@@ -1,0 +1,2448 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+    <title>Controle Financeiro</title>
+    
+    <meta name="theme-color" content="#4F46E5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="/manifest.json">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4F46E5',
+                        secondary: '#E0E7FF',
+                        danger: '#EF4444',
+                        info: '#3B82F6',
+                        success: '#10B981',
+                        warning: '#F59E0B'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+
+    <style>
+        /* Ajuste de Fonte Base */
+        html {
+            font-size: 15px;
+        }
+        @media (min-width: 640px) {
+            html {
+                font-size: 16px;
+            }
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #F0F4F8, #D9E2EC);
+            padding-bottom: 80px; /* Mais espaço para a barra de navegação */
+            padding-left: 0.5rem;
+            padding-right: 0.5rem;
+            padding-top: 0.25rem; /* Ajuste para otimizar espaço no topo */
+            line-height: 1.4;
+        }
+
+        /* Container principal mais compacto */
+        .max-w-4xl {
+            max-width: 100%;
+            padding: 0.5rem; /* Ajuste para mobile */
+        }
+
+        /* Estilos de transição e foco */
+        .progress-bar {
+            transition: width 0.5s ease-in-out;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: theme('colors.primary');
+            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+        }
+        select, select option {
+            color: #000;
+        }
+
+        /* Otimização de Espaço: Cards e listas */
+        #transactions-list > li,
+        #categories-list > li,
+        #goals-list > li {
+            padding: 0.75rem; /* Ajuste para mobile */
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .summary-card {
+            padding: 0.5rem; /* Ajuste para mobile */
+            min-height: 70px; /* Altura consistente */
+        }
+        .summary-card p {
+            font-size: 0.75rem;
+        }
+        .summary-card .amount-text {
+            font-size: 0.875rem;
+        }
+
+        /* Otimização de Espaço: Texto e Títulos */
+        header h1 { font-size: 1.75rem; }
+        header p { font-size: 0.9rem; }
+        h2 { font-size: 1.25rem; }
+        h3 { font-size: 1rem; }
+        #transactions-list > li p, #categories-list > li p, #goals-list > li p {
+            font-size: 0.875rem;
+            color: #212121 !important;
+        }
+        #transactions-list > li .text-gray-600, #categories-list > li .text-gray-600, #goals-list > li .text-gray-600 {
+            color: #444444 !important;
+        }
+
+        /* Scroll suave e otimizado */
+        .overflow-y-auto {
+            -webkit-overflow-scrolling: touch;
+            scroll-behavior: smooth;
+            max-height: 50vh;
+        }
+
+        /* Otimização de Eventos Touch */
+        @media (hover: none) {
+            .hover-effect:hover, button:hover, .bottom-nav-button:hover, .delete-btn:hover {
+                background-color: initial !important;
+                color: initial !important;
+                box-shadow: none !important;
+            }
+            .bottom-nav-button.active:hover {
+                color: theme('colors.primary');
+            }
+        }
+
+        /* Estilos do Modal */
+        .modal {
+            display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%;
+            overflow: auto; background-color: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center;
+        }
+        .modal-content {
+            background-color: #fefefe; margin: auto; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            max-width: 500px; max-height: 80vh; display: flex; flex-direction: column; width: 95%; padding: 1rem;
+        }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .modal-header h3 { font-size: 1.25rem; font-weight: 600; color: #1F2937; }
+        .modal-close-btn { color: #aaa; font-size: 28px; font-weight: bold; cursor: pointer; transition: color 0.2s; }
+        .modal-close-btn:hover, .modal-close-btn:focus { color: #333; }
+        .modal-body { flex-grow: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-right: 5px; }
+        .modal-transaction-item { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #eee; }
+        .modal-transaction-item:last-child { border-bottom: none; }
+        .modal-transaction-item .amount { font-weight: 600; margin-left: 10px; flex-shrink: 0; }
+
+        /* Correções de cor de texto em inputs e placeholders */
+        #transaction-form input, #transaction-form select, #transaction-form textarea, #categories-content input, #categories-content select {
+            color: #000 !important; background-color: #fff !important;
+        }
+        #transaction-form input::placeholder, #categories-content input::placeholder {
+            color: #6b7280 !important; opacity: 1 !important;
+        }
+
+        /* --- INÍCIO DAS NOVAS MELHORIAS --- */
+
+        /* 1. Layout e Espaçamento Otimizados */
+        @media (max-width: 640px) {
+            .max-w-4xl { box-shadow: none; border-radius: 0; padding: 0.5rem; }
+            section, .bg-gray-50, .bg-white { box-shadow: none; border: none; border-radius: 0.5rem; }
+        }
+        .space-y-8 { row-gap: 1rem; }
+        header { margin-bottom: 0.5rem; }
+        .p-4, .p-6 { padding: 0.75rem; }
+        .mt-1 { margin-top: 0.25rem; }
+        label { margin-bottom: 0.25rem; }
+
+        /* 3. Melhorias na Barra Inferior */
+        .bottom-nav {
+            height: 56px; /* Mais alto para melhor toque */
+            border-radius: 0; /* Remove border-radius para mobile */
+            margin: 0; /* Remove margem para ocupar toda a largura */
+            width: 100%;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.15); /* Sombra mais proeminente */
+            border-top: 1px solid rgba(0,0,0,0.1); /* Linha superior sutil */
+        }
+        .bottom-nav-button {
+            padding: 0.5rem;
+            min-height: 44px; /* Tamanho mínimo de toque acessível */
+            font-size: 0.7rem;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .bottom-nav-button svg {
+            height: 1.5rem; /* Ícones maiores */
+            width: 1.5rem;
+        }
+        .bottom-nav-button:active { transform: scale(0.95); }
+        .bottom-nav-button.active { position: relative; color: theme('colors.primary');}
+        .bottom-nav-button.active:after {
+            content: ''; position: absolute; top: 2px; left: 50%;
+            transform: translateX(-50%); width: 4px; height: 4px;
+            border-radius: 50%; background-color: theme('colors.primary');
+        }
+
+        /* 4. Otimização de Listas */
+        #transactions-list > li, #categories-list > li, #goals-list > li {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        #transactions-list > li:active, #categories-list > li:active, #goals-list > li:active {
+            transform: scale(0.98); box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .space-y-3 > * + * { margin-top: 0.5rem; }
+
+        /* 5. Formulários Otimizados */
+        input, select, textarea, button {
+            font-size: 16px !important; /* Melhora o zoom automático no iOS */
+            min-height: 44px; /* Tamanho mínimo de toque acessível */
+        }
+        input, select {
+            -webkit-appearance: none; -moz-appearance: none; appearance: none;
+            background-position: right 0.5rem center; background-repeat: no-repeat;
+            background-size: 1rem; padding-right: 2rem; padding: 0.5rem; font-size: 0.875rem;
+        }
+        select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%236b7280'%3E%3Cpath fill-rule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' clip-rule='evenodd' /%3E%3C/svg%3E");
+        }
+        button[type="submit"] { font-weight: 600; letter-spacing: 0.025em; }
+
+        /* 6. Feedback Visual Melhorado */
+        button, .bottom-nav-button, [tabindex] { transition: transform 0.1s, opacity 0.1s, background-color 0.2s; }
+        button:active, .bottom-nav-button:active, [tabindex]:active { transform: scale(0.96); opacity: 0.9; }
+        #message-container div { font-size: 0.875rem; padding: 0.75rem; }
+        .fixed.bottom-4.right-4 { width: 36px; height: 36px; font-size: 0.875rem; }
+
+        /* 8. Ajustes Finais de UX */
+        #tab-content > section { transition: opacity 0.3s ease; }
+        #tab-content > section.hidden { display: none; opacity: 0; }
+        #tab-content > section:not(.hidden) { animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-thumb { background-color: rgba(0,0,0,0.2); border-radius: 2px; }
+
+        /* Melhorias nos modais para mobile */
+        .modal-content {
+            width: 95%;
+            max-height: 85vh;
+            margin: 0;
+            border-radius: 12px 12px 0 0;
+            position: fixed;
+            bottom: 0;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        /* Ajustes no gráfico para mobile */
+        .chart-container {
+            height: 250px !important;
+            position: relative;
+        }
+
+        /* Ajuste para evitar zoom em inputs no iOS */
+        @media screen and (-webkit-min-device-pixel-ratio:0) {
+            input, select, textarea {
+                font-size: 16px !important;
+            }
+        }
+
+        /* Melhorias na visualização de transações */
+        .transaction-item {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 0.5rem;
+        }
+
+        .transaction-info {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Ajuste para evitar scroll horizontal em tabelas */
+        .overflow-x-hidden {
+            overflow-x: hidden;
+        }
+
+        /* NOVOS ESTILOS PARA O MICROFONE */
+        .voice-input-container {
+            position: relative;
+        }
+        .voice-input-btn {
+            position: absolute;
+            right: 0.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #6b7280;
+            transition: color 0.2s;
+        }
+        .voice-input-btn:hover {
+            color: theme('colors.primary');
+        }
+        .voice-input-btn.listening {
+            color: theme('colors.danger');
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .voice-feedback {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0,0,0,0.7);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            z-index: 1000;
+            display: none;
+        }
+
+        /* Estilos para o loading spinner */
+        #custom-loading {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0,0,0,0.5);
+            /* display: flex; Removido para ser controlado via JS */
+            align-items: center;
+            justify-content: center;
+            z-index: 5000; /* Garante que fique acima de tudo */
+        }
+        #custom-loading > div {
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+        #custom-loading .animate-spin {
+            border-color: theme('colors.primary');
+            border-top-color: transparent;
+            border-right-color: transparent;
+        }
+
+        /* Adicionar ao seu bloco de estilos */
+        .sync-status {
+            position: fixed;
+            bottom: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0,0,0,0.7);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .sync-status .sync-spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Skeleton Loading */
+        .skeleton {
+            animation: skeleton-loading 1.5s linear infinite alternate;
+            background-color: #f3f4f6; /* light gray */
+            border-radius: 0.25rem;
+        }
+
+        .dark .skeleton {
+            background-color: #374151; /* dark gray */
+        }
+
+        @keyframes skeleton-loading {
+            0% { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
+
+        .skeleton-text {
+            height: 1rem; /* Adjust height as needed */
+            margin-bottom: 0.5rem;
+        }
+
+        .skeleton-line-long {
+            width: 90%;
+        }
+
+        .skeleton-line-medium {
+            width: 70%;
+        }
+
+        .skeleton-line-short {
+            width: 40%;
+        }
+
+        /* --- FIM DAS NOVAS MELHORIAS --- */
+
+        /* Estilo para o botão de instalação PWA */
+        .install-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 50;
+            background-color: #4F46E5;
+            color: white;
+            padding: 12px 20px; /* Ajustado para melhor toque */
+            border-radius: 50px; /* Mais arredondado */
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            font-weight: 600;
+            transition: all 0.3s ease; /* Transição para todas as propriedades */
+            cursor: pointer;
+            border: none;
+            animation: pulse 2s infinite; /* Animação atualizada */
+            display: flex; /* Para alinhar o ícone */
+            align-items: center; /* Para alinhar o ícone */
+        }
+
+        .install-btn:hover {
+            background-color: #3B34B2;
+            transform: translateY(-2px); /* Efeito de elevação */
+            box-shadow: 0 6px 16px rgba(0,0,0,0.3); /* Sombra maior no hover */
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        /* iOS Install Banner */
+        .ios-install-banner {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: white;
+            color: #333;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            max-width: 90%;
+            z-index: 100;
+            display: none; /* Hidden by default, shown by JS */
+        }
+
+        .ios-install-content {
+            text-align: center;
+        }
+
+        .ios-install-content ol {
+            text-align: left;
+            padding-left: 20px;
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+
+        .ios-install-content button {
+            background-color: #eee;
+            padding: 8px 15px;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        /* Estilo para o feedback de voz (novo) */
+        .voice-feedback {
+            background: rgba(0, 0, 0, 0.85);
+            color: white;
+            padding: 1rem;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            z-index: 1000;
+            position: fixed; /* Adicionado para garantir que fique na tela */
+            bottom: 100px; /* Ajustado para não cobrir a barra de navegação */
+            left: 50%;
+            transform: translateX(-50%);
+            display: none; /* Escondido por padrão */
+        }
+        #voice-feedback-fields {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 1rem;
+        }
+        /* Botão de confirmação (novo) */
+        #confirm-voice-command {
+            transition: all 0.2s;
+        }
+        #confirm-voice-command:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Estilos para os cabeçalhos de ordenação */
+        .sortable-header {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            user-select: none; /* Prevent text selection on double click */
+        }
+        .sort-icon {
+            width: 16px;
+            height: 16px;
+            transition: transform 0.2s;
+        }
+        .sort-icon.asc {
+            transform: rotate(0deg);
+        }
+        .sort-icon.desc {
+            transform: rotate(180deg);
+        }
+    </style>
+</head>
+<body class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen">
+    <div class="max-w-4xl mx-auto bg-white dark:bg-gray-800 rounded-3xl shadow-xl space-y-8">
+
+        <header class="text-center">
+            <h1 class="font-bold text-gray-900 dark:text-gray-100 leading-tight">
+                Controle Financeiro
+            </h1>
+            <p class="text-gray-600 dark:text-gray-300 mt-2">Gerencie suas finanças de forma simples</p>
+        </header>
+
+        <div id="message-container" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-11/12 max-w-sm"></div>
+
+        <section class="bg-gray-50 dark:bg-gray-700 p-6 rounded-2xl">
+            <h2 class="font-semibold text-gray-800 dark:text-gray-200 mb-4">Resumo do Orçamento</h2>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+                <div class="bg-white dark:bg-gray-900 rounded-xl summary-card">
+                    <p class="text-gray-600 dark:text-gray-400">Receita Total</p>
+                    <p id="total-revenue" class="amount-text font-bold text-green-600 mt-1">R$ 0.00</p>
+                </div>
+                <div class="bg-white dark:bg-gray-900 rounded-xl summary-card">
+                    <p class="text-gray-600 dark:text-gray-400">Despesa Total</p>
+                    <p id="total-expense" class="amount-text font-bold text-red-600 mt-1">R$ 0.00</p>
+                </div>
+                <div class="bg-white dark:bg-gray-900 rounded-xl summary-card">
+                    <p id="current-balance-label" class="text-gray-600 dark:text-gray-400">Saldo Atual</p>
+                    <p id="current-balance" class="amount-text font-bold text-blue-600 mt-1">R$ 0.00</p>
+                </div>
+                <div class="bg-white dark:bg-gray-900 rounded-xl summary-card">
+                    <p id="remaining-budget-label" class="text-gray-600 dark:text-gray-400">Orçamento Restante</p>
+                    <p id="remaining-budget" class="amount-text font-bold text-purple-600 mt-1">R$ 0.00</p>
+                </div>
+            </div>
+        </section>
+
+        <div id="tab-content">
+            <section id="transactions-content" class="bg-white dark:bg-gray-800 p-4 rounded-2xl space-y-4">
+                <h2 class="font-semibold text-gray-800 dark:text-gray-200 mb-3">Adicionar Nova Transação</h2>
+                <form id="transaction-form" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div class="voice-input-container">
+                        <label for="transaction-description" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Descrição</label>
+                        <input type="text" id="transaction-description" placeholder="Ex: Aluguel, Salário" required
+                               class="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm pr-10">
+                        <button type="button" id="voice-input-btn" class="voice-input-btn" title="Falar descrição">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div>
+                        <label for="transaction-amount" class="block text-sm font-medium text-black dark:text-gray-300">Valor <span class="text-xs text-gray-500">(use . para decimais)</span></label>
+                        <input type="number" id="transaction-amount" placeholder="Ex: 500.00" step="0.01" required inputmode="decimal" class="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm">
+                    </div>
+                    <div>
+                        <label for="transaction-type" class="block text-sm font-medium text-black dark:text-gray-300">Tipo</label>
+                        <select id="transaction-type" required class="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm">
+                            <option value="revenue">Receita</option>
+                            <option value="expense">Despesa</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="transaction-category" class="block text-sm font-medium text-black dark:text-gray-300">Categoria</label>
+                        <select id="transaction-category" required class="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm">
+                        </select>
+                    </div>
+                    <div class="col-span-1 md:col-span-2 flex items-center space-x-2">
+                        <input type="checkbox" id="transaction-is-recurring" class="form-checkbox h-4 w-4 text-primary rounded">
+                        <label for="transaction-is-recurring" class="text-sm font-medium text-gray-700 dark:text-gray-300">É Recorrente?</label>
+                        <input type="date" id="transaction-next-due-date" class="mt-1 block flex-1 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm" style="display: none;">
+                    </div>
+                    <div class="col-span-1 md:col-span-2">
+                        <button type="submit" class="w-full bg-primary text-white py-2 px-4 rounded-lg hover:bg-opacity-90 transition duration-200 shadow-md">Adicionar Transação</button>
+                    </div>
+                </form>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm mt-6">
+                    <h3 class="font-semibold text-gray-800 dark:text-gray-200 mb-2">Orçamento Mensal</h3>
+                    <div class="flex items-center mb-2">
+                        <input type="number" id="monthly-budget-input" placeholder="Defina seu orçamento" class="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded-lg mr-2" inputmode="decimal">
+                        <button id="set-budget-btn" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-opacity-90 transition duration-200 shadow-md">
+                            Definir
+                        </button>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                        <div id="budget-progress-bar" class="bg-blue-600 h-2.5 rounded-full progress-bar" style="width: 0%"></div>
+                    </div>
+                    <p id="budget-info" class="text-sm text-gray-600 dark:text-gray-400 mt-2">Orçamento: R$ 0.00 | Gasto: R$ 0.00 | Restante: R$ 0.00</p>
+                </div>
+
+                <div class="mt-6">
+                    <h3 class="font-semibold text-gray-800 dark:text-gray-200 mb-3">Minhas Transações</h3>
+                    <div class="mb-4 flex flex-wrap gap-2">
+                        <button id="export-transactions-csv" class="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm px-3 py-1 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition">Exportar CSV</button>
+                        <button id="export-transactions-pdf" class="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm px-3 py-1 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition">Exportar PDF</button>
+                        <input type="month" id="filter-month" class="p-1 border border-gray-300 dark:border-gray-600 rounded-md text-sm dark:bg-gray-700 dark:text-gray-200">
+                        <select id="filter-type" class="p-1 border border-gray-300 dark:border-gray-600 rounded-md text-sm dark:bg-gray-700 dark:text-gray-200">
+                            <option value="">Todos os Tipos</option>
+                            <option value="revenue">Receita</option>
+                            <option value="expense">Despesa</option>
+                        </select>
+                        <select id="filter-category" class="p-1 border border-gray-300 dark:border-gray-600 rounded-md text-sm dark:bg-gray-700 dark:text-gray-200">
+                            <option value="">Todas as Categorias</option>
+                        </select>
+                    </div>
+                     <div class="grid grid-cols-3 gap-1 mb-2 text-xs font-semibold text-gray-600 dark:text-gray-400 border-b pb-1">
+                        <div class="sortable-header flex items-center" data-sort="description">Descrição
+                            <svg class="sort-icon w-3 h-3 ml-1 text-gray-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3z" clip-rule="evenodd"></path><path fill-rule="evenodd" d="M10 17a1 1 0 01-.707-.293l-3-3a1 1 0 111.414-1.414L10 14.586l2.293-2.293a1 1 0 011.414 1.414l-3 3A1 1 0 0110 17z" clip-rule="evenodd"></path></svg>
+                        </div>
+                        <div class="sortable-header flex items-center justify-end" data-sort="amount">Valor
+                             <svg class="sort-icon w-3 h-3 ml-1 text-gray-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3z" clip-rule="evenodd"></path><path fill-rule="evenodd" d="M10 17a1 1 0 01-.707-.293l-3-3a1 1 0 111.414-1.414L10 14.586l2.293-2.293a1 1 0 011.414 1.414l-3 3A1 1 0 0110 17z" clip-rule="evenodd"></path></svg>
+                        </div>
+                        <div class="sortable-header flex items-center justify-end" data-sort="date">Data
+                             <svg class="sort-icon w-3 h-3 ml-1 text-gray-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3z" clip-rule="evenodd"></path><path fill-rule="evenodd" d="M10 17a1 1 0 01-.707-.293l-3-3a1 1 0 111.414-1.414L10 14.586l2.293-2.293a1 1 0 011.414 1.414l-3 3A1 1 0 0110 17z" clip-rule="evenodd"></path></svg>
+                        </div>
+                    </div>
+                    <div id="transactions-list" class="space-y-3 max-h-96 overflow-y-auto">
+                        <div id="transactions-skeleton" class="space-y-3">
+                            <div class="flex items-center space-x-2 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg skeleton">
+                                <div class="w-10 h-10 rounded-full skeleton-text"></div>
+                                <div class="flex-1 space-y-2">
+                                    <div class="h-4 skeleton-line-long skeleton"></div>
+                                    <div class="h-3 skeleton-line-medium skeleton"></div>
+                                </div>
+                                <div class="h-4 w-16 skeleton-line-short skeleton"></div>
+                            </div>
+                            <div class="flex items-center space-x-2 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg skeleton">
+                                <div class="w-10 h-10 rounded-full skeleton-text"></div>
+                                <div class="flex-1 space-y-2">
+                                    <div class="h-4 skeleton-line-long skeleton"></div>
+                                    <div class="h-3 skeleton-line-medium skeleton"></div>
+                                </div>
+                                <div class="h-4 w-16 skeleton-line-short skeleton"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="categories-content" class="bg-white dark:bg-gray-800 p-4 rounded-2xl space-y-4 hidden">
+                <h2 class="font-semibold text-gray-800 dark:text-gray-200 mb-3">Gerenciar Categorias</h2>
+                <form id="category-form" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div class="voice-input-container">
+                        <label for="category-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nome da Categoria</label>
+                        <input type="text" id="category-name" placeholder="Ex: Moradia, Alimentação" required
+                            class="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm pr-10">
+                        <button type="button" id="voice-category-btn" class="voice-input-btn" title="Falar categoria">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div>
+                        <label for="category-type" class="block text-sm font-medium text-black dark:text-gray-300">Tipo</label>
+                        <select id="category-type" required class="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm">
+                            <option value="revenue">Receita</option>
+                            <option value="expense">Despesa</option>
+                        </select>
+                    </div>
+                    <div class="col-span-1 md:col-span-2">
+                        <label for="category-limit" class="block text-sm font-medium text-black dark:text-gray-300">Limite (para despesas)</label>
+                        <input type="number" id="category-limit" placeholder="Ex: 1000.00" step="0.01" value="0.00" required inputmode="decimal" class="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm">
+                    </div>
+                    <div class="col-span-1 md:col-span-2">
+                        <button type="submit" class="w-full bg-primary text-white py-2 px-4 rounded-lg hover:bg-opacity-90 transition duration-200 shadow-md">Adicionar Categoria</button>
+                    </div>
+                </form>
+
+                <div class="mt-6">
+                    <h3 class="font-semibold text-gray-800 dark:text-gray-200 mb-3">Minhas Categorias</h3>
+                    <div id="categories-list" class="space-y-3 max-h-96 overflow-y-auto">
+                        <div id="categories-skeleton" class="space-y-3">
+                            <div class="flex items-center space-x-2 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg skeleton">
+                                <div class="w-10 h-10 rounded-full skeleton-text"></div>
+                                <div class="flex-1 space-y-2">
+                                    <div class="h-4 skeleton-line-long skeleton"></div>
+                                    <div class="h-3 skeleton-line-medium skeleton"></div>
+                                </div>
+                                <div class="h-4 w-16 skeleton-line-short skeleton"></div>
+                            </div>
+                            <div class="flex items-center space-x-2 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg skeleton">
+                                <div class="w-10 h-10 rounded-full skeleton-text"></div>
+                                <div class="flex-1 space-y-2">
+                                    <div class="h-4 skeleton-line-long skeleton"></div>
+                                    <div class="h-3 skeleton-line-medium skeleton"></div>
+                                </div>
+                                <div class="h-4 w-16 skeleton-line-short skeleton"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="goals-content" class="bg-white dark:bg-gray-800 p-4 rounded-2xl space-y-4 hidden">
+                <h2 class="font-semibold text-gray-800 dark:text-gray-200 mb-3">Metas de Economia</h2>
+                <form id="goal-form" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                        <label for="goal-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nome da Meta</label>
+                        <input type="text" id="goal-name" placeholder="Ex: Carro novo, Viagem" required
+                               class="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm">
+                    </div>
+                    <div>
+                        <label for="goal-target-amount" class="block text-sm font-medium text-black dark:text-gray-300">Valor Alvo</label>
+                        <input type="number" id="goal-target-amount" placeholder="Ex: 10000.00" step="0.01" required inputmode="decimal" class="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm">
+                    </div>
+                    <div class="col-span-1 md:col-span-2">
+                        <button type="submit" class="w-full bg-primary text-white py-2 px-4 rounded-lg hover:bg-opacity-90 transition duration-200 shadow-md">Adicionar Meta</button>
+                    </div>
+                </form>
+
+                <div class="mt-6">
+                    <h3 class="font-semibold text-gray-800 dark:text-gray-200 mb-3">Minhas Metas</h3>
+                    <div id="goals-list" class="space-y-3 max-h-96 overflow-y-auto">
+                        <div id="goals-skeleton" class="space-y-3">
+                            <div class="flex items-center space-x-2 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg skeleton">
+                                <div class="w-10 h-10 rounded-full skeleton-text"></div>
+                                <div class="flex-1 space-y-2">
+                                    <div class="h-4 skeleton-line-long skeleton"></div>
+                                    <div class="h-3 skeleton-line-medium skeleton"></div>
+                                </div>
+                                <div class="h-4 w-16 skeleton-line-short skeleton"></div>
+                            </div>
+                            <div class="flex items-center space-x-2 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg skeleton">
+                                <div class="w-10 h-10 rounded-full skeleton-text"></div>
+                                <div class="flex-1 space-y-2">
+                                    <div class="h-4 skeleton-line-long skeleton"></div>
+                                    <div class="h-3 skeleton-line-medium skeleton"></div>
+                                </div>
+                                <div class="h-4 w-16 skeleton-line-short skeleton"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="reports-content" class="bg-white dark:bg-gray-800 p-4 rounded-2xl space-y-4 hidden">
+                <h2 class="font-semibold text-gray-800 dark:text-gray-200 mb-3">Relatórios Financeiros</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-xl">
+                        <h3 class="font-medium text-gray-800 dark:text-gray-200 mb-2">Despesas por Categoria</h3>
+                        <div class="chart-container">
+                            <canvas id="expensesByCategoryChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-xl">
+                        <h3 class="font-medium text-gray-800 dark:text-gray-200 mb-2">Receitas vs. Despesas</h3>
+                        <div class="chart-container">
+                            <canvas id="revenueVsExpensesChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="settings-content" class="bg-white dark:bg-gray-800 p-4 rounded-2xl space-y-4 hidden">
+                <h2 class="font-semibold text-gray-800 dark:text-gray-200 mb-3">Configurações</h2>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <label for="dark-mode-toggle" class="text-gray-700 dark:text-gray-300">Modo Escuro</label>
+                        <input type="checkbox" id="dark-mode-toggle" class="form-checkbox h-5 w-5 text-primary rounded">
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <label class="text-gray-700 dark:text-gray-300">Sincronização de Dados</label>
+                        <button id="sync-data-btn" class="bg-primary text-white py-2 px-4 rounded-lg hover:bg-opacity-90 transition duration-200 shadow-md">Sincronizar Agora</button>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <label class="text-gray-700 dark:text-gray-300">Redefinir Dados</label>
+                        <button id="reset-data-btn" class="bg-danger text-white py-2 px-4 rounded-lg hover:bg-opacity-90 transition duration-200 shadow-md">Redefinir Tudo</button>
+                    </div>
+                    <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+                        <h3 class="font-semibold text-gray-800 dark:text-gray-200 mb-3">Autenticação</h3>
+                        <div id="auth-status" class="text-gray-600 dark:text-gray-400 mb-4">
+                            Você não está logado.
+                        </div>
+                        <button id="login-google-btn" class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-200 shadow-md hidden">
+                            Login com Google
+                        </button>
+                        <button id="logout-btn" class="w-full bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition duration-200 shadow-md hidden mt-2">
+                            Sair
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div id="edit-transaction-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="text-lg">Editar Transação</h3>
+                    <span class="modal-close-btn" data-modal="edit-transaction-modal">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <form id="edit-transaction-form" class="space-y-4">
+                        <input type="hidden" id="edit-transaction-id">
+                        <div>
+                            <label for="edit-transaction-description" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Descrição</label>
+                            <input type="text" id="edit-transaction-description" required class="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm">
+                        </div>
+                        <div>
+                            <label for="edit-transaction-amount" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Valor</label>
+                            <input type="number" id="edit-transaction-amount" step="0.01" required class="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm">
+                        </div>
+                        <div>
+                            <label for="edit-transaction-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Data</label>
+                            <input type="date" id="edit-transaction-date" required class="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm">
+                        </div>
+                        <div>
+                            <label for="edit-transaction-type" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tipo</label>
+                            <select id="edit-transaction-type" required class="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm">
+                                <option value="revenue">Receita</option>
+                                <option value="expense">Despesa</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="edit-transaction-category" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Categoria</label>
+                            <select id="edit-transaction-category" required class="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm">
+                            </select>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <input type="checkbox" id="edit-transaction-is-recurring" class="form-checkbox h-4 w-4 text-primary rounded">
+                            <label for="edit-transaction-is-recurring" class="text-sm font-medium text-gray-700 dark:text-gray-300">É Recorrente?</label>
+                        </div>
+                        <div id="edit-transaction-recurring-options" style="display: none;">
+                            <div>
+                                <label for="edit-transaction-next-due-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Próxima Data de Vencimento</label>
+                                <input type="date" id="edit-transaction-next-due-date" class="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm">
+                            </div>
+                        </div>
+                        <button type="submit" class="w-full bg-primary text-white py-2 px-4 rounded-lg hover:bg-opacity-90 transition duration-200 shadow-md">Salvar Alterações</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div id="edit-category-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="text-lg">Editar Categoria</h3>
+                    <span class="modal-close-btn" data-modal="edit-category-modal">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <form id="edit-category-form" class="space-y-4">
+                        <input type="hidden" id="edit-category-id">
+                        <div>
+                            <label for="edit-category-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nome da Categoria</label>
+                            <input type="text" id="edit-category-name" required class="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm">
+                        </div>
+                        <div>
+                            <label for="edit-category-type" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tipo</label>
+                            <select id="edit-category-type" required class="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm">
+                                <option value="revenue">Receita</option>
+                                <option value="expense">Despesa</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="edit-category-limit" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Limite</label>
+                            <input type="number" id="edit-category-limit" step="0.01" required class="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm">
+                        </div>
+                        <button type="submit" class="w-full bg-primary text-white py-2 px-4 rounded-lg hover:bg-opacity-90 transition duration-200 shadow-md">Salvar Alterações</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div id="edit-goal-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="text-lg">Editar Meta</h3>
+                    <span class="modal-close-btn" data-modal="edit-goal-modal">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <form id="edit-goal-form" class="space-y-4">
+                        <input type="hidden" id="edit-goal-id">
+                        <div>
+                            <label for="edit-goal-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nome da Meta</label>
+                            <input type="text" id="edit-goal-name" required class="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm">
+                        </div>
+                        <div>
+                            <label for="edit-goal-target-amount" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Valor Alvo</label>
+                            <input type="number" id="edit-goal-target-amount" step="0.01" required class="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm">
+                        </div>
+                        <div>
+                            <label for="edit-goal-current-amount" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Valor Atual</label>
+                            <input type="number" id="edit-goal-current-amount" step="0.01" required class="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm">
+                        </div>
+                        <button type="submit" class="w-full bg-primary text-white py-2 px-4 rounded-lg hover:bg-opacity-90 transition duration-200 shadow-md">Salvar Alterações</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="voice-feedback" id="voice-feedback">
+            <p id="voice-feedback-text">Aguardando comando de voz...</p>
+            <div id="voice-feedback-details" class="voice-feedback-details hidden">
+                <div id="voice-feedback-fields"></div>
+                <div class="flex justify-around mt-4">
+                    <button id="confirm-voice-command" class="bg-green-500 text-white px-4 py-2 rounded-lg mr-2">Confirmar</button>
+                    <button id="cancel-voice-command" class="bg-red-500 text-white px-4 py-2 rounded-lg">Cancelar</button>
+                </div>
+            </div>
+        </div>
+
+        <button id="install-pwa-btn" class="install-btn hidden">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Instalar App
+        </button>
+
+        <div id="ios-install-banner" class="ios-install-banner">
+            <p>Para instalar este aplicativo na sua tela inicial:</p>
+            <ol>
+                <li>Toque no ícone de <strong>Compartilhar</strong> <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block" viewBox="0 0 20 20" fill="currentColor"><path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.314l4.94 2.47a3 3 0 10.832-1.664L10.86 10.51l1.174-.587A3 3 0 1015 8z" /></svg> na barra de navegação.</li>
+                <li>Selecione <strong>Adicionar à Tela de Início</strong>.</li>
+            </ol>
+            <button id="close-ios-install-banner">Fechar</button>
+        </div>
+
+        <div id="custom-loading" class="hidden">
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-lg text-center shadow-lg">
+                <div class="animate-spin rounded-full h-12 w-12 border-4 border-t-4 border-blue-500 mx-auto mb-4"></div>
+                <p class="text-gray-700 dark:text-gray-300">Carregando...</p>
+            </div>
+        </div>
+
+        <div id="sync-status" class="sync-status hidden">
+            <div class="sync-spinner"></div>
+            <span id="sync-message">Sincronizando...</span>
+        </div>
+
+    </div>
+
+    <nav class="bottom-nav fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 flex justify-around items-center p-2 shadow-lg z-20">
+        <button id="nav-transactions" class="bottom-nav-button flex flex-col items-center text-gray-500 dark:text-gray-400 active">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+            Transações
+        </button>
+        <button id="nav-categories" class="bottom-nav-button flex flex-col items-center text-gray-500 dark:text-gray-400">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m7 0V5a2 2 0 012-2h2a2 2 0 012 2v2M7 7h.01" />
+            </svg>
+            Categorias
+        </button>
+        <button id="nav-goals" class="bottom-nav-button flex flex-col items-center text-gray-500 dark:text-gray-400">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            </svg>
+            Metas
+        </button>
+        <button id="nav-reports" class="bottom-nav-button flex flex-col items-center text-gray-500 dark:text-gray-400">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            Relatórios
+        </button>
+        <button id="nav-settings" class="bottom-nav-button flex flex-col items-center text-gray-500 dark:text-gray-400">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.573.352 1.258.10 1.724-1.065z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            Configurações
+        </button>
+    </nav>
+
+    <script type="module">
+        // Firebase Configuration (Replace with your actual config)
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth(); // Initialize auth
+
+        // Global Variables
+        let transactions = [];
+        let categories = {};
+        let goals = [];
+        let monthlyBudget = 0;
+        let expensesChart, revenueExpensesChart;
+        let deferredPrompt;
+        let currentUserId = null; // Track current user ID
+        let currentVoiceCommandMode = null; // 'transaction' or 'category'
+        let pendingVoiceCommand = null;
+        let isCategoryEditMode = false;
+        let currentSortColumn = 'date';
+        let currentSortDirection = 'desc';
+
+        // DOM Elements
+        const totalRevenueEl = document.getElementById('total-revenue');
+        const totalExpenseEl = document.getElementById('total-expense');
+        const currentBalanceEl = document.getElementById('current-balance');
+        const remainingBudgetEl = document.getElementById('remaining-budget');
+
+        const transactionForm = document.getElementById('transaction-form');
+        const transactionDescriptionInput = document.getElementById('transaction-description');
+        const transactionAmountInput = document.getElementById('transaction-amount');
+        const transactionDateInput = document.getElementById('transaction-date');
+        const transactionTypeSelect = document.getElementById('transaction-type');
+        const transactionCategorySelect = document.getElementById('transaction-category');
+        const transactionIsRecurringCheckbox = document.getElementById('transaction-is-recurring');
+        const transactionNextDueDateInput = document.getElementById('transaction-next-due-date');
+        const transactionsList = document.getElementById('transactions-list');
+        const transactionsSkeleton = document.getElementById('transactions-skeleton');
+
+        const monthlyBudgetInput = document.getElementById('monthly-budget-input');
+        const setBudgetBtn = document.getElementById('set-budget-btn');
+        const budgetProgressBar = document.getElementById('budget-progress-bar');
+        const budgetInfo = document.getElementById('budget-info');
+
+        const categoryForm = document.getElementById('category-form');
+        const categoryNameInput = document.getElementById('category-name');
+        const categoryTypeSelect = document.getElementById('category-type');
+        const categoryLimitInput = document.getElementById('category-limit');
+        const categoriesList = document.getElementById('categories-list');
+        const categoriesSkeleton = document.getElementById('categories-skeleton');
+
+        const goalForm = document.getElementById('goal-form');
+        const goalNameInput = document.getElementById('goal-name');
+        const goalTargetAmountInput = document.getElementById('goal-target-amount');
+        const goalsList = document.getElementById('goals-list');
+        const goalsSkeleton = document.getElementById('goals-skeleton');
+
+        const navTransactions = document.getElementById('nav-transactions');
+        const navCategories = document.getElementById('nav-categories');
+        const navGoals = document.getElementById('nav-goals');
+        const navReports = document.getElementById('nav-reports');
+        const navSettings = document.getElementById('nav-settings');
+
+        const transactionsContent = document.getElementById('transactions-content');
+        const categoriesContent = document.getElementById('categories-content');
+        const goalsContent = document.getElementById('goals-content');
+        const reportsContent = document.getElementById('reports-content');
+        const settingsContent = document.getElementById('settings-content');
+
+        const messageContainer = document.getElementById('message-container');
+        const darkModeToggle = document.getElementById('dark-mode-toggle');
+        const syncDataBtn = document.getElementById('sync-data-btn');
+        const resetDataBtn = document.getElementById('reset-data-btn');
+
+        const editTransactionModal = document.getElementById('edit-transaction-modal');
+        const editTransactionForm = document.getElementById('edit-transaction-form');
+        const editTransactionIdInput = document.getElementById('edit-transaction-id');
+        const editTransactionDescriptionInput = document.getElementById('edit-transaction-description');
+        const editTransactionAmountInput = document.getElementById('edit-transaction-amount');
+        const editTransactionDateInput = document.getElementById('edit-transaction-date');
+        const editTransactionTypeSelect = document.getElementById('edit-transaction-type');
+        const editTransactionCategorySelect = document.getElementById('edit-transaction-category');
+        const editTransactionIsRecurringCheckbox = document.getElementById('edit-transaction-is-recurring');
+        const editTransactionRecurringOptions = document.getElementById('edit-transaction-recurring-options');
+        const editTransactionNextDueDateInput = document.getElementById('edit-transaction-next-due-date');
+
+        const editCategoryModal = document.getElementById('edit-category-modal');
+        const editCategoryForm = document.getElementById('edit-category-form');
+        const editCategoryIdInput = document.getElementById('edit-category-id');
+        const editCategoryNameInput = document.getElementById('edit-category-name');
+        const editCategoryTypeSelect = document.getElementById('edit-category-type');
+        const editCategoryLimitInput = document.getElementById('edit-category-limit');
+
+        const editGoalModal = document.getElementById('edit-goal-modal');
+        const editGoalForm = document.getElementById('edit-goal-form');
+        const editGoalIdInput = document.getElementById('edit-goal-id');
+        const editGoalNameInput = document.getElementById('edit-goal-name');
+        const editGoalTargetAmountInput = document.getElementById('edit-goal-target-amount');
+        const editGoalCurrentAmountInput = document.getElementById('edit-goal-current-amount');
+
+        const expensesByCategoryChartCtx = document.getElementById('expensesByCategoryChart')?.getContext('2d');
+        const revenueVsExpensesChartCtx = document.getElementById('revenueVsExpensesChart')?.getContext('2d');
+
+        const exportTransactionsCsvBtn = document.getElementById('export-transactions-csv');
+        const exportTransactionsPdfBtn = document.getElementById('export-transactions-pdf');
+        const filterMonthInput = document.getElementById('filter-month');
+        const filterTypeSelect = document.getElementById('filter-type');
+        const filterCategorySelect = document.getElementById('filter-category');
+
+        const installPwaBtn = document.getElementById('install-pwa-btn');
+        const iosInstallBanner = document.getElementById('ios-install-banner');
+        const closeIosInstallBannerBtn = document.getElementById('close-ios-install-banner');
+
+        const customLoading = document.getElementById('custom-loading');
+        const syncStatus = document.getElementById('sync-status');
+        const syncMessage = document.getElementById('sync-message');
+
+        const voiceInputBtn = document.getElementById('voice-input-btn');
+        const voiceCategoryBtn = document.getElementById('voice-category-btn');
+        const voiceEditCategoryBtn = document.getElementById('voice-edit-category-btn');
+        const voiceFeedback = document.getElementById('voice-feedback');
+        const voiceFeedbackText = document.getElementById('voice-feedback-text');
+        const voiceFeedbackFields = document.getElementById('voice-feedback-fields');
+        const confirmVoiceCommandBtn = document.getElementById('confirm-voice-command');
+        const cancelVoiceCommandBtn = document.getElementById('cancel-voice-command');
+        const voiceFeedbackDetails = document.getElementById('voice-feedback-details'); // Adicionado
+
+        // Auth elements
+        const authStatusEl = document.getElementById('auth-status');
+        const loginGoogleBtn = document.getElementById('login-google-btn'); // Adicionado
+        const logoutBtn = document.getElementById('logout-btn');
+
+        const transactionSortHeaders = document.querySelectorAll('#transactions-content .sortable-header');
+
+
+        // Utility Functions
+        function showMessage(message, type = 'info') {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `p-3 rounded-lg shadow-md mb-3 text-white transition-all duration-300 ease-in-out transform scale-95 opacity-0`;
+            
+            if (type === 'success') alertDiv.classList.add('bg-green-500');
+            else if (type === 'error') alertDiv.classList.add('bg-red-500');
+            else if (type === 'warning') alertDiv.classList.add('bg-yellow-500');
+            else alertDiv.classList.add('bg-blue-500');
+
+            alertDiv.textContent = message;
+            messageContainer.prepend(alertDiv); // Use prepend to show newer messages at the top
+
+            setTimeout(() => {
+                alertDiv.classList.add('scale-100', 'opacity-100');
+            }, 10);
+
+            setTimeout(() => {
+                alertDiv.classList.remove('scale-100', 'opacity-100');
+                alertDiv.classList.add('scale-95', 'opacity-0');
+                alertDiv.addEventListener('transitionend', () => alertDiv.remove());
+            }, 5000);
+        }
+
+        function showLoading() {
+            customLoading.classList.remove('hidden');
+            customLoading.style.display = 'flex';
+        }
+
+        function hideLoading() {
+            customLoading.classList.add('hidden');
+            customLoading.style.display = 'none';
+        }
+
+        function showSyncStatus(message, showSpinner = true) {
+            syncStatus.classList.remove('hidden');
+            syncMessage.textContent = message;
+            if (showSpinner) {
+                syncStatus.querySelector('.sync-spinner').classList.remove('hidden');
+            } else {
+                syncStatus.querySelector('.sync-spinner').classList.add('hidden');
+            }
+        }
+
+        function hideSyncStatus() {
+            syncStatus.classList.add('hidden');
+        }
+
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(amount);
+        }
+
+        function formatDate(timestamp) {
+            if (!timestamp) return '';
+            let date;
+            if (timestamp.toDate) { // Firestore Timestamp
+                date = timestamp.toDate();
+            } else if (typeof timestamp === 'string') { // ISO string
+                date = new Date(timestamp);
+            } else { // Already a Date object
+                date = timestamp;
+            }
+            return date.toLocaleDateString('pt-BR');
+        }
+
+        function debounce(func, delay) {
+            let timeout;
+            return function(...args) {
+                const context = this;
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(context, args), delay);
+            };
+        }
+
+        // Dark Mode
+        function initDarkMode() {
+            const isDarkMode = localStorage.getItem('darkMode') === 'true';
+            if (isDarkMode) {
+                document.documentElement.classList.add('dark');
+                darkModeToggle.checked = true;
+            } else {
+                document.documentElement.classList.remove('dark');
+                darkModeToggle.checked = false;
+            }
+        }
+
+        darkModeToggle.addEventListener('change', () => {
+            if (darkModeToggle.checked) {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('darkMode', 'true');
+            } else {
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('darkMode', 'false');
+            }
+        });
+
+        // PWA Installation
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installPwaBtn.classList.remove('hidden');
+            console.log('beforeinstallprompt fired');
+        });
+
+        installPwaBtn.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                console.log(`User response to the install prompt: ${outcome}`);
+                deferredPrompt = null;
+                installPwaBtn.classList.add('hidden');
+            }
+        });
+
+        window.addEventListener('appinstalled', () => {
+            console.log('PWA was installed');
+            installPwaBtn.classList.add('hidden');
+        });
+
+        // Show iOS install banner
+        function isIos() {
+            const userAgent = window.navigator.userAgent.toLowerCase();
+            return /iphone|ipad|ipod/.test(userAgent);
+        }
+
+        function isInStandaloneMode() {
+            return ('standalone' in window.navigator) && (window.navigator.standalone);
+        }
+
+        if (isIos() && !isInStandaloneMode()) {
+            // Check if the banner has been dismissed before
+            const dismissed = localStorage.getItem('iosInstallBannerDismissed');
+            if (!dismissed) {
+                iosInstallBanner.style.display = 'block';
+            }
+        }
+
+        closeIosInstallBannerBtn.addEventListener('click', () => {
+            iosInstallBanner.style.display = 'none';
+            localStorage.setItem('iosInstallBannerDismissed', 'true'); // Remember dismissal
+        });
+
+        // Tab Navigation
+        const allContentSections = [transactionsContent, categoriesContent, goalsContent, reportsContent, settingsContent];
+        const allNavButtons = [navTransactions, navCategories, navGoals, navReports, navSettings];
+
+        function showTab(tabToShow) {
+            allContentSections.forEach(section => {
+                section.classList.add('hidden');
+            });
+            allNavButtons.forEach(button => {
+                button.classList.remove('active');
+            });
+
+            tabToShow.classList.remove('hidden');
+            const correspondingNavButton = allNavButtons.find(btn => btn.id === `nav-${tabToShow.id.replace('-content', '')}`);
+            if (correspondingNavButton) {
+                correspondingNavButton.classList.add('active');
+            }
+
+            // Load data specific to tab if needed
+            if (tabToShow === reportsContent) {
+                renderCharts();
+            }
+        }
+
+        navTransactions.addEventListener('click', () => showTab(transactionsContent));
+        navCategories.addEventListener('click', () => showTab(categoriesContent));
+        navGoals.addEventListener('click', () => showTab(goalsContent));
+        navReports.addEventListener('click', () => showTab(reportsContent));
+        navSettings.addEventListener('click', () => showTab(settingsContent));
+
+        // Firebase Firestore Operations
+        async function loadBudgetState() {
+            showLoading();
+            try {
+                if (!currentUserId) {
+                    // Handle anonymous user for local-only data load
+                    const storedTransactions = JSON.parse(localStorage.getItem('transactions') || '[]');
+                    const storedCategories = JSON.parse(localStorage.getItem('categories') || '{}');
+                    const storedGoals = JSON.parse(localStorage.getItem('goals') || '[]');
+                    const storedBudget = parseFloat(localStorage.getItem('monthlyBudget') || '0');
+
+                    transactions = storedTransactions;
+                    categories = storedCategories;
+                    goals = storedGoals;
+                    monthlyBudget = storedBudget;
+
+                    renderTransactions();
+                    renderCategories();
+                    renderGoals();
+                    updateBudgetSummary();
+                    updateCategorySelects();
+                    hideLoading();
+                    showMessage('Dados carregados localmente!', 'info');
+                    return;
+                }
+
+                // For logged-in users, load from Firestore
+                const userDocRef = db.collection('users').doc(currentUserId);
+                const doc = await userDocRef.get();
+
+                if (doc.exists) {
+                    const data = doc.data();
+                    transactions = data.transactions || [];
+                    categories = data.categories || {};
+                    goals = data.goals || [];
+                    monthlyBudget = data.monthlyBudget || 0;
+                    showMessage('Dados sincronizados com sucesso!', 'success');
+                } else {
+                    // Create a new document for the user if it doesn't exist
+                    await userDocRef.set({
+                        transactions: [],
+                        categories: {},
+                        goals: [],
+                        monthlyBudget: 0
+                    });
+                    showMessage('Novo perfil de usuário criado!', 'info');
+                }
+            } catch (error) {
+                console.error("Erro ao carregar estado do orçamento:", error);
+                showMessage('Erro ao carregar dados. Verifique sua conexão ou tente novamente.', 'error');
+            } finally {
+                renderTransactions();
+                renderCategories();
+                renderGoals();
+                updateBudgetSummary();
+                updateCategorySelects();
+                hideLoading();
+            }
+        }
+
+        async function saveBudgetState() {
+            if (!currentUserId) {
+                // Save to local storage for anonymous users
+                localStorage.setItem('transactions', JSON.stringify(transactions));
+                localStorage.setItem('categories', JSON.stringify(categories));
+                localStorage.setItem('goals', JSON.stringify(goals));
+                localStorage.setItem('monthlyBudget', monthlyBudget.toString());
+                console.log('Dados salvos localmente.');
+                return;
+            }
+
+            // For logged-in users, save to Firestore
+            showSyncStatus('Sincronizando...');
+            try {
+                const userDocRef = db.collection('users').doc(currentUserId);
+                await userDocRef.set({
+                    transactions: transactions,
+                    categories: categories,
+                    goals: goals,
+                    monthlyBudget: monthlyBudget
+                }, { merge: true }); // Use merge to avoid overwriting other fields if they exist
+                showSyncStatus('Sincronizado!', false);
+                setTimeout(hideSyncStatus, 2000);
+            } catch (error) {
+                console.error("Erro ao salvar estado do orçamento:", error);
+                showSyncStatus('Erro de sincronização!', false);
+                setTimeout(hideSyncStatus, 3000);
+                showMessage('Erro ao salvar dados. Tente novamente.', 'error');
+            }
+        }
+
+        // Transactions
+        async function addTransaction(description, amount, type, categoryId = '') {
+            const date = new Date();
+            const categoryName = categories[categoryId]?.name || 'Sem Categoria'; // Get category name for display
+            transactions.push({
+                id: Date.now().toString(), // Simple unique ID
+                description,
+                amount: parseFloat(amount),
+                date: firebase.firestore.Timestamp.fromDate(date),
+                type,
+                categoryId,
+                categoryName,
+                isRecorrente: transactionIsRecurringCheckbox.checked,
+                proximoVencimento: transactionIsRecurringCheckbox.checked ? transactionNextDueDateInput.value : null
+            });
+            await saveBudgetState();
+            renderTransactions();
+            updateBudgetSummary();
+            showMessage('Transação adicionada com sucesso!', 'success');
+            transactionForm.reset();
+            transactionNextDueDateInput.style.display = 'none'; // Hide date input after reset
+            transactionNextDueDateInput.required = false;
+        }
+
+        async function deleteTransaction(id) {
+            if (confirm('Tem certeza que deseja excluir esta transação?')) {
+                transactions = transactions.filter(t => t.id !== id);
+                await saveBudgetState();
+                renderTransactions();
+                updateBudgetSummary();
+                showMessage('Transação excluída com sucesso!', 'success');
+            }
+        }
+
+        async function updateTransaction(id, description, amount, date, type, categoryId, isRecorrente, proximoVencimento) {
+            const index = transactions.findIndex(t => t.id === id);
+            if (index > -1) {
+                const categoryName = categories[categoryId]?.name || 'Sem Categoria';
+                transactions[index] = {
+                    id,
+                    description,
+                    amount: parseFloat(amount),
+                    date: firebase.firestore.Timestamp.fromDate(new Date(date)),
+                    type,
+                    categoryId,
+                    categoryName,
+                    isRecorrente,
+                    proximoVencimento: isRecorrente ? proximoVencimento : null
+                };
+                await saveBudgetState();
+                renderTransactions();
+                updateBudgetSummary();
+                showMessage('Transação atualizada com sucesso!', 'success');
+            } else {
+                showMessage('Erro: Transação não encontrada.', 'error');
+            }
+            editTransactionModal.classList.add('hidden');
+        }
+
+        function renderTransactions() {
+            transactionsList.innerHTML = ''; // Clear current list
+            transactionsSkeleton.classList.remove('hidden'); // Show skeleton loader
+
+            setTimeout(() => { // Simulate loading time
+                transactionsSkeleton.classList.add('hidden'); // Hide skeleton loader
+
+                if (transactions.length === 0) {
+                    transactionsList.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-center">Nenhuma transação adicionada ainda.</p>';
+                    return;
+                }
+
+                const filterMonth = filterMonthInput.value;
+                const filterType = filterTypeSelect.value;
+                const filterCategory = filterCategorySelect.value;
+
+                let filteredTransactions = transactions;
+
+                if (filterMonth) {
+                    const [year, month] = filterMonth.split('-');
+                    filteredTransactions = filteredTransactions.filter(t => {
+                        const transactionDate = t.date.toDate();
+                        return transactionDate.getFullYear() === parseInt(year) &&
+                               (transactionDate.getMonth() + 1) === parseInt(month);
+                    });
+                }
+
+                if (filterType) {
+                    filteredTransactions = filteredTransactions.filter(t => t.type === filterType);
+                }
+
+                if (filterCategory) {
+                    filteredTransactions = filteredTransactions.filter(t => t.categoryId === filterCategory);
+                }
+
+                // Sorting logic
+                filteredTransactions.sort((a, b) => {
+                    let valA, valB;
+
+                    if (currentSortColumn === 'description') {
+                        valA = a.description.toLowerCase();
+                        valB = b.description.toLowerCase();
+                    } else if (currentSortColumn === 'amount') {
+                        valA = a.amount;
+                        valB = b.amount;
+                    } else if (currentSortColumn === 'date') {
+                        valA = a.date.toDate().getTime();
+                        valB = b.date.toDate().getTime();
+                    }
+
+                    if (valA < valB) return currentSortDirection === 'asc' ? -1 : 1;
+                    if (valA > valB) return currentSortDirection === 'asc' ? 1 : -1;
+                    return 0;
+                });
+
+                filteredTransactions.forEach(item => {
+                    const li = document.createElement('li');
+                    li.className = `transaction-item bg-gray-100 dark:bg-gray-700 p-3 rounded-lg shadow-sm flex items-center justify-between ${item.type === 'expense' ? 'border-l-4 border-red-500' : 'border-l-4 border-green-500'}`;
+                    li.innerHTML = `
+                        <div class="flex-1 transaction-info">
+                            <p class="font-medium text-gray-900 dark:text-gray-100">${item.description}</p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">${formatDate(item.date)} - ${item.categoryName}</p>
+                            ${item.isRecorrente ? `<p class="text-xs text-blue-500">Recorrente | Próx: ${formatDate(item.proximoVencimento)}</p>` : ''}
+                        </div>
+                        <div class="flex items-center">
+                            <p class="font-bold ${item.type === 'expense' ? 'text-red-600' : 'text-green-600'} mr-3">
+                                ${formatCurrency(item.amount)}
+                            </p>
+                            <button class="edit-btn text-blue-500 hover:text-blue-700 mr-2" data-id="${item.id}">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-7.293 7.293A1 1 0 018.707 14H6a1 1 0 01-1-1v-2.293a1 1 0 01.293-.707l7.293-7.293zM14 6L14 6l-7.293 7.293A1 1 0 006 13v0h0-2v-2a1 1 0 00-.707-.293l-7.293-7.293L2.293 3.586 10 11.293 13.586 7.707 14 6z" />
+                                </svg>
+                            </button>
+                            <button class="delete-btn text-red-500 hover:text-red-700" data-id="${item.id}">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1zm2 6a1 1 0 100 2h2a1 1 0 100-2H9z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
+                    `;
+                    transactionsList.appendChild(li);
+                });
+
+                document.querySelectorAll('.edit-btn').forEach(button => {
+                    button.addEventListener('click', (e) => showEditTransactionModal(e.currentTarget.dataset.id));
+                });
+                document.querySelectorAll('.delete-btn').forEach(button => {
+                    button.addEventListener('click', (e) => deleteTransaction(e.currentTarget.dataset.id));
+                });
+            }, 500); // Small delay to show skeleton effect
+        }
+
+        function updateBudgetSummary() {
+            let totalRevenue = transactions.filter(t => t.type === 'revenue').reduce((sum, t) => sum + t.amount, 0);
+            let totalExpense = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+            let currentBalance = totalRevenue - totalExpense;
+
+            totalRevenueEl.textContent = formatCurrency(totalRevenue);
+            totalExpenseEl.textContent = formatCurrency(totalExpense);
+            currentBalanceEl.textContent = formatCurrency(currentBalance);
+            currentBalanceEl.className = `amount-text font-bold mt-1 ${currentBalance >= 0 ? 'text-blue-600' : 'text-red-600'}`;
+
+            // Calculate remaining budget
+            const totalMonthlyExpense = transactions
+                .filter(t => t.type === 'expense' && new Date(t.date.toDate()).getMonth() === new Date().getMonth())
+                .reduce((sum, t) => sum + t.amount, 0);
+            const remaining = monthlyBudget - totalMonthlyExpense;
+            remainingBudgetEl.textContent = formatCurrency(remaining);
+            remainingBudgetEl.className = `amount-text font-bold mt-1 ${remaining >= 0 ? 'text-purple-600' : 'text-red-600'}`;
+
+            // Update progress bar
+            if (monthlyBudget > 0) {
+                const percentageUsed = (totalMonthlyExpense / monthlyBudget) * 100;
+                budgetProgressBar.style.width = `${Math.min(percentageUsed, 100)}%`;
+                if (percentageUsed > 100) {
+                    budgetProgressBar.classList.remove('bg-blue-600');
+                    budgetProgressBar.classList.add('bg-red-600');
+                } else {
+                    budgetProgressBar.classList.remove('bg-red-600');
+                    budgetProgressBar.classList.add('bg-blue-600');
+                }
+            } else {
+                budgetProgressBar.style.width = '0%';
+                budgetProgressBar.classList.remove('bg-red-600');
+                budgetProgressBar.classList.add('bg-blue-600');
+            }
+
+            budgetInfo.textContent = `Orçamento: ${formatCurrency(monthlyBudget)} | Gasto: ${formatCurrency(totalMonthlyExpense)} | Restante: ${formatCurrency(remaining)}`;
+        }
+
+        // Categories
+        async function addCategory(name, type, limit) {
+            const newId = Date.now().toString();
+            categories[newId] = { id: newId, name, type, limit: parseFloat(limit) };
+            await saveBudgetState();
+            renderCategories();
+            updateCategorySelects();
+            showMessage('Categoria adicionada com sucesso!', 'success');
+            categoryForm.reset();
+        }
+
+        async function deleteCategory(id) {
+            if (confirm('Tem certeza que deseja excluir esta categoria? Isso não excluirá as transações associadas, mas elas ficarão sem categoria.')) {
+                delete categories[id];
+                await saveBudgetState();
+                renderCategories();
+                updateCategorySelects();
+                showMessage('Categoria excluída com sucesso!', 'success');
+            }
+        }
+
+        async function updateCategory(id, name, type, limit) {
+            if (categories[id]) {
+                categories[id] = { id, name, type, limit: parseFloat(limit) };
+                await saveBudgetState();
+                renderCategories();
+                updateCategorySelects();
+                showMessage('Categoria atualizada com sucesso!', 'success');
+            } else {
+                showMessage('Erro: Categoria não encontrada.', 'error');
+            }
+            editCategoryModal.classList.add('hidden');
+        }
+
+        function renderCategories() {
+            categoriesList.innerHTML = '';
+            categoriesSkeleton.classList.remove('hidden');
+
+            setTimeout(() => {
+                categoriesSkeleton.classList.add('hidden');
+
+                const categoryArray = Object.values(categories);
+                if (categoryArray.length === 0) {
+                    categoriesList.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-center">Nenhuma categoria adicionada ainda.</p>';
+                    return;
+                }
+
+                categoryArray.forEach(cat => {
+                    const li = document.createElement('li');
+                    li.className = `bg-gray-100 dark:bg-gray-700 p-3 rounded-lg shadow-sm flex items-center justify-between ${cat.type === 'expense' ? 'border-l-4 border-red-500' : 'border-l-4 border-green-500'}`;
+                    li.innerHTML = `
+                        <div class="flex-1">
+                            <p class="font-medium text-gray-900 dark:text-gray-100">${cat.name}</p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">${cat.type === 'expense' ? 'Despesa' : 'Receita'} ${cat.type === 'expense' && cat.limit > 0 ? `| Limite: ${formatCurrency(cat.limit)}` : ''}</p>
+                        </div>
+                        <div class="flex items-center">
+                            <button class="edit-btn text-blue-500 hover:text-blue-700 mr-2" data-id="${cat.id}">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-7.293 7.293A1 1 0 018.707 14H6a1 1 0 01-1-1v-2.293a1 1 0 01.293-.707l7.293-7.293zM14 6L14 6l-7.293 7.293A1 1 0 006 13v0h0-2v-2a1 1 0 00-.707-.293l-7.293-7.293L2.293 3.586 10 11.293 13.586 7.707 14 6z" />
+                                </svg>
+                            </button>
+                            <button class="delete-btn text-red-500 hover:text-red-700" data-id="${cat.id}">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1zm2 6a1 1 0 100 2h2a1 1 0 100-2H9z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
+                    `;
+                    categoriesList.appendChild(li);
+                });
+
+                document.querySelectorAll('#categories-list .edit-btn').forEach(button => {
+                    button.addEventListener('click', (e) => showEditCategoryModal(e.currentTarget.dataset.id));
+                });
+                document.querySelectorAll('#categories-list .delete-btn').forEach(button => {
+                    button.addEventListener('click', (e) => deleteCategory(e.currentTarget.dataset.id));
+                });
+            }, 500);
+        }
+
+        function updateCategorySelects() {
+            const selects = [transactionCategorySelect, filterCategorySelect, editTransactionCategorySelect, editCategoryTypeSelect];
+            selects.forEach(selectEl => {
+                const currentSelected = selectEl.value; // Store current selection
+                selectEl.innerHTML = ''; // Clear existing options
+                if (selectEl.id === 'filter-category') {
+                    const allOption = document.createElement('option');
+                    allOption.value = '';
+                    allOption.textContent = 'Todas as Categorias';
+                    selectEl.appendChild(allOption);
+                }
+                if (selectEl.id === 'edit-category-type') { // This is for category type, not category ID
+                    const revenueOption = document.createElement('option');
+                    revenueOption.value = 'revenue';
+                    revenueOption.textContent = 'Receita';
+                    selectEl.appendChild(revenueOption);
+                    const expenseOption = document.createElement('option');
+                    expenseOption.value = 'expense';
+                    expenseOption.textContent = 'Despesa';
+                    selectEl.appendChild(expenseOption);
+                } else {
+                    for (const id in categories) {
+                        const option = document.createElement('option');
+                        option.value = id;
+                        option.textContent = categories[id].name;
+                        selectEl.appendChild(option);
+                    }
+                }
+                // Restore previous selection if it still exists, otherwise default to first option or 'All Categories'
+                if (currentSelected && selectEl.querySelector(`option[value="${currentSelected}"]`)) {
+                    selectEl.value = currentSelected;
+                } else if (selectEl.options.length > 0 && selectEl.id !== 'filter-category') {
+                    selectEl.value = selectEl.options[0].value;
+                }
+            });
+        }
+
+
+        // Goals
+        async function addGoal(name, targetAmount) {
+            const newId = Date.now().toString();
+            goals.push({
+                id: newId,
+                name,
+                targetAmount: parseFloat(targetAmount),
+                currentAmount: 0,
+                createdAt: firebase.firestore.Timestamp.fromDate(new Date())
+            });
+            await saveBudgetState();
+            renderGoals();
+            showMessage('Meta adicionada com sucesso!', 'success');
+            goalForm.reset();
+        }
+
+        async function deleteGoal(id) {
+            if (confirm('Tem certeza que deseja excluir esta meta?')) {
+                goals = goals.filter(g => g.id !== id);
+                await saveBudgetState();
+                renderGoals();
+                showMessage('Meta excluída com sucesso!', 'success');
+            }
+        }
+
+        async function updateGoal(id, name, targetAmount, currentAmount) {
+            const index = goals.findIndex(g => g.id === id);
+            if (index > -1) {
+                goals[index] = {
+                    ...goals[index],
+                    name,
+                    targetAmount: parseFloat(targetAmount),
+                    currentAmount: parseFloat(currentAmount)
+                };
+                await saveBudgetState();
+                renderGoals();
+                showMessage('Meta atualizada com sucesso!', 'success');
+            } else {
+                showMessage('Erro: Meta não encontrada.', 'error');
+            }
+            editGoalModal.classList.add('hidden');
+        }
+
+        function renderGoals() {
+            goalsList.innerHTML = '';
+            goalsSkeleton.classList.remove('hidden');
+
+            setTimeout(() => {
+                goalsSkeleton.classList.add('hidden');
+
+                if (goals.length === 0) {
+                    goalsList.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-center">Nenhuma meta adicionada ainda.</p>';
+                    return;
+                }
+
+                goals.forEach(goal => {
+                    const progress = (goal.currentAmount / goal.targetAmount) * 100;
+                    const li = document.createElement('li');
+                    li.className = `bg-gray-100 dark:bg-gray-700 p-3 rounded-lg shadow-sm`;
+                    li.innerHTML = `
+                        <div class="flex items-center justify-between mb-2">
+                            <p class="font-medium text-gray-900 dark:text-gray-100">${goal.name}</p>
+                            <div class="flex items-center">
+                                <button class="edit-btn text-blue-500 hover:text-blue-700 mr-2" data-id="${goal.id}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M13.586 3.586a2 2 0 112.828 2.828l-7.293 7.293A1 1 0 018.707 14H6a1 1 0 01-1-1v-2.293a1 1 0 01.293-.707l7.293-7.293zM14 6L14 6l-7.293 7.293A1 1 0 006 13v0h0-2v-2a1 1 0 00-.707-.293l-7.293-7.293L2.293 3.586 10 11.293 13.586 7.707 14 6z" />
+                                    </svg>
+                                </button>
+                                <button class="delete-btn text-red-500 hover:text-red-700" data-id="${goal.id}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1zm2 6a1 1 0 100 2h2a1 1 0 100-2H9z" clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-600 mb-2">
+                            <div class="bg-blue-600 h-2.5 rounded-full" style="width: ${Math.min(progress, 100)}%"></div>
+                        </div>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Progresso: ${formatCurrency(goal.currentAmount)} / ${formatCurrency(goal.targetAmount)} (${progress.toFixed(2)}%)</p>
+                    `;
+                    goalsList.appendChild(li);
+                });
+
+                document.querySelectorAll('#goals-list .edit-btn').forEach(button => {
+                    button.addEventListener('click', (e) => showEditGoalModal(e.currentTarget.dataset.id));
+                });
+                document.querySelectorAll('#goals-list .delete-btn').forEach(button => {
+                    button.addEventListener('click', (e) => deleteGoal(e.currentTarget.dataset.id));
+                });
+            }, 500);
+        }
+
+        // Modals Logic
+        document.querySelectorAll('.modal-close-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const modalId = e.currentTarget.dataset.modal;
+                document.getElementById(modalId).classList.add('hidden');
+            });
+        });
+
+        window.addEventListener('click', (event) => {
+            if (event.target.classList.contains('modal')) {
+                event.target.classList.add('hidden');
+            }
+        });
+
+        function showEditTransactionModal(transactionId) {
+            const item = transactions.find(t => t.id === transactionId);
+            if (!item) {
+                showMessage("Transação não encontrada para edição.", 'error');
+                return;
+            }
+            editTransactionIdInput.value = item.id;
+            editTransactionDescriptionInput.value = item.description;
+            editTransactionAmountInput.value = item.amount.toFixed(2);
+            editTransactionDateInput.value = item.date.toDate().toISOString().split('T')[0];
+            editTransactionTypeSelect.value = item.type;
+            
+            // Populate category select for edit modal
+            const currentEditCategory = item.categoryId;
+            editTransactionCategorySelect.innerHTML = '';
+            for (const id in categories) {
+                const option = document.createElement('option');
+                option.value = id;
+                option.textContent = categories[id].name;
+                editTransactionCategorySelect.appendChild(option);
+            }
+            editTransactionCategorySelect.value = currentEditCategory; // Select the correct category
+
+            editTransactionIsRecurringCheckbox.checked = item.isRecorrente || false;
+            if (item.isRecorrente) {
+                editTransactionRecurringOptions.style.display = 'block';
+                editTransactionNextDueDateInput.value = item.proximoVencimento ? item.proximoVencimento.split('T')[0] : '';
+            } else {
+                editTransactionRecurringOptions.style.display = 'none';
+                editTransactionNextDueDateInput.value = '';
+            }
+            editTransactionModal.classList.remove('hidden');
+        }
+
+        editTransactionIsRecurringCheckbox.addEventListener('change', () => {
+            if (editTransactionIsRecurringCheckbox.checked) {
+                editTransactionRecurringOptions.style.display = 'block';
+            } else {
+                editTransactionRecurringOptions.style.display = 'none';
+            }
+        });
+
+        function showEditCategoryModal(categoryId) {
+            const category = categories[categoryId];
+            if (!category) {
+                showMessage("Categoria não encontrada para edição.", 'error');
+                return;
+            }
+            editCategoryIdInput.value = category.id;
+            editCategoryNameInput.value = category.name;
+            editCategoryTypeSelect.value = category.type;
+            editCategoryLimitInput.value = category.limit.toFixed(2);
+            editCategoryModal.classList.remove('hidden');
+        }
+
+        function showEditGoalModal(goalId) {
+            const goal = goals.find(g => g.id === goalId);
+            if (!goal) {
+                showMessage("Meta não encontrada para edição.", 'error');
+                return;
+            }
+            editGoalIdInput.value = goal.id;
+            editGoalNameInput.value = goal.name;
+            editGoalTargetAmountInput.value = goal.targetAmount.toFixed(2);
+            editGoalCurrentAmountInput.value = goal.currentAmount.toFixed(2);
+            editGoalModal.classList.remove('hidden');
+        }
+
+        // Form Submissions
+        transactionForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const description = transactionDescriptionInput.value;
+            const amount = parseFloat(transactionAmountInput.value);
+            const type = transactionTypeSelect.value;
+            const categoryId = transactionCategorySelect.value;
+            
+            await addTransaction(description, amount, type, categoryId);
+        });
+
+        categoryForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = categoryNameInput.value;
+            const type = categoryTypeSelect.value;
+            const limit = parseFloat(categoryLimitInput.value);
+            await addCategory(name, type, limit);
+        });
+
+        goalForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = goalNameInput.value;
+            const targetAmount = parseFloat(goalTargetAmountInput.value);
+            await addGoal(name, targetAmount);
+        });
+
+        editTransactionForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = editTransactionIdInput.value;
+            const description = editTransactionDescriptionInput.value;
+            const amount = parseFloat(editTransactionAmountInput.value);
+            const date = editTransactionDateInput.value;
+            const type = editTransactionTypeSelect.value;
+            const categoryId = editTransactionCategorySelect.value;
+            const isRecorrente = editTransactionIsRecurringCheckbox.checked;
+            const proximoVencimento = editTransactionNextDueDateInput.value;
+            await updateTransaction(id, description, amount, date, type, categoryId, isRecorrente, proximoVencimento);
+        });
+
+        editCategoryForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = editCategoryIdInput.value;
+            const name = editCategoryNameInput.value;
+            const type = editCategoryTypeSelect.value;
+            const limit = parseFloat(editCategoryLimitInput.value);
+            await updateCategory(id, name, type, limit);
+        });
+
+        editGoalForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = editGoalIdInput.value;
+            const name = editGoalNameInput.value;
+            const targetAmount = parseFloat(editGoalTargetAmountInput.value);
+            const currentAmount = parseFloat(editGoalCurrentAmountInput.value);
+            await updateGoal(id, name, targetAmount, currentAmount);
+        });
+
+        setBudgetBtn.addEventListener('click', async () => {
+            const newBudget = parseFloat(monthlyBudgetInput.value);
+            if (!isNaN(newBudget) && newBudget >= 0) {
+                monthlyBudget = newBudget;
+                await saveBudgetState();
+                updateBudgetSummary();
+                showMessage('Orçamento mensal definido!', 'success');
+            } else {
+                showMessage('Por favor, insira um valor de orçamento válido.', 'warning');
+            }
+        });
+
+        // Reporting / Charts
+        function renderCharts() {
+            // Expenses by Category Chart
+            if (expensesByCategoryChartCtx) {
+                if (expensesChart) expensesChart.destroy();
+                const expenseCategories = transactions.filter(t => t.type === 'expense')
+                    .reduce((acc, t) => {
+                        const categoryName = categories[t.categoryId]?.name || 'Sem Categoria';
+                        acc[categoryName] = (acc[categoryName] || 0) + t.amount;
+                        return acc;
+                    }, {});
+
+                expensesChart = new Chart(expensesByCategoryChartCtx, {
+                    type: 'pie',
+                    data: {
+                        labels: Object.keys(expenseCategories),
+                        datasets: [{
+                            data: Object.values(expenseCategories),
+                            backgroundColor: [
+                                '#EF4444', '#F59E0B', '#3B82F6', '#10B981', '#6B7280', '#A78BFA', '#EC4899', '#FCD34D'
+                            ],
+                            hoverOffset: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                labels: {
+                                    color: document.documentElement.classList.contains('dark') ? '#E0E7FF' : '#1F2937'
+                                }
+                            },
+                            title: {
+                                display: false,
+                                text: 'Despesas por Categoria',
+                                color: document.documentElement.classList.contains('dark') ? '#E0E7FF' : '#1F2937'
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Revenue vs Expenses Chart
+            if (revenueVsExpensesChartCtx) {
+                if (revenueExpensesChart) revenueExpensesChart.destroy();
+
+                const monthlyData = transactions.reduce((acc, t) => {
+                    const month = new Date(t.date.toDate()).toLocaleString('pt-BR', { month: 'short', year: '2-digit' });
+                    if (!acc[month]) {
+                        acc[month] = { revenue: 0, expense: 0 };
+                    }
+                    if (t.type === 'revenue') {
+                        acc[month].revenue += t.amount;
+                    } else {
+                        acc[month].expense += t.amount;
+                    }
+                    return acc;
+                }, {});
+
+                const labels = Object.keys(monthlyData);
+                const revenues = labels.map(month => monthlyData[month].revenue);
+                const expenses = labels.map(month => monthlyData[month].expense);
+
+                revenueExpensesChart = new Chart(revenueVsExpensesChartCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Receitas',
+                                data: revenues,
+                                backgroundColor: '#10B981',
+                            },
+                            {
+                                label: 'Despesas',
+                                data: expenses,
+                                backgroundColor: '#EF4444',
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    color: document.documentElement.classList.contains('dark') ? '#E0E7FF' : '#1F2937'
+                                }
+                            },
+                            title: {
+                                display: false,
+                                text: 'Receitas vs. Despesas',
+                                color: document.documentElement.classList.contains('dark') ? '#E0E7FF' : '#1F2937'
+                            }
+                        },
+                        scales: {
+                            x: {
+                                stacked: false,
+                                ticks: {
+                                    color: document.documentElement.classList.contains('dark') ? '#E0E7FF' : '#1F2937'
+                                }
+                            },
+                            y: {
+                                stacked: false,
+                                ticks: {
+                                    color: document.documentElement.classList.contains('dark') ? '#E0E7FF' : '#1F2937'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // Data Management / Reset
+        resetDataBtn.addEventListener('click', async () => {
+            if (confirm('Tem certeza que deseja resetar todos os seus dados? Esta ação é irreversível!')) {
+                if (currentUserId) {
+                    await db.collection('users').doc(currentUserId).delete();
+                }
+                localStorage.clear();
+                transactions = [];
+                categories = {};
+                goals = [];
+                monthlyBudget = 0;
+                renderTransactions();
+                renderCategories();
+                renderGoals();
+                updateBudgetSummary();
+                updateCategorySelects();
+                showMessage('Todos os dados foram resetados.', 'info');
+                loadBudgetState(); // Reload to ensure anonymous mode is re-established if logged out
+            }
+        });
+
+        syncDataBtn.addEventListener('click', saveBudgetState); // Manual sync button
+
+        // Filter and Sort Event Listeners
+        filterMonthInput.addEventListener('change', renderTransactions);
+        filterTypeSelect.addEventListener('change', renderTransactions);
+        filterCategorySelect.addEventListener('change', renderTransactions);
+
+        transactionSortHeaders.forEach(header => {
+            header.addEventListener('click', () => {
+                const column = header.dataset.sort;
+                if (currentSortColumn === column) {
+                    currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+                } else {
+                    currentSortColumn = column;
+                    currentSortDirection = 'desc'; // Default to descending for new sort column
+                }
+                // Update arrow icon
+                transactionSortHeaders.forEach(h => {
+                    const icon = h.querySelector('.sort-icon');
+                    if (icon) {
+                        icon.classList.remove('asc', 'desc');
+                        if (h.dataset.sort === currentSortColumn) {
+                            icon.classList.add(currentSortDirection);
+                        }
+                    }
+                });
+                renderTransactions();
+            });
+        });
+
+        // Voice Recognition
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const SpeechGrammarList = window.SpeechGrammarList || window.webkitSpeechGrammarList;
+        const SpeechRecognitionEvent = window.SpeechRecognitionEvent || window.webkitSpeechRecognitionEvent;
+
+        let recognition;
+
+        function initVoiceRecognition() {
+            if (!SpeechRecognition) {
+                showMessage('Seu navegador não suporta a API de reconhecimento de voz.', 'error');
+                voiceInputBtn?.setAttribute('disabled', 'true');
+                voiceCategoryBtn?.setAttribute('disabled', 'true');
+                voiceEditCategoryBtn?.setAttribute('disabled', 'true');
+                return;
+            }
+
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.lang = 'pt-BR';
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+
+            recognition.onresult = (event) => {
+                const command = event.results[0][0].transcript;
+                console.log('Comando de voz recebido:', command);
+                voiceFeedbackText.textContent = `Comando reconhecido: "${command}"`;
+                
+                if (currentVoiceCommandMode === 'transaction') {
+                    pendingVoiceCommand = parseTransactionCommand(command);
+                    console.log('Comando analisado (transaction):', pendingVoiceCommand); // Log para depuração
+                    if (pendingVoiceCommand) {
+                        if (!pendingVoiceCommand.description || !pendingVoiceCommand.amount) { // Validação
+                            showMessage('Descrição e valor são obrigatórios para transações.', 'warning');
+                            resetVoiceUI();
+                            return;
+                        }
+                        displayVoiceTransactionDetails(pendingVoiceCommand);
+                    } else {
+                        showMessage('Não entendi o comando de transação. Tente novamente com "Adicionar [descrição] de [valor] reais como [receita/despesa] na categoria [categoria]".', 'warning');
+                        resetVoiceUI();
+                    }
+                } else if (currentVoiceCommandMode === 'category') {
+                    pendingVoiceCommand = parseCategoryCommand(command);
+                    console.log('Comando analisado (category):', pendingVoiceCommand); // Log para depuração
+                    if (pendingVoiceCommand) {
+                        if (pendingVoiceCommand.type === 'add-category' && (!pendingVoiceCommand.newName || !pendingVoiceCommand.categoryType)) {
+                            showMessage('Nome e tipo são obrigatórios para adicionar categoria.', 'warning');
+                            resetVoiceUI();
+                            return;
+                        }
+                        if (pendingVoiceCommand.type === 'edit-category' && (!pendingVoiceCommand.id || (!pendingVoiceCommand.newName && !pendingVoiceCommand.categoryType && !pendingVoiceCommand.limit))) {
+                             showMessage('Para editar categoria, diga o nome da categoria existente e as novas informações (nome, tipo, limite).', 'warning');
+                             resetVoiceUI();
+                             return;
+                        }
+                        displayVoiceCategoryDetails(pendingVoiceCommand);
+                    } else {
+                        showMessage('Não entendi o comando de categoria. Tente novamente. Para criar: "Criar categoria [nome] como [despesa/receita] com limite [valor]". Para editar: "Mudar categoria [nome atual] para nome [novo nome] tipo [novo tipo] limite [novo limite]".', 'warning');
+                        resetVoiceUI();
+                    }
+                }
+                confirmVoiceCommandBtn.style.display = 'inline-block';
+                cancelVoiceCommandBtn.style.display = 'inline-block';
+            };
+
+            recognition.onspeechend = () => {
+                recognition.stop();
+                voiceInputBtn?.classList.remove('listening');
+                voiceCategoryBtn?.classList.remove('listening');
+                voiceEditCategoryBtn?.classList.remove('listening');
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error', event.error);
+                voiceFeedbackText.textContent = `Erro: ${event.error}`;
+                showMessage(`Erro no reconhecimento de voz: ${event.error}`, 'error');
+                voiceInputBtn?.classList.remove('listening');
+                voiceCategoryBtn?.classList.remove('listening');
+                voiceEditCategoryBtn?.classList.remove('listening');
+                resetVoiceUI();
+            };
+
+            recognition.onnomatch = () => {
+                voiceFeedbackText.textContent = "Não consegui entender o que você disse.";
+                showMessage("Não consegui entender o que você disse. Tente novamente.", 'warning');
+                resetVoiceUI();
+            };
+
+            function resetVoiceUI() {
+                voiceFeedback.style.display = 'none';
+                voiceFeedbackDetails.style.display = 'none';
+                voiceFeedbackFields.innerHTML = '';
+                pendingVoiceCommand = null;
+                currentVoiceCommandMode = null;
+                isCategoryEditMode = false;
+            }
+
+            function displayVoiceTransactionDetails(command) {
+                voiceFeedbackFields.innerHTML = `
+                    <p><strong>Descrição:</strong> ${command.description}</p>
+                    <p><strong>Valor:</strong> ${formatCurrency(command.amount)}</p>
+                    <p><strong>Tipo:</strong> ${command.type === 'revenue' ? 'Receita' : 'Despesa'}</p>
+                    <p><strong>Categoria:</strong> ${categories[command.categoryId]?.name || command.categoryName || 'Não especificada'}</p>
+                `;
+                voiceFeedbackDetails.style.display = 'block';
+            }
+
+            function displayVoiceCategoryDetails(command) {
+                let detailsHtml = '';
+                if (command.type === 'add-category') {
+                    detailsHtml = `
+                        <p><strong>Ação:</strong> Criar Categoria</p>
+                        <p><strong>Nome:</strong> ${command.newName}</p>
+                        <p><strong>Tipo:</strong> ${command.categoryType === 'revenue' ? 'Receita' : 'Despesa'}</p>
+                        <p><strong>Limite:</strong> ${command.limit ? formatCurrency(command.limit) : 'Nenhum'}</p>
+                    `;
+                } else if (command.type === 'edit-category') {
+                     detailsHtml = `
+                        <p><strong>Ação:</strong> Editar Categoria</p>
+                        <p><strong>Categoria Atual:</strong> ${command.originalCategoryName || 'N/A'}</p>
+                        ${command.newName ? `<p><strong>Novo Nome:</strong> ${command.newName}</p>` : ''}
+                        ${command.categoryType ? `<p><strong>Novo Tipo:</strong> ${command.categoryType === 'revenue' ? 'Receita' : 'Despesa'}</p>` : ''}
+                        ${command.limit !== undefined ? `<p><strong>Novo Limite:</strong> ${formatCurrency(command.limit)}</p>` : ''}
+                    `;
+                }
+                voiceFeedbackFields.innerHTML = detailsHtml;
+                voiceFeedbackDetails.style.display = 'block';
+            }
+
+            // More flexible transaction parsing
+            const parseTransactionCommand = (command) => {
+                // Regex: (desc) (value) reais (type) (optional category)
+                const flexibleMatch = command.match(/(.+?)\s+(\d+[\.,]?\d*)\s+reais?\s+(receita|despesa)(?:\s+(?:na\s+)?categoria\s+(.+))?/i);
+                
+                if (flexibleMatch) {
+                    let description = flexibleMatch[1].trim();
+                    const amount = parseFloat(flexibleMatch[2].replace(',', '.'));
+                    const type = flexibleMatch[3].toLowerCase();
+                    let categoryName = flexibleMatch[4] ? flexibleMatch[4].trim() : '';
+
+                    // Limpeza da descrição de palavras-chave iniciais
+                    description = description.replace(/^(adicionar|nova|registrar|comprar|pagar|receber)\s*/i, '');
+
+                    // Try to find category ID
+                    let categoryId = '';
+                    if (categoryName) {
+                        const foundCategory = Object.values(categories).find(cat => cat.name.toLowerCase() === categoryName.toLowerCase());
+                        if (foundCategory) {
+                            categoryId = foundCategory.id;
+                        } else {
+                            showMessage(`Categoria "${categoryName}" não encontrada. A transação será adicionada sem categoria ou você pode criá-la manualmente.`, 'warning');
+                        }
+                    }
+                    
+                    return { description, amount, type, categoryName, categoryId };
+                }
+                return null;
+            };
+
+            const parseCategoryCommand = (command) => {
+                // Create category: "Criar categoria [nome] como [despesa/receita] com limite [valor]"
+                const addMatch = command.match(/criar categoria\s+(.+?)\s+como\s+(receita|despesa)(?:\s+com\s+limite\s+(\d+[\.,]?\d*))?/i);
+                if (addMatch) {
+                    return {
+                        type: 'add-category',
+                        newName: addMatch[1].trim(),
+                        categoryType: addMatch[2].toLowerCase(),
+                        limit: addMatch[3] ? parseFloat(addMatch[3].replace(',', '.')) : 0
+                    };
+                }
+
+                // Edit category: "Mudar categoria [nome atual] para nome [novo nome] tipo [novo tipo] limite [novo limite]"
+                const editMatch = command.match(/mudar categoria\s+(.+?)(?:\s+para nome\s+(.+?))?(?:\s+tipo\s+(receita|despesa))?(?:\s+limite\s+(\d+[\.,]?\d*))?/i);
+                if (editMatch) {
+                    const originalCategoryName = editMatch[1].trim();
+                    const newName = editMatch[2] ? editMatch[2].trim() : undefined;
+                    const categoryType = editMatch[3] ? editMatch[3].toLowerCase() : undefined;
+                    const limit = editMatch[4] ? parseFloat(editMatch[4].replace(',', '.')) : undefined;
+
+                    const foundCategory = Object.values(categories).find(cat => cat.name.toLowerCase() === originalCategoryName.toLowerCase());
+                    if (foundCategory) {
+                        return {
+                            type: 'edit-category',
+                            id: foundCategory.id,
+                            originalCategoryName: foundCategory.name,
+                            newName: newName,
+                            categoryType: categoryType,
+                            limit: limit
+                        };
+                    } else {
+                        showMessage(`Categoria "${originalCategoryName}" não encontrada para edição.`, 'warning');
+                        return null;
+                    }
+                }
+                return null;
+            };
+
+
+            voiceInputBtn?.addEventListener('click', () => {
+                currentVoiceCommandMode = 'transaction';
+                recognition.start();
+                voiceInputBtn.classList.add('listening');
+                voiceFeedback.style.display = 'block';
+                voiceFeedbackDetails.style.display = 'block';
+                voiceFeedbackText.textContent = "Diga a descrição, valor, tipo e categoria. Exemplo: 'Adicionar aluguel de 1500 reais como despesa na categoria moradia'";
+                voiceFeedbackFields.innerHTML = ''; // Clear fields
+            });
+
+            voiceCategoryBtn?.addEventListener('click', () => {
+                currentVoiceCommandMode = 'category';
+                isCategoryEditMode = false;
+                recognition.start();
+                voiceCategoryBtn.classList.add('listening'); // Add class to category button
+                voiceFeedback.style.display = 'block';
+                voiceFeedbackDetails.style.display = 'block';
+                voiceFeedbackText.textContent = "Diga o nome da categoria, tipo e limite. Exemplo: 'Criar categoria mercado como despesa com limite 500 reais'";
+                voiceFeedbackFields.innerHTML = ''; // Clear fields
+            });
+
+            voiceEditCategoryBtn?.addEventListener('click', () => {
+                currentVoiceCommandMode = 'category';
+                isCategoryEditMode = true;
+                recognition.start();
+                voiceEditCategoryBtn.classList.add('listening'); // Add class to edit category button
+                voiceFeedback.style.display = 'block';
+                voiceFeedbackDetails.style.display = 'block';
+                voiceFeedbackText.textContent = "Diga as novas informações. Exemplo: 'Mudar categoria moradia para nome Nova Moradia tipo despesa limite 1200'";
+                voiceFeedbackFields.innerHTML = ''; // Clear fields
+            });
+
+            confirmVoiceCommandBtn.addEventListener('click', async () => {
+                if (!pendingVoiceCommand) return;
+
+                console.log('Confirmando comando de voz:', pendingVoiceCommand); // Log para depuração
+
+                try {
+                    if (currentVoiceCommandMode === 'transaction') {
+                        await addTransaction(
+                            pendingVoiceCommand.description,
+                            pendingVoiceCommand.amount,
+                            pendingVoiceCommand.type,
+                            pendingVoiceCommand.categoryId || ''
+                        );
+                        transactionForm.reset();
+                    } 
+                    else if (currentVoiceCommandMode === 'category') {
+                        if (pendingVoiceCommand.type === 'add-category') {
+                            await addCategory(
+                                pendingVoiceCommand.newName,
+                                pendingVoiceCommand.categoryType,
+                                pendingVoiceCommand.limit
+                            );
+                            categoryForm.reset();
+                        } 
+                        else if (pendingVoiceCommand.type === 'edit-category') {
+                            await updateCategory(
+                                pendingVoiceCommand.id,
+                                pendingVoiceCommand.newName || categories[pendingVoiceCommand.id].name, // Use existing if not provided
+                                pendingVoiceCommand.categoryType || categories[pendingVoiceCommand.id].type,
+                                pendingVoiceCommand.limit !== undefined ? pendingVoiceCommand.limit : categories[pendingVoiceCommand.id].limit
+                            );
+                        }
+                    }
+                    
+                    showMessage('Ação realizada com sucesso!', 'success');
+                } catch (error) {
+                    console.error("Erro ao processar comando de voz:", error);
+                    showMessage('Erro ao processar comando. Tente novamente.', 'error');
+                } finally {
+                    resetVoiceUI();
+                }
+            });
+
+            cancelVoiceCommandBtn.addEventListener('click', () => {
+                showMessage('Comando de voz cancelado.', 'info');
+                resetVoiceUI();
+            });
+        }
+
+        // Auth state listener
+        auth.onAuthStateChanged((user) => {
+            updateAuthUI(user);
+        });
+
+        // Login with Google
+        loginGoogleBtn?.addEventListener('click', async () => {
+            try {
+                const provider = new firebase.auth.GoogleAuthProvider();
+                await firebase.auth().signInWithPopup(provider);
+            } catch (error) {
+                console.error("Erro no login com Google:", error);
+                showMessage("Erro ao fazer login com Google.", 'error');
+            }
+        });
+
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                await auth.signOut();
+                showMessage('Você foi desconectado.', 'info');
+                // Data will be loaded locally after logout via updateAuthUI and loadBudgetState
+            } catch (error) {
+                console.error("Erro ao fazer logout:", error);
+                showMessage("Erro ao fazer logout.", 'error');
+            }
+        });
+
+        function updateAuthUI(user) {
+            if (user) {
+                currentUserId = user.uid;
+                authStatusEl.textContent = `Logado como: ${user.displayName || user.email}`;
+                loginGoogleBtn?.classList.add('hidden');
+                logoutBtn?.classList.remove('hidden');
+                showMessage('Login bem-sucedido!', 'success');
+            } else {
+                currentUserId = null;
+                authStatusEl.textContent = 'Você não está logado.';
+                loginGoogleBtn?.classList.remove('hidden');
+                logoutBtn?.classList.add('hidden');
+            }
+            loadBudgetState(); // Always load/reload data based on auth state
+        }
+
+        // Initial load setup
+        window.addEventListener('load', () => {
+            initDarkMode();
+            initVoiceRecognition();
+            // onAuthStateChanged is responsible for calling updateAuthUI and subsequently loadBudgetState
+            // if no user is logged in, updateAuthUI will handle anonymous login and local data load
+        });
+
+    </script>
+</body>
+</html>

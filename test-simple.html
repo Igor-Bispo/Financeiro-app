@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Simples - FinanceApp</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        button { margin: 5px; padding: 10px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .status { margin-top: 20px; padding: 10px; background: #f8f9fa; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Teste Simples - FinanceApp</h1>
+    
+    <div>
+        <h2>Teste de Funções</h2>
+        <button onclick="FinanceApp.editTransaction('test-123')">Teste editTransaction</button>
+        <button onclick="FinanceApp.deleteTransaction('test-123')">Teste deleteTransaction</button>
+        <button onclick="FinanceApp.showTransactionHistory('test-123')">Teste showTransactionHistory</button>
+        <br>
+        <button onclick="FinanceApp.editCategory('test-456')">Teste editCategory</button>
+        <button onclick="FinanceApp.deleteCategory('test-456')">Teste deleteCategory</button>
+        <button onclick="FinanceApp.showCategoryHistory('test-456')">Teste showCategoryHistory</button>
+        <br>
+        <button onclick="FinanceApp.editGoal('test-789')">Teste editGoal</button>
+        <button onclick="FinanceApp.deleteGoal('test-789')">Teste deleteGoal</button>
+        <button onclick="FinanceApp.showGoalHistory('test-789')">Teste showGoalHistory</button>
+        <br>
+        <button onclick="FinanceApp.editBudget('test-012')">Teste editBudget</button>
+        <button onclick="FinanceApp.deleteBudget('test-012')">Teste deleteBudget</button>
+        <button onclick="FinanceApp.showBudgetHistory('test-012')">Teste showBudgetHistory</button>
+    </div>
+
+    <div class="status">
+        <h3>Status do Console:</h3>
+        <p>Abra o console do navegador (F12) para ver os logs detalhados</p>
+        <p>Se as funções funcionarem, você verá alertas e logs no console</p>
+    </div>
+
+    <script>
+        // Verificar se FinanceApp foi carregado
+        window.addEventListener('load', () => {
+            console.log('=== TESTE SIMPLES ===');
+            console.log('FinanceApp:', window.FinanceApp);
+            console.log('typeof FinanceApp:', typeof window.FinanceApp);
+            
+            if (window.FinanceApp) {
+                console.log('✅ FinanceApp encontrado!');
+                console.log('Propriedades:', Object.keys(window.FinanceApp));
+                
+                // Testar cada função
+                const functions = [
+                    'editTransaction', 'editCategory', 'editGoal', 'editBudget',
+                    'deleteTransaction', 'deleteCategory', 'deleteGoal', 'deleteBudget',
+                    'showTransactionHistory', 'showCategoryHistory', 'showGoalHistory', 'showBudgetHistory'
+                ];
+                
+                functions.forEach(funcName => {
+                    const func = window.FinanceApp[funcName];
+                    console.log(`${funcName}:`, typeof func);
+                    if (typeof func === 'function') {
+                        console.log(`✅ ${funcName} é uma função`);
+                    } else {
+                        console.log(`❌ ${funcName} NÃO é uma função`);
+                    }
+                });
+            } else {
+                console.log('❌ FinanceApp NÃO encontrado!');
+            }
+        });
+    </script>
+
+    <!-- Carregar a versão simplificada -->
+    <script src="js/app-simple.js"></script>
+</body>
+</html> 

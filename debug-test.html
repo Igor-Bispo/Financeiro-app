@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Test - FinanceApp</title>
+</head>
+<body>
+    <h1>Debug Test - FinanceApp</h1>
+    
+    <div>
+        <h2>Teste de Funções</h2>
+        <button onclick="testEditTransaction()">Teste editTransaction</button>
+        <button onclick="testDeleteTransaction()">Teste deleteTransaction</button>
+        <button onclick="testShowTransactionHistory()">Teste showTransactionHistory</button>
+        <button onclick="testEditCategory()">Teste editCategory</button>
+        <button onclick="testDeleteCategory()">Teste deleteCategory</button>
+        <button onclick="testShowCategoryHistory()">Teste showCategoryHistory</button>
+    </div>
+
+    <div>
+        <h2>Status</h2>
+        <div id="status"></div>
+    </div>
+
+    <script>
+        // Funções de teste
+        function testEditTransaction() {
+            try {
+                console.log('Testando editTransaction...');
+                console.log('FinanceApp:', window.FinanceApp);
+                console.log('typeof FinanceApp.editTransaction:', typeof window.FinanceApp?.editTransaction);
+                
+                if (window.FinanceApp && typeof window.FinanceApp.editTransaction === 'function') {
+                    window.FinanceApp.editTransaction('test-id');
+                    document.getElementById('status').innerHTML += '<p>✅ editTransaction funcionou!</p>';
+                } else {
+                    document.getElementById('status').innerHTML += '<p>❌ editTransaction não é uma função</p>';
+                }
+            } catch (error) {
+                document.getElementById('status').innerHTML += '<p>❌ Erro: ' + error.message + '</p>';
+            }
+        }
+
+        function testDeleteTransaction() {
+            try {
+                if (window.FinanceApp && typeof window.FinanceApp.deleteTransaction === 'function') {
+                    window.FinanceApp.deleteTransaction('test-id');
+                    document.getElementById('status').innerHTML += '<p>✅ deleteTransaction funcionou!</p>';
+                } else {
+                    document.getElementById('status').innerHTML += '<p>❌ deleteTransaction não é uma função</p>';
+                }
+            } catch (error) {
+                document.getElementById('status').innerHTML += '<p>❌ Erro: ' + error.message + '</p>';
+            }
+        }
+
+        function testShowTransactionHistory() {
+            try {
+                if (window.FinanceApp && typeof window.FinanceApp.showTransactionHistory === 'function') {
+                    window.FinanceApp.showTransactionHistory('test-id');
+                    document.getElementById('status').innerHTML += '<p>✅ showTransactionHistory funcionou!</p>';
+                } else {
+                    document.getElementById('status').innerHTML += '<p>❌ showTransactionHistory não é uma função</p>';
+                }
+            } catch (error) {
+                document.getElementById('status').innerHTML += '<p>❌ Erro: ' + error.message + '</p>';
+            }
+        }
+
+        function testEditCategory() {
+            try {
+                if (window.FinanceApp && typeof window.FinanceApp.editCategory === 'function') {
+                    window.FinanceApp.editCategory('test-id');
+                    document.getElementById('status').innerHTML += '<p>✅ editCategory funcionou!</p>';
+                } else {
+                    document.getElementById('status').innerHTML += '<p>❌ editCategory não é uma função</p>';
+                }
+            } catch (error) {
+                document.getElementById('status').innerHTML += '<p>❌ Erro: ' + error.message + '</p>';
+            }
+        }
+
+        function testDeleteCategory() {
+            try {
+                if (window.FinanceApp && typeof window.FinanceApp.deleteCategory === 'function') {
+                    window.FinanceApp.deleteCategory('test-id');
+                    document.getElementById('status').innerHTML += '<p>✅ deleteCategory funcionou!</p>';
+                } else {
+                    document.getElementById('status').innerHTML += '<p>❌ deleteCategory não é uma função</p>';
+                }
+            } catch (error) {
+                document.getElementById('status').innerHTML += '<p>❌ Erro: ' + error.message + '</p>';
+            }
+        }
+
+        function testShowCategoryHistory() {
+            try {
+                if (window.FinanceApp && typeof window.FinanceApp.showCategoryHistory === 'function') {
+                    window.FinanceApp.showCategoryHistory('test-id');
+                    document.getElementById('status').innerHTML += '<p>✅ showCategoryHistory funcionou!</p>';
+                } else {
+                    document.getElementById('status').innerHTML += '<p>❌ showCategoryHistory não é uma função</p>';
+                }
+            } catch (error) {
+                document.getElementById('status').innerHTML += '<p>❌ Erro: ' + error.message + '</p>';
+            }
+        }
+
+        // Verificar status na carga da página
+        window.addEventListener('load', () => {
+            console.log('Página carregada');
+            console.log('FinanceApp:', window.FinanceApp);
+            console.log('typeof FinanceApp:', typeof window.FinanceApp);
+            
+            if (window.FinanceApp) {
+                console.log('Propriedades de FinanceApp:', Object.keys(window.FinanceApp));
+                document.getElementById('status').innerHTML = '<p>✅ FinanceApp encontrado</p>';
+            } else {
+                document.getElementById('status').innerHTML = '<p>❌ FinanceApp não encontrado</p>';
+            }
+        });
+    </script>
+
+    <!-- Carregar o app.js -->
+    <script src="js/app.js?v=2.4"></script>
+</body>
+</html> 

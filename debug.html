@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug - Controle Financeiro</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .debug-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .error { color: red; }
+        .success { color: green; }
+        .warning { color: orange; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 3px; overflow-x: auto; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Debug - Controle Financeiro</h1>
+    
+    <div class="debug-section">
+        <h2>📊 Status do Servidor</h2>
+        <button onclick="testServer()">Testar Servidor</button>
+        <div id="server-status">Aguardando teste...</div>
+    </div>
+
+    <div class="debug-section">
+        <h2>📁 Teste de Arquivos</h2>
+        <button onclick="testFiles()">Testar Carregamento de Arquivos</button>
+        <div id="files-status">Aguardando teste...</div>
+    </div>
+
+    <div class="debug-section">
+        <h2>🔐 Teste Firebase</h2>
+        <button onclick="testFirebase()">Testar Firebase</button>
+        <div id="firebase-status">Aguardando teste...</div>
+    </div>
+
+    <div class="debug-section">
+        <h2>🧹 Limpeza de Cache</h2>
+        <button onclick="clearCache()">Limpar Cache</button>
+        <button onclick="unregisterSW()">Desregistrar Service Worker</button>
+        <div id="cache-status">Aguardando ação...</div>
+    </div>
+
+    <div class="debug-section">
+        <h2>📝 Logs de Erro</h2>
+        <div id="error-logs"></div>
+    </div>
+
+    <script>
+        // Capturar erros globais
+        window.addEventListener('error', function(e) {
+            addErrorLog(`Erro: ${e.message} em ${e.filename}:${e.lineno}`);
+        });
+
+        window.addEventListener('unhandledrejection', function(e) {
+            addErrorLog(`Promise rejeitada: ${e.reason}`);
+        });
+
+        function addErrorLog(message) {
+            const logs = document.getElementById('error-logs');
+            const timestamp = new Date().toLocaleTimeString();
+            logs.innerHTML += `<div class="error">[${timestamp}] ${message}</div>`;
+        }
+
+        async function testServer() {
+            const status = document.getElementById('server-status');
+            status.innerHTML = 'Testando...';
+            
+            try {
+                const response = await fetch('/');
+                if (response.ok) {
+                    status.innerHTML = '<span class="success">✅ Servidor funcionando</span>';
+                } else {
+                    status.innerHTML = '<span class="error">❌ Erro no servidor</span>';
+                }
+            } catch (error) {
+                status.innerHTML = `<span class="error">❌ Erro: ${error.message}</span>`;
+            }
+        }
+
+        async function testFiles() {
+            const status = document.getElementById('files-status');
+            status.innerHTML = 'Testando arquivos...';
+            
+            const files = [
+                '/js/app.js',
+                '/js/firebase/config.js',
+                '/js/firebase/auth.js',
+                '/css/styles.css'
+            ];
+            
+            let results = '';
+            
+            for (const file of files) {
+                try {
+                    const response = await fetch(file);
+                    if (response.ok) {
+                        const contentType = response.headers.get('content-type');
+                        results += `<div class="success">✅ ${file} (${contentType})</div>`;
+                    } else {
+                        results += `<div class="error">❌ ${file} - ${response.status}</div>`;
+                    }
+                } catch (error) {
+                    results += `<div class="error">❌ ${file} - ${error.message}</div>`;
+                }
+            }
+            
+            status.innerHTML = results;
+        }
+
+        async function testFirebase() {
+            const status = document.getElementById('firebase-status');
+            status.innerHTML = 'Testando Firebase...';
+            
+            try {
+                // Tentar carregar Firebase
+                const script = document.createElement('script');
+                script.src = 'https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js';
+                script.onload = () => {
+                    status.innerHTML = '<span class="success">✅ Firebase carregado</span>';
+                };
+                script.onerror = () => {
+                    status.innerHTML = '<span class="error">❌ Erro ao carregar Firebase</span>';
+                };
+                document.head.appendChild(script);
+            } catch (error) {
+                status.innerHTML = `<span class="error">❌ Erro: ${error.message}</span>`;
+            }
+        }
+
+        async function clearCache() {
+            const status = document.getElementById('cache-status');
+            status.innerHTML = 'Limpando cache...';
+            
+            try {
+                // Limpar cache do navegador
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(cacheNames.map(name => caches.delete(name)));
+                    status.innerHTML = '<span class="success">✅ Cache limpo</span>';
+                } else {
+                    status.innerHTML = '<span class="warning">⚠️ Cache API não disponível</span>';
+                }
+            } catch (error) {
+                status.innerHTML = `<span class="error">❌ Erro: ${error.message}</span>`;
+            }
+        }
+
+        async function unregisterSW() {
+            const status = document.getElementById('cache-status');
+            status.innerHTML = 'Desregistrando Service Worker...';
+            
+            try {
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    await Promise.all(registrations.map(reg => reg.unregister()));
+                    status.innerHTML = '<span class="success">✅ Service Workers desregistrados</span>';
+                } else {
+                    status.innerHTML = '<span class="warning">⚠️ Service Worker não disponível</span>';
+                }
+            } catch (error) {
+                status.innerHTML = `<span class="error">❌ Erro: ${error.message}</span>`;
+            }
+        }
+
+        // Teste automático ao carregar
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                testServer();
+                testFiles();
+            }, 1000);
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Local - Controle Financeiro</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+    <style>
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .warning { background-color: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+    </style>
+</head>
+<body class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen">
+    <div class="container">
+        <header class="p-6">
+            <h1 class="text-3xl font-bold text-center">🧪 Teste Local - Controle Financeiro</h1>
+            <p class="text-center text-gray-600 dark:text-gray-400 mt-2">Testando funcionalidades sem Firebase</p>
+        </header>
+
+        <!-- Status -->
+        <div id="status-container">
+            <div class="status info">🔄 Iniciando testes locais...</div>
+        </div>
+
+        <!-- Controles de Teste -->
+        <div class="card mb-4">
+            <h2 class="text-lg font-bold mb-2">🎮 Controles de Teste</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <button onclick="testAddTransaction()" class="btn btn-primary">Adicionar Transação</button>
+                <button onclick="testGetTransactions()" class="btn btn-secondary">Listar Transações</button>
+                <button onclick="testVoiceRecognition()" class="btn btn-primary">Testar Voz</button>
+                <button onclick="testExport()" class="btn btn-secondary">Exportar</button>
+                <button onclick="testClearData()" class="btn btn-secondary">Limpar Dados</button>
+                <button onclick="testHelpers()" class="btn btn-secondary">Testar Helpers</button>
+                <button onclick="testStorage()" class="btn btn-secondary">Testar Storage</button>
+                <button onclick="showAllData()" class="btn btn-secondary">Ver Dados</button>
+            </div>
+        </div>
+
+        <!-- Resultados -->
+        <div class="card mb-4">
+            <h2 class="text-lg font-bold mb-2">📊 Resultados</h2>
+            <div id="results-container">
+                <p class="text-gray-600">Os resultados dos testes aparecerão aqui...</p>
+            </div>
+        </div>
+
+        <!-- Dados Atuais -->
+        <div class="card mb-4">
+            <h2 class="text-lg font-bold mb-2">💾 Dados Atuais</h2>
+            <div id="data-container">
+                <p class="text-gray-600">Carregando dados...</p>
+            </div>
+        </div>
+
+        <!-- Logs -->
+        <div class="card">
+            <h2 class="text-lg font-bold mb-2">📝 Logs</h2>
+            <div id="logs-container" class="bg-gray-100 dark:bg-gray-800 p-2 rounded max-h-60 overflow-y-auto text-sm">
+                <!-- Logs serão inseridos aqui -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts locais -->
+    <script src="js/utils/helpers.js"></script>
+    <script src="js/utils/storage.js"></script>
+    <script src="js/modules/transactions-local.js"></script>
+    <script src="js/modules/voice-recognition.js"></script>
+    
+    <script>
+        // Funções de teste
+        function addStatus(message, type = 'info') {
+            const container = document.getElementById('status-container');
+            const div = document.createElement('div');
+            div.className = `status ${type}`;
+            div.textContent = message;
+            container.appendChild(div);
+        }
+
+        function addLog(message, type = 'info') {
+            const container = document.getElementById('logs-container');
+            const timestamp = new Date().toLocaleTimeString();
+            const div = document.createElement('div');
+            div.className = type === 'error' ? 'text-red-600' : 'text-gray-700';
+            div.textContent = `[${timestamp}] ${message}`;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function updateResults(content) {
+            const container = document.getElementById('results-container');
+            container.innerHTML = content;
+        }
+
+        function updateData() {
+            const container = document.getElementById('data-container');
+            const transactions = window.FinanceTransactions ? window.FinanceTransactions.transactions : [];
+            const storageData = {
+                transactions: window.FinanceStorage ? window.FinanceStorage.loadFromStorage('finance_transactions') : null,
+                categories: window.FinanceStorage ? window.FinanceStorage.loadFromStorage('finance_categories') : null,
+                goals: window.FinanceStorage ? window.FinanceStorage.loadFromStorage('finance_goals') : null,
+                budgets: window.FinanceStorage ? window.FinanceStorage.loadFromStorage('finance_budgets') : null
+            };
+
+            container.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <h3 class="font-bold">Transações (${transactions.length})</h3>
+                        <pre class="text-xs bg-gray-100 p-2 rounded overflow-auto max-h-40">${JSON.stringify(transactions.slice(0, 3), null, 2)}</pre>
+                    </div>
+                    <div>
+                        <h3 class="font-bold">Storage</h3>
+                        <pre class="text-xs bg-gray-100 p-2 rounded overflow-auto max-h-40">${JSON.stringify(storageData, null, 2)}</pre>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Testes específicos
+        async function testAddTransaction() {
+            try {
+                const transaction = {
+                    description: 'Teste Local - ' + new Date().toLocaleTimeString(),
+                    amount: Math.random() * 100 + 10,
+                    type: 'expense',
+                    category: 'Teste',
+                    date: new Date()
+                };
+
+                await window.FinanceTransactions.addTransaction(transaction);
+                addStatus('✅ Transação adicionada com sucesso', 'success');
+                addLog('Transação adicionada: ' + JSON.stringify(transaction));
+                updateData();
+            } catch (error) {
+                addStatus('❌ Erro ao adicionar transação: ' + error.message, 'error');
+                addLog('Erro: ' + error.message, 'error');
+            }
+        }
+
+        async function testGetTransactions() {
+            try {
+                const transactions = await window.FinanceTransactions.getTransactions();
+                addStatus(`✅ ${transactions.length} transações encontradas`, 'success');
+                addLog(`Transações carregadas: ${transactions.length}`);
+                
+                updateResults(`
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <h3 class="font-bold">Resumo</h3>
+                            <p>Total: ${transactions.length} transações</p>
+                            <p>Valor total: ${window.FinanceHelpers.formatCurrency(transactions.reduce((sum, t) => sum + (t.amount || 0), 0))}</p>
+                        </div>
+                        <div>
+                            <h3 class="font-bold">Últimas 3</h3>
+                            <ul class="text-sm">
+                                ${transactions.slice(0, 3).map(t => `
+                                    <li>${t.description} - ${window.FinanceHelpers.formatCurrency(t.amount)}</li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                `);
+            } catch (error) {
+                addStatus('❌ Erro ao buscar transações: ' + error.message, 'error');
+                addLog('Erro: ' + error.message, 'error');
+            }
+        }
+
+        function testVoiceRecognition() {
+            try {
+                if (window.FinanceVoice) {
+                    window.FinanceVoice.startListening('transaction');
+                    addStatus('🎤 Reconhecimento de voz iniciado', 'info');
+                    addLog('Reconhecimento de voz ativado');
+                } else {
+                    addStatus('❌ Reconhecimento de voz não disponível', 'error');
+                    addLog('Reconhecimento de voz não disponível', 'error');
+                }
+            } catch (error) {
+                addStatus('❌ Erro no reconhecimento de voz: ' + error.message, 'error');
+                addLog('Erro: ' + error.message, 'error');
+            }
+        }
+
+        function testExport() {
+            try {
+                const transactions = window.FinanceTransactions.transactions;
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.json_to_sheet(transactions);
+                XLSX.utils.book_append_sheet(wb, ws, 'Transações');
+                XLSX.writeFile(wb, 'controle-financeiro-local.xlsx');
+                
+                addStatus('✅ Dados exportados com sucesso', 'success');
+                addLog('Exportação realizada: controle-financeiro-local.xlsx');
+            } catch (error) {
+                addStatus('❌ Erro na exportação: ' + error.message, 'error');
+                addLog('Erro: ' + error.message, 'error');
+            }
+        }
+
+        function testClearData() {
+            try {
+                if (window.FinanceTransactions.clearAll) {
+                    window.FinanceTransactions.clearAll();
+                    addStatus('🗑️ Dados limpos com sucesso', 'warning');
+                    addLog('Todos os dados foram removidos');
+                    updateData();
+                } else {
+                    addStatus('❌ Função de limpeza não disponível', 'error');
+                    addLog('Função clearAll não encontrada', 'error');
+                }
+            } catch (error) {
+                addStatus('❌ Erro ao limpar dados: ' + error.message, 'error');
+                addLog('Erro: ' + error.message, 'error');
+            }
+        }
+
+        function testHelpers() {
+            try {
+                const testAmount = 1234.56;
+                const testDate = new Date();
+                
+                const formattedAmount = window.FinanceHelpers.formatCurrency(testAmount);
+                const formattedDate = window.FinanceHelpers.formatDate(testDate);
+                
+                addStatus('✅ Helpers funcionando corretamente', 'success');
+                addLog(`Formatação de moeda: ${testAmount} → ${formattedAmount}`);
+                addLog(`Formatação de data: ${testDate} → ${formattedDate}`);
+                
+                updateResults(`
+                    <div>
+                        <h3 class="font-bold">Teste de Helpers</h3>
+                        <p>Valor: ${testAmount} → ${formattedAmount}</p>
+                        <p>Data: ${testDate.toISOString()} → ${formattedDate}</p>
+                    </div>
+                `);
+            } catch (error) {
+                addStatus('❌ Erro nos helpers: ' + error.message, 'error');
+                addLog('Erro: ' + error.message, 'error');
+            }
+        }
+
+        function testStorage() {
+            try {
+                const testData = { test: 'data', timestamp: Date.now() };
+                window.FinanceStorage.saveToStorage('test_key', testData);
+                const loadedData = window.FinanceStorage.loadFromStorage('test_key');
+                
+                if (JSON.stringify(testData) === JSON.stringify(loadedData)) {
+                    addStatus('✅ Storage funcionando corretamente', 'success');
+                    addLog('Storage testado com sucesso');
+                } else {
+                    addStatus('❌ Erro no storage', 'error');
+                    addLog('Dados não correspondem', 'error');
+                }
+                
+                // Limpa o teste
+                window.FinanceStorage.removeFromStorage('test_key');
+            } catch (error) {
+                addStatus('❌ Erro no storage: ' + error.message, 'error');
+                addLog('Erro: ' + error.message, 'error');
+            }
+        }
+
+        function showAllData() {
+            updateData();
+            addStatus('📊 Dados atualizados', 'info');
+            addLog('Visualização de dados atualizada');
+        }
+
+        // Inicialização
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                addStatus('🚀 Testes locais iniciados', 'success');
+                addLog('Página de teste carregada');
+                updateData();
+                
+                // Testa componentes básicos
+                if (window.FinanceTransactions) {
+                    addLog('✅ Módulo de transações carregado');
+                } else {
+                    addLog('❌ Módulo de transações não encontrado', 'error');
+                }
+                
+                if (window.FinanceHelpers) {
+                    addLog('✅ Helpers carregados');
+                } else {
+                    addLog('❌ Helpers não encontrados', 'error');
+                }
+                
+                if (window.FinanceStorage) {
+                    addLog('✅ Storage carregado');
+                } else {
+                    addLog('❌ Storage não encontrado', 'error');
+                }
+                
+                if (window.FinanceVoice) {
+                    addLog('✅ Reconhecimento de voz carregado');
+                } else {
+                    addLog('❌ Reconhecimento de voz não encontrado', 'error');
+                }
+            }, 500);
+        });
+    </script>
+</body>
+</html> 

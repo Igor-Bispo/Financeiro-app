@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplicativo Financeiro Offline</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --text-color: #1f2937;
+            --bg-color: #f9fafb;
+            --error-color: #dc2626;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            text-align: center;
+            padding: 2rem;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 500px;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            background: white;
+        }
+        
+        h1 {
+            color: var(--error-color);
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+        }
+        
+        p {
+            margin-bottom: 2rem;
+            font-size: 1.1rem;
+        }
+        
+        .icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: var(--error-color);
+        }
+        
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        button:hover {
+            background-color: var(--secondary-color);
+        }
+        
+        .connection-status {
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            background-color: var(--error-color);
+            color: white;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 1.5rem;
+                margin: 1rem;
+            }
+            
+            h1 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">⚠️</div>
+        <h1>Você está offline</h1>
+        <p>O aplicativo financeiro está funcionando em modo offline. Algumas funcionalidades que requerem conexão com a internet podem estar limitadas.</p>
+        <p>Suas alterações serão sincronizadas quando a conexão for restabelecida.</p>
+        
+        <button onclick="checkConnection()">
+            <span class="refresh-icon">↻</span>
+            Tentar novamente
+        </button>
+    </div>
+    
+    <div class="connection-status" id="connectionStatus">
+        <span class="offline-icon">🔴</span>
+        Offline
+    </div>
+    
+    <script>
+        // Verifica a conexão periodicamente
+        function checkConnection() {
+            if (navigator.onLine) {
+                window.location.reload();
+            } else {
+                alert('Ainda offline. Verifique sua conexão com a internet.');
+            }
+        }
+        
+        // Monitora mudanças na conexão
+        window.addEventListener('online', () => {
+            document.getElementById('connectionStatus').style.backgroundColor = '#10b981';
+            document.getElementById('connectionStatus').innerHTML = '🟢 Online - Atualizando...';
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+        });
+        
+        window.addEventListener('offline', () => {
+            document.getElementById('connectionStatus').style.backgroundColor = '#dc2626';
+            document.getElementById('connectionStatus').innerHTML = '🔴 Offline';
+        });
+        
+        // Verifica o status inicial
+        if (navigator.onLine) {
+            window.location.reload();
+        }
+    </script>
+</body>
+</html>

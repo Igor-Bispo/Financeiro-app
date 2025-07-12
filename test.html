@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste - Controle Financeiro</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .btn {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover {
+            background: #1d4ed8;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success { background: #d1fae5; color: #065f46; }
+        .error { background: #fee2e2; color: #991b1b; }
+        .info { background: #dbeafe; color: #1e40af; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Teste - Controle Financeiro</h1>
+    
+    <div class="test-section">
+        <h2>🔐 Teste de Autenticação</h2>
+        <button class="btn" onclick="testAuth()">Testar Login</button>
+        <button class="btn" onclick="testLogout()">Testar Logout</button>
+        <div id="authStatus" class="status info">Status: Não testado</div>
+    </div>
+
+    <div class="test-section">
+        <h2>💰 Teste de Transações</h2>
+        <button class="btn" onclick="testAddTransaction()">Adicionar Transação</button>
+        <button class="btn" onclick="testLoadTransactions()">Carregar Transações</button>
+        <div id="transactionStatus" class="status info">Status: Não testado</div>
+    </div>
+
+    <div class="test-section">
+        <h2>📁 Teste de Categorias</h2>
+        <button class="btn" onclick="testAddCategory()">Adicionar Categoria</button>
+        <button class="btn" onclick="testLoadCategories()">Carregar Categorias</button>
+        <div id="categoryStatus" class="status info">Status: Não testado</div>
+    </div>
+
+    <div class="test-section">
+        <h2>🎯 Teste de Metas</h2>
+        <button class="btn" onclick="testAddGoal()">Adicionar Meta</button>
+        <button class="btn" onclick="testLoadGoals()">Carregar Metas</button>
+        <div id="goalStatus" class="status info">Status: Não testado</div>
+    </div>
+
+    <div class="test-section">
+        <h2>📋 Teste de Orçamentos</h2>
+        <button class="btn" onclick="testAddBudget()">Adicionar Orçamento</button>
+        <button class="btn" onclick="testLoadBudgets()">Carregar Orçamentos</button>
+        <div id="budgetStatus" class="status info">Status: Não testado</div>
+    </div>
+
+    <div class="test-section">
+        <h2>🔔 Teste de Notificações</h2>
+        <button class="btn" onclick="testNotification()">Testar Notificação</button>
+        <div id="notificationStatus" class="status info">Status: Não testado</div>
+    </div>
+
+    <div class="test-section">
+        <h2>📊 Dados do localStorage</h2>
+        <button class="btn" onclick="showLocalStorage()">Mostrar Dados</button>
+        <button class="btn" onclick="clearLocalStorage()">Limpar Dados</button>
+        <pre id="localStorageData" style="background: #f8f9fa; padding: 10px; border-radius: 4px; overflow-x: auto;"></pre>
+    </div>
+
+    <script>
+        // Teste de Autenticação
+        function testAuth() {
+            try {
+                if (window.AuthModule) {
+                    window.AuthModule.login();
+                    document.getElementById('authStatus').innerHTML = '<span class="success">✅ Login testado com sucesso</span>';
+                } else {
+                    document.getElementById('authStatus').innerHTML = '<span class="error">❌ Módulo de autenticação não encontrado</span>';
+                }
+            } catch (error) {
+                document.getElementById('authStatus').innerHTML = `<span class="error">❌ Erro: ${error.message}</span>`;
+            }
+        }
+
+        function testLogout() {
+            try {
+                if (window.AuthModule) {
+                    window.AuthModule.logout();
+                    document.getElementById('authStatus').innerHTML = '<span class="success">✅ Logout testado com sucesso</span>';
+                } else {
+                    document.getElementById('authStatus').innerHTML = '<span class="error">❌ Módulo de autenticação não encontrado</span>';
+                }
+            } catch (error) {
+                document.getElementById('authStatus').innerHTML = `<span class="error">❌ Erro: ${error.message}</span>`;
+            }
+        }
+
+        // Teste de Transações
+        function testAddTransaction() {
+            try {
+                const transaction = {
+                    id: Date.now().toString(),
+                    title: 'Teste de Transação',
+                    amount: 100.50,
+                    type: 'expense',
+                    categoryId: 'test-category',
+                    categoryName: 'Teste',
+                    date: new Date().toISOString().split('T')[0],
+                    createdAt: new Date().toISOString()
+                };
+
+                const transactions = JSON.parse(localStorage.getItem('transactions') || '[]');
+                transactions.unshift(transaction);
+                localStorage.setItem('transactions', JSON.stringify(transactions));
+
+                document.getElementById('transactionStatus').innerHTML = '<span class="success">✅ Transação adicionada com sucesso</span>';
+            } catch (error) {
+                document.getElementById('transactionStatus').innerHTML = `<span class="error">❌ Erro: ${error.message}</span>`;
+            }
+        }
+
+        function testLoadTransactions() {
+            try {
+                const transactions = JSON.parse(localStorage.getItem('transactions') || '[]');
+                document.getElementById('transactionStatus').innerHTML = `<span class="success">✅ ${transactions.length} transações carregadas</span>`;
+            } catch (error) {
+                document.getElementById('transactionStatus').innerHTML = `<span class="error">❌ Erro: ${error.message}</span>`;
+            }
+        }
+
+        // Teste de Categorias
+        function testAddCategory() {
+            try {
+                const category = {
+                    id: Date.now().toString(),
+                    name: 'Categoria Teste',
+                    color: '#2563eb',
+                    type: 'expense',
+                    limit: 500,
+                    createdAt: new Date().toISOString()
+                };
+
+                const categories = JSON.parse(localStorage.getItem('categories') || '[]');
+                categories.push(category);
+                localStorage.setItem('categories', JSON.stringify(categories));
+
+                document.getElementById('categoryStatus').innerHTML = '<span class="success">✅ Categoria adicionada com sucesso</span>';
+            } catch (error) {
+                document.getElementById('categoryStatus').innerHTML = `<span class="error">❌ Erro: ${error.message}</span>`;
+            }
+        }
+
+        function testLoadCategories() {
+            try {
+                const categories = JSON.parse(localStorage.getItem('categories') || '[]');
+                document.getElementById('categoryStatus').innerHTML = `<span class="success">✅ ${categories.length} categorias carregadas</span>`;
+            } catch (error) {
+                document.getElementById('categoryStatus').innerHTML = `<span class="error">❌ Erro: ${error.message}</span>`;
+            }
+        }
+
+        // Teste de Metas
+        function testAddGoal() {
+            try {
+                const goal = {
+                    id: Date.now().toString(),
+                    title: 'Meta Teste',
+                    target: 1000,
+                    current: 0,
+                    deadline: new Date().toISOString().split('T')[0],
+                    createdAt: new Date().toISOString()
+                };
+
+                const goals = JSON.parse(localStorage.getItem('goals') || '[]');
+                goals.push(goal);
+                localStorage.setItem('goals', JSON.stringify(goals));
+
+                document.getElementById('goalStatus').innerHTML = '<span class="success">✅ Meta adicionada com sucesso</span>';
+            } catch (error) {
+                document.getElementById('goalStatus').innerHTML = `<span class="error">❌ Erro: ${error.message}</span>`;
+            }
+        }
+
+        function testLoadGoals() {
+            try {
+                const goals = JSON.parse(localStorage.getItem('goals') || '[]');
+                document.getElementById('goalStatus').innerHTML = `<span class="success">✅ ${goals.length} metas carregadas</span>`;
+            } catch (error) {
+                document.getElementById('goalStatus').innerHTML = `<span class="error">❌ Erro: ${error.message}</span>`;
+            }
+        }
+
+        // Teste de Orçamentos
+        function testAddBudget() {
+            try {
+                const budget = {
+                    id: Date.now().toString(),
+                    title: 'Orçamento Teste',
+                    amount: 1000,
+                    period: 'month',
+                    startDate: new Date().toISOString().split('T')[0],
+                    createdAt: new Date().toISOString()
+                };
+
+                const budgets = JSON.parse(localStorage.getItem('budgets') || '[]');
+                budgets.push(budget);
+                localStorage.setItem('budgets', JSON.stringify(budgets));
+
+                document.getElementById('budgetStatus').innerHTML = '<span class="success">✅ Orçamento adicionado com sucesso</span>';
+            } catch (error) {
+                document.getElementById('budgetStatus').innerHTML = `<span class="error">❌ Erro: ${error.message}</span>`;
+            }
+        }
+
+        function testLoadBudgets() {
+            try {
+                const budgets = JSON.parse(localStorage.getItem('budgets') || '[]');
+                document.getElementById('budgetStatus').innerHTML = `<span class="success">✅ ${budgets.length} orçamentos carregados</span>`;
+            } catch (error) {
+                document.getElementById('budgetStatus').innerHTML = `<span class="error">❌ Erro: ${error.message}</span>`;
+            }
+        }
+
+        // Teste de Notificações
+        function testNotification() {
+            try {
+                if (window.NotificationManager) {
+                    window.NotificationManager.showNotification({
+                        type: 'success',
+                        title: 'Teste de Notificação',
+                        message: 'Esta é uma notificação de teste!',
+                        duration: 3000
+                    });
+                    document.getElementById('notificationStatus').innerHTML = '<span class="success">✅ Notificação enviada com sucesso</span>';
+                } else {
+                    document.getElementById('notificationStatus').innerHTML = '<span class="error">❌ Módulo de notificações não encontrado</span>';
+                }
+            } catch (error) {
+                document.getElementById('notificationStatus').innerHTML = `<span class="error">❌ Erro: ${error.message}</span>`;
+            }
+        }
+
+        // Mostrar dados do localStorage
+        function showLocalStorage() {
+            const data = {
+                transactions: JSON.parse(localStorage.getItem('transactions') || '[]'),
+                categories: JSON.parse(localStorage.getItem('categories') || '[]'),
+                goals: JSON.parse(localStorage.getItem('goals') || '[]'),
+                budgets: JSON.parse(localStorage.getItem('budgets') || '[]'),
+                currentUser: JSON.parse(localStorage.getItem('currentUser') || 'null')
+            };
+            
+            document.getElementById('localStorageData').textContent = JSON.stringify(data, null, 2);
+        }
+
+        // Limpar dados do localStorage
+        function clearLocalStorage() {
+            localStorage.removeItem('transactions');
+            localStorage.removeItem('categories');
+            localStorage.removeItem('goals');
+            localStorage.removeItem('budgets');
+            localStorage.removeItem('currentUser');
+            
+            document.getElementById('localStorageData').textContent = 'Dados limpos!';
+            
+            // Resetar status
+            document.querySelectorAll('.status').forEach(el => {
+                el.innerHTML = '<span class="info">Status: Não testado</span>';
+            });
+        }
+
+        // Carregar dados ao iniciar
+        showLocalStorage();
+    </script>
+</body>
+</html> 

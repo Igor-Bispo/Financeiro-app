@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste - Sistema de Notificações Inteligente</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .test-section {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin: 20px 0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        .test-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin: 16px 0;
+        }
+        
+        .test-button {
+            padding: 12px 16px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .test-button.success { background: #10b981; color: white; }
+        .test-button.error { background: #ef4444; color: white; }
+        .test-button.warning { background: #f59e0b; color: white; }
+        .test-button.info { background: #3b82f6; color: white; }
+        .test-button.alert { background: #dc2626; color: white; }
+        
+        .test-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-online { background: #10b981; }
+        .status-offline { background: #ef4444; }
+        .status-loading { background: #f59e0b; animation: pulse 1s infinite; }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .feature-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .feature-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .feature-icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-size: 12px;
+        }
+        
+        .feature-success { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+        .feature-info { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🔔 Teste - Sistema de Notificações Inteligente</h1>
+            <div class="header-actions">
+                <button class="btn btn-primary" onclick="showNotificationSettings()">
+                    ⚙️ Configurações
+                </button>
+                <button class="btn btn-secondary" onclick="window.history.back()">
+                    ← Voltar
+                </button>
+            </div>
+        </header>
+
+        <div class="test-section">
+            <h2>📋 Status do Sistema</h2>
+            <div class="flex gap-4 items-center mb-4">
+                <div>
+                    <span class="status-indicator" id="notificationStatus"></span>
+                    <span id="statusText">Verificando...</span>
+                </div>
+                <div>
+                    <span class="status-indicator" id="permissionStatus"></span>
+                    <span id="permissionText">Verificando permissões...</span>
+                </div>
+            </div>
+            
+            <div class="feature-list">
+                <li>
+                    <span class="feature-icon feature-success">✅</span>
+                    <span>Notificações do navegador</span>
+                </li>
+                <li>
+                    <span class="feature-icon feature-success">✅</span>
+                    <span>Notificações na interface</span>
+                </li>
+                <li>
+                    <span class="feature-icon feature-success">✅</span>
+                    <span>Sons e vibração</span>
+                </li>
+                <li>
+                    <span class="feature-icon feature-success">✅</span>
+                    <span>Horário silencioso</span>
+                </li>
+                <li>
+                    <span class="feature-icon feature-success">✅</span>
+                    <span>Lembretes inteligentes</span>
+                </li>
+                <li>
+                    <span class="feature-icon feature-info">ℹ️</span>
+                    <span>Alertas de orçamento</span>
+                </li>
+                <li>
+                    <span class="feature-icon feature-info">ℹ️</span>
+                    <span>Lembretes de metas</span>
+                </li>
+                <li>
+                    <span class="feature-icon feature-info">ℹ️</span>
+                    <span>Lembretes de pagamento</span>
+                </li>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🧪 Testes de Notificação</h2>
+            <p>Clique nos botões abaixo para testar diferentes tipos de notificação:</p>
+            
+            <div class="test-buttons">
+                <button class="test-button success" onclick="testSuccessNotification()">
+                    ✅ Sucesso
+                </button>
+                <button class="test-button error" onclick="testErrorNotification()">
+                    ❌ Erro
+                </button>
+                <button class="test-button warning" onclick="testWarningNotification()">
+                    ⚠️ Aviso
+                </button>
+                <button class="test-button info" onclick="testInfoNotification()">
+                    ℹ️ Informação
+                </button>
+                <button class="test-button alert" onclick="testAlertNotification()">
+                    🚨 Alerta
+                </button>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🎯 Testes Específicos</h2>
+            <p>Teste notificações específicas do sistema financeiro:</p>
+            
+            <div class="test-buttons">
+                <button class="test-button info" onclick="testBudgetAlert()">
+                    💰 Alerta de Orçamento
+                </button>
+                <button class="test-button warning" onclick="testGoalReminder()">
+                    🎯 Lembrete de Meta
+                </button>
+                <button class="test-button info" onclick="testPaymentReminder()">
+                    💳 Lembrete de Pagamento
+                </button>
+                <button class="test-button warning" onclick="testBackupReminder()">
+                    💾 Lembrete de Backup
+                </button>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>⚙️ Configurações Avançadas</h2>
+            <p>Teste as configurações do sistema de notificações:</p>
+            
+            <div class="test-buttons">
+                <button class="btn btn-secondary" onclick="testQuietHours()">
+                    🌙 Testar Horário Silencioso
+                </button>
+                <button class="btn btn-secondary" onclick="testSound()">
+                    🔊 Testar Som
+                </button>
+                <button class="btn btn-secondary" onclick="testVibration()">
+                    📳 Testar Vibração
+                </button>
+                <button class="btn btn-secondary" onclick="clearAllNotifications()">
+                    🗑️ Limpar Todas
+                </button>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>📊 Estatísticas</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="text-center p-4 bg-blue-50 rounded-lg">
+                    <div class="text-2xl font-bold text-blue-600" id="totalNotifications">0</div>
+                    <div class="text-sm text-blue-500">Total</div>
+                </div>
+                <div class="text-center p-4 bg-green-50 rounded-lg">
+                    <div class="text-2xl font-bold text-green-600" id="unreadNotifications">0</div>
+                    <div class="text-sm text-green-500">Não lidas</div>
+                </div>
+                <div class="text-center p-4 bg-yellow-50 rounded-lg">
+                    <div class="text-2xl font-bold text-yellow-600" id="todayNotifications">0</div>
+                    <div class="text-sm text-yellow-500">Hoje</div>
+                </div>
+                <div class="text-center p-4 bg-purple-50 rounded-lg">
+                    <div class="text-2xl font-bold text-purple-600" id="activeReminders">0</div>
+                    <div class="text-sm text-purple-500">Lembretes</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/modules/notifications.js"></script>
+    <script>
+        // Aguardar carregamento do sistema de notificações
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(updateStatus, 1000);
+            setInterval(updateStatus, 5000);
+            setInterval(updateStats, 2000);
+        });
+
+        function updateStatus() {
+            const notificationManager = window.NotificationManager;
+            
+            if (notificationManager) {
+                // Status do sistema
+                const statusIndicator = document.getElementById('notificationStatus');
+                const statusText = document.getElementById('statusText');
+                
+                if (notificationManager.settings.enabled) {
+                    statusIndicator.className = 'status-indicator status-online';
+                    statusText.textContent = 'Sistema ativo';
+                } else {
+                    statusIndicator.className = 'status-indicator status-offline';
+                    statusText.textContent = 'Sistema desativado';
+                }
+                
+                // Status das permissões
+                const permissionIndicator = document.getElementById('permissionStatus');
+                const permissionText = document.getElementById('permissionText');
+                
+                if (notificationManager.permission === 'granted') {
+                    permissionIndicator.className = 'status-indicator status-online';
+                    permissionText.textContent = 'Permissões concedidas';
+                } else if (notificationManager.permission === 'denied') {
+                    permissionIndicator.className = 'status-indicator status-offline';
+                    permissionText.textContent = 'Permissões negadas';
+                } else {
+                    permissionIndicator.className = 'status-indicator status-loading';
+                    permissionText.textContent = 'Aguardando permissão';
+                }
+            } else {
+                document.getElementById('notificationStatus').className = 'status-indicator status-offline';
+                document.getElementById('statusText').textContent = 'Sistema não disponível';
+            }
+        }
+
+        function updateStats() {
+            const notificationManager = window.NotificationManager;
+            
+            if (notificationManager) {
+                const notifications = notificationManager.getNotifications();
+                const unreadCount = notificationManager.getUnreadCount();
+                
+                document.getElementById('totalNotifications').textContent = notifications.length;
+                document.getElementById('unreadNotifications').textContent = unreadCount;
+                
+                // Contar notificações de hoje
+                const today = new Date().toDateString();
+                const todayCount = notifications.filter(n => 
+                    new Date(n.timestamp).toDateString() === today
+                ).length;
+                document.getElementById('todayNotifications').textContent = todayCount;
+                
+                // Contar lembretes ativos
+                const activeReminders = notificationManager.reminders.filter(r => r.active).length;
+                document.getElementById('activeReminders').textContent = activeReminders;
+            }
+        }
+
+        // Funções de teste
+        function testSuccessNotification() {
+            if (window.NotificationManager) {
+                window.NotificationManager.showNotification(
+                    'Teste de Sucesso',
+                    'Esta é uma notificação de sucesso para testar o sistema!',
+                    'success',
+                    { category: 'test', data: { type: 'success' } }
+                );
+            }
+        }
+
+        function testErrorNotification() {
+            if (window.NotificationManager) {
+                window.NotificationManager.showNotification(
+                    'Teste de Erro',
+                    'Esta é uma notificação de erro para testar o sistema!',
+                    'error',
+                    { category: 'test', data: { type: 'error' } }
+                );
+            }
+        }
+
+        function testWarningNotification() {
+            if (window.NotificationManager) {
+                window.NotificationManager.showNotification(
+                    'Teste de Aviso',
+                    'Esta é uma notificação de aviso para testar o sistema!',
+                    'warning',
+                    { category: 'test', data: { type: 'warning' } }
+                );
+            }
+        }
+
+        function testInfoNotification() {
+            if (window.NotificationManager) {
+                window.NotificationManager.showNotification(
+                    'Teste de Informação',
+                    'Esta é uma notificação de informação para testar o sistema!',
+                    'info',
+                    { category: 'test', data: { type: 'info' } }
+                );
+            }
+        }
+
+        function testAlertNotification() {
+            if (window.NotificationManager) {
+                window.NotificationManager.showNotification(
+                    'Teste de Alerta',
+                    'Esta é uma notificação de alerta que requer atenção!',
+                    'alert',
+                    { category: 'test', data: { type: 'alert' } }
+                );
+            }
+        }
+
+        function testBudgetAlert() {
+            if (window.NotificationManager) {
+                window.NotificationManager.showBudgetAlert('Alimentação', 450, 500);
+            }
+        }
+
+        function testGoalReminder() {
+            if (window.NotificationManager) {
+                const testGoal = {
+                    id: 'test-goal',
+                    title: 'Viagem para Europa',
+                    current: 5000,
+                    target: 10000,
+                    deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 dias
+                };
+                window.NotificationManager.showGoalReminder(testGoal);
+            }
+        }
+
+        function testPaymentReminder() {
+            if (window.NotificationManager) {
+                const testTransaction = {
+                    id: 'test-payment',
+                    title: 'Aluguel',
+                    amount: 1200,
+                    isRecorrente: true,
+                    proximoVencimento: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000) // 3 dias
+                };
+                window.NotificationManager.showPaymentReminder(testTransaction);
+            }
+        }
+
+        function testBackupReminder() {
+            if (window.NotificationManager) {
+                window.NotificationManager.showBackupReminder();
+            }
+        }
+
+        function testQuietHours() {
+            if (window.NotificationManager) {
+                const isQuiet = window.NotificationManager.isQuietHours();
+                const message = isQuiet ? 
+                    'Horário silencioso ativo - notificações suprimidas' : 
+                    'Horário silencioso inativo - notificações permitidas';
+                
+                window.NotificationManager.showNotification(
+                    'Teste de Horário Silencioso',
+                    message,
+                    isQuiet ? 'warning' : 'info',
+                    { category: 'test', data: { quietHours: isQuiet } }
+                );
+            }
+        }
+
+        function testSound() {
+            if (window.NotificationManager) {
+                window.NotificationManager.playNotificationSound('info');
+                window.NotificationManager.showNotification(
+                    'Teste de Som',
+                    'Você deve ter ouvido um som de notificação!',
+                    'info',
+                    { category: 'test', data: { sound: true } }
+                );
+            }
+        }
+
+        function testVibration() {
+            if (window.NotificationManager && 'vibrate' in navigator) {
+                window.NotificationManager.vibrate('alert');
+                window.NotificationManager.showNotification(
+                    'Teste de Vibração',
+                    'Você deve ter sentido uma vibração no dispositivo!',
+                    'info',
+                    { category: 'test', data: { vibration: true } }
+                );
+            } else {
+                alert('Vibração não suportada neste dispositivo');
+            }
+        }
+
+        function clearAllNotifications() {
+            if (window.NotificationManager) {
+                window.NotificationManager.clearAll();
+                updateStats();
+                window.NotificationManager.showNotification(
+                    'Notificações Limpas',
+                    'Todas as notificações foram removidas!',
+                    'success',
+                    { category: 'test', data: { cleared: true } }
+                );
+            }
+        }
+
+        function showNotificationSettings() {
+            if (typeof showNotificationSettings === 'function') {
+                showNotificationSettings();
+            } else {
+                alert('Função de configurações não disponível');
+            }
+        }
+    </script>
+</body>
+</html> 

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste App.js</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <!-- Firebase Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+</head>
+<body class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen">
+    <div class="container mx-auto p-4">
+        <h1 class="text-3xl font-bold text-center mb-8">🧪 Teste App.js</h1>
+        
+        <div class="card mb-6">
+            <h2 class="text-xl font-bold mb-4">📊 Status dos Módulos</h2>
+            <div id="module-status" class="space-y-2">
+                <p>🔄 Verificando módulos...</p>
+            </div>
+        </div>
+
+        <div class="card mb-6">
+            <h2 class="text-xl font-bold mb-4">🔧 Teste de Carregamento</h2>
+            <div class="space-y-2">
+                <button id="test-load" class="btn btn-primary">Testar Carregamento</button>
+                <button id="test-auth" class="btn btn-secondary">Testar Autenticação</button>
+                <div id="test-result" class="text-sm p-2 bg-gray-100 rounded">
+                    Aguardando teste...
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 class="text-xl font-bold mb-4">📝 Logs</h2>
+            <div id="logs" class="text-sm bg-gray-100 dark:bg-gray-800 p-4 rounded max-h-60 overflow-y-auto">
+                <p>Iniciando teste...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/firebase/config.js"></script>
+    <script src="js/firebase/auth.js"></script>
+    <script src="js/firebase/database.js"></script>
+    <script src="js/utils/helpers.js"></script>
+    <script src="js/utils/ui.js"></script>
+    <script src="js/utils/storage.js"></script>
+    <script src="js/modules/transactions.js"></script>
+    <script src="js/modules/categories.js"></script>
+    <script src="js/modules/goals.js"></script>
+    <script src="js/modules/budgets.js"></script>
+    <script src="js/modules/voice-recognition.js"></script>
+    <script src="js/app.js"></script>
+    
+    <script>
+        // Teste simples para verificar se tudo está funcionando
+        class AppTest {
+            constructor() {
+                this.logs = [];
+                this.init();
+            }
+
+            log(message) {
+                const timestamp = new Date().toLocaleTimeString();
+                const logMessage = `[${timestamp}] ${message}`;
+                this.logs.push(logMessage);
+                
+                const logsContainer = document.getElementById('logs');
+                logsContainer.innerHTML += `<p>${logMessage}</p>`;
+                logsContainer.scrollTop = logsContainer.scrollHeight;
+                
+                console.log(logMessage);
+            }
+
+            init() {
+                this.log('Iniciando teste do app.js...');
+                this.setupEventListeners();
+                this.checkModules();
+            }
+
+            setupEventListeners() {
+                document.getElementById('test-load').addEventListener('click', () => this.testLoad());
+                document.getElementById('test-auth').addEventListener('click', () => this.testAuth());
+            }
+
+            checkModules() {
+                setTimeout(() => {
+                    const modules = {
+                        'Firebase': window.FirebaseApp,
+                        'Auth': window.FinanceAuth,
+                        'UI': window.FinanceUI,
+                        'Transactions': window.FinanceTransactions,
+                        'Categories': window.FinanceCategories,
+                        'Goals': window.FinanceGoals,
+                        'Budgets': window.FinanceBudgets,
+                        'Voice': window.FinanceVoice,
+                        'Helpers': window.FinanceHelpers,
+                        'Storage': window.FinanceStorage
+                    };
+
+                    const statusContainer = document.getElementById('module-status');
+                    statusContainer.innerHTML = '';
+
+                    Object.entries(modules).forEach(([name, module]) => {
+                        const status = module ? '✅' : '❌';
+                        const color = module ? 'text-green-500' : 'text-red-500';
+                        statusContainer.innerHTML += `
+                            <div class="flex justify-between">
+                                <span>${name}:</span>
+                                <span class="${color}">${status} ${module ? 'Carregado' : 'Não carregado'}</span>
+                            </div>
+                        `;
+                        
+                        if (module) {
+                            this.log(`✅ Módulo ${name} carregado com sucesso`);
+                        } else {
+                            this.log(`❌ Módulo ${name} não carregado`);
+                        }
+                    });
+                }, 2000);
+            }
+
+            testLoad() {
+                this.log('🧪 Testando carregamento de módulos...');
+                document.getElementById('test-result').textContent = 'Testando...';
+                
+                if (window.FinanceAuth && window.FinanceUI) {
+                    document.getElementById('test-result').textContent = '✅ Módulos carregados com sucesso!';
+                    this.log('✅ Teste de carregamento passou');
+                } else {
+                    document.getElementById('test-result').textContent = '❌ Erro no carregamento';
+                    this.log('❌ Teste de carregamento falhou');
+                }
+            }
+
+            async testAuth() {
+                this.log('🔐 Testando autenticação...');
+                document.getElementById('test-result').textContent = 'Testando autenticação...';
+                
+                try {
+                    if (window.FinanceAuth) {
+                        const user = window.FinanceAuth.auth.currentUser;
+                        if (user) {
+                            document.getElementById('test-result').textContent = `✅ Usuário logado: ${user.email}`;
+                            this.log(`✅ Usuário autenticado: ${user.email}`);
+                        } else {
+                            document.getElementById('test-result').textContent = 'ℹ️ Nenhum usuário logado';
+                            this.log('ℹ️ Nenhum usuário autenticado');
+                        }
+                    } else {
+                        document.getElementById('test-result').textContent = '❌ Módulo de autenticação não carregado';
+                        this.log('❌ Módulo de autenticação não disponível');
+                    }
+                } catch (error) {
+                    document.getElementById('test-result').textContent = '❌ Erro na autenticação';
+                    this.log(`❌ Erro na autenticação: ${error.message}`);
+                }
+            }
+        }
+
+        // Iniciar teste quando a página carregar
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                new AppTest();
+            }, 1000);
+        });
+    </script>
+</body>
+</html> 
