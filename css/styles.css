@@ -33,6 +33,126 @@ body {
     font-size: 14px; /* Fonte base menor */
 }
 
+/* Estados de Loading e Erro */
+.loading-state {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.loading-container {
+    text-align: center;
+    padding: 40px;
+    background: var(--bg-primary);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    max-width: 400px;
+    width: 90%;
+}
+
+.loading-spinner {
+    width: 60px;
+    height: 60px;
+    border: 4px solid var(--bg-tertiary);
+    border-top: 4px solid var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 20px;
+}
+
+.loading-text {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.error-container {
+    text-align: center;
+    padding: 40px;
+    background: var(--bg-primary);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    max-width: 400px;
+    width: 90%;
+}
+
+.error-icon {
+    font-size: 3rem;
+    margin-bottom: 20px;
+}
+
+.error-text {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 20px;
+}
+
+.login-prompt {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    padding: 40px 20px;
+}
+
+.login-prompt-content {
+    text-align: center;
+    background: var(--bg-primary);
+    border-radius: var(--radius-lg);
+    padding: 40px;
+    box-shadow: var(--shadow-lg);
+    max-width: 400px;
+    width: 100%;
+}
+
+.login-prompt-content h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-bottom: 16px;
+}
+
+.login-prompt-content p {
+    color: var(--text-secondary);
+    margin-bottom: 24px;
+    line-height: 1.6;
+}
+
+/* Dark mode para estados */
+.dark-mode .loading-state {
+    background: rgba(0, 0, 0, 0.8);
+}
+
+.dark-mode .loading-container,
+.dark-mode .error-container,
+.dark-mode .login-prompt-content {
+    background: var(--text-primary);
+    color: var(--bg-primary);
+}
+
+.dark-mode .loading-text,
+.dark-mode .error-text {
+    color: var(--bg-primary);
+}
+
+.dark-mode .login-prompt-content h2 {
+    color: var(--primary-color);
+}
+
+.dark-mode .login-prompt-content p {
+    color: var(--text-secondary);
+}
+
 /* Container principal */
 .container {
     max-width: 1200px;
@@ -827,6 +947,10 @@ body {
 
     .header h1 {
         font-size: 1.25rem;
+    }
+
+    .header h1::before {
+        font-size: 1.75rem;
     }
 
     .summary-cards {

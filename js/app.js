@@ -107,8 +107,8 @@ class FinanceApp {
             this.setupTouchGestures();
             this.setupMobileOptimizations();
             
-            // Carregar dados iniciais do localStorage
-            await this.loadInitialData();
+            // Configurar listeners de autenticação primeiro
+            this.setupAuthListeners();
             
             // Configurar gráficos se Chart.js estiver disponível
             if (typeof Chart !== 'undefined') {
@@ -248,12 +248,156 @@ class FinanceApp {
         }
     }
 
-    // Métodos de autenticação simplificados - sem Firebase
+    // Métodos de autenticação com Firebase
     setupAuthListeners() {
-        // Usar o módulo de autenticação local
-        if (window.AuthModule) {
-            console.log('✅ Módulo de autenticação local configurado');
+        try {
+            console.log('🔐 Configurando listeners de autenticação...');
+            
+            // Mostrar loading inicial
+            this.showLoadingState();
+            
+            // Verificar se o Firebase Auth está disponível
+            if (window.FirebaseAuth) {
+                // Listener para mudanças de estado de autenticação
+                window.FirebaseAuth.onAuthStateChanged(async (user) => {
+                    console.log('👤 Estado de autenticação alterado:', user ? 'Logado' : 'Deslogado');
+                    
+                    this.currentUser = user;
+                    this.updateUIForAuth(user);
+                    
+                    if (user) {
+                        console.log('✅ Usuário autenticado:', user.email);
+                        // Mostrar loading enquanto carrega dados
+                        this.showLoadingState('Carregando seus dados...');
+                        
+                        try {
+                            // Carregar dados do usuário após autenticação
+                            await this.loadInitialData();
+                            this.hideLoadingState();
+                            this.showWelcomeMessage(user);
+                        } catch (error) {
+                            console.error('❌ Erro ao carregar dados do usuário:', error);
+                            this.hideLoadingState();
+                            this.showErrorState('Erro ao carregar dados. Tente novamente.');
+                        }
+                    } else {
+                        console.log('❌ Usuário deslogado');
+                        // Limpar dados quando deslogado
+                        this.clearAllData();
+                        this.hideLoadingState();
+                        this.showLoginPrompt();
+                    }
+                });
+                
+                console.log('✅ Listeners de autenticação configurados');
+            } else {
+                console.warn('⚠️ Firebase Auth não disponível, usando modo offline');
+                // Modo offline - carregar dados locais
+                this.loadInitialData();
+                this.hideLoadingState();
+            }
+        } catch (error) {
+            console.error('❌ Erro ao configurar listeners de autenticação:', error);
+            // Fallback para modo offline
+            this.loadInitialData();
+            this.hideLoadingState();
         }
+    }
+
+    // Métodos de estado da interface
+    showLoadingState(message = 'Carregando...') {
+        const loadingEl = document.getElementById('loadingState');
+        const mainContent = document.getElementById('mainContent');
+        
+        if (loadingEl) {
+            loadingEl.innerHTML = `
+                <div class="loading-container">
+                    <div class="loading-spinner"></div>
+                    <p class="loading-text">${message}</p>
+                </div>
+            `;
+            loadingEl.style.display = 'block';
+        }
+        
+        if (mainContent) {
+            mainContent.style.display = 'none';
+        }
+    }
+
+    hideLoadingState() {
+        const loadingEl = document.getElementById('loadingState');
+        const mainContent = document.getElementById('mainContent');
+        
+        if (loadingEl) {
+            loadingEl.style.display = 'none';
+        }
+        
+        if (mainContent) {
+            mainContent.style.display = 'block';
+        }
+    }
+
+    showErrorState(message) {
+        const loadingEl = document.getElementById('loadingState');
+        const mainContent = document.getElementById('mainContent');
+        
+        if (loadingEl) {
+            loadingEl.innerHTML = `
+                <div class="error-container">
+                    <div class="error-icon">❌</div>
+                    <p class="error-text">${message}</p>
+                    <button class="btn btn-primary" onclick="location.reload()">Tentar Novamente</button>
+                </div>
+            `;
+            loadingEl.style.display = 'block';
+        }
+        
+        if (mainContent) {
+            mainContent.style.display = 'none';
+        }
+    }
+
+    showWelcomeMessage(user) {
+        const userName = user.displayName || user.email || 'Usuário';
+        this.notifications.show(`Bem-vindo(a), ${userName}!`, 'success');
+    }
+
+    showLoginPrompt() {
+        const mainContent = document.getElementById('mainContent');
+        if (mainContent) {
+            mainContent.innerHTML = `
+                <div class="login-prompt">
+                    <div class="login-prompt-content">
+                        <h2>Bem-vindo ao Controle Financeiro</h2>
+                        <p>Faça login para acessar seus dados e começar a gerenciar suas finanças.</p>
+                        <button class="btn btn-primary" onclick="window.AuthModule && window.AuthModule.login()">
+                            🔐 Fazer Login
+                        </button>
+                    </div>
+                </div>
+            `;
+            mainContent.style.display = 'block';
+        }
+    }
+
+    clearAllData() {
+        // Limpar caches
+        this.transactionsCache = [];
+        this.categoriesCache = [];
+        
+        // Limpar interface
+        this.renderTransactions([]);
+        this.renderCategories([]);
+        this.renderGoals([]);
+        this.renderBudgets([]);
+        this.updateSummaryCards();
+        
+        // Limpar formulários
+        const forms = ['transactionForm', 'categoryForm', 'goalForm', 'budgetForm'];
+        forms.forEach(formId => {
+            const form = document.getElementById(formId);
+            if (form) form.reset();
+        });
     }
 
     updateUIForAuth(user) {
@@ -556,27 +700,52 @@ class FinanceApp {
 
     async loadTransactions() {
         try {
-            // Carregar transações do localStorage
-            const transactions = JSON.parse(localStorage.getItem('transactions') || '[]');
+            console.log('📊 Carregando transações do Firebase...');
+            
+            // Usar o módulo de transações padronizado
+            const transactions = await this.transactions.getTransactions();
             this.transactionsCache = transactions;
             this.renderTransactions(transactions);
             console.log('✅ Transações carregadas:', transactions.length);
         } catch (error) {
             console.error('❌ Erro ao carregar transações:', error);
+            // Fallback para dados locais se houver erro
+            try {
+                const fallbackTransactions = JSON.parse(localStorage.getItem('transactions') || '[]');
+                this.transactionsCache = fallbackTransactions;
+                this.renderTransactions(fallbackTransactions);
+                console.log('✅ Transações carregadas do fallback:', fallbackTransactions.length);
+            } catch (fallbackError) {
+                console.error('❌ Erro no fallback:', fallbackError);
+                this.renderTransactions([]);
+            }
         }
     }
 
     async loadCategories() {
         try {
-            console.log('📂 Carregando categorias...');
-            // Carregar categorias do localStorage
-            const categories = JSON.parse(localStorage.getItem('categories') || '[]');
+            console.log('📂 Carregando categorias do Firebase...');
+            
+            // Usar o módulo de categorias padronizado
+            const categories = await this.categories.getCategories();
             this.categoriesCache = categories;
             console.log('📂 Categorias carregadas:', categories);
             this.renderCategories(categories);
             this.updateCategorySelects(categories);
         } catch (error) {
             console.error('❌ Erro ao carregar categorias:', error);
+            // Fallback para dados locais se houver erro
+            try {
+                const fallbackCategories = JSON.parse(localStorage.getItem('categories') || '[]');
+                this.categoriesCache = fallbackCategories;
+                this.renderCategories(fallbackCategories);
+                this.updateCategorySelects(fallbackCategories);
+                console.log('✅ Categorias carregadas do fallback:', fallbackCategories.length);
+            } catch (fallbackError) {
+                console.error('❌ Erro no fallback:', fallbackError);
+                this.renderCategories([]);
+                this.updateCategorySelects([]);
+            }
         }
     }
 
@@ -720,24 +889,45 @@ class FinanceApp {
 
     async loadGoals() {
         try {
-            // Carregar metas do localStorage
-            const goals = JSON.parse(localStorage.getItem('goals') || '[]');
+            console.log('🎯 Carregando metas do Firebase...');
+            
+            // Usar o módulo de metas padronizado
+            const goals = await this.goals.getGoals();
             this.renderGoals(goals);
             console.log('✅ Metas carregadas:', goals.length);
         } catch (error) {
             console.error('❌ Erro ao carregar metas:', error);
+            // Fallback para dados locais se houver erro
+            try {
+                const fallbackGoals = JSON.parse(localStorage.getItem('goals') || '[]');
+                this.renderGoals(fallbackGoals);
+                console.log('✅ Metas carregadas do fallback:', fallbackGoals.length);
+            } catch (fallbackError) {
+                console.error('❌ Erro no fallback:', fallbackError);
+                this.renderGoals([]);
+            }
         }
     }
 
     async loadBudgets() {
         try {
-            console.log('💰 Carregando orçamentos...');
-            // Carregar orçamentos do localStorage
-            const budgets = JSON.parse(localStorage.getItem('budgets') || '[]');
+            console.log('💰 Carregando orçamentos do Firebase...');
+            
+            // Usar o módulo de orçamentos padronizado
+            const budgets = await this.budgets.getBudgets();
             console.log('💰 Orçamentos carregados:', budgets);
             this.renderBudgets(budgets);
         } catch (error) {
             console.error('❌ Erro ao carregar orçamentos:', error);
+            // Fallback para dados locais se houver erro
+            try {
+                const fallbackBudgets = JSON.parse(localStorage.getItem('budgets') || '[]');
+                console.log('💰 Orçamentos carregados do fallback:', fallbackBudgets);
+                this.renderBudgets(fallbackBudgets);
+            } catch (fallbackError) {
+                console.error('❌ Erro no fallback:', fallbackError);
+                this.renderBudgets([]);
+            }
         }
     }
 
@@ -954,14 +1144,15 @@ class FinanceApp {
         try {
             console.log('💰 Atualizando cards de resumo...');
             
-            // Calcular totais usando dados do localStorage
-            const transactions = JSON.parse(localStorage.getItem('transactions') || '[]');
-            const categories = JSON.parse(localStorage.getItem('categories') || '[]');
+            // Usar dados do cache local (que vêm do Firebase)
+            const transactions = this.transactionsCache || [];
+            const categories = this.categoriesCache || [];
             
-            // Calcular receita total
-            const totalIncome = transactions
-                .filter(t => t.type === 'income')
-                .reduce((total, t) => total + (t.amount || 0), 0);
+            // Calcular receita total usando o módulo de transações
+            const totalIncome = await this.transactions.getTotalIncome();
+            
+            // Calcular despesa total usando o módulo de transações
+            const totalExpenses = await this.transactions.getTotalExpenses();
             
             // Calcular despesa total (soma dos limites das categorias)
             const totalBudgetLimits = categories
@@ -984,25 +1175,59 @@ class FinanceApp {
             const budgetRemainingEl = document.getElementById('budgetRemaining');
             
             if (totalIncomeEl) totalIncomeEl.textContent = this.formatCurrency(totalIncome);
-            if (totalExpenseEl) totalExpenseEl.textContent = this.formatCurrency(totalBudgetLimits);
+            if (totalExpenseEl) totalExpenseEl.textContent = this.formatCurrency(totalExpenses);
             if (totalBudgetEl) totalBudgetEl.textContent = this.formatCurrency(totalBudgetBalance);
             if (budgetRemainingEl) budgetRemainingEl.textContent = this.formatCurrency(budgetRemaining);
 
             // Adicionar classes de cor baseadas no valor
             this.updateCardColors('totalIncome', totalIncome, 'positive');
-            this.updateCardColors('totalExpense', totalBudgetLimits, 'negative');
+            this.updateCardColors('totalExpense', totalExpenses, 'negative');
             this.updateCardColors('totalBudget', totalBudgetBalance, totalBudgetBalance >= 0 ? 'positive' : 'negative');
             this.updateCardColors('budgetRemaining', budgetRemaining, budgetRemaining >= 0 ? 'positive' : 'negative');
 
             console.log('💰 Cards de resumo atualizados:', {
                 receitaTotal: totalIncome,
-                despesaTotal: totalBudgetLimits,
+                despesaTotal: totalExpenses,
                 saldoAtual: totalBudgetBalance,
                 orcamentoRestante: budgetRemaining
             });
 
         } catch (error) {
             console.error('❌ Erro ao atualizar cards de resumo:', error);
+            // Fallback para localStorage em caso de erro
+            try {
+                const transactions = JSON.parse(localStorage.getItem('transactions') || '[]');
+                const categories = JSON.parse(localStorage.getItem('categories') || '[]');
+                
+                const totalIncome = transactions
+                    .filter(t => t.type === 'income')
+                    .reduce((total, t) => total + (t.amount || 0), 0);
+                
+                const totalExpenses = transactions
+                    .filter(t => t.type === 'expense')
+                    .reduce((total, t) => total + (t.amount || 0), 0);
+                
+                const totalBudgetLimits = categories
+                    .reduce((total, cat) => total + (cat.limit || 0), 0);
+                
+                const budgetRemaining = totalIncome - totalBudgetLimits;
+
+                const totalIncomeEl = document.getElementById('totalIncome');
+                const totalExpenseEl = document.getElementById('totalExpense');
+                const budgetRemainingEl = document.getElementById('budgetRemaining');
+                
+                if (totalIncomeEl) totalIncomeEl.textContent = this.formatCurrency(totalIncome);
+                if (totalExpenseEl) totalExpenseEl.textContent = this.formatCurrency(totalExpenses);
+                if (budgetRemainingEl) budgetRemainingEl.textContent = this.formatCurrency(budgetRemaining);
+                
+                console.log('💰 Cards de resumo atualizados (fallback):', {
+                    receitaTotal: totalIncome,
+                    despesaTotal: totalExpenses,
+                    orcamentoRestante: budgetRemaining
+                });
+            } catch (fallbackError) {
+                console.error('❌ Erro no fallback dos cards de resumo:', fallbackError);
+            }
         }
     }
 

@@ -47,5 +47,19 @@ class NotificationManager {
     }
 }
 
+// Função global para compatibilidade
+function showNotification(message, type = 'info', duration = 5000) {
+    if (window.NotificationManager) {
+        return window.NotificationManager.show(message, type, duration);
+    } else {
+        // Fallback simples
+        console.log(`${type.toUpperCase()}: ${message}`);
+        return null;
+    }
+}
+
 // Disponibiliza globalmente
-window.NotificationManager = NotificationManager; 
+window.NotificationManager = NotificationManager;
+window.showNotification = showNotification;
+
+console.log('Módulo de notificações carregado'); 

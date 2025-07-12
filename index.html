@@ -55,530 +55,538 @@
             </div>
         </header>
 
-        <!-- Cards de Resumo -->
-        <div class="summary-cards">
-            <div class="summary-card income">
-                <h3>Receita Total</h3>
-                <div class="amount" id="totalIncome">R$ 0,00</div>
-                <div class="text-secondary">Soma de todas as receitas</div>
-            </div>
-            <div class="summary-card expense">
-                <h3>Despesa Total</h3>
-                <div class="amount" id="totalExpense">R$ 0,00</div>
-                <div class="text-secondary">Soma dos limites das categorias</div>
-            </div>
-            <div class="summary-card budget">
-                <h3>Saldo Atual</h3>
-                <div class="amount" id="totalBudget">R$ 0,00</div>
-                <div class="text-secondary">Soma dos saldos das categorias</div>
-            </div>
-            <div class="summary-card balance">
-                <h3>Orçamento Restante</h3>
-                <div class="amount" id="budgetRemaining">R$ 0,00</div>
-                <div class="text-secondary">Receita Total - Despesa Total</div>
-            </div>
+        <!-- Estados de Loading e Erro -->
+        <div id="loadingState" class="loading-state" style="display: none;">
+            <!-- Conteúdo será inserido via JavaScript -->
         </div>
 
-        <!-- Navegação Mobile -->
-        <nav class="mobile-nav">
-            <button class="nav-tab active" data-tab="dashboard">
-                <span class="nav-icon">📊</span>
-                <span class="nav-label">Dashboard</span>
-            </button>
-            <button class="nav-tab" data-tab="transactions">
-                <span class="nav-icon">💰</span>
-                <span class="nav-label">Transações</span>
-            </button>
-            <button class="nav-tab" data-tab="categories">
-                <span class="nav-icon">📁</span>
-                <span class="nav-label">Categorias</span>
-            </button>
-            <button class="nav-tab" data-tab="goals">
-                <span class="nav-icon">🎯</span>
-                <span class="nav-label">Metas</span>
-            </button>
-            <button class="nav-tab" data-tab="budgets">
-                <span class="nav-icon">📋</span>
-                <span class="nav-label">Orçamentos</span>
-            </button>
-        </nav>
-
-        <!-- Conteúdo das Abas -->
-        <div class="tab-content">
-            <!-- Aba Dashboard -->
-            <div class="tab-pane active" id="dashboard-tab">
-                <!-- Dashboard com Gráficos -->
-                <div class="dashboard-grid">
-                    <div class="chart-container">
-                        <div class="chart-header">
-                            <h3>Receitas vs Despesas</h3>
-                            <button class="btn btn-secondary" onclick="FinanceApp.exportToPDF()">
-                                Exportar Relatório
-                            </button>
-                        </div>
-                        <canvas id="incomeExpenseChart"></canvas>
-                    </div>
-                    <div class="chart-container">
-                        <div class="chart-header">
-                            <h3>Distribuição por Categoria</h3>
-                        </div>
-                        <canvas id="categoryChart"></canvas>
-                    </div>
+        <!-- Conteúdo Principal -->
+        <div id="mainContent">
+            <!-- Cards de Resumo -->
+            <div class="summary-cards">
+                <div class="summary-card income">
+                    <h3>Receita Total</h3>
+                    <div class="amount" id="totalIncome">R$ 0,00</div>
+                    <div class="text-secondary">Soma de todas as receitas</div>
                 </div>
-
-                <!-- Filtros -->
-                <div class="filter-bar">
-                    <div class="filter-group">
-                        <label for="periodFilter">Período</label>
-                        <select id="periodFilter" class="form-control">
-                            <option value="month">Este Mês</option>
-                            <option value="quarter">Este Trimestre</option>
-                            <option value="year">Este Ano</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label for="categoryFilter">Categoria</label>
-                        <select id="categoryFilter" class="form-control">
-                            <option value="all">Todas Categorias</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label for="typeFilter">Tipo</label>
-                        <select id="typeFilter" class="form-control">
-                            <option value="all">Todos</option>
-                            <option value="income">Receitas</option>
-                            <option value="expense">Despesas</option>
-                        </select>
-                    </div>
+                <div class="summary-card expense">
+                    <h3>Despesa Total</h3>
+                    <div class="amount" id="totalExpense">R$ 0,00</div>
+                    <div class="text-secondary">Soma dos limites das categorias</div>
+                </div>
+                <div class="summary-card budget">
+                    <h3>Saldo Atual</h3>
+                    <div class="amount" id="totalBudget">R$ 0,00</div>
+                    <div class="text-secondary">Soma dos saldos das categorias</div>
+                </div>
+                <div class="summary-card balance">
+                    <h3>Orçamento Restante</h3>
+                    <div class="amount" id="budgetRemaining">R$ 0,00</div>
+                    <div class="text-secondary">Receita Total - Despesa Total</div>
                 </div>
             </div>
 
-            <!-- Aba Transações -->
-            <div class="tab-pane" id="transactions-tab">
-                <div class="transactions-section">
-                    <div class="section-header">
-                        <h2>Transações Recentes</h2>
-                        <div class="flex gap-2">
-                            <button class="btn btn-primary" onclick="showTransactionModal()" title="Nova transação (Ctrl+N)">
-                                ➕ Nova Transação
-                            </button>
+            <!-- Navegação Mobile -->
+            <nav class="mobile-nav">
+                <button class="nav-tab active" data-tab="dashboard">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-label">Dashboard</span>
+                </button>
+                <button class="nav-tab" data-tab="transactions">
+                    <span class="nav-icon">💰</span>
+                    <span class="nav-label">Transações</span>
+                </button>
+                <button class="nav-tab" data-tab="categories">
+                    <span class="nav-icon">📁</span>
+                    <span class="nav-label">Categorias</span>
+                </button>
+                <button class="nav-tab" data-tab="goals">
+                    <span class="nav-icon">🎯</span>
+                    <span class="nav-label">Metas</span>
+                </button>
+                <button class="nav-tab" data-tab="budgets">
+                    <span class="nav-icon">📋</span>
+                    <span class="nav-label">Orçamentos</span>
+                </button>
+            </nav>
+
+            <!-- Conteúdo das Abas -->
+            <div class="tab-content">
+                <!-- Aba Dashboard -->
+                <div class="tab-pane active" id="dashboard-tab">
+                    <!-- Dashboard com Gráficos -->
+                    <div class="dashboard-grid">
+                        <div class="chart-container">
+                            <div class="chart-header">
+                                <h3>Receitas vs Despesas</h3>
+                                <button class="btn btn-secondary" onclick="FinanceApp.exportToPDF()">
+                                    Exportar Relatório
+                                </button>
+                            </div>
+                            <canvas id="incomeExpenseChart"></canvas>
+                        </div>
+                        <div class="chart-container">
+                            <div class="chart-header">
+                                <h3>Distribuição por Categoria</h3>
+                            </div>
+                            <canvas id="categoryChart"></canvas>
                         </div>
                     </div>
 
-                    <!-- Status do Reconhecimento de Voz -->
-                    <div class="voice-status hidden" id="voiceStatus">
-                        <div class="voice-indicator" id="voiceIndicator"></div>
-                        <span id="voiceText">Ouvindo...</span>
-                    </div>
-
-                    <!-- Lista de Transações -->
-                    <div class="transactions-list" id="transactionsList">
-                        <div class="loading">
-                            <div class="spinner"></div>
+                    <!-- Filtros -->
+                    <div class="filter-bar">
+                        <div class="filter-group">
+                            <label for="periodFilter">Período</label>
+                            <select id="periodFilter" class="form-control">
+                                <option value="month">Este Mês</option>
+                                <option value="quarter">Este Trimestre</option>
+                                <option value="year">Este Ano</option>
+                            </select>
                         </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Aba Categorias -->
-            <div class="tab-pane" id="categories-tab">
-                <div class="categories-section">
-                    <div class="section-header">
-                        <h2>Gerenciar Categorias</h2>
-                        <button class="btn btn-primary" onclick="showCategoryModal()" title="Nova categoria (Ctrl+C)">
-                            ➕ Nova Categoria
-                        </button>
-                    </div>
-                    <div class="categories-grid" id="categoriesList">
-                        <div class="loading">
-                            <div class="spinner"></div>
+                        <div class="filter-group">
+                            <label for="categoryFilter">Categoria</label>
+                            <select id="categoryFilter" class="form-control">
+                                <option value="all">Todas Categorias</option>
+                            </select>
                         </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Aba Metas -->
-            <div class="tab-pane" id="goals-tab">
-                <div class="goals-section">
-                    <div class="section-header">
-                        <h2>Minhas Metas</h2>
-                        <button class="btn btn-primary" onclick="showGoalModal()" title="Nova meta (Ctrl+G)">
-                            ➕ Nova Meta
-                        </button>
-                    </div>
-                    <div class="goals-grid" id="goalsList">
-                        <div class="loading">
-                            <div class="spinner"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Aba Orçamentos -->
-            <div class="tab-pane" id="budgets-tab">
-                <div class="budgets-section">
-                    <div class="section-header">
-                        <h2>Orçamentos</h2>
-                        <button class="btn btn-primary" onclick="showBudgetModal()" title="Novo orçamento (Ctrl+B)">
-                            ➕ Novo Orçamento
-                        </button>
-                    </div>
-                    <div class="budgets-grid" id="budgetsList">
-                        <div class="loading">
-                            <div class="spinner"></div>
+                        <div class="filter-group">
+                            <label for="typeFilter">Tipo</label>
+                            <select id="typeFilter" class="form-control">
+                                <option value="all">Todos</option>
+                                <option value="income">Receitas</option>
+                                <option value="expense">Despesas</option>
+                            </select>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
 
-        <!-- Layout Desktop (mantém a estrutura original) -->
-        <div class="desktop-layout">
-            <!-- Seções Principais -->
-            <div class="main-sections">
-                <!-- Seção de Transações -->
-                <section class="transactions-section">
-                    <div class="section-header">
-                        <h2>Transações Recentes</h2>
-                        <div class="flex gap-2">
-                            <button class="btn btn-primary" onclick="showTransactionModal()" title="Nova transação (Ctrl+N)">
-                                ➕ Nova Transação
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Status do Reconhecimento de Voz -->
-                    <div class="voice-status hidden" id="voiceStatus">
-                        <div class="voice-indicator" id="voiceIndicator"></div>
-                        <span id="voiceText">Ouvindo...</span>
-                    </div>
-
-                    <!-- Lista de Transações -->
-                    <div class="transactions-list" id="transactionsList">
-                        <div class="loading">
-                            <div class="spinner"></div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Sidebar -->
-                <aside class="sidebar">
-                    <!-- Categorias -->
-                    <div class="sidebar-section">
+                <!-- Aba Transações -->
+                <div class="tab-pane" id="transactions-tab">
+                    <div class="transactions-section">
                         <div class="section-header">
-                            <h3>Categorias</h3>
-                            <button class="btn btn-secondary" onclick="showCategoryModal()" title="Nova categoria (Ctrl+C)">➕</button>
+                            <h2>Transações Recentes</h2>
+                            <div class="flex gap-2">
+                                <button class="btn btn-primary" onclick="showTransactionModal()" title="Nova transação (Ctrl+N)">
+                                    ➕ Nova Transação
+                                </button>
+                            </div>
                         </div>
-                        <div class="categories-list" id="categoriesList">
+
+                        <!-- Status do Reconhecimento de Voz -->
+                        <div class="voice-status hidden" id="voiceStatus">
+                            <div class="voice-indicator" id="voiceIndicator"></div>
+                            <span id="voiceText">Ouvindo...</span>
+                        </div>
+
+                        <!-- Lista de Transações -->
+                        <div class="transactions-list" id="transactionsList">
                             <div class="loading">
                                 <div class="spinner"></div>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Metas -->
-                    <div class="sidebar-section">
+                <!-- Aba Categorias -->
+                <div class="tab-pane" id="categories-tab">
+                    <div class="categories-section">
                         <div class="section-header">
-                            <h3>Metas</h3>
-                            <button class="btn btn-secondary" onclick="showGoalModal()" title="Nova meta (Ctrl+G)">➕</button>
+                            <h2>Gerenciar Categorias</h2>
+                            <button class="btn btn-primary" onclick="showCategoryModal()" title="Nova categoria (Ctrl+C)">
+                                ➕ Nova Categoria
+                            </button>
                         </div>
-                        <div class="goals-list" id="goalsList">
+                        <div class="categories-grid" id="categoriesList">
                             <div class="loading">
                                 <div class="spinner"></div>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Orçamentos -->
-                    <div class="sidebar-section">
+                <!-- Aba Metas -->
+                <div class="tab-pane" id="goals-tab">
+                    <div class="goals-section">
                         <div class="section-header">
-                            <h3>Orçamentos</h3>
-                            <button class="btn btn-secondary" onclick="showBudgetModal()" title="Novo orçamento (Ctrl+B)">➕</button>
+                            <h2>Minhas Metas</h2>
+                            <button class="btn btn-primary" onclick="showGoalModal()" title="Nova meta (Ctrl+G)">
+                                ➕ Nova Meta
+                            </button>
                         </div>
-                        <div id="budgetsList">
+                        <div class="goals-grid" id="goalsList">
                             <div class="loading">
                                 <div class="spinner"></div>
                             </div>
                         </div>
                     </div>
-                </aside>
-            </div>
-        </div>
+                </div>
 
-        <!-- FAB (Floating Action Button) -->
-        <button class="fab" onclick="showTransactionModal()" title="Nova Transação">
-            ➕
-        </button>
-
-        <!-- Quick Actions -->
-        <div class="quick-actions">
-            <button class="quick-action" onclick="showCategoryModal()" title="Nova Categoria">
-                📁
-            </button>
-            <button class="quick-action" onclick="showGoalModal()" title="Nova Meta">
-                🎯
-            </button>
-            <button class="quick-action" onclick="showBudgetModal()" title="Novo Orçamento">
-                📋
-            </button>
-        </div>
-    </div>
-
-    <!-- Container de Notificações -->
-    <div class="notification-container" id="notificationContainer"></div>
-
-    <!-- Modais -->
-    <!-- Modal de Transação -->
-    <div class="modal" id="transactionModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="transactionModalTitle">Nova Transação</h3>
-                <button class="modal-close" onclick="closeTransactionModal()">&times;</button>
-            </div>
-            <form id="transactionForm" onsubmit="handleTransactionSubmit(event)">
-                <div class="form-group">
-                    <label for="transactionTitle">Título</label>
-                    <input type="text" id="transactionTitle" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label for="transactionAmount">Valor</label>
-                    <input type="number" id="transactionAmount" class="form-control" step="0.01" required>
-                </div>
-                <div class="form-group">
-                    <label for="transactionType">Tipo</label>
-                    <select id="transactionType" class="form-control" required>
-                        <option value="income">Receita</option>
-                        <option value="expense">Despesa</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="transactionCategory">Categoria</label>
-                    <select id="transactionCategory" class="form-control" required>
-                        <option value="">Selecione uma categoria</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="transactionDate">Data</label>
-                    <input type="date" id="transactionDate" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label for="transactionDescription">Descrição (opcional)</label>
-                    <textarea id="transactionDescription" class="form-control" rows="3"></textarea>
-                </div>
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" onclick="closeTransactionModal()">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Salvar</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Modal de Categoria -->
-    <div class="modal" id="categoryModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="categoryModalTitle">Nova Categoria</h3>
-                <button class="modal-close" onclick="closeCategoryModal()">&times;</button>
-            </div>
-            <form id="categoryForm" onsubmit="handleCategorySubmit(event)">
-                <div class="form-group">
-                    <label for="categoryName">Nome</label>
-                    <input type="text" id="categoryName" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label for="categoryColor">Cor</label>
-                    <input type="color" id="categoryColor" class="form-control" value="#2563eb">
-                </div>
-                <div class="form-group">
-                    <label for="categoryType">Tipo</label>
-                    <select id="categoryType" class="form-control" required>
-                        <option value="expense">Despesa</option>
-                        <option value="income">Receita</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="categoryLimit">Limite Mensal (opcional)</label>
-                    <input type="number" id="categoryLimit" class="form-control" step="0.01" placeholder="0,00">
-                </div>
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" onclick="closeCategoryModal()">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Salvar</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Modal de Meta -->
-    <div class="modal" id="goalModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="goalModalTitle">Nova Meta</h3>
-                <button class="modal-close" onclick="closeGoalModal()">&times;</button>
-            </div>
-            <form id="goalForm" onsubmit="handleGoalSubmit(event)">
-                <div class="form-group">
-                    <label for="goalTitle">Título</label>
-                    <input type="text" id="goalTitle" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label for="goalTarget">Meta (R$)</label>
-                    <input type="number" id="goalTarget" class="form-control" step="0.01" required>
-                </div>
-                <div class="form-group">
-                    <label for="goalCurrent">Valor Atual (R$)</label>
-                    <input type="number" id="goalCurrent" class="form-control" step="0.01" value="0">
-                </div>
-                <div class="form-group">
-                    <label for="goalDeadline">Data Limite</label>
-                    <input type="date" id="goalDeadline" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label for="goalDescription">Descrição (opcional)</label>
-                    <textarea id="goalDescription" class="form-control" rows="3"></textarea>
-                </div>
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" onclick="closeGoalModal()">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Salvar</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Modal de Orçamento -->
-    <div class="modal" id="budgetModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="budgetModalTitle">Novo Orçamento</h3>
-                <button class="modal-close" onclick="closeBudgetModal()">&times;</button>
-            </div>
-            <form id="budgetForm" onsubmit="handleBudgetSubmit(event)">
-                <div class="form-group">
-                    <label for="budgetTitle">Título</label>
-                    <input type="text" id="budgetTitle" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label for="budgetAmount">Valor Total</label>
-                    <input type="number" id="budgetAmount" class="form-control" step="0.01" required>
-                </div>
-                <div class="form-group">
-                    <label for="budgetPeriod">Período</label>
-                    <select id="budgetPeriod" class="form-control" required>
-                        <option value="month">Mensal</option>
-                        <option value="quarter">Trimestral</option>
-                        <option value="year">Anual</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="budgetStartDate">Data de Início</label>
-                    <input type="date" id="budgetStartDate" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label for="budgetDescription">Descrição (opcional)</label>
-                    <textarea id="budgetDescription" class="form-control" rows="3"></textarea>
-                </div>
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" onclick="closeBudgetModal()">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Salvar</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Modal de Configurações de Notificação -->
-    <div class="modal" id="notificationSettingsModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Configurações de Notificação</h3>
-                <button class="modal-close" onclick="closeNotificationSettings()">&times;</button>
-            </div>
-            <div class="notification-settings">
-                <div class="notification-setting-item">
-                    <div class="notification-setting-info">
-                        <div class="notification-setting-label">Notificações do Navegador</div>
-                        <div class="notification-setting-description">Receber notificações push do navegador</div>
-                    </div>
-                    <label class="switch">
-                        <input type="checkbox" id="browserNotifications" checked>
-                        <span class="slider"></span>
-                    </label>
-                </div>
-                
-                <div class="notification-setting-item">
-                    <div class="notification-setting-info">
-                        <div class="notification-setting-label">Som</div>
-                        <div class="notification-setting-description">Tocar som ao receber notificações</div>
-                    </div>
-                    <label class="switch">
-                        <input type="checkbox" id="soundEnabled" checked>
-                        <span class="slider"></span>
-                    </label>
-                </div>
-                
-                <div class="notification-setting-item">
-                    <div class="notification-setting-info">
-                        <div class="notification-setting-label">Vibração</div>
-                        <div class="notification-setting-description">Vibrar dispositivo ao receber notificações</div>
-                    </div>
-                    <label class="switch">
-                        <input type="checkbox" id="vibrationEnabled">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-                
-                <div class="notification-setting-item">
-                    <div class="notification-setting-info">
-                        <div class="notification-setting-label">Alertas de Orçamento</div>
-                        <div class="notification-setting-description">Avisar quando orçamento estiver próximo do limite</div>
-                    </div>
-                    <label class="switch">
-                        <input type="checkbox" id="budgetAlerts" checked>
-                        <span class="slider"></span>
-                    </label>
-                </div>
-                
-                <div class="notification-setting-item">
-                    <div class="notification-setting-info">
-                        <div class="notification-setting-label">Lembretes de Metas</div>
-                        <div class="notification-setting-description">Lembrar sobre progresso das metas</div>
-                    </div>
-                    <label class="switch">
-                        <input type="checkbox" id="goalReminders" checked>
-                        <span class="slider"></span>
-                    </label>
-                </div>
-                
-                <div class="notification-setting-item">
-                    <div class="notification-setting-info">
-                        <div class="notification-setting-label">Lembretes de Pagamento</div>
-                        <div class="notification-setting-description">Lembrar sobre pagamentos recorrentes</div>
-                    </div>
-                    <label class="switch">
-                        <input type="checkbox" id="paymentReminders" checked>
-                        <span class="slider"></span>
-                    </label>
-                </div>
-                
-                <div class="notification-setting-item">
-                    <div class="notification-setting-info">
-                        <div class="notification-setting-label">Backup Automático</div>
-                        <div class="notification-setting-description">Notificar sobre backup automático dos dados</div>
-                    </div>
-                    <label class="switch">
-                        <input type="checkbox" id="backupNotifications" checked>
-                        <span class="slider"></span>
-                    </label>
-                </div>
-                
-                <div class="quiet-hours-settings">
-                    <h4>Horário Silencioso</h4>
-                    <div class="time-inputs">
-                        <div class="time-input">
-                            <label for="quietStart">Início</label>
-                            <input type="time" id="quietStart" value="22:00">
+                <!-- Aba Orçamentos -->
+                <div class="tab-pane" id="budgets-tab">
+                    <div class="budgets-section">
+                        <div class="section-header">
+                            <h2>Orçamentos</h2>
+                            <button class="btn btn-primary" onclick="showBudgetModal()" title="Novo orçamento (Ctrl+B)">
+                                ➕ Novo Orçamento
+                            </button>
                         </div>
-                        <div class="time-input">
-                            <label for="quietEnd">Fim</label>
-                            <input type="time" id="quietEnd" value="08:00">
+                        <div class="budgets-grid" id="budgetsList">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Layout Desktop (mantém a estrutura original) -->
+            <div class="desktop-layout">
+                <!-- Seções Principais -->
+                <div class="main-sections">
+                    <!-- Seção de Transações -->
+                    <section class="transactions-section">
+                        <div class="section-header">
+                            <h2>Transações Recentes</h2>
+                            <div class="flex gap-2">
+                                <button class="btn btn-primary" onclick="showTransactionModal()" title="Nova transação (Ctrl+N)">
+                                    ➕ Nova Transação
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Status do Reconhecimento de Voz -->
+                        <div class="voice-status hidden" id="voiceStatus">
+                            <div class="voice-indicator" id="voiceIndicator"></div>
+                            <span id="voiceText">Ouvindo...</span>
+                        </div>
+
+                        <!-- Lista de Transações -->
+                        <div class="transactions-list" id="transactionsList">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Sidebar -->
+                    <aside class="sidebar">
+                        <!-- Categorias -->
+                        <div class="sidebar-section">
+                            <div class="section-header">
+                                <h3>Categorias</h3>
+                                <button class="btn btn-secondary" onclick="showCategoryModal()" title="Nova categoria (Ctrl+C)">➕</button>
+                            </div>
+                            <div class="categories-list" id="categoriesList">
+                                <div class="loading">
+                                    <div class="spinner"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Metas -->
+                        <div class="sidebar-section">
+                            <div class="section-header">
+                                <h3>Metas</h3>
+                                <button class="btn btn-secondary" onclick="showGoalModal()" title="Nova meta (Ctrl+G)">➕</button>
+                            </div>
+                            <div class="goals-list" id="goalsList">
+                                <div class="loading">
+                                    <div class="spinner"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Orçamentos -->
+                        <div class="sidebar-section">
+                            <div class="section-header">
+                                <h3>Orçamentos</h3>
+                                <button class="btn btn-secondary" onclick="showBudgetModal()" title="Novo orçamento (Ctrl+B)">➕</button>
+                            </div>
+                            <div id="budgetsList">
+                                <div class="loading">
+                                    <div class="spinner"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </aside>
+                </div>
+            </div>
+
+            <!-- FAB (Floating Action Button) -->
+            <button class="fab" onclick="showTransactionModal()" title="Nova Transação">
+                ➕
+            </button>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <button class="quick-action" onclick="showCategoryModal()" title="Nova Categoria">
+                    📁
+                </button>
+                <button class="quick-action" onclick="showGoalModal()" title="Nova Meta">
+                    🎯
+                </button>
+                <button class="quick-action" onclick="showBudgetModal()" title="Novo Orçamento">
+                    📋
+                </button>
+            </div>
+        </div>
+
+        <!-- Container de Notificações -->
+        <div class="notification-container" id="notificationContainer"></div>
+
+        <!-- Modais -->
+        <!-- Modal de Transação -->
+        <div class="modal" id="transactionModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="transactionModalTitle">Nova Transação</h3>
+                    <button class="modal-close" onclick="closeTransactionModal()">&times;</button>
+                </div>
+                <form id="transactionForm" onsubmit="handleTransactionSubmit(event)">
+                    <div class="form-group">
+                        <label for="transactionTitle">Título</label>
+                        <input type="text" id="transactionTitle" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="transactionAmount">Valor</label>
+                        <input type="number" id="transactionAmount" class="form-control" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="transactionType">Tipo</label>
+                        <select id="transactionType" class="form-control" required>
+                            <option value="income">Receita</option>
+                            <option value="expense">Despesa</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="transactionCategory">Categoria</label>
+                        <select id="transactionCategory" class="form-control" required>
+                            <option value="">Selecione uma categoria</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="transactionDate">Data</label>
+                        <input type="date" id="transactionDate" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="transactionDescription">Descrição (opcional)</label>
+                        <textarea id="transactionDescription" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeTransactionModal()">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal de Categoria -->
+        <div class="modal" id="categoryModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="categoryModalTitle">Nova Categoria</h3>
+                    <button class="modal-close" onclick="closeCategoryModal()">&times;</button>
+                </div>
+                <form id="categoryForm" onsubmit="handleCategorySubmit(event)">
+                    <div class="form-group">
+                        <label for="categoryName">Nome</label>
+                        <input type="text" id="categoryName" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="categoryColor">Cor</label>
+                        <input type="color" id="categoryColor" class="form-control" value="#2563eb">
+                    </div>
+                    <div class="form-group">
+                        <label for="categoryType">Tipo</label>
+                        <select id="categoryType" class="form-control" required>
+                            <option value="expense">Despesa</option>
+                            <option value="income">Receita</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="categoryLimit">Limite Mensal (opcional)</label>
+                        <input type="number" id="categoryLimit" class="form-control" step="0.01" placeholder="0,00">
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeCategoryModal()">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal de Meta -->
+        <div class="modal" id="goalModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="goalModalTitle">Nova Meta</h3>
+                    <button class="modal-close" onclick="closeGoalModal()">&times;</button>
+                </div>
+                <form id="goalForm" onsubmit="handleGoalSubmit(event)">
+                    <div class="form-group">
+                        <label for="goalTitle">Título</label>
+                        <input type="text" id="goalTitle" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="goalTarget">Meta (R$)</label>
+                        <input type="number" id="goalTarget" class="form-control" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="goalCurrent">Valor Atual (R$)</label>
+                        <input type="number" id="goalCurrent" class="form-control" step="0.01" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="goalDeadline">Data Limite</label>
+                        <input type="date" id="goalDeadline" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="goalDescription">Descrição (opcional)</label>
+                        <textarea id="goalDescription" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeGoalModal()">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal de Orçamento -->
+        <div class="modal" id="budgetModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="budgetModalTitle">Novo Orçamento</h3>
+                    <button class="modal-close" onclick="closeBudgetModal()">&times;</button>
+                </div>
+                <form id="budgetForm" onsubmit="handleBudgetSubmit(event)">
+                    <div class="form-group">
+                        <label for="budgetTitle">Título</label>
+                        <input type="text" id="budgetTitle" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="budgetAmount">Valor Total</label>
+                        <input type="number" id="budgetAmount" class="form-control" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="budgetPeriod">Período</label>
+                        <select id="budgetPeriod" class="form-control" required>
+                            <option value="month">Mensal</option>
+                            <option value="quarter">Trimestral</option>
+                            <option value="year">Anual</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="budgetStartDate">Data de Início</label>
+                        <input type="date" id="budgetStartDate" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="budgetDescription">Descrição (opcional)</label>
+                        <textarea id="budgetDescription" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeBudgetModal()">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal de Configurações de Notificação -->
+        <div class="modal" id="notificationSettingsModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Configurações de Notificação</h3>
+                    <button class="modal-close" onclick="closeNotificationSettings()">&times;</button>
+                </div>
+                <div class="notification-settings">
+                    <div class="notification-setting-item">
+                        <div class="notification-setting-info">
+                            <div class="notification-setting-label">Notificações do Navegador</div>
+                            <div class="notification-setting-description">Receber notificações push do navegador</div>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="browserNotifications" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="notification-setting-item">
+                        <div class="notification-setting-info">
+                            <div class="notification-setting-label">Som</div>
+                            <div class="notification-setting-description">Tocar som ao receber notificações</div>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="soundEnabled" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="notification-setting-item">
+                        <div class="notification-setting-info">
+                            <div class="notification-setting-label">Vibração</div>
+                            <div class="notification-setting-description">Vibrar dispositivo ao receber notificações</div>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="vibrationEnabled">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="notification-setting-item">
+                        <div class="notification-setting-info">
+                            <div class="notification-setting-label">Alertas de Orçamento</div>
+                            <div class="notification-setting-description">Avisar quando orçamento estiver próximo do limite</div>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="budgetAlerts" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="notification-setting-item">
+                        <div class="notification-setting-info">
+                            <div class="notification-setting-label">Lembretes de Metas</div>
+                            <div class="notification-setting-description">Lembrar sobre progresso das metas</div>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="goalReminders" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="notification-setting-item">
+                        <div class="notification-setting-info">
+                            <div class="notification-setting-label">Lembretes de Pagamento</div>
+                            <div class="notification-setting-description">Lembrar sobre pagamentos recorrentes</div>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="paymentReminders" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="notification-setting-item">
+                        <div class="notification-setting-info">
+                            <div class="notification-setting-label">Backup Automático</div>
+                            <div class="notification-setting-description">Notificar sobre backup automático dos dados</div>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="backupNotifications" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="quiet-hours-settings">
+                        <h4>Horário Silencioso</h4>
+                        <div class="time-inputs">
+                            <div class="time-input">
+                                <label for="quietStart">Início</label>
+                                <input type="time" id="quietStart" value="22:00">
+                            </div>
+                            <div class="time-input">
+                                <label for="quietEnd">Fim</label>
+                                <input type="time" id="quietEnd" value="08:00">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -587,11 +595,31 @@
     </div>
 
     <!-- Scripts -->
-    <script src="js/modules/auth.js"></script>
-    <script src="js/modules/notifications.js"></script>
-    <script src="js/modules/voice.js"></script>
-    <script src="js/modules/charts.js"></script>
-    <script src="js/modules/pdf.js"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+    
+    <!-- Firebase -->
+    <script src="js/firebase/config.js"></script>
+    <script src="js/firebase/auth.js"></script>
+    <script src="js/firebase/database.js"></script>
+    
+    <!-- Utils -->
+    <script src="js/utils/helpers.js"></script>
+    <script src="js/utils/ui.js"></script>
+    <script src="js/utils/storage.js"></script>
+    <script src="js/utils/notifications.js"></script>
+    <script src="js/utils/i18n.js"></script>
+    
+    <!-- Modules -->
+    <script src="js/modules/transactions.js"></script>
+    <script src="js/modules/categories.js"></script>
+    <script src="js/modules/goals.js"></script>
+    <script src="js/modules/budgets.js"></script>
+    <script src="js/modules/voice-recognition.js"></script>
+    
+    <!-- Main App -->
     <script src="js/app.js"></script>
 </body>
 </html>
