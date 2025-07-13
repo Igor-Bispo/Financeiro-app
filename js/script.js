@@ -32,6 +32,50 @@ const resumoDespesa = document.getElementById('resumo-despesa');
 const resumoSaldo = document.getElementById('resumo-saldo');
 const resumoOrcamento = document.getElementById('resumo-orcamento');
 
+// === NAVEGAÇÃO MOBILE ===
+const navItems = document.querySelectorAll('.nav-item');
+const contentSections = document.querySelectorAll('.content-section');
+const fabAdd = document.getElementById('fab-add');
+
+// Função para alternar seções
+function showSection(sectionName) {
+  // Esconder todas as seções
+  contentSections.forEach(section => {
+    section.classList.remove('active');
+  });
+  
+  // Mostrar seção selecionada
+  const targetSection = document.getElementById(`${sectionName}-section`);
+  if (targetSection) {
+    targetSection.classList.add('active');
+  }
+  
+  // Atualizar navegação
+  navItems.forEach(item => {
+    item.classList.remove('active');
+  });
+  
+  const activeNavItem = document.querySelector(`[data-section="${sectionName}"]`);
+  if (activeNavItem) {
+    activeNavItem.classList.add('active');
+  }
+}
+
+// Event listeners para navegação
+navItems.forEach(item => {
+  item.addEventListener('click', () => {
+    const section = item.getAttribute('data-section');
+    showSection(section);
+  });
+});
+
+// Floating Action Button
+if (fabAdd) {
+  fabAdd.addEventListener('click', () => {
+    showSection('transacoes');
+  });
+}
+
 // === AUTENTICAÇÃO GOOGLE ===
 if (btnEntrar) {
   btnEntrar.onclick = async function() {
@@ -708,3 +752,193 @@ if (btnInstall) {
     }
   });
 }
+
+// === BOTÕES DE CONFIGURAÇÃO ===
+document.addEventListener('DOMContentLoaded', function() {
+  // Botão Exportar PDF
+  const btnExportPDF = document.getElementById('btn-export-pdf');
+  if (btnExportPDF) {
+    btnExportPDF.addEventListener('click', async () => {
+      try {
+        const user = auth.currentUser;
+        if (!user) {
+          alert('Faça login para exportar dados.');
+          return;
+        }
+        
+        // Carregar dados
+        const categorias = await carregarCategoriasFirestore();
+        const transacoes = await carregarTransacoesFirestore();
+        
+        // Criar conteúdo do PDF
+        let pdfContent = `
+          <h1>Relatório Financeiro - Servo Tech</h1>
+          <p>Usuário: ${user.displayName || user.email}</p>
+          <p>Data: ${new Date().toLocaleDateString('pt-BR')}</p>
+          
+          <h2>Resumo</h2>
+          <p>Receita Total: R$ ${resumoReceita.textContent}</p>
+          <p>Despesa Total: R$ ${resumoDespesa.textContent}</p>
+          <p>Saldo: R$ ${resumoSaldo.textContent}</p>
+          
+          <h2>Transações</h2>
+          <table border="1" style="width:100%; border-collapse: collapse;">
+            <tr>
+              <th>Data</th>
+              <th>Descrição</th>
+              <th>Tipo</th>
+              <th>Categoria</th>
+              <th>Valor</th>
+            </tr>
+        `;
+        
+        transacoes.forEach(t => {
+          pdfContent += `
+            <tr>
+              <td>${new Date(t.data).toLocaleDateString('pt-BR')}</td>
+              <td>${t.descricao}</td>
+              <td>${t.tipo}</td>
+              <td>${t.categoria}</td>
+              <td>R$ ${Number(t.valor).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
+            </tr>
+          `;
+        });
+        
+        pdfContent += `
+          </table>
+          
+          <h2>Categorias</h2>
+          <table border="1" style="width:100%; border-collapse: collapse;">
+            <tr>
+              <th>Nome</th>
+              <th>Tipo</th>
+              <th>Limite</th>
+            </tr>
+        `;
+        
+        categorias.forEach(c => {
+          pdfContent += `
+            <tr>
+              <td>${c.nome}</td>
+              <td>${c.tipo}</td>
+              <td>R$ ${Number(c.limite).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
+            </tr>
+          `;
+        });
+        
+        pdfContent += '</table>';
+        
+        // Criar e baixar PDF
+        const blob = new Blob([pdfContent], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `relatorio-financeiro-${new Date().toISOString().split('T')[0]}.html`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        alert('Relatório exportado com sucesso!');
+      } catch (error) {
+        console.error('Erro ao exportar PDF:', error);
+        alert('Erro ao exportar relatório.');
+      }
+    });
+  }
+  
+  // Botão Exportar Excel
+  const btnExportExcel = document.getElementById('btn-export-excel');
+  if (btnExportExcel) {
+    btnExportExcel.addEventListener('click', async () => {
+      try {
+        const user = auth.currentUser;
+        if (!user) {
+          alert('Faça login para exportar dados.');
+          return;
+        }
+        
+        // Carregar dados
+        const categorias = await carregarCategoriasFirestore();
+        const transacoes = await carregarTransacoesFirestore();
+        
+        // Criar workbook
+        const wb = XLSX.utils.book_new();
+        
+        // Worksheet de transações
+        const wsTransacoes = XLSX.utils.json_to_sheet(transacoes.map(t => ({
+          Data: new Date(t.data).toLocaleDateString('pt-BR'),
+          Descrição: t.descricao,
+          Tipo: t.tipo,
+          Categoria: t.categoria,
+          Valor: Number(t.valor)
+        })));
+        XLSX.utils.book_append_sheet(wb, wsTransacoes, 'Transações');
+        
+        // Worksheet de categorias
+        const wsCategorias = XLSX.utils.json_to_sheet(categorias.map(c => ({
+          Nome: c.nome,
+          Tipo: c.tipo,
+          Limite: Number(c.limite)
+        })));
+        XLSX.utils.book_append_sheet(wb, wsCategorias, 'Categorias');
+        
+        // Baixar arquivo
+        XLSX.writeFile(wb, `dados-financeiros-${new Date().toISOString().split('T')[0]}.xlsx`);
+        
+        alert('Dados exportados para Excel com sucesso!');
+      } catch (error) {
+        console.error('Erro ao exportar Excel:', error);
+        alert('Erro ao exportar dados.');
+      }
+    });
+  }
+  
+  // Botão Backup
+  const btnBackup = document.getElementById('btn-backup');
+  if (btnBackup) {
+    btnBackup.addEventListener('click', async () => {
+      try {
+        const user = auth.currentUser;
+        if (!user) {
+          alert('Faça login para fazer backup.');
+          return;
+        }
+        
+        // Carregar dados
+        const categorias = await carregarCategoriasFirestore();
+        const transacoes = await carregarTransacoesFirestore();
+        
+        // Criar objeto de backup
+        const backup = {
+          usuario: user.displayName || user.email,
+          dataBackup: new Date().toISOString(),
+          categorias: categorias,
+          transacoes: transacoes,
+          resumo: {
+            receita: resumoReceita.textContent,
+            despesa: resumoDespesa.textContent,
+            saldo: resumoSaldo.textContent,
+            orcamento: resumoOrcamento.textContent
+          }
+        };
+        
+        // Criar e baixar arquivo JSON
+        const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `backup-financeiro-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        alert('Backup realizado com sucesso!');
+      } catch (error) {
+        console.error('Erro ao fazer backup:', error);
+        alert('Erro ao fazer backup.');
+      }
+    });
+  }
+});
