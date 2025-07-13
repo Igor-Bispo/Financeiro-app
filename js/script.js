@@ -159,6 +159,19 @@ async function atualizarListaCategorias(categorias) {
       
       const limite = Number(cat.limite) || 0;
       const saldo = cat.tipo === 'despesa' ? limite - totalDespesas : 0;
+      let percent = 0;
+      if (cat.tipo === 'despesa' && limite > 0) {
+        percent = Math.min(100, Math.round((totalDespesas / limite) * 100));
+      }
+      let barColor = '#10B981'; // verde
+      if (percent >= 90) barColor = '#ef4444'; // vermelho
+      else if (percent >= 60) barColor = '#f59e0b'; // amarelo
+      const progressBar = cat.tipo === 'despesa' && limite > 0 ? `
+        <div style="background:#e5e7eb;border-radius:8px;height:10px;width:100%;margin-top:6px;">
+          <div style="width:${percent}%;background:${barColor};height:100%;border-radius:8px;transition:width 0.3s;"></div>
+        </div>
+        <div style="font-size:11px;color:#666;margin-top:2px;">${percent}% do limite utilizado</div>
+      ` : '';
       
       const li = document.createElement('li');
       li.className = 'py-1 px-2 flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-gray-200 relative';
@@ -168,17 +181,17 @@ async function atualizarListaCategorias(categorias) {
             <span class="font-medium">${cat.nome} (${cat.tipo})</span>
             <span class="text-xs text-gray-500 ml-2">Limite: R$ ${limite.toLocaleString('pt-BR', {minimumFractionDigits:2})}</span>
             <span class="text-xs text-blue-700 ml-2">Saldo: ${cat.tipo === 'despesa' ? 'R$ ' + saldo.toLocaleString('pt-BR', {minimumFractionDigits:2}) : '-'}</span>
+            ${progressBar}
           </div>
-          <div class="flex gap-2">
+          <div class="flex gap-3">
             <button class="history-categoria-btn" data-nome="${cat.nome}" title="Ver histórico">
-              <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M12 8v4l3 3" stroke="#0ea5e9" stroke-width="2"/></svg>
+              <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" stroke="#0ea5e9" stroke-width="2"/><path d="M8 8h8M8 12h8M8 16h4" stroke="#0ea5e9" stroke-width="2" stroke-linecap="round"/></svg>
             </button>
             <button class="edit-categoria-btn" data-nome="${cat.nome}" title="Editar">
               <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M4 21h4.586a1 1 0 0 0 .707-.293l10.414-10.414a2 2 0 0 0 0-2.828l-2.172-2.172a2 2 0 0 0-2.828 0L4.293 15.707A1 1 0 0 0 4 16.414V21z" stroke="#6366f1" stroke-width="2"/></svg>
             </button>
             <button class="delete-categoria-btn" data-nome="${cat.nome}" title="Apagar">
               <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" stroke="#ef4444" stroke-width="2"/></svg>
-            </button>
           </div>
         </div>
       `;
@@ -478,6 +491,16 @@ function parseTransacaoVoice(texto) {
   return { descricao: descricao.trim(), valor, tipo, categoria: categoria.trim() };
 }
 
+function showVoiceModal() {
+  console.log('Mostrando modal de voz');
+  const modal = document.getElementById('voice-modal');
+  if (modal) modal.style.display = 'flex';
+}
+function hideVoiceModal() {
+  const modal = document.getElementById('voice-modal');
+  if (modal) modal.style.display = 'none';
+}
+
 function setupVoiceInputAdvanced(btnId, formType) {
   const btn = document.getElementById(btnId);
   if (!btn) return;
@@ -497,6 +520,7 @@ function setupVoiceInputAdvanced(btnId, formType) {
   recognition.interimResults = false;
   btn.onclick = function() {
     btn.classList.add('active');
+    showVoiceModal();
     recognition.start();
   };
   recognition.onresult = function(event) {
@@ -514,12 +538,15 @@ function setupVoiceInputAdvanced(btnId, formType) {
       if (categoria) document.getElementById('categoria-transacao').value = categoria;
     }
     btn.classList.remove('active');
+    hideVoiceModal();
   };
   recognition.onerror = function() {
     btn.classList.remove('active');
+    hideVoiceModal();
   };
   recognition.onend = function() {
     btn.classList.remove('active');
+    hideVoiceModal();
   };
 }
 
@@ -659,4 +686,25 @@ async function buscarTransacoesPorCategoria(nome) {
   const transacoes = [];
   snap.forEach(doc => transacoes.push(doc.data()));
   return transacoes;
+}
+
+// === BOTÃO DE INSTALAÇÃO PWA ===
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  const btn = document.getElementById('btn-install-pwa');
+  if (btn) btn.style.display = 'block';
+});
+const btnInstall = document.getElementById('btn-install-pwa');
+if (btnInstall) {
+  btnInstall.addEventListener('click', async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        btnInstall.style.display = 'none';
+      }
+    }
+  });
 }

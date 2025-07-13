@@ -1,7 +1,7 @@
 {
-  "name": "Controle Financeiro",
-  "short_name": "Finanças",
-  "start_url": "index.html",
+  "name": "Servo Tech - Finanças",
+  "short_name": "ServoTech",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#4F46E5",
   "theme_color": "#4F46E5",
