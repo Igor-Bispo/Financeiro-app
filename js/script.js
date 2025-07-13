@@ -76,6 +76,90 @@ if (fabAdd) {
   });
 }
 
+// === SISTEMA DE MODO ESCURO ===
+class DarkModeManager {
+  constructor() {
+    this.themeToggle = document.getElementById('theme-toggle');
+    this.currentTheme = this.getStoredTheme() || this.getSystemTheme();
+    this.init();
+  }
+
+  init() {
+    // Aplicar tema inicial
+    this.applyTheme(this.currentTheme);
+    
+    // Event listener para toggle
+    if (this.themeToggle) {
+      this.themeToggle.addEventListener('click', () => {
+        this.toggleTheme();
+      });
+    }
+    
+    // Detectar mudanças no sistema
+    this.watchSystemTheme();
+    
+    console.log('🌙 Sistema de modo escuro inicializado');
+  }
+
+  getStoredTheme() {
+    return localStorage.getItem('theme');
+  }
+
+  getSystemTheme() {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+
+  applyTheme(theme) {
+    const html = document.documentElement;
+    
+    if (theme === 'dark') {
+      html.classList.add('dark');
+      this.updateThemeColor('#1f2937');
+    } else {
+      html.classList.remove('dark');
+      this.updateThemeColor('#4F46E5');
+    }
+    
+    this.currentTheme = theme;
+    localStorage.setItem('theme', theme);
+    
+    console.log(`🌙 Tema aplicado: ${theme}`);
+  }
+
+  toggleTheme() {
+    const newTheme = this.currentTheme === 'dark' ? 'light' : 'dark';
+    this.applyTheme(newTheme);
+    
+    // Feedback visual
+    this.themeToggle.style.transform = 'scale(0.95)';
+    setTimeout(() => {
+      this.themeToggle.style.transform = 'scale(1)';
+    }, 150);
+  }
+
+  updateThemeColor(color) {
+    // Atualizar meta theme-color para PWA
+    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+    if (metaThemeColor) {
+      metaThemeColor.setAttribute('content', color);
+    }
+  }
+
+  watchSystemTheme() {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    
+    mediaQuery.addEventListener('change', (e) => {
+      // Só aplicar se não houver preferência salva
+      if (!this.getStoredTheme()) {
+        this.applyTheme(e.matches ? 'dark' : 'light');
+      }
+    });
+  }
+}
+
+// Inicializar sistema de modo escuro
+const darkModeManager = new DarkModeManager();
+
 // === AUTENTICAÇÃO GOOGLE ===
 if (btnEntrar) {
   btnEntrar.onclick = async function() {
@@ -143,6 +227,15 @@ async function salvarCategoriaFirestore(nome, tipo, limite) {
   };
   console.log('Tentando salvar categoria:', categoriaData);
   await addDoc(collection(db, 'categorias'), categoriaData);
+  
+  // Notificação de sucesso
+  if (window.notificationSystem) {
+    window.notificationSystem.showNotification(
+      'Categoria Criada',
+      `Categoria "${nome}" criada com sucesso!`,
+      'success'
+    );
+  }
 }
 
 async function carregarCategoriasFirestore() {
@@ -249,17 +342,7 @@ async function atualizarListaCategorias(categorias) {
 // Transações
 async function salvarTransacaoFirestore(descricao, valor, tipo, categoria) {
   const user = auth.currentUser;
-  if (!user) {
-    throw new Error('Usuário não autenticado. Faça login novamente.');
-  }
-  
-  // Verifica se o token ainda é válido
-  try {
-    await user.getIdToken(true);
-  } catch (e) {
-    throw new Error('Sessão expirada. Faça login novamente.');
-  }
-  
+  if (!user) throw new Error('Usuário não autenticado. Faça login novamente.');
   const transacaoData = {
     descricao: descricao,
     valor: Number(valor) || 0,
@@ -268,8 +351,17 @@ async function salvarTransacaoFirestore(descricao, valor, tipo, categoria) {
     uid: user.uid,
     data: new Date().toISOString()
   };
-  
+  console.log('Tentando salvar transação:', transacaoData);
   await addDoc(collection(db, 'transacoes'), transacaoData);
+  
+  // Notificação de sucesso
+  if (window.notificationSystem) {
+    window.notificationSystem.showNotification(
+      'Transação Adicionada',
+      `${descricao} - ${tipo === 'receita' ? '+' : '-'}R$ ${Number(valor).toLocaleString('pt-BR', {minimumFractionDigits:2})}`,
+      'success'
+    );
+  }
 }
 
 async function carregarTransacoesFirestore() {
@@ -682,6 +774,15 @@ async function apagarTransacaoFirestore(id) {
   const user = auth.currentUser;
   if (!user) return;
   await deleteDoc(doc(db, 'transacoes', id));
+  
+  // Notificação de sucesso
+  if (window.notificationSystem) {
+    window.notificationSystem.showNotification(
+      'Transação Removida',
+      'Transação removida com sucesso!',
+      'info'
+    );
+  }
 }
 async function buscarTransacaoPorId(id) {
   const user = auth.currentUser;
@@ -705,6 +806,15 @@ async function apagarCategoriaFirestore(nome) {
   const snap = await getDocs(q);
   for (const docu of snap.docs) {
     await deleteDoc(doc(db, 'categorias', docu.id));
+  }
+  
+  // Notificação de sucesso
+  if (window.notificationSystem) {
+    window.notificationSystem.showNotification(
+      'Categoria Removida',
+      `Categoria "${nome}" removida com sucesso!`,
+      'info'
+    );
   }
 }
 async function buscarCategoriaPorNome(nome) {
@@ -839,9 +949,28 @@ document.addEventListener('DOMContentLoaded', function() {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
         
+        // Notificação de sucesso
+        if (window.notificationSystem) {
+          window.notificationSystem.showNotification(
+            'Exportação Concluída',
+            'Relatório PDF exportado com sucesso!',
+            'success'
+          );
+        }
+        
         alert('Relatório exportado com sucesso!');
       } catch (error) {
         console.error('Erro ao exportar PDF:', error);
+        
+        // Notificação de erro
+        if (window.notificationSystem) {
+          window.notificationSystem.showNotification(
+            'Erro na Exportação',
+            'Não foi possível exportar o relatório. Tente novamente.',
+            'error'
+          );
+        }
+        
         alert('Erro ao exportar relatório.');
       }
     });
@@ -886,9 +1015,28 @@ document.addEventListener('DOMContentLoaded', function() {
         // Baixar arquivo
         XLSX.writeFile(wb, `dados-financeiros-${new Date().toISOString().split('T')[0]}.xlsx`);
         
+        // Notificação de sucesso
+        if (window.notificationSystem) {
+          window.notificationSystem.showNotification(
+            'Exportação Concluída',
+            'Dados exportados para Excel com sucesso!',
+            'success'
+          );
+        }
+        
         alert('Dados exportados para Excel com sucesso!');
       } catch (error) {
         console.error('Erro ao exportar Excel:', error);
+        
+        // Notificação de erro
+        if (window.notificationSystem) {
+          window.notificationSystem.showNotification(
+            'Erro na Exportação',
+            'Não foi possível exportar os dados. Tente novamente.',
+            'error'
+          );
+        }
+        
         alert('Erro ao exportar dados.');
       }
     });
@@ -934,11 +1082,44 @@ document.addEventListener('DOMContentLoaded', function() {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
         
+        // Salvar timestamp do backup
+        localStorage.setItem('lastBackup', Date.now().toString());
+        
+        // Notificação de sucesso
+        if (window.notificationSystem) {
+          window.notificationSystem.showNotification(
+            'Backup Realizado',
+            'Backup dos dados realizado com sucesso!',
+            'success'
+          );
+        }
+        
         alert('Backup realizado com sucesso!');
       } catch (error) {
         console.error('Erro ao fazer backup:', error);
+        
+        // Notificação de erro
+        if (window.notificationSystem) {
+          window.notificationSystem.showNotification(
+            'Erro no Backup',
+            'Não foi possível realizar o backup. Tente novamente.',
+            'error'
+          );
+        }
+        
         alert('Erro ao fazer backup.');
       }
     });
   }
+  
+  // Teste de notificação (remover em produção)
+  setTimeout(() => {
+    if (window.notificationSystem) {
+      window.notificationSystem.showNotification(
+        'Bem-vindo ao Servo Tech!',
+        'Sistema de notificações ativo. Você receberá alertas importantes aqui.',
+        'info'
+      );
+    }
+  }, 2000);
 });

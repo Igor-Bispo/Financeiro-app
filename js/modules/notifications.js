@@ -1,31 +1,26 @@
-// Módulo de Notificações Inteligente
-class NotificationManager {
+/**
+ * Sistema de Notificações Push
+ * Gerencia notificações do navegador e in-app
+ */
+
+class NotificationSystem {
     constructor() {
-        this.notifications = [];
-        this.reminders = [];
-        this.settings = this.loadSettings();
         this.isSupported = 'Notification' in window;
         this.permission = 'default';
-        
+        this.notifications = [];
+        this.settings = this.loadSettings();
         this.init();
     }
 
     async init() {
         console.log('🔔 Inicializando sistema de notificações...');
         
-        // Solicitar permissão para notificações
         if (this.isSupported) {
             this.permission = await this.requestPermission();
+            this.setupServiceWorker();
+            this.loadNotifications();
+            this.startPeriodicChecks();
         }
-        
-        // Configurar Service Worker para notificações push
-        this.setupServiceWorker();
-        
-        // Carregar lembretes salvos
-        this.loadReminders();
-        
-        // Iniciar verificações periódicas
-        this.startPeriodicChecks();
         
         console.log('✅ Sistema de notificações inicializado');
     }
@@ -56,7 +51,6 @@ class NotificationManager {
         }
     }
 
-    // Configurações de notificação
     loadSettings() {
         const defaultSettings = {
             enabled: true,
@@ -81,7 +75,7 @@ class NotificationManager {
         localStorage.setItem('notificationSettings', JSON.stringify(this.settings));
     }
 
-    // Tipos de notificação
+    // Mostrar notificação
     showNotification(title, message, type = 'info', options = {}) {
         if (!this.settings.enabled) return;
         
@@ -170,7 +164,7 @@ class NotificationManager {
                 <div class="notification-message">${notification.message}</div>
                 <div class="notification-time">${this.formatTime(notification.timestamp)}</div>
             </div>
-            <button class="notification-close" onclick="window.NotificationManager.closeNotification('${notification.id}')">
+            <button class="notification-close" onclick="window.notificationSystem.closeNotification('${notification.id}')">
                 ×
             </button>
         `;
@@ -196,18 +190,38 @@ class NotificationManager {
         return container;
     }
 
+    getNotificationIcon(type) {
+        const icons = {
+            success: '✅',
+            warning: '⚠️',
+            error: '❌',
+            info: 'ℹ️',
+            alert: '🚨'
+        };
+        return icons[type] || icons.info;
+    }
+
+    formatTime(date) {
+        const now = new Date();
+        const diff = now - date;
+        
+        if (diff < 60000) return 'Agora';
+        if (diff < 3600000) return `${Math.floor(diff / 60000)}m atrás`;
+        if (diff < 86400000) return `${Math.floor(diff / 3600000)}h atrás`;
+        return date.toLocaleDateString('pt-BR');
+    }
+
     closeNotification(id) {
+        // Remover da lista
+        this.notifications = this.notifications.filter(n => n.id !== id);
+        this.saveNotifications();
+        
         // Remover da interface
         const element = document.querySelector(`[data-id="${id}"]`);
         if (element) {
-            element.classList.add('hiding');
-            setTimeout(() => {
-                element.remove();
-            }, 300);
+            element.classList.add('fade-out');
+            setTimeout(() => element.remove(), 300);
         }
-
-        // Marcar como lida
-        this.markAsRead(id);
     }
 
     markAsRead(id) {
@@ -218,23 +232,7 @@ class NotificationManager {
         }
     }
 
-    // Lembretes inteligentes
-    addReminder(reminder) {
-        const newReminder = {
-            id: Date.now().toString(),
-            ...reminder,
-            created: new Date(),
-            active: true
-        };
-
-        this.reminders.push(newReminder);
-        this.saveReminders();
-        
-        console.log('🔔 Lembrete adicionado:', newReminder);
-        return newReminder.id;
-    }
-
-    // Tipos específicos de notificação
+    // Notificações específicas
     showBudgetAlert(category, spent, limit) {
         const percentage = (spent / limit) * 100;
         let message, type;
@@ -264,68 +262,41 @@ class NotificationManager {
     }
 
     showGoalReminder(goal) {
-        const daysLeft = this.calculateDaysLeft(goal.deadline);
-        const progress = (goal.current / goal.target) * 100;
+        const progress = (goal.currentAmount / goal.targetAmount) * 100;
+        const remaining = goal.targetAmount - goal.currentAmount;
         
-        let message, type = 'info';
-        
-        if (daysLeft <= 0) {
-            message = `Meta "${goal.title}" venceu hoje! Progresso: ${progress.toFixed(0)}%`;
-            type = 'alert';
-        } else if (daysLeft <= 7) {
-            message = `Meta "${goal.title}" vence em ${daysLeft} dias. Progresso: ${progress.toFixed(0)}%`;
-            type = 'warning';
-        } else if (daysLeft <= 30) {
-            message = `Meta "${goal.title}" vence em ${daysLeft} dias. Progresso: ${progress.toFixed(0)}%`;
-        }
-
-        if (message) {
-            this.showNotification(
-                'Lembrete de Meta',
-                message,
-                type,
-                {
-                    category: 'goal',
-                    data: { goal, daysLeft, progress }
-                }
-            );
-        }
+        this.showNotification(
+            'Lembrete de Meta',
+            `Meta "${goal.name}": ${progress.toFixed(0)}% concluída. Faltam ${this.formatCurrency(remaining)}`,
+            'info',
+            {
+                category: 'goal',
+                data: { goal }
+            }
+        );
     }
 
     showPaymentReminder(transaction) {
-        if (transaction.isRecorrente && transaction.proximoVencimento) {
-            const daysLeft = this.calculateDaysLeft(transaction.proximoVencimento);
-            
-            if (daysLeft <= 3) {
-                this.showNotification(
-                    'Lembrete de Pagamento',
-                    `Pagamento recorrente "${transaction.title}" vence em ${daysLeft} dias (${this.formatCurrency(transaction.amount)})`,
-                    daysLeft === 0 ? 'alert' : 'warning',
-                    {
-                        category: 'payment',
-                        data: { transaction, daysLeft }
-                    }
-                );
+        this.showNotification(
+            'Lembrete de Pagamento',
+            `Pagamento recorrente: ${transaction.description} - ${this.formatCurrency(transaction.amount)}`,
+            'warning',
+            {
+                category: 'payment',
+                data: { transaction }
             }
-        }
+        );
     }
 
     showBackupReminder() {
-        const lastBackup = localStorage.getItem('lastBackup');
-        const daysSinceBackup = lastBackup ? 
-            Math.floor((Date.now() - new Date(lastBackup).getTime()) / (1000 * 60 * 60 * 24)) : 999;
-
-        if (daysSinceBackup >= 7) {
-            this.showNotification(
-                'Backup Recomendado',
-                `Seus dados não são salvos há ${daysSinceBackup} dias. Faça um backup para proteger suas informações.`,
-                'info',
-                {
-                    category: 'backup',
-                    data: { daysSinceBackup }
-                }
-            );
-        }
+        this.showNotification(
+            'Backup Recomendado',
+            'Faça backup dos seus dados financeiros para manter a segurança',
+            'info',
+            {
+                category: 'backup'
+            }
+        );
     }
 
     // Verificações periódicas
@@ -343,89 +314,32 @@ class NotificationManager {
         }, 24 * 60 * 60 * 1000);
     }
 
-    async checkBudgetAlerts() {
-        if (!this.settings.budgetAlerts) return;
-        
-        try {
-            // Buscar dados de orçamento (implementar conforme sua estrutura)
-            const budgets = await this.getBudgetsData();
-            
-            budgets.forEach(budget => {
-                if (budget.spent > budget.limit * 0.75) {
-                    this.showBudgetAlert(budget.category, budget.spent, budget.limit);
-                }
-            });
-        } catch (error) {
-            console.error('❌ Erro ao verificar alertas de orçamento:', error);
-        }
+    checkBudgetAlerts() {
+        // Implementar verificação de orçamentos
+        console.log('🔔 Verificando alertas de orçamento...');
     }
 
-    async checkGoalReminders() {
-        if (!this.settings.goalReminders) return;
-        
-        try {
-            // Buscar metas (implementar conforme sua estrutura)
-            const goals = await this.getGoalsData();
-            
-            goals.forEach(goal => {
-                if (goal.deadline) {
-                    this.showGoalReminder(goal);
-                }
-            });
-        } catch (error) {
-            console.error('❌ Erro ao verificar lembretes de metas:', error);
-        }
+    checkGoalReminders() {
+        // Implementar verificação de metas
+        console.log('🔔 Verificando lembretes de metas...');
     }
 
-    async checkPaymentReminders() {
-        if (!this.settings.paymentReminders) return;
-        
-        try {
-            // Buscar transações recorrentes (implementar conforme sua estrutura)
-            const transactions = await this.getRecurringTransactions();
-            
-            transactions.forEach(transaction => {
-                this.showPaymentReminder(transaction);
-            });
-        } catch (error) {
-            console.error('❌ Erro ao verificar lembretes de pagamento:', error);
-        }
+    checkPaymentReminders() {
+        // Implementar verificação de pagamentos recorrentes
+        console.log('🔔 Verificando lembretes de pagamento...');
     }
 
     checkBackupReminder() {
-        if (!this.settings.backupReminders) return;
-        this.showBackupReminder();
-    }
-
-    // Utilitários
-    isQuietHours() {
-        if (!this.settings.quietHours.enabled) return false;
+        const lastBackup = localStorage.getItem('lastBackup');
+        const now = Date.now();
+        const oneWeek = 7 * 24 * 60 * 60 * 1000;
         
-        const now = new Date();
-        const currentTime = now.getHours() * 100 + now.getMinutes();
-        const startTime = this.timeToMinutes(this.settings.quietHours.start);
-        const endTime = this.timeToMinutes(this.settings.quietHours.end);
-        
-        if (startTime > endTime) {
-            // Período atravessa a meia-noite
-            return currentTime >= startTime || currentTime <= endTime;
-        } else {
-            return currentTime >= startTime && currentTime <= endTime;
+        if (!lastBackup || (now - parseInt(lastBackup)) > oneWeek) {
+            this.showBackupReminder();
         }
     }
 
-    timeToMinutes(timeString) {
-        const [hours, minutes] = timeString.split(':').map(Number);
-        return hours * 60 + minutes;
-    }
-
-    calculateDaysLeft(deadline) {
-        const deadlineDate = new Date(deadline);
-        const today = new Date();
-        const diffTime = deadlineDate - today;
-        return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    }
-
+    // Utilitários
     formatCurrency(value) {
         return new Intl.NumberFormat('pt-BR', {
             style: 'currency',
@@ -433,22 +347,25 @@ class NotificationManager {
         }).format(value);
     }
 
-    formatTime(date) {
-        return new Intl.DateTimeFormat('pt-BR', {
-            hour: '2-digit',
-            minute: '2-digit'
-        }).format(date);
+    isQuietHours() {
+        if (!this.settings.quietHours.enabled) return false;
+        
+        const now = new Date();
+        const currentTime = now.getHours() * 60 + now.getMinutes();
+        const startTime = this.timeToMinutes(this.settings.quietHours.start);
+        const endTime = this.timeToMinutes(this.settings.quietHours.end);
+        
+        if (startTime <= endTime) {
+            return currentTime >= startTime && currentTime <= endTime;
+        } else {
+            // Horário que cruza meia-noite
+            return currentTime >= startTime || currentTime <= endTime;
+        }
     }
 
-    getNotificationIcon(type) {
-        const icons = {
-            success: '✅',
-            error: '❌',
-            warning: '⚠️',
-            info: 'ℹ️',
-            alert: '🚨'
-        };
-        return icons[type] || icons.info;
+    timeToMinutes(timeString) {
+        const [hours, minutes] = timeString.split(':').map(Number);
+        return hours * 60 + minutes;
     }
 
     playNotificationSound(type) {
@@ -501,25 +418,21 @@ class NotificationManager {
         }
     }
 
-    // Métodos para abrir modais (implementar conforme sua estrutura)
+    // Métodos para abrir modais (implementar conforme necessário)
     openBudgetModal(category) {
         console.log('Abrindo modal de orçamento para:', category);
-        // Implementar abertura do modal de orçamento
     }
 
     openGoalModal(goalId) {
         console.log('Abrindo modal de meta:', goalId);
-        // Implementar abertura do modal de meta
     }
 
     openTransactionModal(transactionId) {
         console.log('Abrindo modal de transação:', transactionId);
-        // Implementar abertura do modal de transação
     }
 
     openBackupModal() {
         console.log('Abrindo modal de backup');
-        // Implementar abertura do modal de backup
     }
 
     // Persistência
@@ -532,55 +445,158 @@ class NotificationManager {
         this.notifications = saved ? JSON.parse(saved) : [];
     }
 
-    saveReminders() {
-        localStorage.setItem('reminders', JSON.stringify(this.reminders));
-    }
-
-    loadReminders() {
-        const saved = localStorage.getItem('reminders');
-        this.reminders = saved ? JSON.parse(saved) : [];
-    }
-
-    // Métodos para buscar dados (implementar conforme sua estrutura)
-    async getBudgetsData() {
-        // Implementar busca de dados de orçamento
-        return [];
-    }
-
-    async getGoalsData() {
-        // Implementar busca de dados de metas
-        return [];
-    }
-
-    async getRecurringTransactions() {
-        // Implementar busca de transações recorrentes
-        return [];
-    }
-
-    // API pública
-    getNotifications() {
-        return this.notifications;
-    }
-
-    getUnreadCount() {
-        return this.notifications.filter(n => !n.read).length;
-    }
-
-    markAllAsRead() {
-        this.notifications.forEach(n => n.read = true);
-        this.saveNotifications();
-    }
-
-    clearAll() {
-        this.notifications = [];
-        this.saveNotifications();
-    }
-
+    // Configurações
     updateSettings(newSettings) {
         this.settings = { ...this.settings, ...newSettings };
         this.saveSettings();
     }
+
+    // Teste de notificação
+    testNotification() {
+        this.showNotification(
+            'Teste de Notificação',
+            'Esta é uma notificação de teste do Servo Tech - Finanças!',
+            'info'
+        );
+    }
 }
 
 // Instância global
-window.NotificationManager = new NotificationManager(); 
+window.notificationSystem = new NotificationSystem();
+
+// Adicionar CSS para notificações
+const notificationStyles = `
+    .notification-container {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        max-width: 400px;
+        width: calc(100vw - 40px);
+    }
+
+    .notification {
+        background: white;
+        border-radius: 12px;
+        padding: 16px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        border-left: 4px solid #4f46e5;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        transform: translateX(100%);
+        transition: transform 0.3s ease;
+        opacity: 0;
+    }
+
+    .dark .notification {
+        background: #1f2937;
+        color: #f9fafb;
+        border-left-color: #6366f1;
+    }
+
+    .notification.show {
+        transform: translateX(0);
+        opacity: 1;
+    }
+
+    .notification.fade-out {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+
+    .notification-icon {
+        font-size: 20px;
+        flex-shrink: 0;
+    }
+
+    .notification-content {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .notification-title {
+        font-weight: 600;
+        margin-bottom: 4px;
+        font-size: 14px;
+    }
+
+    .notification-message {
+        font-size: 13px;
+        color: #6b7280;
+        margin-bottom: 4px;
+    }
+
+    .dark .notification-message {
+        color: #9ca3af;
+    }
+
+    .notification-time {
+        font-size: 11px;
+        color: #9ca3af;
+    }
+
+    .dark .notification-time {
+        color: #6b7280;
+    }
+
+    .notification-close {
+        background: none;
+        border: none;
+        font-size: 18px;
+        color: #9ca3af;
+        cursor: pointer;
+        padding: 0;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: background-color 0.2s ease;
+    }
+
+    .notification-close:hover {
+        background: #f3f4f6;
+        color: #6b7280;
+    }
+
+    .dark .notification-close:hover {
+        background: #374151;
+        color: #d1d5db;
+    }
+
+    .notification-success {
+        border-left-color: #10b981;
+    }
+
+    .notification-warning {
+        border-left-color: #f59e0b;
+    }
+
+    .notification-error {
+        border-left-color: #ef4444;
+    }
+
+    .notification-alert {
+        border-left-color: #dc2626;
+    }
+
+    @media (max-width: 768px) {
+        .notification-container {
+            right: 10px;
+            left: 10px;
+            width: auto;
+        }
+    }
+`;
+
+// Injetar estilos
+const styleSheet = document.createElement('style');
+styleSheet.textContent = notificationStyles;
+document.head.appendChild(styleSheet);
+
+console.log('✅ Sistema de notificações carregado'); 
