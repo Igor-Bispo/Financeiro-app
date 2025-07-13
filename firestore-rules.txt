@@ -4,28 +4,40 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Regras para transações
-    match /transactions/{document} {
-      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    // Regras para transações (coleção usada no código)
+    match /transacoes/{document} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.uid;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.uid;
     }
     
-    // Regras para categorias
+    // Regras para categorias (coleção usada no código)
+    match /categorias/{document} {
+      allow create: if request.auth != null;
+      allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.uid;
+    }
+    
+    // Regras para transações (nomenclatura alternativa)
+    match /transactions/{document} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.uid;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.uid;
+    }
+    
+    // Regras para categorias (nomenclatura alternativa)
     match /categories/{document} {
-      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.uid;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.uid;
     }
     
     // Regras para metas
     match /goals/{document} {
-      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.uid;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.uid;
     }
     
     // Regras para orçamentos
     match /budgets/{document} {
-      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.uid;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.uid;
     }
     
     // Regras para perfis de usuário
@@ -36,7 +48,7 @@ service cloud.firestore {
 }
 
 // Regras temporárias para desenvolvimento (NÃO USE EM PRODUÇÃO)
-// Descomente as linhas abaixo apenas para testes iniciais:
+// Descomente as linhas abaixo apenas para testes iniciais se houver problemas de permissão:
 
 /*
 rules_version = '2';

@@ -2,624 +2,146 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Controle Financeiro - Gerencie suas finanças</title>
-    <meta name="description" content="Aplicativo completo para controle financeiro pessoal com reconhecimento de voz, gráficos e exportação PDF">
-    
-    <!-- PWA -->
-    <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
-    <link rel="apple-touch-icon" href="icon-192.png">
-    <meta name="theme-color" content="#2563eb">
-    
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- External Libraries -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+    <title>Controle Financeiro</title>
+    <meta name="theme-color" content="#4F46E5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="/manifest.json">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4F46E5',
+                        secondary: '#E0E7FF',
+                        danger: '#EF4444',
+                        info: '#3B82F6',
+                        success: '#10B981',
+                        warning: '#F59E0B'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    
-    <!-- Styles -->
-    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
 </head>
-<body>
-    <div class="container">
-        <!-- Header -->
-        <header class="header">
-            <div class="header-left">
-                <h1>Controle Financeiro</h1>
-                <div class="header-actions">
-                    <button class="btn btn-icon" id="darkModeBtn" onclick="toggleDarkMode()" title="Alternar modo escuro (Ctrl+D)">
-                        🌙
-                    </button>
-                    <button class="btn btn-icon" onclick="exportToPDF()" title="Exportar PDF (Ctrl+E)">
-                        📄
-                    </button>
-                    <button class="btn btn-icon" onclick="showNotificationSettings()" title="Configurações de notificação">
-                        🔔
-                    </button>
-                    <button class="btn btn-icon" id="voiceBtn" onclick="toggleVoiceRecognition()" title="Reconhecimento de voz (Ctrl+V)">
-                        🎙️
-                    </button>
-                </div>
-            </div>
-            <div class="user-info">
-                <div class="user-avatar" id="userAvatar">👤</div>
-                <div>
-                    <div id="userName">Faça login</div>
-                    <button class="btn btn-secondary" id="loginBtn" onclick="AuthModule.login()">Entrar</button>
-                    <button class="btn btn-secondary hidden" id="logoutBtn" onclick="AuthModule.logout()">Sair</button>
-                </div>
+<body class="bg-gradient-to-br from-blue-100 to-purple-200 min-h-screen flex flex-col items-center p-2">
+    <main class="min-h-screen bg-gray-50 flex flex-col items-center py-8">
+        <header class="w-full max-w-3xl flex flex-col items-center mb-8">
+            <h1 class="text-3xl font-bold tracking-tight text-gray-900 mb-2 flex items-center gap-2">
+                <svg width="32" height="32" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="#6366f1" stroke-width="2"/><path d="M8 12l2 2 4-4" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Controle Financeiro
+            </h1>
+            <div class="flex gap-2 items-center">
+                <span id="user-name" class="text-gray-700 text-sm"></span>
+                <button id="btn-entrar" class="px-4 py-1 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 transition hidden">Entrar</button>
+                <button id="btn-sair" class="px-4 py-1 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 transition hidden">Sair</button>
             </div>
         </header>
 
-        <!-- Estados de Loading e Erro -->
-        <div id="loadingState" class="loading-state" style="display: none;">
-            <!-- Conteúdo será inserido via JavaScript -->
-        </div>
-
-        <!-- Conteúdo Principal -->
-        <div id="mainContent">
-            <!-- Cards de Resumo -->
-            <div class="summary-cards">
-                <div class="summary-card income">
-                    <h3>Receita Total</h3>
-                    <div class="amount" id="totalIncome">R$ 0,00</div>
-                    <div class="text-secondary">Soma de todas as receitas</div>
-                </div>
-                <div class="summary-card expense">
-                    <h3>Despesa Total</h3>
-                    <div class="amount" id="totalExpense">R$ 0,00</div>
-                    <div class="text-secondary">Soma dos limites das categorias</div>
-                </div>
-                <div class="summary-card budget">
-                    <h3>Saldo Atual</h3>
-                    <div class="amount" id="totalBudget">R$ 0,00</div>
-                    <div class="text-secondary">Soma dos saldos das categorias</div>
-                </div>
-                <div class="summary-card balance">
-                    <h3>Orçamento Restante</h3>
-                    <div class="amount" id="budgetRemaining">R$ 0,00</div>
-                    <div class="text-secondary">Receita Total - Despesa Total</div>
-                </div>
+        <!-- Cards de Resumo -->
+        <section class="w-full max-w-3xl grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div class="bg-white rounded-xl shadow p-4 flex flex-col items-center">
+                <span class="text-xs text-gray-400 mb-1">RECEITA TOTAL</span>
+                <svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="mb-1"><circle cx="12" cy="12" r="10" stroke="#22c55e" stroke-width="2"/></svg>
+                <span id="resumo-receita" class="text-lg font-semibold text-green-600">R$ 0,00</span>
             </div>
-
-            <!-- Navegação Mobile -->
-            <nav class="mobile-nav">
-                <button class="nav-tab active" data-tab="dashboard">
-                    <span class="nav-icon">📊</span>
-                    <span class="nav-label">Dashboard</span>
-                </button>
-                <button class="nav-tab" data-tab="transactions">
-                    <span class="nav-icon">💰</span>
-                    <span class="nav-label">Transações</span>
-                </button>
-                <button class="nav-tab" data-tab="categories">
-                    <span class="nav-icon">📁</span>
-                    <span class="nav-label">Categorias</span>
-                </button>
-                <button class="nav-tab" data-tab="goals">
-                    <span class="nav-icon">🎯</span>
-                    <span class="nav-label">Metas</span>
-                </button>
-                <button class="nav-tab" data-tab="budgets">
-                    <span class="nav-icon">📋</span>
-                    <span class="nav-label">Orçamentos</span>
-                </button>
-            </nav>
-
-            <!-- Conteúdo das Abas -->
-            <div class="tab-content">
-                <!-- Aba Dashboard -->
-                <div class="tab-pane active" id="dashboard-tab">
-                    <!-- Dashboard com Gráficos -->
-                    <div class="dashboard-grid">
-                        <div class="chart-container">
-                            <div class="chart-header">
-                                <h3>Receitas vs Despesas</h3>
-                                <button class="btn btn-secondary" onclick="FinanceApp.exportToPDF()">
-                                    Exportar Relatório
-                                </button>
-                            </div>
-                            <canvas id="incomeExpenseChart"></canvas>
-                        </div>
-                        <div class="chart-container">
-                            <div class="chart-header">
-                                <h3>Distribuição por Categoria</h3>
-                            </div>
-                            <canvas id="categoryChart"></canvas>
-                        </div>
-                    </div>
-
-                    <!-- Filtros -->
-                    <div class="filter-bar">
-                        <div class="filter-group">
-                            <label for="periodFilter">Período</label>
-                            <select id="periodFilter" class="form-control">
-                                <option value="month">Este Mês</option>
-                                <option value="quarter">Este Trimestre</option>
-                                <option value="year">Este Ano</option>
-                            </select>
-                        </div>
-                        <div class="filter-group">
-                            <label for="categoryFilter">Categoria</label>
-                            <select id="categoryFilter" class="form-control">
-                                <option value="all">Todas Categorias</option>
-                            </select>
-                        </div>
-                        <div class="filter-group">
-                            <label for="typeFilter">Tipo</label>
-                            <select id="typeFilter" class="form-control">
-                                <option value="all">Todos</option>
-                                <option value="income">Receitas</option>
-                                <option value="expense">Despesas</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Aba Transações -->
-                <div class="tab-pane" id="transactions-tab">
-                    <div class="transactions-section">
-                        <div class="section-header">
-                            <h2>Transações Recentes</h2>
-                            <div class="flex gap-2">
-                                <button class="btn btn-primary" onclick="showTransactionModal()" title="Nova transação (Ctrl+N)">
-                                    ➕ Nova Transação
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Status do Reconhecimento de Voz -->
-                        <div class="voice-status hidden" id="voiceStatus">
-                            <div class="voice-indicator" id="voiceIndicator"></div>
-                            <span id="voiceText">Ouvindo...</span>
-                        </div>
-
-                        <!-- Lista de Transações -->
-                        <div class="transactions-list" id="transactionsList">
-                            <div class="loading">
-                                <div class="spinner"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Aba Categorias -->
-                <div class="tab-pane" id="categories-tab">
-                    <div class="categories-section">
-                        <div class="section-header">
-                            <h2>Gerenciar Categorias</h2>
-                            <button class="btn btn-primary" onclick="showCategoryModal()" title="Nova categoria (Ctrl+C)">
-                                ➕ Nova Categoria
-                            </button>
-                        </div>
-                        <div class="categories-grid" id="categoriesList">
-                            <div class="loading">
-                                <div class="spinner"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Aba Metas -->
-                <div class="tab-pane" id="goals-tab">
-                    <div class="goals-section">
-                        <div class="section-header">
-                            <h2>Minhas Metas</h2>
-                            <button class="btn btn-primary" onclick="showGoalModal()" title="Nova meta (Ctrl+G)">
-                                ➕ Nova Meta
-                            </button>
-                        </div>
-                        <div class="goals-grid" id="goalsList">
-                            <div class="loading">
-                                <div class="spinner"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Aba Orçamentos -->
-                <div class="tab-pane" id="budgets-tab">
-                    <div class="budgets-section">
-                        <div class="section-header">
-                            <h2>Orçamentos</h2>
-                            <button class="btn btn-primary" onclick="showBudgetModal()" title="Novo orçamento (Ctrl+B)">
-                                ➕ Novo Orçamento
-                            </button>
-                        </div>
-                        <div class="budgets-grid" id="budgetsList">
-                            <div class="loading">
-                                <div class="spinner"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div class="bg-white rounded-xl shadow p-4 flex flex-col items-center">
+                <span class="text-xs text-gray-400 mb-1">DESPESA TOTAL</span>
+                <svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="mb-1"><circle cx="12" cy="12" r="10" stroke="#ef4444" stroke-width="2"/></svg>
+                <span id="resumo-despesa" class="text-lg font-semibold text-red-600">R$ 0,00</span>
             </div>
-
-            <!-- Layout Desktop (mantém a estrutura original) -->
-            <div class="desktop-layout">
-                <!-- Seções Principais -->
-                <div class="main-sections">
-                    <!-- Seção de Transações -->
-                    <section class="transactions-section">
-                        <div class="section-header">
-                            <h2>Transações Recentes</h2>
-                            <div class="flex gap-2">
-                                <button class="btn btn-primary" onclick="showTransactionModal()" title="Nova transação (Ctrl+N)">
-                                    ➕ Nova Transação
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Status do Reconhecimento de Voz -->
-                        <div class="voice-status hidden" id="voiceStatus">
-                            <div class="voice-indicator" id="voiceIndicator"></div>
-                            <span id="voiceText">Ouvindo...</span>
-                        </div>
-
-                        <!-- Lista de Transações -->
-                        <div class="transactions-list" id="transactionsList">
-                            <div class="loading">
-                                <div class="spinner"></div>
-                            </div>
-                        </div>
-                    </section>
-
-                    <!-- Sidebar -->
-                    <aside class="sidebar">
-                        <!-- Categorias -->
-                        <div class="sidebar-section">
-                            <div class="section-header">
-                                <h3>Categorias</h3>
-                                <button class="btn btn-secondary" onclick="showCategoryModal()" title="Nova categoria (Ctrl+C)">➕</button>
-                            </div>
-                            <div class="categories-list" id="categoriesList">
-                                <div class="loading">
-                                    <div class="spinner"></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Metas -->
-                        <div class="sidebar-section">
-                            <div class="section-header">
-                                <h3>Metas</h3>
-                                <button class="btn btn-secondary" onclick="showGoalModal()" title="Nova meta (Ctrl+G)">➕</button>
-                            </div>
-                            <div class="goals-list" id="goalsList">
-                                <div class="loading">
-                                    <div class="spinner"></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Orçamentos -->
-                        <div class="sidebar-section">
-                            <div class="section-header">
-                                <h3>Orçamentos</h3>
-                                <button class="btn btn-secondary" onclick="showBudgetModal()" title="Novo orçamento (Ctrl+B)">➕</button>
-                            </div>
-                            <div id="budgetsList">
-                                <div class="loading">
-                                    <div class="spinner"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </aside>
-                </div>
+            <div class="bg-white rounded-xl shadow p-4 flex flex-col items-center">
+                <span class="text-xs text-gray-400 mb-1">SALDO ATUAL</span>
+                <svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="mb-1"><circle cx="12" cy="12" r="10" stroke="#0ea5e9" stroke-width="2"/></svg>
+                <span id="resumo-saldo" class="text-lg font-semibold text-blue-600">R$ 0,00</span>
             </div>
-
-            <!-- FAB (Floating Action Button) -->
-            <button class="fab" onclick="showTransactionModal()" title="Nova Transação">
-                ➕
-            </button>
-
-            <!-- Quick Actions -->
-            <div class="quick-actions">
-                <button class="quick-action" onclick="showCategoryModal()" title="Nova Categoria">
-                    📁
-                </button>
-                <button class="quick-action" onclick="showGoalModal()" title="Nova Meta">
-                    🎯
-                </button>
-                <button class="quick-action" onclick="showBudgetModal()" title="Novo Orçamento">
-                    📋
-                </button>
+            <div class="bg-white rounded-xl shadow p-4 flex flex-col items-center">
+                <span class="text-xs text-gray-400 mb-1">ORÇAMENTO</span>
+                <svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="mb-1"><circle cx="12" cy="12" r="10" stroke="#a855f7" stroke-width="2"/></svg>
+                <span id="resumo-orcamento" class="text-lg font-semibold text-purple-600">R$ 0,00</span>
             </div>
-        </div>
+        </section>
 
-        <!-- Container de Notificações -->
-        <div class="notification-container" id="notificationContainer"></div>
-
-        <!-- Modais -->
-        <!-- Modal de Transação -->
-        <div class="modal" id="transactionModal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3 id="transactionModalTitle">Nova Transação</h3>
-                    <button class="modal-close" onclick="closeTransactionModal()">&times;</button>
+        <!-- Formulários -->
+        <section class="w-full max-w-3xl flex flex-col md:flex-row gap-8 mb-8">
+            <!-- Formulário Nova Transação -->
+            <form id="form-transacao" class="flex-1 bg-white rounded-xl shadow p-6 flex flex-col gap-4">
+                <h2 class="text-xl font-semibold text-center text-gray-800 mb-2">Nova Transação</h2>
+                <div class="flex flex-col gap-3">
+                    <label for="descricao-transacao" class="text-sm text-gray-600">Descrição</label>
+                    <div class="flex items-center gap-2">
+                        <input id="descricao-transacao" type="text" placeholder="Ex: Salário, Mercado..." class="border border-gray-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-100 flex-1" required />
+                        <button type="button" id="mic-transacao" class="mic-btn" aria-label="Falar descrição">
+                            <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3" stroke="#6366f1" stroke-width="2"/><path d="M5 10v2a7 7 0 0 0 14 0v-2" stroke="#6366f1" stroke-width="2" stroke-linecap="round"/><path d="M12 20v2" stroke="#6366f1" stroke-width="2" stroke-linecap="round"/></svg>
+                        </button>
+                    </div>
+                    <label for="valor-transacao" class="text-sm text-gray-600">Valor</label>
+                    <input id="valor-transacao" type="number" step="0.01" min="0" placeholder="0,00" class="border border-gray-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-100" required />
+                    <label for="tipo-transacao" class="text-sm text-gray-600">Tipo</label>
+                    <select id="tipo-transacao" class="border border-gray-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-100">
+                        <option value="receita">Receita</option>
+                        <option value="despesa">Despesa</option>
+                    </select>
+                    <label for="categoria-transacao" class="text-sm text-gray-600">Categoria</label>
+                    <select id="categoria-transacao" class="border border-gray-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-100"></select>
                 </div>
-                <form id="transactionForm" onsubmit="handleTransactionSubmit(event)">
-                    <div class="form-group">
-                        <label for="transactionTitle">Título</label>
-                        <input type="text" id="transactionTitle" class="form-control" required>
+                <button type="submit" class="mt-4 bg-gray-900 hover:bg-gray-800 text-white font-semibold px-4 py-2 rounded transition">Adicionar Transação</button>
+            </form>
+            <!-- Formulário Nova Categoria -->
+            <form id="form-categoria" class="flex-1 bg-white rounded-xl shadow p-6 flex flex-col gap-4">
+                <h2 class="text-xl font-semibold text-center text-gray-800 mb-2">Nova Categoria</h2>
+                <div class="flex flex-col gap-3">
+                    <label for="nome-categoria" class="text-sm text-gray-600">Nome</label>
+                    <div class="flex items-center gap-2">
+                        <input id="nome-categoria" type="text" placeholder="Ex: Mercado, Lazer..." class="border border-gray-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-100 flex-1" required />
+                        <button type="button" id="mic-categoria" class="mic-btn" aria-label="Falar nome da categoria">
+                            <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3" stroke="#6366f1" stroke-width="2"/><path d="M5 10v2a7 7 0 0 0 14 0v-2" stroke="#6366f1" stroke-width="2" stroke-linecap="round"/><path d="M12 20v2" stroke="#6366f1" stroke-width="2" stroke-linecap="round"/></svg>
+                        </button>
                     </div>
-                    <div class="form-group">
-                        <label for="transactionAmount">Valor</label>
-                        <input type="number" id="transactionAmount" class="form-control" step="0.01" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="transactionType">Tipo</label>
-                        <select id="transactionType" class="form-control" required>
-                            <option value="income">Receita</option>
-                            <option value="expense">Despesa</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="transactionCategory">Categoria</label>
-                        <select id="transactionCategory" class="form-control" required>
-                            <option value="">Selecione uma categoria</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="transactionDate">Data</label>
-                        <input type="date" id="transactionDate" class="form-control" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="transactionDescription">Descrição (opcional)</label>
-                        <textarea id="transactionDescription" class="form-control" rows="3"></textarea>
-                    </div>
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-secondary" onclick="closeTransactionModal()">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">Salvar</button>
-                    </div>
-                </form>
+                    <label for="tipo-categoria" class="text-sm text-gray-600">Tipo</label>
+                    <select id="tipo-categoria" class="border border-gray-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-100">
+                        <option value="receita">Receita</option>
+                        <option value="despesa">Despesa</option>
+                    </select>
+                    <label for="limite-categoria" class="text-sm text-gray-600">Limite</label>
+                    <input id="limite-categoria" type="number" step="0.01" min="0" placeholder="0,00" class="border border-gray-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-100" required />
+                </div>
+                <button type="submit" class="mt-4 bg-gray-900 hover:bg-gray-800 text-white font-semibold px-4 py-2 rounded transition">Adicionar Categoria</button>
+            </form>
+        </section>
+
+        <!-- Listas -->
+        <section class="w-full max-w-3xl grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div>
+                <h2 class="text-lg font-semibold text-gray-700 mb-2 text-center">Transações Recentes</h2>
+                <ul id="lista-transacoes" class="flex flex-col gap-3"></ul>
             </div>
-        </div>
-
-        <!-- Modal de Categoria -->
-        <div class="modal" id="categoryModal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3 id="categoryModalTitle">Nova Categoria</h3>
-                    <button class="modal-close" onclick="closeCategoryModal()">&times;</button>
-                </div>
-                <form id="categoryForm" onsubmit="handleCategorySubmit(event)">
-                    <div class="form-group">
-                        <label for="categoryName">Nome</label>
-                        <input type="text" id="categoryName" class="form-control" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="categoryColor">Cor</label>
-                        <input type="color" id="categoryColor" class="form-control" value="#2563eb">
-                    </div>
-                    <div class="form-group">
-                        <label for="categoryType">Tipo</label>
-                        <select id="categoryType" class="form-control" required>
-                            <option value="expense">Despesa</option>
-                            <option value="income">Receita</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="categoryLimit">Limite Mensal (opcional)</label>
-                        <input type="number" id="categoryLimit" class="form-control" step="0.01" placeholder="0,00">
-                    </div>
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-secondary" onclick="closeCategoryModal()">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">Salvar</button>
-                    </div>
-                </form>
+            <div>
+                <h2 class="text-lg font-semibold text-gray-700 mb-2 text-center">Categorias</h2>
+                <ul id="lista-categorias" class="flex flex-col gap-3"></ul>
             </div>
-        </div>
+        </section>
 
-        <!-- Modal de Meta -->
-        <div class="modal" id="goalModal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3 id="goalModalTitle">Nova Meta</h3>
-                    <button class="modal-close" onclick="closeGoalModal()">&times;</button>
-                </div>
-                <form id="goalForm" onsubmit="handleGoalSubmit(event)">
-                    <div class="form-group">
-                        <label for="goalTitle">Título</label>
-                        <input type="text" id="goalTitle" class="form-control" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="goalTarget">Meta (R$)</label>
-                        <input type="number" id="goalTarget" class="form-control" step="0.01" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="goalCurrent">Valor Atual (R$)</label>
-                        <input type="number" id="goalCurrent" class="form-control" step="0.01" value="0">
-                    </div>
-                    <div class="form-group">
-                        <label for="goalDeadline">Data Limite</label>
-                        <input type="date" id="goalDeadline" class="form-control" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="goalDescription">Descrição (opcional)</label>
-                        <textarea id="goalDescription" class="form-control" rows="3"></textarea>
-                    </div>
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-secondary" onclick="closeGoalModal()">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">Salvar</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- Modal de Orçamento -->
-        <div class="modal" id="budgetModal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3 id="budgetModalTitle">Novo Orçamento</h3>
-                    <button class="modal-close" onclick="closeBudgetModal()">&times;</button>
-                </div>
-                <form id="budgetForm" onsubmit="handleBudgetSubmit(event)">
-                    <div class="form-group">
-                        <label for="budgetTitle">Título</label>
-                        <input type="text" id="budgetTitle" class="form-control" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="budgetAmount">Valor Total</label>
-                        <input type="number" id="budgetAmount" class="form-control" step="0.01" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="budgetPeriod">Período</label>
-                        <select id="budgetPeriod" class="form-control" required>
-                            <option value="month">Mensal</option>
-                            <option value="quarter">Trimestral</option>
-                            <option value="year">Anual</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="budgetStartDate">Data de Início</label>
-                        <input type="date" id="budgetStartDate" class="form-control" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="budgetDescription">Descrição (opcional)</label>
-                        <textarea id="budgetDescription" class="form-control" rows="3"></textarea>
-                    </div>
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-secondary" onclick="closeBudgetModal()">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">Salvar</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- Modal de Configurações de Notificação -->
-        <div class="modal" id="notificationSettingsModal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3>Configurações de Notificação</h3>
-                    <button class="modal-close" onclick="closeNotificationSettings()">&times;</button>
-                </div>
-                <div class="notification-settings">
-                    <div class="notification-setting-item">
-                        <div class="notification-setting-info">
-                            <div class="notification-setting-label">Notificações do Navegador</div>
-                            <div class="notification-setting-description">Receber notificações push do navegador</div>
-                        </div>
-                        <label class="switch">
-                            <input type="checkbox" id="browserNotifications" checked>
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                    
-                    <div class="notification-setting-item">
-                        <div class="notification-setting-info">
-                            <div class="notification-setting-label">Som</div>
-                            <div class="notification-setting-description">Tocar som ao receber notificações</div>
-                        </div>
-                        <label class="switch">
-                            <input type="checkbox" id="soundEnabled" checked>
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                    
-                    <div class="notification-setting-item">
-                        <div class="notification-setting-info">
-                            <div class="notification-setting-label">Vibração</div>
-                            <div class="notification-setting-description">Vibrar dispositivo ao receber notificações</div>
-                        </div>
-                        <label class="switch">
-                            <input type="checkbox" id="vibrationEnabled">
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                    
-                    <div class="notification-setting-item">
-                        <div class="notification-setting-info">
-                            <div class="notification-setting-label">Alertas de Orçamento</div>
-                            <div class="notification-setting-description">Avisar quando orçamento estiver próximo do limite</div>
-                        </div>
-                        <label class="switch">
-                            <input type="checkbox" id="budgetAlerts" checked>
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                    
-                    <div class="notification-setting-item">
-                        <div class="notification-setting-info">
-                            <div class="notification-setting-label">Lembretes de Metas</div>
-                            <div class="notification-setting-description">Lembrar sobre progresso das metas</div>
-                        </div>
-                        <label class="switch">
-                            <input type="checkbox" id="goalReminders" checked>
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                    
-                    <div class="notification-setting-item">
-                        <div class="notification-setting-info">
-                            <div class="notification-setting-label">Lembretes de Pagamento</div>
-                            <div class="notification-setting-description">Lembrar sobre pagamentos recorrentes</div>
-                        </div>
-                        <label class="switch">
-                            <input type="checkbox" id="paymentReminders" checked>
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                    
-                    <div class="notification-setting-item">
-                        <div class="notification-setting-info">
-                            <div class="notification-setting-label">Backup Automático</div>
-                            <div class="notification-setting-description">Notificar sobre backup automático dos dados</div>
-                        </div>
-                        <label class="switch">
-                            <input type="checkbox" id="backupNotifications" checked>
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                    
-                    <div class="quiet-hours-settings">
-                        <h4>Horário Silencioso</h4>
-                        <div class="time-inputs">
-                            <div class="time-input">
-                                <label for="quietStart">Início</label>
-                                <input type="time" id="quietStart" value="22:00">
-                            </div>
-                            <div class="time-input">
-                                <label for="quietEnd">Fim</label>
-                                <input type="time" id="quietEnd" value="08:00">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Scripts -->
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-    
-    <!-- Firebase -->
-    <script src="js/firebase/config.js"></script>
-    <script src="js/firebase/auth.js"></script>
-    <script src="js/firebase/database.js"></script>
-    
-    <!-- Utils -->
-    <script src="js/utils/helpers.js"></script>
-    <script src="js/utils/ui.js"></script>
-    <script src="js/utils/storage.js"></script>
-    <script src="js/utils/notifications.js"></script>
-    <script src="js/utils/i18n.js"></script>
-    
-    <!-- Modules -->
-    <script src="js/modules/transactions.js"></script>
-    <script src="js/modules/categories.js"></script>
-    <script src="js/modules/goals.js"></script>
-    <script src="js/modules/budgets.js"></script>
-    <script src="js/modules/voice-recognition.js"></script>
-    
-    <!-- Main App -->
-    <script src="js/app.js"></script>
+        <footer class="w-full max-w-3xl mt-12 text-center text-xs text-gray-400 py-4 border-t border-gray-100">
+            &copy; 2025 Controle Financeiro. Igor Bispo.
+        </footer>
+    </main>
+    <script type="module" src="js/script.js"></script>
 </body>
 </html>
