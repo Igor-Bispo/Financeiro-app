@@ -113,14 +113,20 @@ class VoiceRecognition {
 
     async processTransactionCommand(transcript) {
         try {
-            // Parser simples para transações
+            // Parser melhorado para transações
             const amount = this.extractAmount(transcript);
             const description = this.extractDescription(transcript);
             const type = this.extractType(transcript);
             const category = this.extractCategory(transcript);
             
+            // Log detalhado do que foi reconhecido
+            console.log('[VOICE][DEBUG] Reconhecido:', { amount, description, type, category, transcript });
+            if (window.FinanceUI) {
+                window.FinanceUI.addLog(`🔎 Valor: ${amount || 'não reconhecido'}, Descrição: ${description || 'não reconhecida'}, Tipo: ${type}, Categoria: ${category}`);
+            }
+            
             if (!amount) {
-                this.showFeedback('Não consegui entender o valor. Tente novamente.');
+                this.showFeedback('Não consegui entender o valor. Tente frases como "gastei 50 reais no mercado" ou "recebi 100".');
                 return;
             }
             
@@ -132,10 +138,13 @@ class VoiceRecognition {
                 date: new Date()
             };
             
+            // Log do objeto transação
+            console.log('[VOICE][DEBUG] Transação montada:', transaction);
+            
             // Adiciona a transação
             if (window.FinanceTransactions) {
                 await window.FinanceTransactions.addTransaction(transaction);
-                this.showFeedback(`Transação adicionada: ${description} - ${window.FinanceHelpers.formatCurrency(amount)}`);
+                this.showFeedback(`Transação adicionada: ${transaction.description} - ${window.FinanceHelpers ? window.FinanceHelpers.formatCurrency(amount) : amount}`);
                 
                 // Atualiza a lista de transações
                 const transactions = await window.FinanceTransactions.getTransactions();
@@ -160,14 +169,18 @@ class VoiceRecognition {
 
     // Funções auxiliares para parsing
     extractAmount(text) {
-        // Procura por padrões de valor monetário
+        // Parser melhorado para valores: aceita números por extenso e variações comuns
         const patterns = [
             /(\d+)[.,](\d{2})/, // 100,50 ou 100.50
             /(\d+)\s*reais?/, // 100 reais
             /r\$\s*(\d+)/, // R$ 100
             /(\d+)\s*real/, // 100 real
         ];
-        
+        // Números por extenso (básico)
+        const extenso = {
+            'um': 1, 'dois': 2, 'três': 3, 'quatro': 4, 'cinco': 5, 'seis': 6, 'sete': 7, 'oito': 8, 'nove': 9, 'dez': 10,
+            'onze': 11, 'doze': 12, 'treze': 13, 'quatorze': 14, 'catorze': 14, 'quinze': 15, 'dezesseis': 16, 'dezessete': 17, 'dezoito': 18, 'dezenove': 19, 'vinte': 20, 'trinta': 30, 'quarenta': 40, 'cinquenta': 50, 'sessenta': 60, 'setenta': 70, 'oitenta': 80, 'noventa': 90, 'cem': 100, 'cento': 100, 'duzentos': 200, 'trezentos': 300, 'quatrocentos': 400, 'quinhentos': 500, 'seiscentos': 600, 'setecentos': 700, 'oitocentos': 800, 'novecentos': 900, 'mil': 1000
+        };
         for (const pattern of patterns) {
             const match = text.match(pattern);
             if (match) {
@@ -180,7 +193,17 @@ class VoiceRecognition {
                 }
             }
         }
-        
+        // Busca por número por extenso
+        let soma = 0;
+        let encontrou = false;
+        const palavras = text.toLowerCase().split(/\s+/);
+        for (const palavra of palavras) {
+            if (extenso[palavra] !== undefined) {
+                soma += extenso[palavra];
+                encontrou = true;
+            }
+        }
+        if (encontrou && soma > 0) return soma;
         return null;
     }
 
@@ -225,23 +248,49 @@ class VoiceRecognition {
     }
 
     extractCategory(text) {
-        const categories = {
-            'alimentação': ['comida', 'restaurante', 'supermercado', 'lanche'],
-            'transporte': ['uber', 'ônibus', 'metrô', 'gasolina', 'combustível'],
-            'lazer': ['cinema', 'teatro', 'show', 'bar', 'balada'],
-            'saúde': ['médico', 'farmácia', 'consulta', 'exame'],
-            'educação': ['curso', 'livro', 'escola', 'universidade'],
-            'moradia': ['aluguel', 'condomínio', 'energia', 'água', 'internet']
-        };
-        
-        const lowerText = text.toLowerCase();
-        
-        for (const [category, keywords] of Object.entries(categories)) {
-            if (keywords.some(keyword => lowerText.includes(keyword))) {
+        // Parser robusto para categorias exatas do usuário, ignorando acentos e maiúsculas/minúsculas
+        const categories = [
+            'MERCADO',
+            'RECARGA',
+            'LUZ',
+            'AGUA',
+            'REMEDIOS',
+            'PADARIA',
+            'FDS',
+            'CABELO IGOR',
+            'CAMILA',
+            'INTERNET',
+            'SEGURO CARRO',
+            'GABRIELA FRALDA',
+            'DIZMO',
+            'ACADEMIA',
+            'GASOLINA',
+            'ESCOLA GABI',
+            'NETFLIX',
+            'YOUTUBE',
+            'TAG CARRO',
+            'GOOGLE CAMILA',
+            'ALMOÇO CAMILA/LANCHE',
+            'TRANSPORTE GABI',
+            'DIZMO CAMILA',
+            'GABI MICELANEAS',
+            'MEI CAMILA'
+        ];
+        // Função para remover acentos
+        function removerAcentos(str) {
+            return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        }
+        const lowerText = removerAcentos(text.toLowerCase());
+        console.log('[VOICE][DEBUG] Texto reconhecido (sem acento):', lowerText);
+        for (const category of categories) {
+            const catNorm = removerAcentos(category.toLowerCase());
+            console.log(`[VOICE][DEBUG] Comparando categoria: '${catNorm}'`);
+            if (lowerText.includes(catNorm)) {
+                console.log(`[VOICE][DEBUG] Categoria reconhecida: '${category}'`);
                 return category;
             }
         }
-        
+        console.log('[VOICE][DEBUG] Nenhuma categoria reconhecida. Retornando "Geral"');
         return 'Geral';
     }
 }

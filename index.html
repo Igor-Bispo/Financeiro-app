@@ -292,13 +292,10 @@
                         Servo Tech
                     </h1>
                     <div class="flex gap-2 items-center">
-                        <span id="user-name" class="text-gray-700 text-sm"></span>
                         <button id="theme-toggle" class="theme-toggle" aria-label="Alternar modo escuro">
                             <span class="icon sun-icon">☀️</span>
                             <span class="icon moon-icon">🌙</span>
                         </button>
-                        <button id="btn-entrar" class="touch-btn px-3 py-2 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 transition hidden">Entrar</button>
-                        <button id="btn-sair" class="touch-btn px-3 py-2 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 transition hidden">Sair</button>
                     </div>
                 </div>
             </div>
@@ -424,6 +421,7 @@
             <div class="max-w-3xl mx-auto px-4 py-6">
                 <div class="bg-white rounded-xl shadow p-6">
                     <h2 class="text-xl font-semibold text-center text-gray-800 mb-4">Configurações</h2>
+                    <div id="orcamento-config-container"></div>
                     <div class="flex flex-col gap-4">
                         <button id="btn-export-pdf" class="touch-btn bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-3 rounded transition flex items-center justify-center gap-2">
                             <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
@@ -521,5 +519,17 @@
     <!-- Scripts -->
     <script src="js/modules/notifications.js"></script>
     <script type="module" src="js/script.js"></script>
+    <script src="js/firebase/config.js"></script>
+    <!-- <script src="js/firebase/auth.js"></script> -->
+    <script src="js/firebase/database.js"></script>
+    <script>
+      // Fallback simples para OfflineDB
+      window.OfflineDB = window.OfflineDB || {
+        save: async () => {},
+        get: async () => null,
+        remove: async () => {}
+      };
+    </script>
+    <script src="js/modules/budgets.js"></script>
 </body>
 </html>

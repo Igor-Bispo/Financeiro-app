@@ -1,67 +1,6 @@
 // Definir funções globais ANTES de tudo
 window.FinanceApp = {};
 
-// Funções temporárias que serão substituídas quando a aplicação inicializar
-window.FinanceApp.editTransaction = function(id) {
-    console.log('editTransaction chamada com id:', id);
-    console.warn('Aplicação ainda não inicializada');
-};
-
-window.FinanceApp.editCategory = function(id) {
-    console.log('editCategory chamada com id:', id);
-    console.warn('Aplicação ainda não inicializada');
-};
-
-window.FinanceApp.editGoal = function(id) {
-    console.log('editGoal chamada com id:', id);
-    console.warn('Aplicação ainda não inicializada');
-};
-
-window.FinanceApp.editBudget = function(id) {
-    console.log('editBudget chamada com id:', id);
-    console.warn('Aplicação ainda não inicializada');
-};
-
-window.FinanceApp.deleteTransaction = function(id) {
-    console.log('deleteTransaction chamada com id:', id);
-    console.warn('Aplicação ainda não inicializada');
-};
-
-window.FinanceApp.deleteCategory = function(id) {
-    console.log('deleteCategory chamada com id:', id);
-    console.warn('Aplicação ainda não inicializada');
-};
-
-window.FinanceApp.deleteGoal = function(id) {
-    console.log('deleteGoal chamada com id:', id);
-    console.warn('Aplicação ainda não inicializada');
-};
-
-window.FinanceApp.deleteBudget = function(id) {
-    console.log('deleteBudget chamada com id:', id);
-    console.warn('Aplicação ainda não inicializada');
-};
-
-window.FinanceApp.showTransactionHistory = function(id) {
-    console.log('showTransactionHistory chamada com id:', id);
-    console.warn('Aplicação ainda não inicializada');
-};
-
-window.FinanceApp.showCategoryHistory = function(id) {
-    console.log('showCategoryHistory chamada com id:', id);
-    console.warn('Aplicação ainda não inicializada');
-};
-
-window.FinanceApp.showGoalHistory = function(id) {
-    console.log('showGoalHistory chamada com id:', id);
-    console.warn('Aplicação ainda não inicializada');
-};
-
-window.FinanceApp.showBudgetHistory = function(id) {
-    console.log('showBudgetHistory chamada com id:', id);
-    console.warn('Aplicação ainda não inicializada');
-};
-
 // Aplicação Principal - Controle Financeiro (Versão Aprimorada)
 class FinanceApp {
     constructor() {
@@ -245,62 +184,6 @@ class FinanceApp {
             }
         } catch (error) {
             console.error('Erro ao gerar PDF:', error);
-        }
-    }
-
-    // Métodos de autenticação com Firebase
-    setupAuthListeners() {
-        try {
-            console.log('🔐 Configurando listeners de autenticação...');
-            
-            // Mostrar loading inicial
-            this.showLoadingState();
-            
-            // Verificar se o Firebase Auth está disponível
-            if (window.FirebaseAuth) {
-                // Listener para mudanças de estado de autenticação
-                window.FirebaseAuth.onAuthStateChanged(async (user) => {
-                    console.log('👤 Estado de autenticação alterado:', user ? 'Logado' : 'Deslogado');
-                    
-                    this.currentUser = user;
-                    this.updateUIForAuth(user);
-                    
-                    if (user) {
-                        console.log('✅ Usuário autenticado:', user.email);
-                        // Mostrar loading enquanto carrega dados
-                        this.showLoadingState('Carregando seus dados...');
-                        
-                        try {
-                            // Carregar dados do usuário após autenticação
-                            await this.loadInitialData();
-                            this.hideLoadingState();
-                            this.showWelcomeMessage(user);
-                        } catch (error) {
-                            console.error('❌ Erro ao carregar dados do usuário:', error);
-                            this.hideLoadingState();
-                            this.showErrorState('Erro ao carregar dados. Tente novamente.');
-                        }
-                    } else {
-                        console.log('❌ Usuário deslogado');
-                        // Limpar dados quando deslogado
-                        this.clearAllData();
-                        this.hideLoadingState();
-                        this.showLoginPrompt();
-                    }
-                });
-                
-                console.log('✅ Listeners de autenticação configurados');
-            } else {
-                console.warn('⚠️ Firebase Auth não disponível, usando modo offline');
-                // Modo offline - carregar dados locais
-                this.loadInitialData();
-                this.hideLoadingState();
-            }
-        } catch (error) {
-            console.error('❌ Erro ao configurar listeners de autenticação:', error);
-            // Fallback para modo offline
-            this.loadInitialData();
-            this.hideLoadingState();
         }
     }
 

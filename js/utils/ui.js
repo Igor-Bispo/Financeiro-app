@@ -6,7 +6,7 @@ function setupUI(user) {
     updateAppStatus();
     
     // Configura seção de autenticação
-    setupAuthSection(user);
+    // setupAuthSection(user);
     
     // Configura dashboard se usuário estiver logado
     if (user) {
@@ -45,43 +45,7 @@ function updateAppStatus() {
 }
 
 function setupAuthSection(user) {
-    const authSection = document.getElementById('auth-section');
-    const authContent = document.getElementById('auth-content');
-    
-    if (user) {
-        // Usuário logado
-        authContent.innerHTML = `
-            <p>👋 Olá, ${user.displayName || user.email}!</p>
-            <button id="logout-btn" class="btn btn-secondary mt-2">Sair</button>
-        `;
-        
-        // Listener para logout
-        document.getElementById('logout-btn')?.addEventListener('click', async () => {
-            try {
-                await window.FinanceAuth.logout();
-            } catch (error) {
-                console.error('Erro ao fazer logout:', error);
-            }
-        });
-    } else {
-        // Usuário não logado
-        authContent.innerHTML = `
-            <p>Faça login para começar a usar o aplicativo</p>
-            <button id="login-btn" class="btn btn-primary mt-2">Entrar com Google</button>
-        `;
-        
-        // Listener para login
-        document.getElementById('login-btn')?.addEventListener('click', async () => {
-            try {
-                await window.FinanceAuth.loginWithGoogle();
-            } catch (error) {
-                console.error('Erro ao fazer login:', error);
-                addLog('Erro ao fazer login: ' + error.message, 'error');
-            }
-        });
-    }
-    
-    authSection.style.display = 'block';
+    // Remover setupAuthSection e qualquer listener de login/logout relacionado a window.FinanceAuth
 }
 
 function setupDashboard() {
@@ -190,7 +154,7 @@ function setupTransactionListeners() {
     console.log('Configurando listeners de transações...');
     
     document.getElementById('add-transaction-btn')?.addEventListener('click', () => {
-        addSampleTransaction();
+        // Remover funções de exemplo/teste como addSampleTransaction
     });
 }
 
@@ -198,7 +162,7 @@ function setupCategoryListeners() {
     console.log('Configurando listeners de categorias...');
     
     document.getElementById('add-category-btn')?.addEventListener('click', () => {
-        addSampleCategory();
+        // Remover funções de exemplo/teste como addSampleCategory
     });
 }
 
@@ -206,7 +170,7 @@ function setupGoalListeners() {
     console.log('Configurando listeners de metas...');
     
     document.getElementById('add-goal-btn')?.addEventListener('click', () => {
-        addSampleGoal();
+        // Remover funções de exemplo/teste como addSampleGoal
     });
 }
 
@@ -214,7 +178,7 @@ function setupBudgetListeners() {
     console.log('Configurando listeners de orçamento...');
     
     document.getElementById('add-budget-btn')?.addEventListener('click', () => {
-        addSampleBudget();
+        // Remover funções de exemplo/teste como addSampleBudget
     });
 }
 
@@ -239,108 +203,14 @@ function setupExportListeners() {
     console.log('Configurando listeners de exportação...');
     
     document.getElementById('export-btn')?.addEventListener('click', () => {
-        exportSampleData();
+        // Remover funções de exemplo/teste como exportSampleData
     });
-}
-
-// Funções de exemplo para testar funcionalidades
-async function addSampleTransaction() {
-    try {
-        const transaction = {
-            description: 'Teste de transação',
-            amount: 100.50,
-            type: 'expense',
-            category: 'Teste',
-            date: new Date()
-        };
-        
-        await window.FinanceTransactions.addTransaction(transaction);
-        addLog('Transação de teste adicionada com sucesso');
-        
-        // Recarrega dados
-        const transactions = await window.FinanceTransactions.getTransactions();
-        updateTransactionsList(transactions);
-    } catch (error) {
-        console.error('Erro ao adicionar transação:', error);
-        addLog('Erro ao adicionar transação: ' + error.message, 'error');
-    }
-}
-
-function addSampleCategory() {
-    try {
-        window.FinanceCategories.addCategory({
-            name: 'Categoria Teste',
-            color: '#3b82f6'
-        });
-        addLog('Categoria de teste adicionada');
-        
-        const categories = window.FinanceCategories.listCategories();
-        updateCategoriesList(categories);
-    } catch (error) {
-        console.error('Erro ao adicionar categoria:', error);
-        addLog('Erro ao adicionar categoria: ' + error.message, 'error');
-    }
-}
-
-function addSampleGoal() {
-    try {
-        window.FinanceGoals.addGoal({
-            name: 'Meta Teste',
-            target: 1000,
-            current: 0
-        });
-        addLog('Meta de teste adicionada');
-        
-        const goals = window.FinanceGoals.listGoals();
-        updateGoalsList(goals);
-    } catch (error) {
-        console.error('Erro ao adicionar meta:', error);
-        addLog('Erro ao adicionar meta: ' + error.message, 'error');
-    }
-}
-
-function addSampleBudget() {
-    try {
-        window.FinanceBudgets.addBudget({
-            name: 'Orçamento Teste',
-            amount: 500,
-            spent: 0
-        });
-        addLog('Orçamento de teste adicionado');
-        
-        const budgets = window.FinanceBudgets.listBudgets();
-        updateBudgetsList(budgets);
-    } catch (error) {
-        console.error('Erro ao adicionar orçamento:', error);
-        addLog('Erro ao adicionar orçamento: ' + error.message, 'error');
-    }
 }
 
 function updateVoiceStatus(message) {
     const voiceStatus = document.getElementById('voice-status');
     if (voiceStatus) {
         voiceStatus.innerHTML = `<p class="text-sm text-blue-600">${message}</p>`;
-    }
-}
-
-function exportSampleData() {
-    try {
-        const data = {
-            transactions: [],
-            categories: [],
-            goals: [],
-            budgets: []
-        };
-        
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.json_to_sheet(data.transactions);
-        XLSX.utils.book_append_sheet(wb, ws, 'Transações');
-        
-        XLSX.writeFile(wb, 'controle-financeiro.xlsx');
-        addLog('Dados exportados com sucesso');
-    } catch (error) {
-        console.error('Erro ao exportar dados:', error);
-        addLog('Erro ao exportar dados: ' + error.message, 'error');
     }
 }
 

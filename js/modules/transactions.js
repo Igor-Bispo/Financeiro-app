@@ -29,9 +29,16 @@ class TransactionManager {
                 throw new Error('Usuário não autenticado');
             }
 
+            // Adicionar budgetId da seleção global
+            const budgetId = window.ActiveBudgetId || transaction.budgetId;
+            if (!budgetId) {
+                throw new Error('Nenhum orçamento selecionado');
+            }
+
             const transactionData = {
                 ...transaction,
                 userId: user.uid,
+                budgetId: budgetId,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             };
@@ -73,14 +80,21 @@ class TransactionManager {
             // Se offline, usar cache local
             if (!this.isOnline) {
                 const offlineTransactions = await this.offlineDB.get('transactions') || [];
-                this.transactionsCache = offlineTransactions;
+                // Filtrar pelo orçamento ativo
+                const budgetId = window.ActiveBudgetId;
+                this.transactionsCache = budgetId ? offlineTransactions.filter(t => t.budgetId === budgetId) : offlineTransactions;
                 this.isLoading = false;
                 return this.transactionsCache;
             }
 
-            // Buscar do Firestore
+            // Buscar do Firestore: transações do orçamento selecionado
+            const budgetId = window.ActiveBudgetId;
+            if (!budgetId) {
+                this.isLoading = false;
+                return [];
+            }
             const snapshot = await this.transactionsRef
-                .where('userId', '==', user.uid)
+                .where('budgetId', '==', budgetId)
                 .orderBy('createdAt', 'desc')
                 .get();
 
@@ -104,8 +118,10 @@ class TransactionManager {
             // Fallback para localStorage
             try {
                 const fallbackData = await this.offlineDB.get('transactions') || [];
-                this.transactionsCache = fallbackData;
-                return fallbackData;
+                // Filtrar pelo orçamento ativo
+                const budgetId = window.ActiveBudgetId;
+                this.transactionsCache = budgetId ? fallbackData.filter(t => t.budgetId === budgetId) : fallbackData;
+                return this.transactionsCache;
             } catch (fallbackError) {
                 console.error('Erro no fallback:', fallbackError);
                 return [];

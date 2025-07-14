@@ -80,7 +80,8 @@ if (fabAdd) {
 class DarkModeManager {
   constructor() {
     this.themeToggle = document.getElementById('theme-toggle');
-    this.currentTheme = this.getStoredTheme() || this.getSystemTheme();
+    // Forçar modo claro ao abrir o app
+    this.currentTheme = 'light';
     this.init();
   }
 
@@ -175,27 +176,21 @@ if (btnEntrar) {
 
 if (btnSair) {
   btnSair.onclick = async function() {
-    try {
-      await signOut(auth);
-    } catch (e) {
-      console.error('Erro ao fazer logout:', e);
-      alert('Erro ao fazer logout: ' + e.message);
-    }
+    await signOut(auth);
   };
 }
 
 // === CONTROLE DE INTERFACE ===
 function atualizarInterfaceLogin(user) {
   if (user) {
-    if (userName) userName.textContent = user.displayName || user.email || '';
+    if (userName) userName.textContent = user.displayName || user.email || 'Usuário Anônimo';
     if (btnEntrar) btnEntrar.classList.add('hidden');
     if (btnSair) btnSair.classList.remove('hidden');
     if (formTransacao) formTransacao.style.display = '';
     if (formCategoria) formCategoria.style.display = '';
-    // Aguarda um pouco para garantir que a autenticação está completa
     setTimeout(() => {
-      carregarCategoriasFirestore();
-      carregarTransacoesFirestore();
+      //carregarCategoriasFirestore();
+      //carregarTransacoesFirestore();
     }, 500);
   } else {
     if (userName) userName.textContent = '';
@@ -209,32 +204,156 @@ function atualizarInterfaceLogin(user) {
   }
 }
 
-onAuthStateChanged(auth, function(user) {
-  atualizarInterfaceLogin(user);
-});
+function mostrarTelaLogin() {
+  let loginDiv = document.getElementById('login-section');
+  if (!loginDiv) {
+    loginDiv = document.createElement('div');
+    loginDiv.id = 'login-section';
+    loginDiv.style.position = 'fixed';
+    loginDiv.style.top = '0';
+    loginDiv.style.left = '0';
+    loginDiv.style.width = '100vw';
+    loginDiv.style.height = '100vh';
+    loginDiv.style.background = 'rgba(30,41,59,0.98)';
+    loginDiv.style.display = 'flex';
+    loginDiv.style.flexDirection = 'column';
+    loginDiv.style.alignItems = 'center';
+    loginDiv.style.justifyContent = 'center';
+    loginDiv.style.zIndex = '9999';
+    loginDiv.innerHTML = `
+      <h2 style="color:#222;margin-bottom:16px;">Faça login para acessar seus dados</h2>
+      <button id="btn-google-login" style="padding:10px 20px;font-size:18px;">Entrar com Google</button>
+    `;
+    document.body.appendChild(loginDiv);
+    document.getElementById('btn-google-login').onclick = () => {
+      if (typeof loginComGoogle === 'function') loginComGoogle();
+    };
+  }
+  loginDiv.style.display = 'flex';
+}
+
+function esconderTelaLogin() {
+  const loginDiv = document.getElementById('login-section');
+  if (loginDiv) {
+    loginDiv.parentNode.removeChild(loginDiv);
+  }
+}
+
+function mostrarMensagemSelecioneOrcamento() {
+  let msgDiv = document.getElementById('orcamento-msg-section');
+  if (!msgDiv) {
+    msgDiv = document.createElement('div');
+    msgDiv.id = 'orcamento-msg-section';
+    msgDiv.style.position = 'fixed';
+    msgDiv.style.top = '80px';
+    msgDiv.style.left = '50%';
+    msgDiv.style.transform = 'translateX(-50%)';
+    msgDiv.style.background = 'rgba(255,255,255,0.95)';
+    msgDiv.style.color = '#222';
+    msgDiv.style.boxShadow = '0 2px 12px rgba(0,0,0,0.08)';
+    msgDiv.style.borderRadius = '10px';
+    msgDiv.style.padding = '18px 32px';
+    msgDiv.style.zIndex = '1000';
+    msgDiv.style.display = 'flex';
+    msgDiv.style.flexDirection = 'column';
+    msgDiv.style.alignItems = 'center';
+    msgDiv.style.gap = '12px';
+    msgDiv.innerHTML = `
+      <span style="font-size:1.1rem;font-weight:500;">Selecione ou crie um orçamento para começar</span>
+      <button id="btn-focus-orcamento" style="background:#4f46e5;color:#fff;padding:8px 22px;border:none;border-radius:6px;font-size:1rem;cursor:pointer;">Gerenciar Orçamentos</button>
+    `;
+    document.body.appendChild(msgDiv);
+    document.getElementById('btn-focus-orcamento').onclick = () => {
+      // Trocar para a aba Config
+      const configBtn = document.querySelector('.nav-item[data-section="config"]');
+      if (configBtn) configBtn.click();
+      esconderMensagemSelecioneOrcamento();
+    };
+  }
+  // Só exibir se a aba dashboard estiver ativa
+  const dashboardSection = document.getElementById('dashboard-section');
+  if (dashboardSection && dashboardSection.classList.contains('active')) {
+    msgDiv.style.display = 'flex';
+  } else {
+    msgDiv.style.display = 'none';
+  }
+}
+
+function esconderMensagemSelecioneOrcamento() {
+  const msgDiv = document.getElementById('orcamento-msg-section');
+  if (msgDiv) msgDiv.style.display = 'none';
+}
+
+function mostrarUsuarioLogado(user) {
+  let userDiv = document.getElementById('user-info-section');
+  if (!userDiv) {
+    userDiv = document.createElement('div');
+    userDiv.id = 'user-info-section';
+    userDiv.style.position = 'fixed';
+    userDiv.style.top = '16px';
+    userDiv.style.right = '16px';
+    userDiv.style.zIndex = '10000';
+    userDiv.style.display = 'flex';
+    userDiv.style.alignItems = 'center';
+    userDiv.style.gap = '12px';
+    document.body.appendChild(userDiv);
+  }
+  userDiv.innerHTML = `
+    <img src="${user.photoURL || ''}" alt="avatar" style="width:36px;height:36px;border-radius:50%;border:2px solid #4f46e5;object-fit:cover;" onerror="this.style.display='none'">
+    <span style="font-weight:500;">${user.displayName || user.email || 'Usuário'}</span>
+    <button id="btn-logout-google" style="padding:6px 14px;font-size:15px;background:#ef4444;color:#fff;border:none;border-radius:6px;cursor:pointer;">Sair</button>
+  `;
+  document.getElementById('btn-logout-google').onclick = () => {
+    if (typeof window.logoutGoogle === 'function') window.logoutGoogle();
+  };
+}
+
+window.logoutGoogle = async function() {
+  try {
+    await signOut(auth);
+    location.reload();
+  } catch (error) {
+    alert('Erro ao sair: ' + error.message);
+  }
+};
 
 // === CRUD FIRESTORE ===
 // Categorias
 async function salvarCategoriaFirestore(nome, tipo, limite) {
   const user = auth.currentUser;
+  console.log('[DEBUG] Usuário autenticado?', !!user, 'UID:', user && user.uid);
   if (!user) throw new Error('Usuário não autenticado. Faça login novamente.');
+  if (!window.ActiveBudgetId) throw new Error('Nenhum orçamento selecionado.');
   const categoriaData = {
     nome: nome,
     tipo: tipo,
     limite: Number(limite) || 0,
     uid: user.uid,
+    budgetId: window.ActiveBudgetId,
     dataCriacao: new Date().toISOString()
   };
-  console.log('Tentando salvar categoria:', categoriaData);
-  await addDoc(collection(db, 'categorias'), categoriaData);
-  
-  // Notificação de sucesso
-  if (window.notificationSystem) {
-    window.notificationSystem.showNotification(
-      'Categoria Criada',
-      `Categoria "${nome}" criada com sucesso!`,
-      'success'
-    );
+  console.log('[DEBUG] Salvando categoria:', {
+    uid: user.uid,
+    budgetId: window.ActiveBudgetId,
+    categoriaData
+  });
+  try {
+    await addDoc(collection(db, 'categorias'), categoriaData);
+    // Notificação de sucesso
+    if (window.notificationSystem) {
+      window.notificationSystem.showNotification(
+        'Categoria Criada',
+        `Categoria "${nome}" criada com sucesso!`,
+        'success'
+      );
+    }
+  } catch (err) {
+    console.error('[DEBUG] Erro ao salvar categoria:', err, {
+      uid: user.uid,
+      budgetId: window.ActiveBudgetId,
+      categoriaData
+    });
+    throw err;
   }
 }
 
@@ -244,25 +363,48 @@ async function carregarCategoriasFirestore() {
     console.log('Usuário não autenticado, não carregando categorias');
     return [];
   }
-  
+  if (!window.ActiveBudgetId) {
+    alert('Selecione um orçamento para visualizar as categorias.');
+    return [];
+  }
   try {
-    const q = query(collection(db, 'categorias'), where('uid', '==', user.uid));
+    const q = query(collection(db, 'categorias'), where('budgetId', '==', window.ActiveBudgetId));
     const snap = await getDocs(q);
     const categorias = [];
     snap.forEach(doc => categorias.push({ id: doc.id, ...doc.data() }));
-    atualizarSelectCategorias(categorias);
-    await atualizarListaCategorias(categorias);
+    // Atualizar lista visual
+    if (typeof atualizarListaCategorias === 'function') {
+      await atualizarListaCategorias(categorias);
+    }
+    // Atualizar select de categorias em transações
+    if (typeof atualizarSelectCategorias === 'function') {
+      await atualizarSelectCategorias(categorias);
+    } else {
+      // Fallback manual
+      const select = document.getElementById('categoria-transacao');
+      if (select) {
+        const currentValue = select.value;
+        select.innerHTML = '<option value="">Selecione uma categoria</option>';
+        categorias.forEach(cat => {
+          const option = document.createElement('option');
+          option.value = cat.id;
+          option.textContent = cat.nome;
+          select.appendChild(option);
+        });
+        if (currentValue && categorias.find(c => c.id === currentValue)) {
+          select.value = currentValue;
+        }
+      }
+    }
     return categorias;
   } catch (error) {
-    console.error('Erro ao carregar categorias:', error);
-    if (error.code === 'permission-denied') {
-      alert('Erro de permissão ao carregar categorias. Verifique se está logado.');
-    }
+    console.error('Erro ao atualizar lista de categorias:', error);
     return [];
   }
 }
 
 function atualizarSelectCategorias(categorias) {
+  if (!Array.isArray(categorias)) return;
   if (!selectCategoria) return;
   selectCategoria.innerHTML = '<option value="">Selecione uma categoria</option>';
   categorias.forEach(cat => {
@@ -343,12 +485,14 @@ async function atualizarListaCategorias(categorias) {
 async function salvarTransacaoFirestore(descricao, valor, tipo, categoria) {
   const user = auth.currentUser;
   if (!user) throw new Error('Usuário não autenticado. Faça login novamente.');
+  if (!window.ActiveBudgetId) throw new Error('Nenhum orçamento selecionado.');
   const transacaoData = {
     descricao: descricao,
     valor: Number(valor) || 0,
     tipo: tipo,
     categoria: categoria,
     uid: user.uid,
+    budgetId: window.ActiveBudgetId,
     data: new Date().toISOString()
   };
   console.log('Tentando salvar transação:', transacaoData);
@@ -370,9 +514,12 @@ async function carregarTransacoesFirestore() {
     console.log('Usuário não autenticado, não carregando transações');
     return [];
   }
-  
+  if (!window.ActiveBudgetId) {
+    alert('Selecione um orçamento para visualizar as transações.');
+    return [];
+  }
   try {
-    const q = query(collection(db, 'transacoes'), where('uid', '==', user.uid), orderBy('data', 'desc'));
+    const q = query(collection(db, 'transacoes'), where('budgetId', '==', window.ActiveBudgetId), orderBy('data', 'desc'));
     const snap = await getDocs(q);
     const transacoes = [];
     snap.forEach(doc => transacoes.push({ id: doc.id, ...doc.data() }));
@@ -382,7 +529,7 @@ async function carregarTransacoesFirestore() {
   } catch (error) {
     console.error('Erro ao carregar transações:', error);
     if (error.code === 'permission-denied') {
-      alert('Erro de permissão ao carregar transações. Verifique se está logado.');
+      alert('Erro de permissão ao carregar transações. Verifique se está logado e se é membro do orçamento.');
     }
     return [];
   }
@@ -423,6 +570,7 @@ function atualizarListaTransacoes(transacoes) {
 }
 
 async function atualizarResumoCards(transacoes) {
+  if (!Array.isArray(transacoes)) transacoes = [];
   const user = auth.currentUser;
   if (!user) return;
   
@@ -502,41 +650,32 @@ async function atualizarTudoAposTransacao() {
 if (formCategoria) {
   formCategoria.onsubmit = async function(e) {
     e.preventDefault();
-    
-    // Verifica se o usuário está autenticado
     const user = auth.currentUser;
     if (!user) {
       alert('Você precisa estar logado para adicionar categorias. Faça login primeiro.');
       return;
     }
-    
     const nome = document.getElementById('nome-categoria').value.trim();
     const tipo = document.getElementById('tipo-categoria').value;
     const limite = document.getElementById('limite-categoria').value;
-    
     if (!nome) {
       alert('Por favor, informe o nome da categoria.');
       return;
     }
-    
     try {
       await salvarCategoriaFirestore(nome, tipo, limite);
       alert('Categoria adicionada com sucesso!');
       formCategoria.reset();
-      await atualizarTudoAposCategoria();
-    } catch (err) {
-      console.error('Erro ao salvar categoria:', err);
-      if (err.code === 'permission-denied' || err.message.includes('permission') || err.message.includes('autenticado') || err.message.includes('Sessão')) {
-        alert('Erro de autenticação: ' + err.message + '\n\nPor favor, faça login novamente.');
-        // Tenta fazer logout para limpar o estado
-        try {
-          await signOut(auth);
-        } catch (logoutError) {
-          console.error('Erro ao fazer logout:', logoutError);
-        }
-      } else {
-        alert('Erro ao adicionar categoria: ' + err.message);
-      }
+      // Sempre recarregar e atualizar listas após adicionar categoria
+      const categorias = await carregarCategoriasFirestore();
+      atualizarListaCategorias(categorias);
+      atualizarSelectCategorias(categorias);
+      const transacoes = await carregarTransacoesFirestore();
+      atualizarListaTransacoes(transacoes);
+      atualizarResumoCards(transacoes);
+    } catch (error) {
+      console.error('Erro ao salvar categoria:', error);
+      alert('Erro ao salvar categoria: ' + error.message);
     }
   };
 }
@@ -544,66 +683,48 @@ if (formCategoria) {
 if (formTransacao) {
   formTransacao.onsubmit = async function(e) {
     e.preventDefault();
-    
-    // Verifica se o usuário está autenticado
     const user = auth.currentUser;
     if (!user) {
       alert('Você precisa estar logado para adicionar transações. Faça login primeiro.');
       return;
     }
-    
     const descricao = document.getElementById('descricao-transacao').value.trim();
     const valor = parseFloat(document.getElementById('valor-transacao').value);
     const tipo = document.getElementById('tipo-transacao').value;
     const categoria = document.getElementById('categoria-transacao').value;
-    
-    if (!descricao) {
-      alert('Por favor, informe a descrição da transação.');
+    if (!descricao || !valor || !tipo || !categoria) {
+      alert('Preencha todos os campos da transação.');
       return;
     }
-    
-    if (!valor || valor <= 0) {
-      alert('Por favor, informe um valor válido maior que zero.');
-      return;
-    }
-    
-    if (!categoria) {
-      alert('Por favor, selecione uma categoria.');
-      return;
-    }
-    
     try {
       await salvarTransacaoFirestore(descricao, valor, tipo, categoria);
       alert('Transação adicionada com sucesso!');
       formTransacao.reset();
-      await atualizarTudoAposTransacao();
-    } catch (err) {
-      console.error('Erro ao salvar transação:', err);
-      if (err.code === 'permission-denied' || err.message.includes('permission') || err.message.includes('autenticado') || err.message.includes('Sessão')) {
-        alert('Erro de autenticação: ' + err.message + '\n\nPor favor, faça login novamente.');
-        // Tenta fazer logout para limpar o estado
-        try {
-          await signOut(auth);
-        } catch (logoutError) {
-          console.error('Erro ao fazer logout:', logoutError);
-        }
-      } else {
-        alert('Erro ao adicionar transação: ' + err.message);
-      }
+      // Sempre recarregar e atualizar listas após adicionar transação
+      const categorias = await carregarCategoriasFirestore();
+      atualizarListaCategorias(categorias);
+      atualizarSelectCategorias(categorias);
+      const transacoes = await carregarTransacoesFirestore();
+      atualizarListaTransacoes(transacoes);
+      atualizarResumoCards(transacoes);
+    } catch (error) {
+      console.error('Erro ao salvar transação:', error);
+      alert('Erro ao salvar transação: ' + error.message);
     }
   };
 }
 
 // === MICROFONE/RECONHECIMENTO DE VOZ AVANÇADO ===
-function normalizeVoiceText(texto) {
-  return texto
-    .replace(/[.,]/g, ' ')
-    .replace(/\s+/g, ' ')
+function normalizeString(str) {
+  return str
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
     .trim();
 }
 
 function parseCategoriaVoice(texto) {
-  texto = normalizeVoiceText(texto.toLowerCase());
+  texto = normalizeString(texto.toLowerCase());
   let partes = texto.split(' ');
   let tipo = partes.find(p => p === 'despesa' || p === 'receita') || '';
   let limite = partes.find(p => /^\d+[\d,.]*$/.test(p)) || '';
@@ -615,7 +736,7 @@ function parseCategoriaVoice(texto) {
 }
 
 function parseTransacaoVoice(texto) {
-  texto = normalizeVoiceText(texto.toLowerCase());
+  texto = normalizeString(texto.toLowerCase());
   let partes = texto.split(' ');
   let tipo = partes.find(p => p === 'despesa' || p === 'receita') || '';
   let valor = partes.find(p => /^\d+[\d,.]*$/.test(p)) || '';
@@ -671,7 +792,23 @@ function setupVoiceInputAdvanced(btnId, formType) {
       if (descricao) document.getElementById('descricao-transacao').value = descricao;
       if (valor) document.getElementById('valor-transacao').value = valor;
       if (tipo) document.getElementById('tipo-transacao').value = tipo;
-      if (categoria) document.getElementById('categoria-transacao').value = categoria;
+      if (categoria) {
+        const select = document.getElementById('categoria-transacao');
+        const categoriaNormalizada = normalizeString(categoria);
+        let found = false;
+        for (let i = 0; i < select.options.length; i++) {
+          const opt = select.options[i];
+          const optNorm = normalizeString(opt.textContent || opt.value);
+          if (optNorm.includes(categoriaNormalizada) || categoriaNormalizada.includes(optNorm)) {
+            select.selectedIndex = i;
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          select.selectedIndex = 0; // "Selecione uma categoria"
+        }
+      }
     }
     btn.classList.remove('active');
     hideVoiceModal();
@@ -1122,4 +1259,117 @@ document.addEventListener('DOMContentLoaded', function() {
       );
     }
   }, 2000);
+});
+
+// Função global para login com Google
+window.loginComGoogle = async function() {
+  const provider = new GoogleAuthProvider();
+  try {
+    await signInWithPopup(auth, provider);
+    // O onAuthStateChanged já cuida do resto!
+  } catch (error) {
+    alert('Erro ao fazer login: ' + error.message);
+    console.error(error);
+  }
+};
+
+// Detectar troca de aba para mostrar/esconder a mensagem
+function onSectionChangeMsg() {
+  const msgDiv = document.getElementById('orcamento-msg-section');
+  if (!msgDiv) return;
+  const dashboardSection = document.getElementById('dashboard-section');
+  if (dashboardSection && dashboardSection.classList.contains('active')) {
+    msgDiv.style.display = 'flex';
+  } else {
+    msgDiv.style.display = 'none';
+  }
+}
+document.addEventListener('sectionchange', onSectionChangeMsg);
+
+function mostrarOrcamentoAtivo(nome) {
+  let budgetDiv = document.getElementById('orcamento-ativo-section');
+  if (!budgetDiv) {
+    budgetDiv = document.createElement('div');
+    budgetDiv.id = 'orcamento-ativo-section';
+    budgetDiv.style.position = 'fixed';
+    budgetDiv.style.top = '16px';
+    budgetDiv.style.left = '50%';
+    budgetDiv.style.transform = 'translateX(-50%)';
+    budgetDiv.style.background = '#f3f4f6';
+    budgetDiv.style.color = '#4f46e5';
+    budgetDiv.style.fontWeight = '600';
+    budgetDiv.style.fontSize = '1rem';
+    budgetDiv.style.padding = '6px 22px';
+    budgetDiv.style.borderRadius = '8px';
+    budgetDiv.style.boxShadow = '0 2px 8px rgba(79,70,229,0.08)';
+    budgetDiv.style.zIndex = '900';
+    document.body.appendChild(budgetDiv);
+  }
+  budgetDiv.textContent = nome ? `Orçamento ativo: ${nome}` : '';
+  budgetDiv.style.display = nome ? 'block' : 'none';
+}
+
+async function atualizarFeedbackOrcamentoAtivo() {
+  if (!window.ActiveBudgetId || !window.BudgetManager) {
+    mostrarOrcamentoAtivo('');
+    return;
+  }
+  const budget = await window.BudgetManager.getBudgetById(window.ActiveBudgetId);
+  mostrarOrcamentoAtivo(budget && (budget.name || budget.categoryName || budget.id));
+}
+
+document.addEventListener('budgetchange', atualizarFeedbackOrcamentoAtivo);
+// Também atualizar ao logar ou recarregar
+window.addEventListener('DOMContentLoaded', atualizarFeedbackOrcamentoAtivo);
+
+// Função para sair do orçamento (chamar por botão na UI de orçamentos)
+window.sairDoOrcamento = function() {
+  window.ActiveBudgetId = null;
+  atualizarListaCategorias([]);
+  atualizarListaTransacoes([]);
+  atualizarResumoCards([]);
+  mostrarMensagemSelecioneOrcamento();
+};
+
+// Função para setar orçamento ativo e persistir no localStorage
+window.setActiveBudget = function(budgetId) {
+  window.ActiveBudgetId = budgetId;
+  if (budgetId) {
+    localStorage.setItem('activeBudgetId', budgetId);
+  } else {
+    localStorage.removeItem('activeBudgetId');
+  }
+};
+
+onAuthStateChanged(auth, async function(user) {
+  atualizarInterfaceLogin(user);
+  if (user) {
+    esconderTelaLogin();
+    esconderMensagemSelecioneOrcamento();
+    // Restaurar orçamento ativo do localStorage
+    const savedBudgetId = localStorage.getItem('activeBudgetId');
+    if (savedBudgetId) {
+      window.ActiveBudgetId = savedBudgetId;
+    }
+    if (window.ActiveBudgetId) {
+      const categorias = await carregarCategoriasFirestore();
+      atualizarListaCategorias(categorias);
+      atualizarSelectCategorias(categorias);
+      const transacoes = await carregarTransacoesFirestore();
+      atualizarListaTransacoes(transacoes);
+      atualizarResumoCards(transacoes);
+    } else {
+      atualizarListaCategorias([]);
+      atualizarListaTransacoes([]);
+      atualizarResumoCards([]);
+    }
+    mostrarUsuarioLogado(user);
+    if (window.reloadBudgetsUI) window.reloadBudgetsUI();
+    const budgetUI = document.querySelector('.budget-ui-container');
+    if (budgetUI) budgetUI.style.display = 'block';
+  } else {
+    mostrarTelaLogin();
+    const userDiv = document.getElementById('user-info-section');
+    if (userDiv) userDiv.remove();
+  }
 });

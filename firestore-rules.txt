@@ -4,43 +4,51 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Regras para transações (coleção usada no código)
-    match /transacoes/{document} {
-      allow read, write: if request.auth != null && request.auth.uid == resource.data.uid;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.uid;
+    // Função utilitária para verificar se o usuário é membro do orçamento
+    function isBudgetMember(budgetId) {
+      return exists(/databases/$(database)/documents/budgets/$(budgetId)) &&
+             request.auth.uid in get(/databases/$(database)/documents/budgets/$(budgetId)).data.members;
     }
-    
-    // Regras para categorias (coleção usada no código)
-    match /categorias/{document} {
-      allow create: if request.auth != null;
-      allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.uid;
-    }
-    
-    // Regras para transações (nomenclatura alternativa)
-    match /transactions/{document} {
-      allow read, write: if request.auth != null && request.auth.uid == resource.data.uid;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.uid;
-    }
-    
-    // Regras para categorias (nomenclatura alternativa)
-    match /categories/{document} {
-      allow read, write: if request.auth != null && request.auth.uid == resource.data.uid;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.uid;
-    }
-    
-    // Regras para metas
-    match /goals/{document} {
-      allow read, write: if request.auth != null && request.auth.uid == resource.data.uid;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.uid;
-    }
-    
-    // Regras para orçamentos
+
+    // Orçamentos: só membros podem ler, mas qualquer usuário autenticado pode se adicionar ao array members
     match /budgets/{document} {
-      allow read, write: if request.auth != null && request.auth.uid == resource.data.uid;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.uid;
+      // Permite leitura apenas para membros
+      allow read: if request.auth != null && request.auth.uid in resource.data.members;
+
+      // Permite criar orçamento se o usuário estiver nos membros do novo documento
+      allow create: if request.auth != null && request.auth.uid in request.resource.data.members;
+
+      // Permite update se:
+      // - O usuário já é membro (pode editar normalmente)
+      // - OU o update é EXATAMENTE adicionar o próprio UID ao array members (entrar em orçamento)
+      allow update: if request.auth != null && (
+        request.auth.uid in resource.data.members
+        || (
+          !(request.auth.uid in resource.data.members) &&
+          request.resource.data.members == resource.data.members.concat([request.auth.uid])
+        )
+      );
     }
-    
-    // Regras para perfis de usuário
+
+    // Transações: só membros do orçamento podem ler/escrever
+    match /transactions/{document} {
+      allow read, write: if request.auth != null && isBudgetMember(resource.data.budgetId);
+      allow create: if request.auth != null && isBudgetMember(request.resource.data.budgetId);
+    }
+
+    // Categorias: só membros do orçamento podem ler/escrever
+    match /categories/{document} {
+      allow read, write: if request.auth != null && isBudgetMember(resource.data.budgetId);
+      allow create: if request.auth != null && isBudgetMember(request.resource.data.budgetId);
+    }
+
+    // Metas: só membros do orçamento podem ler/escrever
+    match /goals/{document} {
+      allow read, write: if request.auth != null && isBudgetMember(resource.data.budgetId);
+      allow create: if request.auth != null && isBudgetMember(request.resource.data.budgetId);
+    }
+
+    // Perfis de usuário
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }

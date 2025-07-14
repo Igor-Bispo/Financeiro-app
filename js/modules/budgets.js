@@ -38,10 +38,16 @@ class BudgetManager {
                 }
             }
 
+            // Novo campo: membros do orçamento (sempre inclui o criador)
+            const members = Array.isArray(budgetData.members) && budgetData.members.length > 0
+                ? Array.from(new Set([user.uid, ...budgetData.members]))
+                : [user.uid];
+
             const budget = {
                 ...budgetData,
                 categoryName: categoryName,
-                userId: user.uid,
+                userId: user.uid, // compatibilidade
+                members: members,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             };
@@ -88,9 +94,9 @@ class BudgetManager {
                 return this.budgetsCache;
             }
 
-            // Buscar do Firestore
+            // Buscar do Firestore: orçamentos onde o usuário é membro OU criador (compatibilidade)
             const snapshot = await this.budgetsRef
-                .where('userId', '==', user.uid)
+                .where('members', 'array-contains', user.uid)
                 .orderBy('amount')
                 .get();
 
@@ -417,9 +423,62 @@ class BudgetManager {
         this.budgetsCache = [];
         return await this.getBudgets();
     }
+
+    // Adiciona um membro ao orçamento
+    async addMemberToBudget(budgetId, memberUid) {
+        try {
+            const user = window.FirebaseAuth.currentUser;
+            if (!user) throw new Error('Usuário não autenticado');
+            const budgetDoc = await this.budgetsRef.doc(budgetId).get();
+            if (!budgetDoc.exists) throw new Error('Orçamento não encontrado');
+            const data = budgetDoc.data();
+            // Só membros atuais podem adicionar outros membros
+            if (!data.members || !data.members.includes(user.uid)) throw new Error('Acesso negado');
+            if (data.members.includes(memberUid)) return; // já é membro
+            const newMembers = [...data.members, memberUid];
+            await this.budgetsRef.doc(budgetId).update({ members: newMembers, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+            this.showNotification && this.showNotification('Membro adicionado ao orçamento!', 'success');
+        } catch (error) {
+            console.error('Erro ao adicionar membro:', error);
+            this.showNotification && this.showNotification('Erro ao adicionar membro: ' + error.message, 'error');
+            throw error;
+        }
+    }
+
+    // Remove um membro do orçamento
+    async removeMemberFromBudget(budgetId, memberUid) {
+        try {
+            const user = window.FirebaseAuth.currentUser;
+            if (!user) throw new Error('Usuário não autenticado');
+            const budgetDoc = await this.budgetsRef.doc(budgetId).get();
+            if (!budgetDoc.exists) throw new Error('Orçamento não encontrado');
+            const data = budgetDoc.data();
+            // Só membros atuais podem remover outros membros
+            if (!data.members || !data.members.includes(user.uid)) throw new Error('Acesso negado');
+            if (!data.members.includes(memberUid)) return; // já não é membro
+            const newMembers = data.members.filter(uid => uid !== memberUid);
+            await this.budgetsRef.doc(budgetId).update({ members: newMembers, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+            this.showNotification && this.showNotification('Membro removido do orçamento!', 'success');
+        } catch (error) {
+            console.error('Erro ao remover membro:', error);
+            this.showNotification && this.showNotification('Erro ao remover membro: ' + error.message, 'error');
+            throw error;
+        }
+    }
 }
 
-// Disponibiliza globalmente
-window.BudgetsModule = new BudgetManager();
+// Instanciar BudgetManager globalmente
+if (!window.BudgetManager) {
+  window.BudgetManager = new BudgetManager();
+}
+
+// Carregar budgets-ui.js dinamicamente após BudgetManager estar pronto
+(function() {
+  if (!document.querySelector('script[src="js/ui/budgets-ui.js"]')) {
+    const script = document.createElement('script');
+    script.src = 'js/ui/budgets-ui.js';
+    document.body.appendChild(script);
+  }
+})();
 
 console.log('Módulo de orçamentos carregado'); 

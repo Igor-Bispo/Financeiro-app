@@ -121,31 +121,30 @@ class NotificationSystem {
     }
 
     showBrowserNotification(notification) {
-        const browserNotification = new Notification(notification.title, {
-            body: notification.message,
-            icon: '/icon-192.png',
-            badge: '/icon-192.png',
-            tag: notification.id,
-            requireInteraction: notification.type === 'alert',
-            actions: notification.actions || []
-        });
-
-        // Eventos da notificação
-        browserNotification.onclick = () => {
-            this.handleNotificationClick(notification);
-            browserNotification.close();
-        };
-
-        browserNotification.onclose = () => {
-            this.markAsRead(notification.id);
-        };
-
-        // Auto-close após 5 segundos (exceto alertas)
-        if (notification.type !== 'alert') {
-            setTimeout(() => {
-                browserNotification.close();
-            }, 5000);
+        // Detecta se está rodando como PWA (standalone)
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+        // Tenta usar Service Worker se disponível (recomendado para mobile/PWA)
+        if (
+            'serviceWorker' in navigator &&
+            navigator.serviceWorker.controller &&
+            typeof navigator.serviceWorker.getRegistration === 'function'
+        ) {
+            navigator.serviceWorker.getRegistration().then(function(reg) {
+                if (reg && reg.showNotification) {
+                    reg.showNotification(notification.title, {
+                        body: notification.message,
+                        icon: '/icon-192.png',
+                        badge: '/icon-192.png',
+                        tag: notification.id,
+                        requireInteraction: notification.type === 'alert',
+                        actions: notification.actions || []
+                    });
+                }
+            });
+            return; // Nunca tente o fallback se tentou Service Worker
         }
+        // Fallback: apenas mostra in-app e retorna
+        return;
     }
 
     showInAppNotification(notification) {
@@ -304,8 +303,7 @@ class NotificationSystem {
         // Verificar a cada 30 minutos
         setInterval(() => {
             this.checkBudgetAlerts();
-            this.checkGoalReminders();
-            this.checkPaymentReminders();
+            this.checkBackupReminder();
         }, 30 * 60 * 1000);
 
         // Verificar backup diariamente
@@ -317,16 +315,6 @@ class NotificationSystem {
     checkBudgetAlerts() {
         // Implementar verificação de orçamentos
         console.log('🔔 Verificando alertas de orçamento...');
-    }
-
-    checkGoalReminders() {
-        // Implementar verificação de metas
-        console.log('🔔 Verificando lembretes de metas...');
-    }
-
-    checkPaymentReminders() {
-        // Implementar verificação de pagamentos recorrentes
-        console.log('🔔 Verificando lembretes de pagamento...');
     }
 
     checkBackupReminder() {
@@ -391,12 +379,13 @@ class NotificationSystem {
     }
 
     vibrate(type) {
+        // Só vibra se houve interação do usuário recentemente
+        if (!window.__userInteracted) return;
         const patterns = {
             alert: [200, 100, 200, 100, 200],
             warning: [200, 100, 200],
             default: [200]
         };
-        
         navigator.vibrate(patterns[type] || patterns.default);
     }
 
@@ -599,4 +588,14 @@ const styleSheet = document.createElement('style');
 styleSheet.textContent = notificationStyles;
 document.head.appendChild(styleSheet);
 
-console.log('✅ Sistema de notificações carregado'); 
+console.log('✅ Sistema de notificações carregado');
+
+// Adiciona listeners globais para detectar interação do usuário
+if (!window.__userInteracted) {
+    window.__userInteracted = false;
+    ['click', 'touchstart', 'keydown'].forEach(evt => {
+        window.addEventListener(evt, () => {
+            window.__userInteracted = true;
+        }, { once: true, passive: true });
+    });
+} 
