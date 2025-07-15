@@ -13,6 +13,9 @@ console.log('[budgets-ui] Script budgets-ui.js carregado');
     let mounted = false;
 
     function createUI() {
+        // Remover UI anterior se existir para evitar duplicidade
+        const oldContainer = document.querySelector('.budget-ui-container');
+        if (oldContainer) oldContainer.remove();
         if (mounted) return;
         const parent = document.getElementById('orcamento-config-container');
         if (!parent) return;
@@ -103,6 +106,9 @@ console.log('[budgets-ui] Script budgets-ui.js carregado');
         if (!mounted) return;
         const budgets = await window.BudgetManager.getBudgets();
         selectBudget.innerHTML = '';
+        if (!budgets || budgets.length === 0) {
+            console.warn('[budgets-ui] Nenhum orçamento carregado para este usuário.');
+        }
         budgets.forEach(b => {
             const opt = document.createElement('option');
             opt.value = b.id;
@@ -199,7 +205,7 @@ console.log('[budgets-ui] Script budgets-ui.js carregado');
         const input = container.querySelector('#input-budget-id');
         const budgetId = input.value.trim();
         if (!budgetId) return alert('Informe o ID do orçamento');
-        const user = window.FirebaseAuth && window.FirebaseAuth.currentUser;
+        const user = window.FINANCEIRO_USER;
         if (!user) return alert('Faça login primeiro!');
         try {
             const doc = await window.FirebaseDB.collection('budgets').doc(budgetId).get();
@@ -231,10 +237,25 @@ console.log('[budgets-ui] Script budgets-ui.js carregado');
     }
 
     // Detectar troca de aba
-    document.addEventListener('sectionchange', onSectionChange);
-    // Chamar ao iniciar (garantir montagem imediata se já estiver na aba Config)
-    window.addEventListener('DOMContentLoaded', onSectionChange);
-    setTimeout(onSectionChange, 0);
+    function forceBudgetsReload() {
+        if (window.reloadBudgetsUI) window.reloadBudgetsUI();
+    }
+    document.addEventListener('sectionchange', function(e) {
+        if (document.getElementById('config-section')?.classList.contains('active')) {
+            forceBudgetsReload();
+        }
+    });
+    window.addEventListener('DOMContentLoaded', forceBudgetsReload);
+    // Também atualizar ao logar
+    if (!Object.getOwnPropertyDescriptor(window, 'FINANCEIRO_USER')) {
+        Object.defineProperty(window, 'FINANCEIRO_USER', {
+            set: function(val) {
+                this._fin_user = val;
+                forceBudgetsReload();
+            },
+            get: function() { return this._fin_user; }
+        });
+    }
 
     // Forçar montagem ao clicar na aba Config
     const configBtn = document.querySelector('.nav-item[data-section="config"]');
@@ -275,7 +296,7 @@ console.log('[budgets-ui] Script budgets-ui.js carregado');
     function showUserUidInfo() {
         const infoDiv = container.querySelector('#user-uid-info');
         if (!infoDiv) return;
-        const user = window.FirebaseAuth && window.FirebaseAuth.currentUser;
+        const user = window.FINANCEIRO_USER;
         if (!user) {
             infoDiv.style.display = 'none';
             return;
@@ -293,4 +314,10 @@ console.log('[budgets-ui] Script budgets-ui.js carregado');
             setTimeout(() => btnCopiar.textContent = 'Copiar', 1200);
         };
     }
+
+    function onBudgetsLoaded() {
+        if (mounted) loadBudgets();
+        window.removeEventListener('budgetsLoaded', onBudgetsLoaded);
+    }
+    window.addEventListener('budgetsLoaded', onBudgetsLoaded);
 })(); 

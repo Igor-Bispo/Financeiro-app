@@ -24,7 +24,7 @@ class BudgetManager {
 
     async addBudget(budgetData) {
         try {
-            const user = window.FirebaseAuth.currentUser;
+            const user = window.FINANCEIRO_USER;
             if (!user) {
                 throw new Error('Usuário não autenticado');
             }
@@ -75,52 +75,50 @@ class BudgetManager {
 
     async getBudgets() {
         try {
-            const user = window.FirebaseAuth.currentUser;
+            const user = window.FINANCEIRO_USER;
+            console.log('[BudgetManager] getBudgets - Usuário atual:', user ? user.uid : user);
             if (!user) {
                 throw new Error('Usuário não autenticado');
             }
-
             if (this.isLoading) {
+                console.log('[BudgetManager] getBudgets - Retornando cache:', this.budgetsCache);
                 return this.budgetsCache;
             }
-
             this.isLoading = true;
-
             // Se offline, usar cache local
             if (!this.isOnline) {
                 const offlineBudgets = await this.offlineDB.get('budgets') || [];
                 this.budgetsCache = offlineBudgets;
                 this.isLoading = false;
+                console.log('[BudgetManager] getBudgets - Offline, retornando:', offlineBudgets);
                 return this.budgetsCache;
             }
-
             // Buscar do Firestore: orçamentos onde o usuário é membro OU criador (compatibilidade)
             const snapshot = await this.budgetsRef
                 .where('members', 'array-contains', user.uid)
                 .orderBy('amount')
                 .get();
-
             const budgets = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             }));
-
             // Atualizar cache local
             this.budgetsCache = budgets;
-            
             // Salvar no localStorage como fallback
             await this.offlineDB.save('budgets', budgets);
-            
             this.isLoading = false;
+            console.log('[BudgetManager] getBudgets - Orçamentos retornados:', budgets);
+            const event = new CustomEvent('budgetsLoaded');
+            window.dispatchEvent(event);
             return budgets;
         } catch (error) {
             console.error('Erro ao buscar orçamentos:', error);
             this.isLoading = false;
-            
             // Fallback para localStorage
             try {
                 const fallbackData = await this.offlineDB.get('budgets') || [];
                 this.budgetsCache = fallbackData;
+                console.log('[BudgetManager] getBudgets - Fallback localStorage:', fallbackData);
                 return fallbackData;
             } catch (fallbackError) {
                 console.error('Erro no fallback:', fallbackError);
@@ -131,7 +129,7 @@ class BudgetManager {
 
     async updateBudget(id, updates) {
         try {
-            const user = window.FirebaseAuth.currentUser;
+            const user = window.FINANCEIRO_USER;
             if (!user) {
                 throw new Error('Usuário não autenticado');
             }
@@ -165,7 +163,7 @@ class BudgetManager {
 
     async deleteBudget(id) {
         try {
-            const user = window.FirebaseAuth.currentUser;
+            const user = window.FINANCEIRO_USER;
             if (!user) {
                 throw new Error('Usuário não autenticado');
             }
@@ -191,7 +189,7 @@ class BudgetManager {
 
     async getBudgetById(id) {
         try {
-            const user = window.FirebaseAuth.currentUser;
+            const user = window.FINANCEIRO_USER;
             if (!user) {
                 throw new Error('Usuário não autenticado');
             }
@@ -222,7 +220,7 @@ class BudgetManager {
 
     async getBudgetByCategory(categoryId) {
         try {
-            const user = window.FirebaseAuth.currentUser;
+            const user = window.FINANCEIRO_USER;
             if (!user) {
                 throw new Error('Usuário não autenticado');
             }
@@ -253,7 +251,7 @@ class BudgetManager {
 
     async getTotalBudget() {
         try {
-            const user = window.FirebaseAuth.currentUser;
+            const user = window.FINANCEIRO_USER;
             if (!user) {
                 throw new Error('Usuário não autenticado');
             }
@@ -279,7 +277,7 @@ class BudgetManager {
 
     async getBudgetsWithBalance() {
         try {
-            const user = window.FirebaseAuth.currentUser;
+            const user = window.FINANCEIRO_USER;
             if (!user) {
                 throw new Error('Usuário não autenticado');
             }
@@ -349,7 +347,7 @@ class BudgetManager {
 
     async clearAllBudgets() {
         try {
-            const user = window.FirebaseAuth.currentUser;
+            const user = window.FINANCEIRO_USER;
             if (!user) {
                 throw new Error('Usuário não autenticado');
             }
@@ -427,7 +425,7 @@ class BudgetManager {
     // Adiciona um membro ao orçamento
     async addMemberToBudget(budgetId, memberUid) {
         try {
-            const user = window.FirebaseAuth.currentUser;
+            const user = window.FINANCEIRO_USER;
             if (!user) throw new Error('Usuário não autenticado');
             const budgetDoc = await this.budgetsRef.doc(budgetId).get();
             if (!budgetDoc.exists) throw new Error('Orçamento não encontrado');
@@ -448,7 +446,7 @@ class BudgetManager {
     // Remove um membro do orçamento
     async removeMemberFromBudget(budgetId, memberUid) {
         try {
-            const user = window.FirebaseAuth.currentUser;
+            const user = window.FINANCEIRO_USER;
             if (!user) throw new Error('Usuário não autenticado');
             const budgetDoc = await this.budgetsRef.doc(budgetId).get();
             if (!budgetDoc.exists) throw new Error('Orçamento não encontrado');

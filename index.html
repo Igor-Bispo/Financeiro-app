@@ -31,6 +31,7 @@
         }
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
@@ -296,6 +297,7 @@
                             <span class="icon sun-icon">☀️</span>
                             <span class="icon moon-icon">🌙</span>
                         </button>
+                        <div id="user-info"></div>
                     </div>
                 </div>
             </div>
@@ -421,6 +423,7 @@
             <div class="max-w-3xl mx-auto px-4 py-6">
                 <div class="bg-white rounded-xl shadow p-6">
                     <h2 class="text-xl font-semibold text-center text-gray-800 mb-4">Configurações</h2>
+                    <button id="btn-google-login-main" style="display:none;margin-bottom:18px;padding:10px 20px;font-size:18px;background:#6366f1;color:#fff;border:none;border-radius:6px;cursor:pointer;">Entrar com Google</button>
                     <div id="orcamento-config-container"></div>
                     <div class="flex flex-col gap-4">
                         <button id="btn-export-pdf" class="touch-btn bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-3 rounded transition flex items-center justify-center gap-2">
@@ -531,5 +534,9 @@
       };
     </script>
     <script src="js/modules/budgets.js"></script>
+    <script src="js/ui/budgets-ui.js"></script>
 </body>
+<footer style="width:100%;text-align:center;padding:18px 0;background:#f3f4f6;color:#4f46e5;font-size:15px;font-weight:500;letter-spacing:0.5px;position:relative;z-index:10;">
+  © 2025 • Financeiro App • Fundador: Igor Bispo
+</footer>
 </html>

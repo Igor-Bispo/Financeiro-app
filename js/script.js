@@ -59,6 +59,10 @@ function showSection(sectionName) {
   if (activeNavItem) {
     activeNavItem.classList.add('active');
   }
+  // Atualizar dashboard ao trocar de aba
+  if (typeof atualizarDashboardCompleto === 'function') {
+    atualizarDashboardCompleto();
+  }
 }
 
 // Event listeners para navegação
@@ -79,8 +83,9 @@ if (fabAdd) {
 // === SISTEMA DE MODO ESCURO ===
 class DarkModeManager {
   constructor() {
+    // Sempre forçar modo claro ao abrir o app
+    localStorage.setItem('theme', 'light');
     this.themeToggle = document.getElementById('theme-toggle');
-    // Forçar modo claro ao abrir o app
     this.currentTheme = 'light';
     this.init();
   }
@@ -176,18 +181,20 @@ if (btnEntrar) {
 
 if (btnSair) {
   btnSair.onclick = async function() {
-    await signOut(auth);
+      await signOut(auth);
   };
 }
 
 // === CONTROLE DE INTERFACE ===
 function atualizarInterfaceLogin(user) {
+  const btnGoogleLoginMain = document.getElementById('btn-google-login-main');
   if (user) {
     if (userName) userName.textContent = user.displayName || user.email || 'Usuário Anônimo';
     if (btnEntrar) btnEntrar.classList.add('hidden');
     if (btnSair) btnSair.classList.remove('hidden');
     if (formTransacao) formTransacao.style.display = '';
     if (formCategoria) formCategoria.style.display = '';
+    if (btnGoogleLoginMain) btnGoogleLoginMain.style.display = 'none';
     setTimeout(() => {
       //carregarCategoriasFirestore();
       //carregarTransacoesFirestore();
@@ -201,6 +208,12 @@ function atualizarInterfaceLogin(user) {
     if (listaTransacoes) listaTransacoes.innerHTML = '';
     if (listaCategorias) listaCategorias.innerHTML = '';
     atualizarResumo(0, 0, 0, 0);
+    if (btnGoogleLoginMain) btnGoogleLoginMain.style.display = 'block';
+  }
+  if (btnGoogleLoginMain) {
+    btnGoogleLoginMain.onclick = function() {
+      if (typeof window.loginComGoogle === 'function') window.loginComGoogle();
+    };
   }
 }
 
@@ -214,15 +227,18 @@ function mostrarTelaLogin() {
     loginDiv.style.left = '0';
     loginDiv.style.width = '100vw';
     loginDiv.style.height = '100vh';
-    loginDiv.style.background = 'rgba(30,41,59,0.98)';
+    loginDiv.style.background = 'rgba(255,255,255,0.7)';
     loginDiv.style.display = 'flex';
     loginDiv.style.flexDirection = 'column';
     loginDiv.style.alignItems = 'center';
     loginDiv.style.justifyContent = 'center';
     loginDiv.style.zIndex = '9999';
     loginDiv.innerHTML = `
-      <h2 style="color:#222;margin-bottom:16px;">Faça login para acessar seus dados</h2>
-      <button id="btn-google-login" style="padding:10px 20px;font-size:18px;">Entrar com Google</button>
+      <h2 style="color:#222;font-size:1.2rem;margin-bottom:18px;font-weight:600;">Faça login para acessar seus dados</h2>
+      <button id="btn-google-login" style="padding:14px 28px;font-size:20px;background:#4285F4;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:600;box-shadow:0 2px 8px #4285f455;display:flex;align-items:center;gap:10px;">
+        <img src='https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg' alt='Google' style='width:24px;height:24px;vertical-align:middle;'>
+        Entrar com Google
+      </button>
     `;
     document.body.appendChild(loginDiv);
     document.getElementById('btn-google-login').onclick = () => {
@@ -338,14 +354,14 @@ async function salvarCategoriaFirestore(nome, tipo, limite) {
     categoriaData
   });
   try {
-    await addDoc(collection(db, 'categorias'), categoriaData);
-    // Notificação de sucesso
-    if (window.notificationSystem) {
-      window.notificationSystem.showNotification(
-        'Categoria Criada',
-        `Categoria "${nome}" criada com sucesso!`,
-        'success'
-      );
+  await addDoc(collection(db, 'categorias'), categoriaData);
+  // Notificação de sucesso
+  if (window.notificationSystem) {
+    window.notificationSystem.showNotification(
+      'Categoria Criada',
+      `Categoria "${nome}" criada com sucesso!`,
+      'success'
+    );
     }
   } catch (err) {
     console.error('[DEBUG] Erro ao salvar categoria:', err, {
@@ -374,7 +390,7 @@ async function carregarCategoriasFirestore() {
     snap.forEach(doc => categorias.push({ id: doc.id, ...doc.data() }));
     // Atualizar lista visual
     if (typeof atualizarListaCategorias === 'function') {
-      await atualizarListaCategorias(categorias);
+    await atualizarListaCategorias(categorias);
     }
     // Atualizar select de categorias em transações
     if (typeof atualizarSelectCategorias === 'function') {
@@ -626,23 +642,25 @@ function atualizarResumo(receita, despesa, saldo, orcamento) {
   if (resumoOrcamento) resumoOrcamento.textContent = 'R$ ' + orcamentoValor.toLocaleString('pt-BR', {minimumFractionDigits:2});
 }
 
-// Função auxiliar para atualizar categorias e transações após adicionar categoria
-async function atualizarTudoAposCategoria() {
-  try {
-    await carregarCategoriasFirestore();
-    await carregarTransacoesFirestore();
-  } catch (error) {
-    console.error('Erro ao atualizar após adicionar categoria:', error);
+// Função central para atualizar dashboard, listas e resumo
+async function atualizarDashboardCompleto() {
+  if (!window.ActiveBudgetId) {
+    console.log('[DASHBOARD] Nenhum orçamento ativo. Limpando listas.');
+    atualizarListaCategorias([]);
+    atualizarListaTransacoes([]);
+    atualizarResumoCards([]);
+    return;
   }
-}
-
-// Função auxiliar para atualizar categorias e transações após adicionar transação
-async function atualizarTudoAposTransacao() {
   try {
-    await carregarTransacoesFirestore();
-    await carregarCategoriasFirestore();
-  } catch (error) {
-    console.error('Erro ao atualizar após adicionar transação:', error);
+    console.log('[DASHBOARD] Atualizando dashboard para orçamento:', window.ActiveBudgetId);
+    const categorias = await carregarCategoriasFirestore();
+    atualizarListaCategorias(categorias);
+    atualizarSelectCategorias(categorias);
+    const transacoes = await carregarTransacoesFirestore();
+    atualizarListaTransacoes(transacoes);
+    atualizarResumoCards(transacoes);
+  } catch (e) {
+    console.error('[DASHBOARD] Erro ao atualizar dashboard:', e);
   }
 }
 
@@ -666,13 +684,7 @@ if (formCategoria) {
       await salvarCategoriaFirestore(nome, tipo, limite);
       alert('Categoria adicionada com sucesso!');
       formCategoria.reset();
-      // Sempre recarregar e atualizar listas após adicionar categoria
-      const categorias = await carregarCategoriasFirestore();
-      atualizarListaCategorias(categorias);
-      atualizarSelectCategorias(categorias);
-      const transacoes = await carregarTransacoesFirestore();
-      atualizarListaTransacoes(transacoes);
-      atualizarResumoCards(transacoes);
+      await atualizarDashboardCompleto();
     } catch (error) {
       console.error('Erro ao salvar categoria:', error);
       alert('Erro ao salvar categoria: ' + error.message);
@@ -700,13 +712,7 @@ if (formTransacao) {
       await salvarTransacaoFirestore(descricao, valor, tipo, categoria);
       alert('Transação adicionada com sucesso!');
       formTransacao.reset();
-      // Sempre recarregar e atualizar listas após adicionar transação
-      const categorias = await carregarCategoriasFirestore();
-      atualizarListaCategorias(categorias);
-      atualizarSelectCategorias(categorias);
-      const transacoes = await carregarTransacoesFirestore();
-      atualizarListaTransacoes(transacoes);
-      atualizarResumoCards(transacoes);
+      await atualizarDashboardCompleto();
     } catch (error) {
       console.error('Erro ao salvar transação:', error);
       alert('Erro ao salvar transação: ' + error.message);
@@ -836,7 +842,7 @@ document.addEventListener('click', async function(e) {
     const id = btn.getAttribute('data-id');
     if (confirm('Tem certeza que deseja apagar esta transação?')) {
       await apagarTransacaoFirestore(id);
-      await atualizarTudoAposTransacao();
+      await atualizarDashboardCompleto();
     }
   }
   // Editar transação
@@ -856,7 +862,7 @@ document.addEventListener('click', async function(e) {
         valor: Number(novoValor),
         categoria: novaCategoria
       });
-      await atualizarTudoAposTransacao();
+      await atualizarDashboardCompleto();
     }
   }
 });
@@ -869,7 +875,7 @@ document.addEventListener('click', async function(e) {
     const nome = btn.getAttribute('data-nome');
     if (confirm('Tem certeza que deseja apagar esta categoria?')) {
       await apagarCategoriaFirestore(nome);
-      await atualizarTudoAposCategoria();
+      await atualizarDashboardCompleto();
     }
   }
   // Editar categoria
@@ -889,7 +895,7 @@ document.addEventListener('click', async function(e) {
         tipo: novoTipo,
         limite: Number(novoLimite)
       });
-      await atualizarTudoAposCategoria();
+      await atualizarDashboardCompleto();
     }
   }
   // Histórico da categoria
@@ -1318,9 +1324,9 @@ async function atualizarFeedbackOrcamentoAtivo() {
   mostrarOrcamentoAtivo(budget && (budget.name || budget.categoryName || budget.id));
 }
 
-document.addEventListener('budgetchange', atualizarFeedbackOrcamentoAtivo);
+document.addEventListener('budgetchange', atualizarDashboardCompleto);
 // Também atualizar ao logar ou recarregar
-window.addEventListener('DOMContentLoaded', atualizarFeedbackOrcamentoAtivo);
+window.addEventListener('DOMContentLoaded', atualizarDashboardCompleto);
 
 // Função para sair do orçamento (chamar por botão na UI de orçamentos)
 window.sairDoOrcamento = function() {
@@ -1342,27 +1348,27 @@ window.setActiveBudget = function(budgetId) {
 };
 
 onAuthStateChanged(auth, async function(user) {
+  // Sincronizar usuário global para módulos antigos
+  window.FINANCEIRO_USER = user;
   atualizarInterfaceLogin(user);
   if (user) {
     esconderTelaLogin();
     esconderMensagemSelecioneOrcamento();
     // Restaurar orçamento ativo do localStorage
-    const savedBudgetId = localStorage.getItem('activeBudgetId');
-    if (savedBudgetId) {
+    let savedBudgetId = localStorage.getItem('activeBudgetId');
+    if (!savedBudgetId) {
+      // Buscar orçamentos do usuário e definir o primeiro como ativo, se existir
+      if (window.BudgetManager) {
+        const budgets = await window.BudgetManager.getBudgets();
+        if (budgets && budgets.length > 0) {
+          savedBudgetId = budgets[0].id;
+          window.setActiveBudget(savedBudgetId);
+        }
+      }
+    } else {
       window.ActiveBudgetId = savedBudgetId;
     }
-    if (window.ActiveBudgetId) {
-      const categorias = await carregarCategoriasFirestore();
-      atualizarListaCategorias(categorias);
-      atualizarSelectCategorias(categorias);
-      const transacoes = await carregarTransacoesFirestore();
-      atualizarListaTransacoes(transacoes);
-      atualizarResumoCards(transacoes);
-    } else {
-      atualizarListaCategorias([]);
-      atualizarListaTransacoes([]);
-      atualizarResumoCards([]);
-    }
+    await atualizarDashboardCompleto();
     mostrarUsuarioLogado(user);
     if (window.reloadBudgetsUI) window.reloadBudgetsUI();
     const budgetUI = document.querySelector('.budget-ui-container');
@@ -1373,3 +1379,10 @@ onAuthStateChanged(auth, async function(user) {
     if (userDiv) userDiv.remove();
   }
 });
+
+// Alerta de atualização do Service Worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('controllerchange', function() {
+    alert('Uma nova versão do app está disponível! Recarregue a página para atualizar.');
+  });
+}

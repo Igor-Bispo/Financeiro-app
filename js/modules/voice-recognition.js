@@ -60,18 +60,19 @@ class VoiceRecognition {
             window.FinanceUI.addLog(`🎤 Comando de voz: "${transcript}"`);
         }
         
-        switch(this.currentMode) {
-            case 'transaction':
-                this.processTransactionCommand(transcript);
-                break;
-            case 'category':
-                this.processCategoryCommand(transcript, this.isEditMode);
-                break;
-            default:
-                console.warn("Modo de comando não reconhecido");
-                if (window.FinanceUI) {
-                    window.FinanceUI.addLog('Modo de comando não reconhecido', 'error');
-                }
+        this.showVoiceExamples(this.currentMode);
+        let parsed = null;
+        if (this.currentMode === 'transaction') {
+            parsed = this.parseVoiceTransaction(transcript);
+        } else if (this.currentMode === 'category') {
+            parsed = this.parseVoiceCategory(transcript);
+        }
+        if (parsed) {
+            this.showVoicePreview(parsed, this.currentMode);
+            this.showConfirmButtons(parsed, this.currentMode);
+        } else {
+            this.showFeedback('Não consegui entender. Tente seguir o exemplo abaixo.');
+            this.showVoiceExamples(this.currentMode);
         }
     }
 
@@ -292,6 +293,135 @@ class VoiceRecognition {
         }
         console.log('[VOICE][DEBUG] Nenhuma categoria reconhecida. Retornando "Geral"');
         return 'Geral';
+    }
+
+    // Função robusta para transação: descricao valor tipo categoria
+    parseVoiceTransaction(text) {
+        text = text.toLowerCase()
+            .replace(/ vírgula /g, ".")
+            .replace(/,/g, ".")
+            .replace(/ reais?/g, "")
+            .replace(/ r\$/g, "")
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const match = text.match(/(.+?)\s+(\d+[.,]?\d*)\s+(receita|despesa)\s+(.+)/);
+        if (match) {
+            return {
+                descricao: match[1].trim(),
+                valor: parseFloat(match[2].replace(",", ".")),
+                tipo: match[3],
+                categoria: match[4].trim()
+            };
+        }
+        return null;
+    }
+
+    // Função robusta para categoria: nome tipo limite
+    parseVoiceCategory(text) {
+        text = text.toLowerCase()
+            .replace(/ vírgula /g, ".")
+            .replace(/,/g, ".")
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const match = text.match(/categoria\s+(.+?)\s+(receita|despesa)\s+(\d+[.,]?\d*)/);
+        if (match) {
+            return {
+                nome: match[1].trim(),
+                tipo: match[2],
+                limite: parseFloat(match[3].replace(",", "."))
+            };
+        }
+        return null;
+    }
+
+    // Feedback visual aprimorado
+    showVoicePreview(data, mode) {
+        let html = '';
+        if (mode === 'transaction' && data) {
+            html = `<div style="padding:12px 0;text-align:left;">
+                <b>Descrição:</b> ${data.descricao}<br>
+                <b>Valor:</b> R$ ${data.valor}<br>
+                <b>Tipo:</b> ${data.tipo}<br>
+                <b>Categoria:</b> ${data.categoria}
+            </div>`;
+        } else if (mode === 'category' && data) {
+            html = `<div style="padding:12px 0;text-align:left;">
+                <b>Nome:</b> ${data.nome}<br>
+                <b>Tipo:</b> ${data.tipo}<br>
+                <b>Limite:</b> R$ ${data.limite}
+            </div>`;
+        }
+        const modal = document.getElementById('voice-modal');
+        if (modal) {
+            let preview = document.getElementById('voice-preview');
+            if (!preview) {
+                preview = document.createElement('div');
+                preview.id = 'voice-preview';
+                modal.appendChild(preview);
+            }
+            preview.innerHTML = html;
+        }
+    }
+
+    // Exemplo de comandos na interface
+    showVoiceExamples(mode) {
+        const modal = document.getElementById('voice-modal');
+        if (modal) {
+            let ex = document.getElementById('voice-examples');
+            if (!ex) {
+                ex = document.createElement('div');
+                ex.id = 'voice-examples';
+                ex.style = 'font-size:13px;color:#666;margin-top:8px;';
+                modal.appendChild(ex);
+            }
+            if (mode === 'transaction') {
+                ex.innerHTML = `<b>Exemplo:</b> mercado 120 despesa alimentação`;
+            } else if (mode === 'category') {
+                ex.innerHTML = `<b>Exemplo:</b> categoria lazer despesa 300`;
+            }
+        }
+    }
+
+    showConfirmButtons(data, mode) {
+        const modal = document.getElementById('voice-modal');
+        if (!modal) return;
+        let btns = document.getElementById('voice-confirm-btns');
+        if (!btns) {
+            btns = document.createElement('div');
+            btns.id = 'voice-confirm-btns';
+            btns.style = 'margin-top:10px;display:flex;gap:10px;justify-content:center;';
+            modal.appendChild(btns);
+        }
+        btns.innerHTML = `<button id='btn-voice-confirm' style='padding:7px 18px;background:#06b6d4;color:#fff;border:none;border-radius:6px;font-weight:600;'>Confirmar</button>
+            <button id='btn-voice-edit' style='padding:7px 18px;background:#f3f4f6;color:#222;border:none;border-radius:6px;font-weight:600;'>Editar</button>`;
+        document.getElementById('btn-voice-confirm').onclick = () => {
+            if (mode === 'transaction') {
+                // Chame a função de adicionar transação com os dados
+                if (window.FinanceTransactions) {
+                    window.FinanceTransactions.addTransaction({
+                        description: data.descricao,
+                        amount: data.valor,
+                        type: data.tipo,
+                        category: data.categoria,
+                        date: new Date()
+                    });
+                }
+            } else if (mode === 'category') {
+                // Chame a função de adicionar categoria com os dados
+                if (window.FinanceCategories) {
+                    window.FinanceCategories.addCategory({
+                        nome: data.nome,
+                        tipo: data.tipo,
+                        limite: data.limite,
+                        date: new Date()
+                    });
+                }
+            }
+            modal.style.display = 'none';
+        };
+        document.getElementById('btn-voice-edit').onclick = () => {
+            // Permitir edição manual (pode abrir um modal de edição ou preencher o formulário)
+            modal.style.display = 'none';
+            // Aqui você pode chamar a função para abrir o formulário já preenchido
+        };
     }
 }
 
