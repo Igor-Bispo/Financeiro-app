@@ -309,25 +309,22 @@ footer {
 
 /* Header */
 .header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
     background: var(--bg-primary);
-    border-radius: var(--radius-lg);
-    padding: 20px;
-    margin-bottom: 20px;
-    box-shadow: var(--shadow-lg);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 12px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+    margin-bottom: 2rem;
 }
 
 .header h1 {
-    font-size: 1.5rem; /* Fonte menor */
+    font-size: 2rem;
     font-weight: 700;
-    color: var(--primary-color);
+    letter-spacing: -0.02em;
+    color: #222;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 0.5rem;
 }
 
 .header h1::before {
@@ -2164,4 +2161,79 @@ hr, .divider {
     width: auto;
     margin-top: 0;
   }
+}
+
+/* Badges de notificação */
+.nav-tab, .nav-item {
+  position: relative;
+}
+.badge {
+  position: absolute;
+  top: 6px;
+  right: 18px;
+  background: #ef4444;
+  color: #fff;
+  border-radius: 50%;
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  min-width: 18px;
+  text-align: center;
+  z-index: 10;
+  font-weight: 700;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+}
+
+/* Feedback visual aprimorado para aba ativa */
+.nav-tab.active, .nav-item.active {
+  background: var(--primary-color);
+  color: #fff !important;
+  box-shadow: 0 2px 8px rgba(37,99,235,0.10);
+  font-weight: 700;
+}
+
+/* Contraste aprimorado para acessibilidade */
+.nav-tab, .nav-item {
+  color: #222;
+}
+.nav-tab.active, .nav-item.active {
+  color: #fff;
+  background: var(--primary-color);
+}
+
+/* Zona de alcance do polegar para FAB */
+.fab {
+  position: fixed;
+  bottom: 80px;
+  right: 20px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  box-shadow: var(--shadow-lg);
+  z-index: 1000;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.fab:active, .fab:focus {
+  background: var(--primary-dark);
+  outline: none;
+}
+
+/* Ajuste para contraste de botões e textos em dark mode */
+.dark-mode .nav-tab, .dark-mode .nav-item {
+  color: #d1d5db;
+}
+.dark-mode .nav-tab.active, .dark-mode .nav-item.active {
+  background: var(--primary-color);
+  color: #fff;
+}
+.dark-mode .fab {
+  background: var(--primary-color);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
 } 

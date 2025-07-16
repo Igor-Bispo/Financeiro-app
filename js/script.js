@@ -217,43 +217,73 @@ function atualizarInterfaceLogin(user) {
   }
 }
 
+// Função para mostrar tela de login personalizada
 function mostrarTelaLogin() {
-  let loginDiv = document.getElementById('login-section');
-  if (!loginDiv) {
-    loginDiv = document.createElement('div');
-    loginDiv.id = 'login-section';
-    loginDiv.style.position = 'fixed';
-    loginDiv.style.top = '0';
-    loginDiv.style.left = '0';
-    loginDiv.style.width = '100vw';
-    loginDiv.style.height = '100vh';
-    loginDiv.style.background = 'rgba(255,255,255,0.7)';
-    loginDiv.style.display = 'flex';
-    loginDiv.style.flexDirection = 'column';
-    loginDiv.style.alignItems = 'center';
-    loginDiv.style.justifyContent = 'center';
-    loginDiv.style.zIndex = '9999';
-    loginDiv.innerHTML = `
-      <h2 style="color:#222;font-size:1.2rem;margin-bottom:18px;font-weight:600;">Faça login para acessar seus dados</h2>
-      <button id="btn-google-login" style="padding:14px 28px;font-size:20px;background:#4285F4;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:600;box-shadow:0 2px 8px #4285f455;display:flex;align-items:center;gap:10px;">
-        <img src='https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg' alt='Google' style='width:24px;height:24px;vertical-align:middle;'>
-        Entrar com Google
-      </button>
-    `;
-    document.body.appendChild(loginDiv);
-    document.getElementById('btn-google-login').onclick = () => {
-      if (typeof loginComGoogle === 'function') loginComGoogle();
-    };
-  }
-  loginDiv.style.display = 'flex';
+  const btnGoogle = document.getElementById('btn-google-login-main');
+  if (btnGoogle) btnGoogle.style.display = 'block';
+  // Esconder conteúdo principal
+  const mainContent = document.querySelector('main');
+  if (mainContent) mainContent.style.display = 'none';
 }
 
+// Função para esconder tela de login personalizada
 function esconderTelaLogin() {
-  const loginDiv = document.getElementById('login-section');
-  if (loginDiv) {
-    loginDiv.parentNode.removeChild(loginDiv);
-  }
+  const btnGoogle = document.getElementById('btn-google-login-main');
+  if (btnGoogle) btnGoogle.style.display = 'none';
+  // Mostrar conteúdo principal
+  const mainContent = document.querySelector('main');
+  if (mainContent) mainContent.style.display = '';
 }
+
+// Listener do botão de login Google
+const btnGoogle = document.getElementById('btn-google-login-main');
+if (btnGoogle) {
+  btnGoogle.onclick = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+    } catch (e) {
+      alert('Erro ao fazer login: ' + (e && e.message ? e.message : e));
+    }
+  };
+}
+
+// Listener de autenticação central
+onAuthStateChanged(auth, async function(user) {
+  const loadingOverlay = document.getElementById('loading-overlay');
+  if (loadingOverlay) loadingOverlay.style.display = 'none';
+  if (user) {
+    esconderTelaLogin();
+    atualizarInterfaceLogin(user);
+    if (user) {
+      esconderTelaLogin();
+      esconderMensagemSelecioneOrcamento();
+      // Restaurar orçamento ativo do localStorage
+      let savedBudgetId = localStorage.getItem('activeBudgetId');
+      if (!savedBudgetId) {
+        // Buscar orçamentos do usuário e definir o primeiro como ativo, se existir
+        if (window.BudgetManager) {
+          const budgets = await window.BudgetManager.getBudgets();
+          if (budgets && budgets.length > 0) {
+            savedBudgetId = budgets[0].id;
+            window.setActiveBudget(savedBudgetId);
+          }
+        }
+      } else {
+        window.ActiveBudgetId = savedBudgetId;
+      }
+      await atualizarDashboardCompleto();
+      mostrarUsuarioLogado(user);
+      if (window.reloadBudgetsUI) window.reloadBudgetsUI();
+      const budgetUI = document.querySelector('.budget-ui-container');
+      if (budgetUI) budgetUI.style.display = 'block';
+    }
+  } else {
+    mostrarTelaLogin();
+    const userDiv = document.getElementById('user-info-section');
+    if (userDiv) userDiv.remove();
+  }
+});
 
 function mostrarMensagemSelecioneOrcamento() {
   let msgDiv = document.getElementById('orcamento-msg-section');
@@ -1346,39 +1376,6 @@ window.setActiveBudget = function(budgetId) {
     localStorage.removeItem('activeBudgetId');
   }
 };
-
-onAuthStateChanged(auth, async function(user) {
-  // Sincronizar usuário global para módulos antigos
-  window.FINANCEIRO_USER = user;
-  atualizarInterfaceLogin(user);
-  if (user) {
-    esconderTelaLogin();
-    esconderMensagemSelecioneOrcamento();
-    // Restaurar orçamento ativo do localStorage
-    let savedBudgetId = localStorage.getItem('activeBudgetId');
-    if (!savedBudgetId) {
-      // Buscar orçamentos do usuário e definir o primeiro como ativo, se existir
-      if (window.BudgetManager) {
-        const budgets = await window.BudgetManager.getBudgets();
-        if (budgets && budgets.length > 0) {
-          savedBudgetId = budgets[0].id;
-          window.setActiveBudget(savedBudgetId);
-        }
-      }
-    } else {
-      window.ActiveBudgetId = savedBudgetId;
-    }
-    await atualizarDashboardCompleto();
-    mostrarUsuarioLogado(user);
-    if (window.reloadBudgetsUI) window.reloadBudgetsUI();
-    const budgetUI = document.querySelector('.budget-ui-container');
-    if (budgetUI) budgetUI.style.display = 'block';
-  } else {
-    mostrarTelaLogin();
-    const userDiv = document.getElementById('user-info-section');
-    if (userDiv) userDiv.remove();
-  }
-});
 
 // Alerta de atualização do Service Worker
 if ('serviceWorker' in navigator) {
