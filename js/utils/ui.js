@@ -65,8 +65,8 @@ async function loadUserData() {
         updateTransactionsList(transactions);
         
         // Carrega categorias
-        const categories = window.FinanceCategories.listCategories();
-        updateCategoriesList(categories);
+        const categorias = window.FinanceCategories.listCategories();
+        updateCategoriasList(categorias);
         
         // Carrega metas
         const goals = window.FinanceGoals.listGoals();
@@ -102,20 +102,20 @@ function updateTransactionsList(transactions) {
     list.innerHTML = html + `<p class="text-xs text-gray-500 mt-2">${transactions.length} transações no total</p>`;
 }
 
-function updateCategoriesList(categories) {
-    const list = document.getElementById('categories-list');
-    if (categories.length === 0) {
+function updateCategoriasList(categorias) {
+    const list = document.getElementById('categorias-list');
+    if (categorias.length === 0) {
         list.innerHTML = '<p class="text-sm text-gray-600">Nenhuma categoria encontrada</p>';
         return;
     }
     
-    const html = categories.slice(0, 3).map(c => `
+    const html = categorias.slice(0, 3).map(c => `
         <div class="border-b py-1">
             <span class="text-sm">${c.name || 'Sem nome'}</span>
         </div>
     `).join('');
     
-    list.innerHTML = html + `<p class="text-xs text-gray-500 mt-2">${categories.length} categorias no total</p>`;
+    list.innerHTML = html + `<p class="text-xs text-gray-500 mt-2">${categorias.length} categorias no total</p>`;
 }
 
 function updateGoalsList(goals) {
@@ -260,7 +260,7 @@ window.FinanceUI = {
     hideDashboard,
     loadUserData,
     updateTransactionsList,
-    updateCategoriesList,
+    updateCategoriasList,
     updateGoalsList,
     updateBudgetsList,
     setupTransactionListeners,

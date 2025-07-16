@@ -2,13 +2,13 @@
 class CategoryManager {
     constructor() {
         this.db = window.FirebaseDB;
-        this.categoriesRef = this.db.collection('categories');
+        this.categoriasRef = this.db.collection('categorias');
         this.offlineDB = window.OfflineDB;
         this.showNotification = window.showNotification;
         this.isOnline = navigator.onLine;
         
         // Cache local para melhor performance
-        this.categoriesCache = [];
+        this.categoriasCache = [];
         this.isLoading = false;
         
         // Listener para mudanças de conectividade
@@ -43,12 +43,12 @@ class CategoryManager {
                 return 'offline';
             }
 
-            const docRef = await this.categoriesRef.add(categoryData);
+            const docRef = await this.categoriasRef.add(categoryData);
             console.log('Categoria adicionada com ID:', docRef.id);
             
             // Atualizar cache local
             const newCategory = { id: docRef.id, ...categoryData };
-            this.categoriesCache.push(newCategory);
+            this.categoriasCache.push(newCategory);
             
             return docRef.id;
         } catch (error) {
@@ -65,46 +65,46 @@ class CategoryManager {
             }
 
             if (this.isLoading) {
-                return this.categoriesCache;
+                return this.categoriasCache;
             }
 
             this.isLoading = true;
 
             // Se offline, usar cache local
             if (!this.isOnline) {
-                const offlineCategories = await this.offlineDB.get('categories') || [];
-                this.categoriesCache = offlineCategories;
+                const offlineCategories = await this.offlineDB.get('categorias') || [];
+                this.categoriasCache = offlineCategories;
                 this.isLoading = false;
-                return this.categoriesCache;
+                return this.categoriasCache;
             }
 
             // Buscar do Firestore
-            const snapshot = await this.categoriesRef
+            const snapshot = await this.categoriasRef
                 .where('userId', '==', user.uid)
                 .orderBy('name')
                 .get();
 
-            const categories = snapshot.docs.map(doc => ({
+            const categorias = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             }));
 
             // Atualizar cache local
-            this.categoriesCache = categories;
+            this.categoriasCache = categorias;
             
             // Salvar no localStorage como fallback
-            await this.offlineDB.save('categories', categories);
+            await this.offlineDB.save('categorias', categorias);
             
             this.isLoading = false;
-            return categories;
+            return categorias;
         } catch (error) {
             console.error('Erro ao buscar categorias:', error);
             this.isLoading = false;
             
             // Fallback para localStorage
             try {
-                const fallbackData = await this.offlineDB.get('categories') || [];
-                this.categoriesCache = fallbackData;
+                const fallbackData = await this.offlineDB.get('categorias') || [];
+                this.categoriasCache = fallbackData;
                 return fallbackData;
             } catch (fallbackError) {
                 console.error('Erro no fallback:', fallbackError);
@@ -132,13 +132,13 @@ class CategoryManager {
                 return 'offline';
             }
 
-            await this.categoriesRef.doc(id).update(updateData);
+            await this.categoriasRef.doc(id).update(updateData);
             console.log('Categoria atualizada:', id);
             
             // Atualizar cache local
-            const index = this.categoriesCache.findIndex(c => c.id === id);
+            const index = this.categoriasCache.findIndex(c => c.id === id);
             if (index !== -1) {
-                this.categoriesCache[index] = { ...this.categoriesCache[index], ...updateData };
+                this.categoriasCache[index] = { ...this.categoriasCache[index], ...updateData };
             }
             
         } catch (error) {
@@ -175,17 +175,17 @@ class CategoryManager {
                 });
                 
                 // Deletar a categoria
-                batch.delete(this.categoriesRef.doc(id));
+                batch.delete(this.categoriasRef.doc(id));
                 await batch.commit();
             } else {
                 // Se não houver módulo de transações, apenas deletar a categoria
-                await this.categoriesRef.doc(id).delete();
+                await this.categoriasRef.doc(id).delete();
             }
             
             console.log('Categoria deletada:', id);
             
             // Remover do cache local
-            this.categoriesCache = this.categoriesCache.filter(c => c.id !== id);
+            this.categoriasCache = this.categoriasCache.filter(c => c.id !== id);
             
         } catch (error) {
             console.error('Erro ao deletar categoria:', error);
@@ -201,7 +201,7 @@ class CategoryManager {
             }
 
             // Primeiro verificar no cache local
-            const cachedCategory = this.categoriesCache.find(c => c.id === id);
+            const cachedCategory = this.categoriasCache.find(c => c.id === id);
             if (cachedCategory) {
                 return cachedCategory;
             }
@@ -210,7 +210,7 @@ class CategoryManager {
                 return null;
             }
 
-            const doc = await this.categoriesRef.doc(id).get();
+            const doc = await this.categoriasRef.doc(id).get();
             if (doc.exists && doc.data().userId === user.uid) {
                 return {
                     id: doc.id,
@@ -233,10 +233,10 @@ class CategoryManager {
 
             if (!this.isOnline) {
                 // Filtrar do cache local
-                return this.categoriesCache.filter(c => c.type === type);
+                return this.categoriasCache.filter(c => c.type === type);
             }
 
-            const snapshot = await this.categoriesRef
+            const snapshot = await this.categoriasRef
                 .where('userId', '==', user.uid)
                 .where('type', '==', type)
                 .orderBy('name')
@@ -249,7 +249,7 @@ class CategoryManager {
         } catch (error) {
             console.error('Erro ao buscar categorias por tipo:', error);
             // Fallback para cache local
-            return this.categoriesCache.filter(c => c.type === type);
+            return this.categoriasCache.filter(c => c.type === type);
         }
     }
 
@@ -262,12 +262,12 @@ class CategoryManager {
 
             if (!this.isOnline) {
                 // Marcar para limpeza offline
-                await this.offlineDB.save('pendingClear', { type: 'categories' });
+                await this.offlineDB.save('pendingClear', { type: 'categorias' });
                 this.showNotification && this.showNotification('Limpeza salva localmente. Será sincronizada quando online', 'info');
                 return 'offline';
             }
 
-            const snapshot = await this.categoriesRef
+            const snapshot = await this.categoriasRef
                 .where('userId', '==', user.uid)
                 .get();
 
@@ -280,7 +280,7 @@ class CategoryManager {
             console.log('Todas as categorias removidas');
             
             // Limpar cache local
-            this.categoriesCache = [];
+            this.categoriasCache = [];
             
         } catch (error) {
             console.error('Erro ao remover categorias:', error);
@@ -326,12 +326,12 @@ class CategoryManager {
     // Método para forçar recarregamento dos dados
     async refreshData() {
         this.isLoading = false;
-        this.categoriesCache = [];
+        this.categoriasCache = [];
         return await this.getCategories();
     }
 }
 
 // Disponibiliza globalmente
-window.CategoriesModule = new CategoryManager();
+window.CategoriasModule = new CategoryManager();
 
 console.log('Módulo de categorias carregado'); 

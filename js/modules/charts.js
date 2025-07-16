@@ -42,7 +42,7 @@ class ChartsModule {
         // Aguardar um pouco para garantir que os canvas estejam prontos
         setTimeout(() => {
             this.createIncomeExpenseChart();
-            this.createCategoryChart();
+            this.createCategoriaChart();
         }, 100);
     }
 
@@ -102,16 +102,16 @@ class ChartsModule {
         console.log('✅ Gráfico de receitas vs despesas criado');
     }
 
-    createCategoryChart() {
-        const canvas = document.getElementById('categoryChart');
+    createCategoriaChart() {
+        const canvas = document.getElementById('categoriaChart');
         if (!canvas) {
-            console.warn('⚠️ Canvas categoryChart não encontrado');
+            console.warn('⚠️ Canvas categoriaChart não encontrado');
             return;
         }
 
         const ctx = canvas.getContext('2d');
         
-        this.charts.category = new Chart(ctx, {
+        this.charts.categoria = new Chart(ctx, {
             type: 'bar',
             data: {
                 labels: [],
@@ -169,14 +169,14 @@ class ChartsModule {
         }
     }
 
-    updateCategoryChart(categories = []) {
-        if (this.charts.category) {
-            const labels = categories.map(cat => cat.name);
-            const data = categories.map(cat => cat.total || 0);
+    updateCategoriaChart(categorias = []) {
+        if (this.charts.categoria) {
+            const labels = categorias.map(cat => cat.name);
+            const data = categorias.map(cat => cat.total || 0);
             
-            this.charts.category.data.labels = labels;
-            this.charts.category.data.datasets[0].data = data;
-            this.charts.category.update('active');
+            this.charts.categoria.data.labels = labels;
+            this.charts.categoria.data.datasets[0].data = data;
+            this.charts.categoria.update('active');
             console.log('📊 Gráfico de categorias atualizado');
         }
     }
@@ -188,8 +188,8 @@ class ChartsModule {
         this.updateIncomeExpenseChart(income, expense);
 
         // Atualizar gráfico de categorias
-        const categories = data.categories || [];
-        this.updateCategoryChart(categories);
+        const categorias = data.categorias || [];
+        this.updateCategoriaChart(categorias);
     }
 
     // Método estático para compatibilidade

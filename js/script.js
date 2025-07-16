@@ -219,39 +219,54 @@ function atualizarInterfaceLogin(user) {
 
 // Função para mostrar tela de login personalizada
 function mostrarTelaLogin() {
+  console.log('[LOGIN] Exibindo tela de login personalizada');
+  // Tenta encontrar ou criar a seção de login
+  let loginSection = document.getElementById('login-section');
+  if (!loginSection) {
+    loginSection = document.createElement('section');
+    loginSection.id = 'login-section';
+    loginSection.style.display = 'flex';
+    loginSection.style.flexDirection = 'column';
+    loginSection.style.alignItems = 'center';
+    loginSection.style.justifyContent = 'center';
+    loginSection.style.minHeight = '60vh';
+    loginSection.innerHTML = `
+      <h2 style="font-size:2rem;margin-bottom:18px;color:#4f46e5;">Bem-vindo ao Financeiro App</h2>
+      <button id="btn-google-login-main" style="margin-bottom:18px;padding:10px 20px;font-size:18px;background:#6366f1;color:#fff;border:none;border-radius:6px;cursor:pointer;">Entrar com Google</button>
+    `;
+    document.body.appendChild(loginSection);
+  } else {
+    loginSection.style.display = 'flex';
+  }
+  // Garante que o botão de login está visível e funcional
   const btnGoogle = document.getElementById('btn-google-login-main');
-  if (btnGoogle) btnGoogle.style.display = 'block';
-  // Esconder conteúdo principal
-  const mainContent = document.querySelector('main');
-  if (mainContent) mainContent.style.display = 'none';
+  if (btnGoogle) {
+    btnGoogle.style.display = 'block';
+    btnGoogle.onclick = function() {
+      if (typeof window.loginComGoogle === 'function') {
+        window.loginComGoogle();
+      } else {
+        alert('Função de login não disponível!');
+      }
+    };
+  }
+  // Esconde outras seções principais
+  const main = document.querySelector('main');
+  if (main) main.style.display = 'none';
 }
 
-// Função para esconder tela de login personalizada
 function esconderTelaLogin() {
-  const btnGoogle = document.getElementById('btn-google-login-main');
-  if (btnGoogle) btnGoogle.style.display = 'none';
-  // Mostrar conteúdo principal
-  const mainContent = document.querySelector('main');
-  if (mainContent) mainContent.style.display = '';
-}
-
-// Listener do botão de login Google
-const btnGoogle = document.getElementById('btn-google-login-main');
-if (btnGoogle) {
-  btnGoogle.onclick = async () => {
-    try {
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-    } catch (e) {
-      alert('Erro ao fazer login: ' + (e && e.message ? e.message : e));
-    }
-  };
+  const loginSection = document.getElementById('login-section');
+  if (loginSection) loginSection.style.display = 'none';
+  const main = document.querySelector('main');
+  if (main) main.style.display = '';
 }
 
 // Listener de autenticação central
 onAuthStateChanged(auth, async function(user) {
-  const loadingOverlay = document.getElementById('loading-overlay');
-  if (loadingOverlay) loadingOverlay.style.display = 'none';
+  if (window.FinanceApp && typeof window.FinanceApp.hideLoadingState === 'function') {
+    window.FinanceApp.hideLoadingState();
+  }
   if (user) {
     esconderTelaLogin();
     atualizarInterfaceLogin(user);
@@ -860,6 +875,21 @@ function setupVoiceInputAdvanced(btnId, formType) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+  console.log('[GLOBAL] DOMContentLoaded');
+  if (typeof window.loginComGoogle !== 'function') {
+    window.loginComGoogle = async function() {
+      console.log('[LOGIN] Clique no botão de login com Google (forçado no DOMContentLoaded)');
+      try {
+        const provider = new GoogleAuthProvider();
+        await signInWithPopup(auth, provider);
+      } catch (error) {
+        alert('Erro ao fazer login: ' + error.message);
+      }
+    };
+    console.log('[GLOBAL] window.loginComGoogle foi definida no DOMContentLoaded');
+  } else {
+    console.log('[GLOBAL] window.loginComGoogle já estava definida');
+  }
   setupVoiceInputAdvanced('mic-categoria', 'categoria');
   setupVoiceInputAdvanced('mic-transacao', 'transacao');
 });
@@ -1297,18 +1327,6 @@ document.addEventListener('DOMContentLoaded', function() {
   }, 2000);
 });
 
-// Função global para login com Google
-window.loginComGoogle = async function() {
-  const provider = new GoogleAuthProvider();
-  try {
-    await signInWithPopup(auth, provider);
-    // O onAuthStateChanged já cuida do resto!
-  } catch (error) {
-    alert('Erro ao fazer login: ' + error.message);
-    console.error(error);
-  }
-};
-
 // Detectar troca de aba para mostrar/esconder a mensagem
 function onSectionChangeMsg() {
   const msgDiv = document.getElementById('orcamento-msg-section');
@@ -1382,4 +1400,8 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('controllerchange', function() {
     alert('Uma nova versão do app está disponível! Recarregue a página para atualizar.');
   });
+}
+
+if (window.FinanceApp && typeof window.FinanceApp.showLoadingState === 'function') {
+  window.FinanceApp.showLoadingState();
 }

@@ -158,7 +158,7 @@ class I18nManager {
 
             // Estados vazios
             'empty.transactions': 'Nenhuma transação encontrada',
-            'empty.categories': 'Nenhuma categoria encontrada',
+            'empty.categorias': 'Nenhuma categoria encontrada',
             'empty.goals': 'Nenhuma meta encontrada',
             'empty.budgets': 'Nenhum orçamento encontrado',
             'empty.loginRequired': 'Faça login para ver seus dados'

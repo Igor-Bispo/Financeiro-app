@@ -31,8 +31,8 @@ class BudgetManager {
 
             // Obter nome da categoria
             let categoryName = 'Sem categoria';
-            if (window.CategoriesModule) {
-                const category = await window.CategoriesModule.getCategoryById(budgetData.categoryId);
+            if (window.CategoriasModule) {
+                const category = await window.CategoriasModule.getCategoryById(budgetData.categoryId);
                 if (category) {
                     categoryName = category.name;
                 }

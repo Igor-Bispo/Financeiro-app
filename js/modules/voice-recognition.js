@@ -64,7 +64,7 @@ class VoiceRecognition {
         let parsed = null;
         if (this.currentMode === 'transaction') {
             parsed = this.parseVoiceTransaction(transcript);
-        } else if (this.currentMode === 'category') {
+        } else if (this.currentMode === 'categoria') {
             parsed = this.parseVoiceCategory(transcript);
         }
         if (parsed) {
@@ -118,12 +118,12 @@ class VoiceRecognition {
             const amount = this.extractAmount(transcript);
             const description = this.extractDescription(transcript);
             const type = this.extractType(transcript);
-            const category = this.extractCategory(transcript);
+            const categoria = this.extractCategoria(transcript);
             
             // Log detalhado do que foi reconhecido
-            console.log('[VOICE][DEBUG] Reconhecido:', { amount, description, type, category, transcript });
+            console.log('[VOICE][DEBUG] Reconhecido:', { amount, description, type, categoria, transcript });
             if (window.FinanceUI) {
-                window.FinanceUI.addLog(`🔎 Valor: ${amount || 'não reconhecido'}, Descrição: ${description || 'não reconhecida'}, Tipo: ${type}, Categoria: ${category}`);
+                window.FinanceUI.addLog(`🔎 Valor: ${amount || 'não reconhecido'}, Descrição: ${description || 'não reconhecida'}, Tipo: ${type}, Categoria: ${categoria}`);
             }
             
             if (!amount) {
@@ -135,7 +135,7 @@ class VoiceRecognition {
                 description: description || 'Transação por voz',
                 amount: amount,
                 type: type || 'expense',
-                category: category || 'Geral',
+                categoria: categoria || 'Geral',
                 date: new Date()
             };
             
@@ -162,7 +162,7 @@ class VoiceRecognition {
         }
     }
 
-    processCategoryCommand(transcript, isEdit) {
+    processCategoriaCommand(transcript, isEdit) {
         // Implementar parser de categoria
         console.log("[VOICE] Categoria:", transcript, isEdit);
         this.showFeedback('Funcionalidade de categoria por voz em desenvolvimento');
@@ -248,9 +248,9 @@ class VoiceRecognition {
         return 'expense'; // Padrão
     }
 
-    extractCategory(text) {
+    extractCategoria(text) {
         // Parser robusto para categorias exatas do usuário, ignorando acentos e maiúsculas/minúsculas
-        const categories = [
+        const categorias = [
             'MERCADO',
             'RECARGA',
             'LUZ',
@@ -283,12 +283,12 @@ class VoiceRecognition {
         }
         const lowerText = removerAcentos(text.toLowerCase());
         console.log('[VOICE][DEBUG] Texto reconhecido (sem acento):', lowerText);
-        for (const category of categories) {
-            const catNorm = removerAcentos(category.toLowerCase());
+        for (const categoria of categorias) {
+            const catNorm = removerAcentos(categoria.toLowerCase());
             console.log(`[VOICE][DEBUG] Comparando categoria: '${catNorm}'`);
             if (lowerText.includes(catNorm)) {
-                console.log(`[VOICE][DEBUG] Categoria reconhecida: '${category}'`);
-                return category;
+                console.log(`[VOICE][DEBUG] Categoria reconhecida: '${categoria}'`);
+                return categoria;
             }
         }
         console.log('[VOICE][DEBUG] Nenhuma categoria reconhecida. Retornando "Geral"');
@@ -342,7 +342,7 @@ class VoiceRecognition {
                 <b>Tipo:</b> ${data.tipo}<br>
                 <b>Categoria:</b> ${data.categoria}
             </div>`;
-        } else if (mode === 'category' && data) {
+        } else if (mode === 'categoria' && data) {
             html = `<div style="padding:12px 0;text-align:left;">
                 <b>Nome:</b> ${data.nome}<br>
                 <b>Tipo:</b> ${data.tipo}<br>
@@ -374,7 +374,7 @@ class VoiceRecognition {
             }
             if (mode === 'transaction') {
                 ex.innerHTML = `<b>Exemplo:</b> mercado 120 despesa alimentação`;
-            } else if (mode === 'category') {
+            } else if (mode === 'categoria') {
                 ex.innerHTML = `<b>Exemplo:</b> categoria lazer despesa 300`;
             }
         }
@@ -400,11 +400,11 @@ class VoiceRecognition {
                         description: data.descricao,
                         amount: data.valor,
                         type: data.tipo,
-                        category: data.categoria,
+                        categoria: data.categoria,
                         date: new Date()
                     });
                 }
-            } else if (mode === 'category') {
+            } else if (mode === 'categoria') {
                 // Chame a função de adicionar categoria com os dados
                 if (window.FinanceCategories) {
                     window.FinanceCategories.addCategory({

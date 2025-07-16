@@ -205,10 +205,6 @@ class VoiceRecognition {
             }
         } else if (transcript.includes('categorias')) {
             if (window.mobileNav) {
-                window.mobileNav.showTab('categories');
-            }
-        } else if (transcript.includes('metas')) {
-            if (window.mobileNav) {
                 window.mobileNav.showTab('goals');
             }
         } else if (transcript.includes('orçamentos')) {

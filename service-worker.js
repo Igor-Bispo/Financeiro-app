@@ -25,7 +25,7 @@ const ASSETS = [
   '/js/utils/notifications.js',
   '/js/utils/i18n.js',
   '/js/modules/transactions.js',
-  '/js/modules/categories.js',
+  '/js/modules/categorias.js',
   '/js/modules/goals.js',
   '/js/modules/budgets.js',
   '/js/modules/voice-recognition.js',

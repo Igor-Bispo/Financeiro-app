@@ -24,7 +24,7 @@ class FinanceApp {
         
         // Inicializar módulos principais
         this.transactions = window.TransactionsModule;
-        this.categories = window.CategoriesModule;
+        this.categorias = window.CategoriasModule;
         this.goals = window.GoalsModule;
         this.budgets = window.BudgetsModule;
         this.voice = window.FinanceVoice;
@@ -66,7 +66,7 @@ class FinanceApp {
         
         // Carregar dados do localStorage
         await this.loadTransactions();
-        await this.loadCategories();
+        await this.loadCategorias();
         await this.loadGoals();
         await this.loadBudgets();
         await this.updateSummaryCards();
@@ -266,11 +266,11 @@ class FinanceApp {
     clearAllData() {
         // Limpar caches
         this.transactionsCache = [];
-        this.categoriesCache = [];
+        this.categoriasCache = [];
         
         // Limpar interface
         this.renderTransactions([]);
-        this.renderCategories([]);
+        this.renderCategorias([]);
         this.renderGoals([]);
         this.renderBudgets([]);
         this.updateSummaryCards();
@@ -418,7 +418,7 @@ class FinanceApp {
             
             // Recarregar dados
             await this.loadTransactions();
-            await this.loadCategories(); // Recarregar categorias para atualizar saldos
+            await this.loadCategorias(); // Recarregar categorias para atualizar saldos
             this.updateSummaryCards();
             this.updateCharts();
             
@@ -446,14 +446,14 @@ class FinanceApp {
                 type: document.getElementById('categoryType').value
             };
 
-            await this.categories.addCategory(formData);
+            await this.categorias.addCategory(formData);
             
             // Limpar formulário e fechar modal
             document.getElementById('categoryForm').reset();
             closeModal('categoryModal');
             
             // Recarregar dados
-            await this.loadCategories();
+            await this.loadCategorias();
             this.updateSummaryCards(); // Atualizar cards de resumo
             
             this.notifications.show('Categoria adicionada com sucesso!', 'success');
@@ -548,7 +548,7 @@ class FinanceApp {
             
             // Recarregar dados
             await this.loadBudgets();
-            await this.loadCategories(); // Recarregar categorias para atualizar os limites
+            await this.loadCategorias(); // Recarregar categorias para atualizar os limites
             this.updateSummaryCards(); // Atualizar cards de resumo
             
             this.notifications.show('Orçamento adicionado com sucesso!', 'success');
@@ -605,42 +605,42 @@ class FinanceApp {
         }
     }
 
-    async loadCategories() {
+    async loadCategorias() {
         try {
             console.log('📂 Carregando categorias do Firebase...');
             
             // Usar o módulo de categorias padronizado
-            const categories = await this.categories.getCategories();
-            this.categoriesCache = categories;
-            console.log('📂 Categorias carregadas:', categories);
-            this.renderCategories(categories);
-            this.updateCategorySelects(categories);
+            const categorias = await this.categorias.getCategories();
+            this.categoriasCache = categorias;
+            console.log('📂 Categorias carregadas:', categorias);
+            this.renderCategorias(categorias);
+            this.updateCategorySelects(categorias);
         } catch (error) {
             console.error('❌ Erro ao carregar categorias:', error);
             // Fallback para dados locais se houver erro
             try {
-                const fallbackCategories = JSON.parse(localStorage.getItem('categories') || '[]');
-                this.categoriesCache = fallbackCategories;
-                this.renderCategories(fallbackCategories);
-                this.updateCategorySelects(fallbackCategories);
-                console.log('✅ Categorias carregadas do fallback:', fallbackCategories.length);
+                const fallbackCategorias = JSON.parse(localStorage.getItem('categorias') || '[]');
+                this.categoriasCache = fallbackCategorias;
+                this.renderCategorias(fallbackCategorias);
+                this.updateCategorySelects(fallbackCategorias);
+                console.log('✅ Categorias carregadas do fallback:', fallbackCategorias.length);
             } catch (fallbackError) {
                 console.error('❌ Erro no fallback:', fallbackError);
-                this.renderCategories([]);
+                this.renderCategorias([]);
                 this.updateCategorySelects([]);
             }
         }
     }
 
-    async renderCategories(categories) {
+    async renderCategorias(categorias) {
         try {
-            console.log('📂 Renderizando categorias:', categories);
+            console.log('📂 Renderizando categorias:', categorias);
             
-            const categoriesList = document.getElementById('categoriesList');
-            if (!categoriesList) return;
+            const categoriasList = document.getElementById('categoriasList');
+            if (!categoriasList) return;
 
-            if (categories.length === 0) {
-                categoriesList.innerHTML = `
+            if (categorias.length === 0) {
+                categoriasList.innerHTML = `
                     <div class="empty-state">
                         <p>Nenhuma categoria encontrada</p>
                         <button class="btn btn-primary" onclick="showCategoryModal()">Criar primeira categoria</button>
@@ -649,10 +649,10 @@ class FinanceApp {
                 return;
             }
 
-            const categoriesHTML = categories.map(category => {
+            const categoriasHTML = categorias.map(categoria => {
                 // Calcular gastos usando transações locais
-                const spent = this.getTotalSpentForCategory(category.id);
-                const limit = category.limit || 0;
+                const spent = this.getTotalSpentForCategory(categoria.id);
+                const limit = categoria.limit || 0;
                 const balance = limit - spent;
                 const percentageUsed = limit > 0 ? (spent / limit) * 100 : 0;
 
@@ -663,14 +663,14 @@ class FinanceApp {
                 else if (percentageUsed >= 50) statusClass = 'info';
 
                 return `
-                    <div class="category-item ${statusClass}" data-id="${category.id}">
+                    <div class="category-item ${statusClass}" data-id="${categoria.id}">
                         <div class="category-info">
                             <div class="category-header">
-                                <div class="category-color" style="background-color: ${category.color || '#2563eb'}"></div>
+                                <div class="category-color" style="background-color: ${categoria.color || '#2563eb'}"></div>
                                 <div class="category-details">
-                                    <h4>${category.name}</h4>
+                                    <h4>${categoria.name}</h4>
                                     <div class="category-meta">
-                                        <span class="category-type">${category.type === 'income' ? 'Receita' : 'Despesa'}</span>
+                                        <span class="category-type">${categoria.type === 'income' ? 'Receita' : 'Despesa'}</span>
                                         ${limit > 0 ? `
                                             <div class="category-budget-info">
                                                 <span class="category-limit">Limite: ${this.formatCurrency(limit)}</span>
@@ -703,7 +703,7 @@ class FinanceApp {
                                             ${spent > 0 ? `
                                                 <div class="budget-stat-item">
                                                     <span class="stat-label">Transações:</span>
-                                                    <span class="transactions-count">📊 ${this.getTransactionCountForCategory(category.id)}</span>
+                                                    <span class="transactions-count">📊 ${this.getTransactionCountForCategory(categoria.id)}</span>
                                                 </div>
                                             ` : ''}
                                         </div>
@@ -718,10 +718,10 @@ class FinanceApp {
                         </div>
                         
                         <div class="category-actions">
-                            <button class="btn btn-icon" onclick="editCategory('${category.id}')" title="Editar categoria">
+                            <button class="btn btn-icon" onclick="editCategory('${categoria.id}')" title="Editar categoria">
                                 ✏️
                             </button>
-                            <button class="btn btn-icon" onclick="deleteCategory('${category.id}')" title="Excluir categoria">
+                            <button class="btn btn-icon" onclick="deleteCategory('${categoria.id}')" title="Excluir categoria">
                                 🗑️
                             </button>
                         </div>
@@ -729,12 +729,12 @@ class FinanceApp {
                 `;
             }).join('');
 
-            categoriesList.innerHTML = categoriesHTML;
+            categoriasList.innerHTML = categoriasHTML;
             console.log('📂 Categorias renderizadas com sucesso');
 
         } catch (error) {
             console.error('❌ Erro ao renderizar categorias:', error);
-            document.getElementById('categoriesList').innerHTML = `
+            document.getElementById('categoriasList').innerHTML = `
                 <div class="error-state">
                     <p>Erro ao carregar categorias</p>
                     <button class="btn btn-primary" onclick="location.reload()">Tentar novamente</button>
@@ -752,8 +752,8 @@ class FinanceApp {
 
     getCategoryColor(categoryId) {
         // Buscar a cor da categoria no cache ou retornar cor padrão
-        const category = this.categoriesCache?.find(c => c.id === categoryId);
-        return category?.color || '#2563eb';
+        const categoria = this.categoriasCache?.find(c => c.id === categoryId);
+        return categoria?.color || '#2563eb';
     }
 
     getTransactionCountForCategory(categoryId) {
@@ -981,8 +981,8 @@ class FinanceApp {
         container.innerHTML = html;
     }
 
-    updateCategorySelects(categories) {
-        console.log('🔍 Debug - Atualizando selects de categoria:', categories);
+    updateCategorySelects(categorias) {
+        console.log('🔍 Debug - Atualizando selects de categoria:', categorias);
         
         const selects = ['transactionCategory', 'budgetCategory'];
         
@@ -1001,15 +1001,15 @@ class FinanceApp {
                 select.innerHTML = '<option value="">Selecione uma categoria</option>';
                 
                 // Adicionar categorias
-                categories.forEach(category => {
+                categorias.forEach(categoria => {
                     const option = document.createElement('option');
-                    option.value = category.id;
-                    option.textContent = category.name;
+                    option.value = categoria.id;
+                    option.textContent = categoria.name;
                     select.appendChild(option);
                 });
                 
                 // Restaurar a seleção se ainda existir
-                if (currentValue && categories.find(c => c.id === currentValue)) {
+                if (currentValue && categorias.find(c => c.id === currentValue)) {
                     select.value = currentValue;
                 }
                 
@@ -1029,7 +1029,7 @@ class FinanceApp {
             
             // Usar dados do cache local (que vêm do Firebase)
             const transactions = this.transactionsCache || [];
-            const categories = this.categoriesCache || [];
+            const categorias = this.categoriasCache || [];
             
             // Calcular receita total usando o módulo de transações
             const totalIncome = await this.transactions.getTotalIncome();
@@ -1038,11 +1038,11 @@ class FinanceApp {
             const totalExpenses = await this.transactions.getTotalExpenses();
             
             // Calcular despesa total (soma dos limites das categorias)
-            const totalBudgetLimits = categories
+            const totalBudgetLimits = categorias
                 .reduce((total, cat) => total + (cat.limit || 0), 0);
             
             // Calcular saldo atual (soma dos saldos das categorias)
-            const totalBudgetBalance = categories.reduce((total, cat) => {
+            const totalBudgetBalance = categorias.reduce((total, cat) => {
                 const spent = this.getTotalSpentForCategory(cat.id);
                 const limit = cat.limit || 0;
                 return total + (limit - spent);
@@ -1080,7 +1080,7 @@ class FinanceApp {
             // Fallback para localStorage em caso de erro
             try {
                 const transactions = JSON.parse(localStorage.getItem('transactions') || '[]');
-                const categories = JSON.parse(localStorage.getItem('categories') || '[]');
+                const categorias = JSON.parse(localStorage.getItem('categorias') || '[]');
                 
                 const totalIncome = transactions
                     .filter(t => t.type === 'income')
@@ -1090,7 +1090,7 @@ class FinanceApp {
                     .filter(t => t.type === 'expense')
                     .reduce((total, t) => total + (t.amount || 0), 0);
                 
-                const totalBudgetLimits = categories
+                const totalBudgetLimits = categorias
                     .reduce((total, cat) => total + (cat.limit || 0), 0);
                 
                 const budgetRemaining = totalIncome - totalBudgetLimits;
@@ -1162,9 +1162,9 @@ class FinanceApp {
 
     async editCategory(id) {
         try {
-            const category = await this.categories.getCategoryById(id);
-            if (category) {
-                this.populateCategoryForm(category);
+            const categoria = await this.categorias.getCategoryById(id);
+            if (categoria) {
+                this.populateCategoryForm(categoria);
                 showCategoryModal();
                 this.notifications.show('Categoria carregada para edição', 'success');
             }
@@ -1206,7 +1206,7 @@ class FinanceApp {
             try {
                 await this.transactions.deleteTransaction(id);
                 await this.loadTransactions();
-                await this.loadCategories(); // Recarregar categorias para atualizar saldos
+                await this.loadCategorias(); // Recarregar categorias para atualizar saldos
                 this.updateSummaryCards();
                 this.notifications.show('Transação excluída com sucesso', 'success');
             } catch (error) {
@@ -1219,8 +1219,8 @@ class FinanceApp {
     async deleteCategory(id) {
         if (confirm('Tem certeza que deseja excluir esta categoria? Todas as transações relacionadas serão marcadas como "Sem categoria"')) {
             try {
-                await this.categories.deleteCategory(id);
-                await this.loadCategories();
+                await this.categorias.deleteCategory(id);
+                await this.loadCategorias();
                 this.updateSummaryCards(); // Atualizar cards de resumo
                 this.notifications.show('Categoria excluída com sucesso', 'success');
             } catch (error) {
@@ -1248,7 +1248,7 @@ class FinanceApp {
             try {
                 await this.budgets.deleteBudget(id);
                 await this.loadBudgets();
-                await this.loadCategories(); // Recarregar categorias para atualizar os limites
+                await this.loadCategorias(); // Recarregar categorias para atualizar os limites
                 this.updateSummaryCards(); // Atualizar cards de resumo
                 this.notifications.show('Orçamento excluído com sucesso!', 'success');
             } catch (error) {
@@ -1275,11 +1275,11 @@ class FinanceApp {
 
     async showCategoryHistory(id) {
         try {
-            const category = await this.categories.getCategoryById(id);
+            const categoria = await this.categorias.getCategoryById(id);
             const transactions = await this.transactions.getTransactionsByCategory(id);
             
-            if (category) {
-                this.showHistoryModal('Categoria', category, transactions);
+            if (categoria) {
+                this.showHistoryModal('Categoria', categoria, transactions);
             }
         } catch (error) {
             console.error('Erro ao mostrar histórico:', error);
@@ -1366,10 +1366,10 @@ class FinanceApp {
         }
     }
 
-    populateCategoryForm(category) {
-        document.getElementById('categoryName').value = category.name;
-        document.getElementById('categoryColor').value = category.color;
-        document.getElementById('categoryType').value = category.type;
+    populateCategoryForm(categoria) {
+        document.getElementById('categoryName').value = categoria.name;
+        document.getElementById('categoryColor').value = categoria.color;
+        document.getElementById('categoryType').value = categoria.type;
     }
 
     populateGoalForm(goal) {
@@ -1769,7 +1769,7 @@ class FinanceApp {
         console.log('loadUserData chamado');
         // Carregar dados do usuário se necessário
         this.loadTransactions();
-        this.loadCategories();
+        this.loadCategorias();
         this.loadGoals();
         this.loadBudgets();
     }
@@ -1788,7 +1788,7 @@ class FinanceApp {
         console.log('clearUserData chamado');
         // Limpar dados do usuário quando deslogado
         document.getElementById('transactionsList').innerHTML = '<div class="empty-state">Faça login para ver suas transações</div>';
-        document.getElementById('categoriesList').innerHTML = '<div class="empty-state">Faça login para ver suas categorias</div>';
+        document.getElementById('categoriasList').innerHTML = '<div class="empty-state">Faça login para ver suas categorias</div>';
         document.getElementById('goalsList').innerHTML = '<div class="empty-state">Faça login para ver suas metas</div>';
         document.getElementById('budgetsList').innerHTML = '<div class="empty-state">Faça login para ver seus orçamentos</div>';
     }
@@ -1812,9 +1812,9 @@ class FinanceApp {
         if (!categoryId) return 'Sem categoria';
         
         // Buscar no cache de categorias
-        if (this.categoriesCache) {
-            const category = this.categoriesCache.find(c => c.id === categoryId);
-            return category ? category.name : 'Categoria não encontrada';
+        if (this.categoriasCache) {
+            const categoria = this.categoriasCache.find(c => c.id === categoryId);
+            return categoria ? categoria.name : 'Categoria não encontrada';
         }
         
         return 'Categoria não encontrada';
@@ -2103,9 +2103,9 @@ class MobileNavigation {
                     window.FinanceApp.renderTransactions();
                 }
                 break;
-            case 'categories':
-                if (window.FinanceApp && window.FinanceApp.renderCategories) {
-                    window.FinanceApp.renderCategories();
+            case 'categorias':
+                if (window.FinanceApp && window.FinanceApp.renderCategorias) {
+                    window.FinanceApp.renderCategorias();
                 }
                 break;
             case 'goals':
@@ -2326,7 +2326,7 @@ function handleCategorySubmit(event) {
     const formData = new FormData(event.target);
     const editId = event.target.dataset.editId;
     
-    const category = {
+    const categoria = {
         name: formData.get('categoryName') || document.getElementById('categoryName').value,
         color: formData.get('categoryColor') || document.getElementById('categoryColor').value,
         type: formData.get('categoryType') || document.getElementById('categoryType').value,
@@ -2334,7 +2334,7 @@ function handleCategorySubmit(event) {
     };
     
     // Validar dados
-    if (!category.name) {
+    if (!categoria.name) {
         if (window.NotificationManager) {
             window.NotificationManager.showNotification({
                 type: 'error',
@@ -2347,24 +2347,24 @@ function handleCategorySubmit(event) {
     }
     
     // Salvar categoria
-    const categories = JSON.parse(localStorage.getItem('categories') || '[]');
+    const categorias = JSON.parse(localStorage.getItem('categorias') || '[]');
     
     if (editId) {
         // Modo edição
-        const index = categories.findIndex(c => c.id === editId);
+        const index = categorias.findIndex(c => c.id === editId);
         if (index !== -1) {
-            category.id = editId;
-            category.updatedAt = new Date().toISOString();
-            categories[index] = category;
+            categoria.id = editId;
+            categoria.updatedAt = new Date().toISOString();
+            categorias[index] = categoria;
         }
     } else {
         // Modo criação
-        category.id = Date.now().toString();
-        category.createdAt = new Date().toISOString();
-        categories.push(category);
+        categoria.id = Date.now().toString();
+        categoria.createdAt = new Date().toISOString();
+        categorias.push(categoria);
     }
     
-    localStorage.setItem('categories', JSON.stringify(categories));
+    localStorage.setItem('categorias', JSON.stringify(categorias));
     
     // Fechar modal
     closeCategoryModal();
@@ -2378,14 +2378,14 @@ function handleCategorySubmit(event) {
         window.NotificationManager.showNotification({
             type: 'success',
             title: editId ? 'Categoria atualizada!' : 'Categoria criada!',
-            message: category.name,
+            message: categoria.name,
             duration: 3000
         });
     }
     
     // Atualizar interface
     if (window.FinanceApp) {
-        window.FinanceApp.loadCategories();
+        window.FinanceApp.loadCategorias();
     }
 }
 
@@ -2493,15 +2493,15 @@ function handleBudgetSubmit(event) {
 
 // Funções globais para edição e exclusão
 function editCategory(id) {
-    const categories = JSON.parse(localStorage.getItem('categories') || '[]');
-    const category = categories.find(c => c.id === id);
+    const categorias = JSON.parse(localStorage.getItem('categorias') || '[]');
+    const categoria = categorias.find(c => c.id === id);
     
-    if (category) {
+    if (categoria) {
         // Preencher formulário
-        document.getElementById('categoryName').value = category.name;
-        document.getElementById('categoryColor').value = category.color || '#2563eb';
-        document.getElementById('categoryType').value = category.type;
-        document.getElementById('categoryLimit').value = category.limit || '';
+        document.getElementById('categoryName').value = categoria.name;
+        document.getElementById('categoryColor').value = categoria.color || '#2563eb';
+        document.getElementById('categoryType').value = categoria.type;
+        document.getElementById('categoryLimit').value = categoria.limit || '';
         
         // Mostrar modal
         showCategoryModal();
@@ -2514,13 +2514,13 @@ function editCategory(id) {
 
 function deleteCategory(id) {
     if (confirm('Tem certeza que deseja excluir esta categoria?')) {
-        const categories = JSON.parse(localStorage.getItem('categories') || '[]');
-        const updatedCategories = categories.filter(c => c.id !== id);
-        localStorage.setItem('categories', JSON.stringify(updatedCategories));
+        const categorias = JSON.parse(localStorage.getItem('categorias') || '[]');
+        const updatedCategorias = categorias.filter(c => c.id !== id);
+        localStorage.setItem('categorias', JSON.stringify(updatedCategorias));
         
         // Recarregar categorias
         if (window.FinanceApp) {
-            window.FinanceApp.loadCategories();
+            window.FinanceApp.loadCategorias();
         }
         
         // Notificar sucesso

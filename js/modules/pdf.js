@@ -104,7 +104,7 @@ class PDFModule {
                 doc.setTextColor(color);
                 doc.text(`${transaction.date} - ${transaction.title}`, 20, yPosition);
                 doc.text(transaction.amount, 150, yPosition);
-                doc.text(transaction.category, 180, yPosition);
+                doc.text(transaction.categoria, 180, yPosition);
                 
                 yPosition += 8;
             });
@@ -116,19 +116,19 @@ class PDFModule {
             doc.text('Categorias', 20, 20);
             
             doc.setFontSize(10);
-            const categories = this.getCategoriesData();
+            const categorias = this.getCategoriesData();
             yPosition = 35;
             
-            categories.forEach((category, index) => {
+            categorias.forEach((categoria, index) => {
                 if (yPosition > 250) {
                     doc.addPage();
                     yPosition = 20;
                 }
                 
-                doc.text(category.name, 20, yPosition);
-                doc.text(category.limit, 80, yPosition);
-                doc.text(category.balance, 120, yPosition);
-                doc.text(category.percentage, 160, yPosition);
+                doc.text(categoria.name, 20, yPosition);
+                doc.text(categoria.limit, 80, yPosition);
+                doc.text(categoria.balance, 120, yPosition);
+                doc.text(categoria.percentage, 160, yPosition);
                 
                 yPosition += 8;
             });
@@ -192,14 +192,14 @@ class PDFModule {
         transactionItems.forEach(item => {
             const title = item.querySelector('.transaction-title')?.textContent || '';
             const amount = item.querySelector('.transaction-amount')?.textContent || '';
-            const category = item.querySelector('.transaction-category')?.textContent || '';
+            const categoria = item.querySelector('.transaction-category')?.textContent || '';
             const date = item.querySelector('.transaction-date')?.textContent || '';
             const type = item.querySelector('.transaction-amount')?.classList.contains('income') ? 'income' : 'expense';
             
             transactions.push({
                 title: title.trim(),
                 amount: amount.trim(),
-                category: category.trim(),
+                categoria: categoria.trim(),
                 date: date.trim(),
                 type: type
             });
@@ -209,7 +209,7 @@ class PDFModule {
     }
 
     getCategoriesData() {
-        const categories = [];
+        const categorias = [];
         const categoryItems = document.querySelectorAll('.category-item');
         
         categoryItems.forEach(item => {
@@ -218,7 +218,7 @@ class PDFModule {
             const balance = item.querySelector('.budget-stats .balance')?.textContent || '';
             const percentage = item.querySelector('.budget-stats .percentage')?.textContent || '';
             
-            categories.push({
+            categorias.push({
                 name: name.trim(),
                 limit: limit.trim(),
                 balance: balance.trim(),
@@ -226,7 +226,7 @@ class PDFModule {
             });
         });
         
-        return categories;
+        return categorias;
     }
 
     getGoalsData() {
