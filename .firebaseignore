@@ -1,0 +1,7 @@
+# Ignorar arquivos executáveis e de automação local
+push.bat
+*.bat
+*.exe
+*.sh
+*.cmd
+*.ps1 

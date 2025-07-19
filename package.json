@@ -5,9 +5,15 @@
   "main": "index.html",
   "scripts": {
     "start": "node server.js",
-    "build": "echo 'Build completed'",
+    "build": "vite build",
     "deploy": "firebase deploy",
-    "serve": "firebase serve"
+    "serve": "firebase serve",
+    "dev": "vite",
+    "preview": "vite preview",
+    "lint": "eslint src --ext .js",
+    "format": "prettier --write src",
+    "test": "vitest",
+    "postbuild": "copy manifest.json dist\\ && copy service-worker.js dist\\ && copy icon-192.png dist\\ && copy icon-512.png dist\\"
   },
   "keywords": [
     "financeiro",
@@ -19,7 +25,18 @@
   "author": "Seu Nome",
   "license": "MIT",
   "devDependencies": {
-    "firebase-tools": "^12.0.0"
+    "@tailwindcss/postcss": "^4.1.11",
+    "autoprefixer": "^10.4.21",
+    "eslint": "^9.31.0",
+    "eslint-config-prettier": "^10.1.5",
+    "eslint-plugin-prettier": "^5.5.1",
+    "firebase-tools": "^12.0.0",
+    "postcss": "^8.5.6",
+    "prettier": "^3.6.2",
+    "tailwindcss": "^4.1.11",
+    "vite": "^7.0.5",
+    "vite-plugin-compression": "^0.5.1",
+    "vitest": "^3.2.4"
   },
   "engines": {
     "node": ">=14.0.0"
@@ -28,7 +45,7 @@
     "type": "git",
     "url": "https://github.com/Igor-Bispo/Financeiro-app.git"
   },
-  "type": "commonjs",
+  "type": "module",
   "bugs": {
     "url": "https://github.com/Igor-Bispo/Financeiro-app/issues"
   },
