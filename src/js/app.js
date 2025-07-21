@@ -1,6 +1,12 @@
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, setPersistence, browserLocalPersistence } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js';
-import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, where, serverTimestamp, onSnapshot } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js';
+import { initializeApp } from 'firebase/app';
+import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth';
+import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, where, serverTimestamp, onSnapshot } from 'firebase/firestore';
+import { loginWithGoogle, logout } from './auth.js';
+import { addTransacao, getTransacoes } from './firestore.js';
+import { CardResumo } from './ui/CardResumo.js';
+import { Modal } from './ui/Modal.js';
+import { Snackbar } from './ui/Snackbar.js';
+import { FAB } from './ui/FAB.js';
 
 const firebaseConfig = {
   apiKey: 'AIzaSyCbBmmxn4Qj4CU6ymfG4MY5VGqCPSo13HY',
@@ -272,115 +278,128 @@ function renderDashboard() {
   const content = document.getElementById('app-content');
   if (!content) return;
   setSubtitle('Dashboard');
-  
+
+  // Limpar o conteúdo antes de renderizar
+  content.innerHTML = '';
+
   // Calcular totais
   const receitas = window.appState.transactions
     .filter(t => t.tipo === 'receita')
     .reduce((sum, t) => sum + parseFloat(t.valor), 0);
-  
+
   const despesas = window.appState.transactions
     .filter(t => t.tipo === 'despesa')
     .reduce((sum, t) => sum + parseFloat(t.valor), 0);
-  
+
   const saldo = receitas - despesas;
-  
-  // Calcular limites das categorias
+
+  // Calcular limites das categorias e orçado
   const totalLimite = window.appState.categories
     .reduce((sum, cat) => sum + parseFloat(cat.limite || 0), 0);
-  
-  // Calcular orçado
   const orcado = totalLimite - despesas;
-  
-  content.innerHTML = `
-    <div class="grid gap-4 md:gap-6">
-      <!-- Cards de Resumo -->
-      <div class="grid grid-cols-4 gap-1 md:gap-4">
-        <div class="bg-gradient-to-r from-green-500 to-green-600 text-white p-1.5 md:p-6 rounded-xl shadow-lg flex flex-col items-center justify-center">
-          <h3 class="text-xs md:text-lg font-semibold mb-0.5 md:mb-2">Receitas</h3>
-          <p class="text-sm md:text-3xl font-bold">R$ ${receitas.toFixed(2)}</p>
-        </div>
-        <div class="bg-gradient-to-r from-red-500 to-red-600 text-white p-1.5 md:p-6 rounded-xl shadow-lg flex flex-col items-center justify-center">
-          <h3 class="text-xs md:text-lg font-semibold mb-0.5 md:mb-2">Despesas</h3>
-          <p class="text-sm md:text-3xl font-bold">R$ ${despesas.toFixed(2)}</p>
-        </div>
-        <div class="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-1.5 md:p-6 rounded-xl shadow-lg flex flex-col items-center justify-center">
-          <h3 class="text-xs md:text-lg font-semibold mb-0.5 md:mb-2">Saldo</h3>
-          <p class="text-sm md:text-3xl font-bold">R$ ${saldo.toFixed(2)}</p>
-        </div>
-        <div class="bg-gradient-to-r from-yellow-500 to-yellow-600 text-white p-1.5 md:p-6 rounded-xl shadow-lg flex flex-col items-center justify-center">
-          <h3 class="text-xs md:text-lg font-semibold mb-0.5 md:mb-2">Orçado</h3>
-          <p class="text-sm md:text-3xl font-bold">R$ ${orcado.toFixed(2)}</p>
-        </div>
-      </div>
-      <!-- Categorias com Progresso -->
-      <div class="bg-white rounded-xl shadow-lg p-2 md:p-6">
-        <h3 class="text-base md:text-xl font-bold mb-2 md:mb-4">Categorias</h3>
-        <div class="space-y-2 md:space-y-4">
-          ${window.appState.categories.map(cat => {
-            const transacoesCategoria = window.appState.transactions
-              .filter(t => t.categoriaId === cat.id && t.tipo === 'despesa');
-            const gasto = transacoesCategoria.reduce((sum, t) => sum + parseFloat(t.valor), 0);
-            const limite = parseFloat(cat.limite || 0);
-            const percentual = limite > 0 ? (gasto / limite) * 100 : 0;
-            const saldo = limite - gasto;
-            
-            return `
-              <div class="border rounded-lg p-2 md:p-4">
-                <div class="flex justify-between items-center mb-1 md:mb-2">
-                  <div class="flex items-center space-x-2 md:space-x-3">
-                    <div class="w-4 h-4 rounded-full" style="background-color: ${cat.cor || '#4F46E5'}"></div>
-                    <span class="font-semibold text-xs md:text-base">${cat.nome}</span>
-                  </div>
-                  <div class="text-right">
-                    <p class="text-xs md:text-sm text-gray-600">R$ ${gasto.toFixed(2)} / R$ ${limite.toFixed(2)}</p>
-                    <p class="text-xs md:text-sm ${saldo >= 0 ? 'text-green-600' : 'text-red-600'}">
-                      Saldo: R$ ${saldo.toFixed(2)}
-                    </p>
-                  </div>
+
+  content.innerHTML = `<div id="dashboard-cards" class="grid grid-cols-4 gap-1 md:gap-4 mb-4"></div>` + content.innerHTML;
+  const cardsContainer = document.getElementById('dashboard-cards');
+  cardsContainer.innerHTML = '';
+  const cards = [
+    {
+      titulo: 'Receitas',
+      valor: `R$ ${receitas.toFixed(2)}`,
+      cor: 'text-green-600',
+      icone: '<svg width="24" height="24" fill="none" viewBox="0 0 24 24"><path d="M12 3v18m9-9H3" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/></svg>'
+    },
+    {
+      titulo: 'Despesas',
+      valor: `R$ ${despesas.toFixed(2)}`,
+      cor: 'text-red-600',
+      icone: '<svg width="24" height="24" fill="none" viewBox="0 0 24 24"><path d="M3 12h18" stroke="#ef4444" stroke-width="2" stroke-linecap="round"/></svg>'
+    },
+    {
+      titulo: 'Saldo',
+      valor: `R$ ${saldo.toFixed(2)}`,
+      cor: 'text-blue-600',
+      icone: '<svg width="24" height="24" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="#3b82f6" stroke-width="2"/></svg>'
+    },
+    {
+      titulo: 'Orçado',
+      valor: `R$ ${orcado.toFixed(2)}`,
+      cor: 'text-yellow-600',
+      icone: '<svg width="24" height="24" fill="none" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4" stroke="#eab308" stroke-width="2"/></svg>'
+    }
+  ];
+  cards.forEach(cardData => {
+    cardsContainer.appendChild(CardResumo(cardData));
+  });
+
+  // Adicionar o restante do dashboard
+  content.innerHTML += `
+    <!-- Categorias com Progresso -->
+    <div class="bg-white rounded-xl shadow-lg p-2 md:p-6">
+      <h3 class="text-base md:text-xl font-bold mb-2 md:mb-4">Categorias</h3>
+      <div class="space-y-2 md:space-y-4">
+        ${window.appState.categories.map(cat => {
+          const transacoesCategoria = window.appState.transactions
+            .filter(t => t.categoriaId === cat.id && t.tipo === 'despesa');
+          const gasto = transacoesCategoria.reduce((sum, t) => sum + parseFloat(t.valor), 0);
+          const limite = parseFloat(cat.limite || 0);
+          const percentual = limite > 0 ? (gasto / limite) * 100 : 0;
+          const saldo = limite - gasto;
+          return `
+            <div class="border rounded-lg p-2 md:p-4">
+              <div class="flex justify-between items-center mb-1 md:mb-2">
+                <div class="flex items-center space-x-2 md:space-x-3">
+                  <div class="w-4 h-4 rounded-full" style="background-color: ${cat.cor || '#4F46E5'}"></div>
+                  <span class="font-semibold text-xs md:text-base">${cat.nome}</span>
                 </div>
-                <div class="w-full bg-gray-200 rounded-full h-2 md:h-3 mb-1 md:mb-2">
-                  <div class="h-2 md:h-3 rounded-full transition-all duration-300 ${
-                    percentual > 100 ? 'bg-red-500' : percentual > 80 ? 'bg-yellow-500' : 'bg-green-500'
-                  }" style="width: ${Math.min(percentual, 100)}%"></div>
-                </div>
-                <div class="flex flex-wrap justify-end gap-1 md:space-x-2">
-                  <button onclick="editCategory('${cat.id}')" class="text-blue-600 hover:text-blue-800 text-xs md:text-sm px-2 py-1 md:px-3 md:py-1 rounded">Editar</button>
-                  <button onclick="deleteCategory('${cat.id}')" class="text-red-600 hover:text-red-800 text-xs md:text-sm px-2 py-1 md:px-3 md:py-1 rounded">Excluir</button>
-                  <button onclick="showCategoryHistory('${cat.id}')" class="text-gray-600 hover:text-gray-800 text-xs md:text-sm px-2 py-1 md:px-3 md:py-1 rounded">Histórico</button>
-                </div>
-              </div>
-            `;
-          }).join('')}
-        </div>
-      </div>
-      <!-- Transações Recentes -->
-      <div class="bg-white rounded-xl shadow-lg p-2 md:p-6">
-        <div class="flex flex-wrap justify-between items-center mb-2 md:mb-4 gap-1 md:gap-0">
-          <h3 class="text-base md:text-xl font-bold">Transações Recentes</h3>
-          <button onclick="showAddTransactionModal()" class="bg-blue-500 text-white px-2 py-1 md:px-4 md:py-2 rounded-lg hover:bg-blue-600 text-xs md:text-base">
-            + Nova Transação
-          </button>
-        </div>
-        <div class="space-y-2 md:space-y-3">
-          ${window.appState.transactions.slice(0, 10).map(t => {
-            const categoria = window.appState.categories.find(c => c.id === t.categoriaId);
-            return `
-              <div class="flex flex-wrap justify-between items-center p-2 md:p-3 border rounded-lg hover:bg-gray-50 gap-1 md:gap-0">
-                <div class="flex-1 min-w-[120px]">
-                  <p class="font-medium text-xs md:text-base">${t.descricao}</p>
-                  <p class="text-xs md:text-sm text-gray-500">${categoria?.nome || 'Sem categoria'} • ${t.createdAt && t.createdAt.toDate ? t.createdAt.toDate().toLocaleDateString() : ''}</p>
-                </div>
-                <div class="flex items-center space-x-1 md:space-x-2">
-                  <span class="font-bold text-xs md:text-base ${t.tipo === 'receita' ? 'text-green-600' : 'text-red-600'}">
-                    ${t.tipo === 'receita' ? '+' : '-'}R$ ${parseFloat(t.valor).toFixed(2)}
-                  </span>
-                  <button onclick="editTransaction('${t.id}')" class="text-blue-600 hover:text-blue-800 text-xs md:text-base">✏️</button>
-                  <button onclick="deleteTransaction('${t.id}')" class="text-red-600 hover:text-red-800 text-xs md:text-base">🗑️</button>
+                <div class="text-right">
+                  <p class="text-xs md:text-sm text-gray-600">R$ ${gasto.toFixed(2)} / R$ ${limite.toFixed(2)}</p>
+                  <p class="text-xs md:text-sm ${saldo >= 0 ? 'text-green-600' : 'text-red-600'}">
+                    Saldo: R$ ${saldo.toFixed(2)}
+                  </p>
                 </div>
               </div>
-            `;
-          }).join('')}
-        </div>
+              <div class="w-full bg-gray-200 rounded-full h-2 md:h-3 mb-1 md:mb-2">
+                <div class="h-2 md:h-3 rounded-full transition-all duration-300 ${
+                  percentual > 100 ? 'bg-red-500' : percentual > 80 ? 'bg-yellow-500' : 'bg-green-500'
+                }" style="width: ${Math.min(percentual, 100)}%"></div>
+              </div>
+              <div class="flex flex-wrap justify-end gap-1 md:space-x-2">
+                <button onclick="editCategory('${cat.id}')" class="text-blue-600 hover:text-blue-800 text-xs md:text-sm px-2 py-1 md:px-3 md:py-1 rounded">Editar</button>
+                <button onclick="deleteCategory('${cat.id}')" class="text-red-600 hover:text-red-800 text-xs md:text-sm px-2 py-1 md:px-3 md:py-1 rounded">Excluir</button>
+                <button onclick="showCategoryHistory('${cat.id}')" class="text-gray-600 hover:text-gray-800 text-xs md:text-sm px-2 py-1 md:px-3 md:py-1 rounded">Histórico</button>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+    <!-- Transações Recentes -->
+    <div class="bg-white rounded-xl shadow-lg p-2 md:p-6">
+      <div class="flex flex-wrap justify-between items-center mb-2 md:mb-4 gap-1 md:gap-0">
+        <h3 class="text-base md:text-xl font-bold">Transações Recentes</h3>
+        <button onclick="showAddTransactionModal()" class="bg-blue-500 text-white px-2 py-1 md:px-4 md:py-2 rounded-lg hover:bg-blue-600 text-xs md:text-base">
+          + Nova Transação
+        </button>
+      </div>
+      <div class="space-y-2 md:space-y-3">
+        ${window.appState.transactions.slice(0, 10).map(t => {
+          const categoria = window.appState.categories.find(c => c.id === t.categoriaId);
+          return `
+            <div class="flex flex-wrap justify-between items-center p-2 md:p-3 border rounded-lg hover:bg-gray-50 gap-1 md:gap-0">
+              <div class="flex-1 min-w-[120px]">
+                <p class="font-medium text-xs md:text-base">${t.descricao}</p>
+                <p class="text-xs md:text-sm text-gray-500">${categoria?.nome || 'Sem categoria'} • ${t.createdAt && t.createdAt.toDate ? t.createdAt.toDate().toLocaleDateString() : ''}</p>
+              </div>
+              <div class="flex items-center space-x-1 md:space-x-2">
+                <span class="font-bold text-xs md:text-base ${t.tipo === 'receita' ? 'text-green-600' : 'text-red-600'}">
+                  ${t.tipo === 'receita' ? '+' : '-'}R$ ${parseFloat(t.valor).toFixed(2)}
+                </span>
+                <button onclick="editTransaction('${t.id}')" class="text-blue-600 hover:text-blue-800 text-xs md:text-base">✏️</button>
+                <button onclick="deleteTransaction('${t.id}')" class="text-red-600 hover:text-red-800 text-xs md:text-base">🗑️</button>
+              </div>
+            </div>
+          `;
+        }).join('')}
       </div>
     </div>
   `;
@@ -410,15 +429,15 @@ function renderTransactions() {
           return `
             <div class="flex flex-wrap justify-between items-center p-2 md:p-4 border-b last:border-b-0 hover:bg-gray-50 gap-1 md:gap-0">
               <div class="flex-1 min-w-[120px]">
-                <p class="font-medium text-xs md:text-lg">${t.descricao}</p>
+                <p class="font-medium text-xs md:text-base">${t.descricao}</p>
                 <p class="text-xs md:text-sm text-gray-500">${categoria?.nome || 'Sem categoria'} • ${t.createdAt && t.createdAt.toDate ? t.createdAt.toDate().toLocaleDateString() : ''}</p>
               </div>
-              <div class="flex items-center space-x-1 md:space-x-3">
-                <span class="font-bold text-xs md:text-lg ${t.tipo === 'receita' ? 'text-green-600' : 'text-red-600'}">
+              <div class="flex items-center space-x-1 md:space-x-2">
+                <span class="font-bold text-xs md:text-base ${t.tipo === 'receita' ? 'text-green-600' : 'text-red-600'}">
                   ${t.tipo === 'receita' ? '+' : '-'}R$ ${parseFloat(t.valor).toFixed(2)}
                 </span>
-                <button onclick="editTransaction('${t.id}')" class="bg-blue-100 text-blue-600 px-2 py-1 md:px-3 md:py-1 rounded-lg hover:bg-blue-200 text-xs md:text-base">Editar</button>
-                <button onclick="deleteTransaction('${t.id}')" class="bg-red-100 text-red-600 px-2 py-1 md:px-3 md:py-1 rounded-lg hover:bg-red-200 text-xs md:text-base">Excluir</button>
+                <button onclick="editTransaction('${t.id}')" class="text-blue-600 hover:text-blue-800 text-xs md:text-base">✏️</button>
+                <button onclick="deleteTransaction('${t.id}')" class="text-red-600 hover:text-red-800 text-xs md:text-base">🗑️</button>
               </div>
             </div>
           `;
@@ -655,62 +674,69 @@ function setCurrentBudget(budget) {
 }
 
 // Funções globais para modais e ações
-window.showAddTransactionModal = function() {
-  const modal = createModal('Adicionar Transação', `
-    <form id="transaction-form" class="space-y-4">
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
-        <input type="text" id="transaction-descricao" required 
-               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-               placeholder="Ex: Supermercado">
-      </div>
-      
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Valor (R$)</label>
-        <input type="number" id="transaction-valor" required step="0.01" min="0"
-               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-               placeholder="0,00">
-      </div>
-      
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
-        <select id="transaction-tipo" required
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-          <option value="">Selecione...</option>
-          <option value="receita">Receita</option>
-          <option value="despesa">Despesa</option>
-        </select>
-      </div>
-      
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
-        <select id="transaction-categoria" required
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-          <option value="">Selecione...</option>
-          ${window.appState.categories.length > 0 ? 
-            window.appState.categories.map(cat => 
-              `<option value="${cat.id}">${cat.nome}</option>`
-            ).join('') : 
-            '<option value="" disabled>Nenhuma categoria disponível</option>'
+window.showAddTransactionModal = function(initialData = {}) {
+  const modal = Modal({
+    title: 'Adicionar Transação',
+    content: `
+      <form id="transaction-form" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
+          <input type="text" id="transaction-descricao" required 
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                 placeholder="Ex: Supermercado"
+                 value="${initialData.descricao || ''}">
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Valor (R$)</label>
+          <input type="number" id="transaction-valor" required step="0.01" min="0"
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                 placeholder="0,00"
+                 value="${initialData.valor !== undefined ? initialData.valor : ''}">
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
+          <select id="transaction-tipo" required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option value="">Selecione...</option>
+            <option value="receita" ${initialData.tipo === 'receita' ? 'selected' : ''}>Receita</option>
+            <option value="despesa" ${initialData.tipo === 'despesa' ? 'selected' : ''}>Despesa</option>
+          </select>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
+          <select id="transaction-categoria" required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option value="">Selecione...</option>
+            ${window.appState.categories.length > 0 ? 
+              window.appState.categories.map(cat => 
+                `<option value="${cat.id}" ${initialData.categoriaId === cat.id ? 'selected' : ''}>${cat.nome}</option>`
+              ).join('') : 
+              '<option value="" disabled>Nenhuma categoria disponível</option>'
+            }
+          </select>
+          ${window.appState.categories.length === 0 ? 
+            '<p class="text-sm text-red-500 mt-1">Crie uma categoria primeiro</p>' : ''
           }
-        </select>
-        ${window.appState.categories.length === 0 ? 
-          '<p class="text-sm text-red-500 mt-1">Crie uma categoria primeiro</p>' : ''
-        }
-      </div>
-      
-      <div class="flex justify-end space-x-3 pt-4">
-        <button type="button" onclick="closeModal()" 
-                class="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200">
-          Cancelar
-        </button>
-        <button type="submit" 
-                class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
-          Adicionar
-        </button>
-      </div>
-    </form>
-  `);
+        </div>
+        
+        <div class="flex justify-end space-x-3 pt-4">
+          <button type="button" onclick="closeModal()" 
+                  class="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200">
+            Cancelar
+          </button>
+          <button type="submit" 
+                  class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+            Adicionar
+          </button>
+        </div>
+      </form>
+    `,
+    onClose: () => modal.remove()
+  });
+  document.body.appendChild(modal);
   
   // Adicionar evento de submit
   document.getElementById('transaction-form').addEventListener('submit', async (e) => {
@@ -728,62 +754,69 @@ window.showAddTransactionModal = function() {
         tipo,
         categoriaId
       });
-      await refreshCurrentView();
-      closeModal();
-      alert('Transação adicionada com sucesso!');
+      modal.remove(); // Fecha o modal primeiro
+      renderDashboard(); // Atualiza o dashboard imediatamente
+      Snackbar({ message: 'Transação adicionada com sucesso!', type: 'success' });
     } catch (error) {
       console.error('Erro ao adicionar transação:', error);
-      alert('Erro ao adicionar transação: ' + error.message);
+      Snackbar({ message: 'Erro ao adicionar transação: ' + error.message, type: 'error' });
     }
   });
 };
 
-window.showAddCategoryModal = function() {
-  const modal = createModal('Adicionar Categoria', `
-    <form id="category-form" class="space-y-4">
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Nome</label>
-        <input type="text" id="category-nome" required 
-               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-               placeholder="Ex: Alimentação">
-      </div>
-      
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
-        <select id="category-tipo" required
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-          <option value="">Selecione...</option>
-          <option value="receita">Receita</option>
-          <option value="despesa">Despesa</option>
-        </select>
-      </div>
-      
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Limite (R$)</label>
-        <input type="number" id="category-limite" step="0.01" min="0"
-               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-               placeholder="0,00">
-        <p class="text-sm text-gray-500 mt-1">Deixe em branco se não houver limite</p>
-      </div>
-      
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Cor</label>
-        <input type="color" id="category-cor" value="#4F46E5"
-               class="w-full h-12 border border-gray-300 rounded-lg">
-      </div>
-      
-      <div class="flex justify-end space-x-3 pt-4">
-        <button type="button" onclick="closeModal()" 
-                class="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200">
-          Cancelar
-        </button>
-        <button type="submit" 
-                class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
-          Adicionar
-        </button>
-      </div>
-    </form>
-  `);
+window.showAddCategoryModal = function(initialData = {}) {
+  const modal = Modal({
+    title: 'Adicionar Categoria',
+    content: `
+      <form id="category-form" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Nome</label>
+          <input type="text" id="category-nome" required 
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                 placeholder="Ex: Alimentação"
+                 value="${initialData.nome || ''}">
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
+          <select id="category-tipo" required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option value="">Selecione...</option>
+            <option value="receita" ${initialData.tipo === 'receita' ? 'selected' : ''}>Receita</option>
+            <option value="despesa" ${initialData.tipo === 'despesa' ? 'selected' : ''}>Despesa</option>
+          </select>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Limite (R$)</label>
+          <input type="number" id="category-limite" step="0.01" min="0"
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                 placeholder="0,00"
+                 value="${initialData.limite !== undefined ? initialData.limite : ''}">
+          <p class="text-sm text-gray-500 mt-1">Deixe em branco se não houver limite</p>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Cor</label>
+          <input type="color" id="category-cor" value="${initialData.cor || '#4F46E5'}"
+                 class="w-full h-12 border border-gray-300 rounded-lg">
+        </div>
+        
+        <div class="flex justify-end space-x-3 pt-4">
+          <button type="button" onclick="closeModal()" 
+                  class="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200">
+            Cancelar
+          </button>
+          <button type="submit" 
+                  class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+            Adicionar
+          </button>
+        </div>
+      </form>
+    `,
+    onClose: () => modal.remove()
+  });
+  document.body.appendChild(modal);
   
   // Adicionar evento de submit
   document.getElementById('category-form').addEventListener('submit', async (e) => {
@@ -801,46 +834,49 @@ window.showAddCategoryModal = function() {
         limite,
         cor
       });
-      
-      closeModal();
-      router('/categories'); // Recarregar categorias
-      alert('Categoria adicionada com sucesso!');
+      modal.remove(); // Fecha o modal primeiro
+      renderDashboard(); // Atualiza o dashboard imediatamente
+      Snackbar({ message: 'Categoria adicionada com sucesso!', type: 'success' });
     } catch (error) {
       console.error('Erro ao adicionar categoria:', error);
-      alert('Erro ao adicionar categoria: ' + error.message);
+      Snackbar({ message: 'Erro ao adicionar categoria: ' + error.message, type: 'error' });
     }
   });
 };
 
 window.showAddBudgetModal = function() {
-  const modal = createModal('Adicionar Orçamento', `
-    <form id="budget-form" class="space-y-4">
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Nome</label>
-        <input type="text" id="budget-nome" required 
-               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-               placeholder="Ex: Orçamento Familiar">
-      </div>
-      
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
-        <textarea id="budget-descricao" rows="3"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Descrição opcional do orçamento"></textarea>
-      </div>
-      
-      <div class="flex justify-end space-x-3 pt-4">
-        <button type="button" onclick="closeModal()" 
-                class="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200">
-          Cancelar
-        </button>
-        <button type="submit" 
-                class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
-          Adicionar
-        </button>
-      </div>
-    </form>
-  `);
+  const modal = Modal({
+    title: 'Adicionar Orçamento',
+    content: `
+      <form id="budget-form" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Nome</label>
+          <input type="text" id="budget-nome" required 
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                 placeholder="Ex: Orçamento Familiar">
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
+          <textarea id="budget-descricao" rows="3"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Descrição opcional do orçamento"></textarea>
+        </div>
+        
+        <div class="flex justify-end space-x-3 pt-4">
+          <button type="button" onclick="closeModal()" 
+                  class="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200">
+            Cancelar
+          </button>
+          <button type="submit" 
+                  class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+            Adicionar
+          </button>
+        </div>
+      </form>
+    `,
+    onClose: () => modal.remove()
+  });
   
   // Adicionar evento de submit
   document.getElementById('budget-form').addEventListener('submit', async (e) => {
@@ -855,12 +891,12 @@ window.showAddBudgetModal = function() {
         descricao
       });
       
-      closeModal();
+      modal.remove(); // Fecha o modal primeiro
       router('/settings'); // Recarregar configurações
-      alert('Orçamento adicionado com sucesso!');
+      Snackbar({ message: 'Orçamento adicionado com sucesso!', type: 'success' });
     } catch (error) {
       console.error('Erro ao adicionar orçamento:', error);
-      alert('Erro ao adicionar orçamento: ' + error.message);
+      Snackbar({ message: 'Erro ao adicionar orçamento: ' + error.message, type: 'error' });
     }
   });
 };
@@ -872,56 +908,60 @@ window.editTransaction = function(id) {
     return;
   }
   
-  const modal = createModal('Editar Transação', `
-    <form id="edit-transaction-form" class="space-y-4">
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
-        <input type="text" id="edit-transaction-descricao" required 
-               value="${transaction.descricao}"
-               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-               placeholder="Ex: Supermercado">
-      </div>
-      
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Valor (R$)</label>
-        <input type="number" id="edit-transaction-valor" required step="0.01" min="0"
-               value="${transaction.valor}"
-               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-               placeholder="0,00">
-      </div>
-      
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
-        <select id="edit-transaction-tipo" required
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-          <option value="receita" ${transaction.tipo === 'receita' ? 'selected' : ''}>Receita</option>
-          <option value="despesa" ${transaction.tipo === 'despesa' ? 'selected' : ''}>Despesa</option>
-        </select>
-      </div>
-      
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
-        <select id="edit-transaction-categoria" required
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-          <option value="">Selecione...</option>
-          ${window.appState.categories.map(cat => 
-            `<option value="${cat.id}" ${transaction.categoriaId === cat.id ? 'selected' : ''}>${cat.nome}</option>`
-          ).join('')}
-        </select>
-      </div>
-      
-      <div class="flex justify-end space-x-3 pt-4">
-        <button type="button" onclick="closeModal()" 
-                class="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200">
-          Cancelar
-        </button>
-        <button type="submit" 
-                class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
-          Salvar
-        </button>
-      </div>
-    </form>
-  `);
+  const modal = Modal({
+    title: 'Editar Transação',
+    content: `
+      <form id="edit-transaction-form" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
+          <input type="text" id="edit-transaction-descricao" required 
+                 value="${transaction.descricao}"
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                 placeholder="Ex: Supermercado">
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Valor (R$)</label>
+          <input type="number" id="edit-transaction-valor" required step="0.01" min="0"
+                 value="${transaction.valor}"
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                 placeholder="0,00">
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
+          <select id="edit-transaction-tipo" required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option value="receita" ${transaction.tipo === 'receita' ? 'selected' : ''}>Receita</option>
+            <option value="despesa" ${transaction.tipo === 'despesa' ? 'selected' : ''}>Despesa</option>
+          </select>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
+          <select id="edit-transaction-categoria" required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option value="">Selecione...</option>
+            ${window.appState.categories.map(cat => 
+              `<option value="${cat.id}" ${transaction.categoriaId === cat.id ? 'selected' : ''}>${cat.nome}</option>`
+            ).join('')}
+          </select>
+        </div>
+        
+        <div class="flex justify-end space-x-3 pt-4">
+          <button type="button" onclick="closeModal()" 
+                  class="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200">
+            Cancelar
+          </button>
+          <button type="submit" 
+                  class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+            Salvar
+          </button>
+        </div>
+      </form>
+    `,
+    onClose: () => modal.remove()
+  });
   
   // Adicionar evento de submit
   document.getElementById('edit-transaction-form').addEventListener('submit', async (e) => {
@@ -940,12 +980,12 @@ window.editTransaction = function(id) {
         categoriaId
       });
       
-      closeModal();
+      modal.remove(); // Fecha o modal primeiro
       router('/dashboard'); // Recarregar dashboard
-      alert('Transação atualizada com sucesso!');
+      Snackbar({ message: 'Transação atualizada com sucesso!', type: 'success' });
     } catch (error) {
       console.error('Erro ao atualizar transação:', error);
-      alert('Erro ao atualizar transação: ' + error.message);
+      Snackbar({ message: 'Erro ao atualizar transação: ' + error.message, type: 'error' });
     }
   });
 };
@@ -963,52 +1003,56 @@ window.editCategory = function(id) {
     return;
   }
   
-  const modal = createModal('Editar Categoria', `
-    <form id="edit-category-form" class="space-y-4">
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Nome</label>
-        <input type="text" id="edit-category-nome" required 
-               value="${category.nome}"
-               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-               placeholder="Ex: Alimentação">
-      </div>
-      
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
-        <select id="edit-category-tipo" required
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-          <option value="receita" ${category.tipo === 'receita' ? 'selected' : ''}>Receita</option>
-          <option value="despesa" ${category.tipo === 'despesa' ? 'selected' : ''}>Despesa</option>
-        </select>
-      </div>
-      
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Limite (R$)</label>
-        <input type="number" id="edit-category-limite" step="0.01" min="0"
-               value="${category.limite || ''}"
-               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-               placeholder="0,00">
-        <p class="text-sm text-gray-500 mt-1">Deixe em branco se não houver limite</p>
-      </div>
-      
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Cor</label>
-        <input type="color" id="edit-category-cor" value="${category.cor || '#4F46E5'}"
-               class="w-full h-12 border border-gray-300 rounded-lg">
-      </div>
-      
-      <div class="flex justify-end space-x-3 pt-4">
-        <button type="button" onclick="closeModal()" 
-                class="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200">
-          Cancelar
-        </button>
-        <button type="submit" 
-                class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
-          Salvar
-        </button>
-      </div>
-    </form>
-  `);
+  const modal = Modal({
+    title: 'Editar Categoria',
+    content: `
+      <form id="edit-category-form" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Nome</label>
+          <input type="text" id="edit-category-nome" required 
+                 value="${category.nome}"
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                 placeholder="Ex: Alimentação">
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
+          <select id="edit-category-tipo" required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option value="receita" ${category.tipo === 'receita' ? 'selected' : ''}>Receita</option>
+            <option value="despesa" ${category.tipo === 'despesa' ? 'selected' : ''}>Despesa</option>
+          </select>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Limite (R$)</label>
+          <input type="number" id="edit-category-limite" step="0.01" min="0"
+                 value="${category.limite || ''}"
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                 placeholder="0,00">
+          <p class="text-sm text-gray-500 mt-1">Deixe em branco se não houver limite</p>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Cor</label>
+          <input type="color" id="edit-category-cor" value="${category.cor || '#4F46E5'}"
+                 class="w-full h-12 border border-gray-300 rounded-lg">
+        </div>
+        
+        <div class="flex justify-end space-x-3 pt-4">
+          <button type="button" onclick="closeModal()" 
+                  class="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200">
+            Cancelar
+          </button>
+          <button type="submit" 
+                  class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+            Salvar
+          </button>
+        </div>
+      </form>
+    `,
+    onClose: () => modal.remove()
+  });
   
   // Adicionar evento de submit
   document.getElementById('edit-category-form').addEventListener('submit', async (e) => {
@@ -1027,12 +1071,12 @@ window.editCategory = function(id) {
         cor
       });
       
-      closeModal();
+      modal.remove(); // Fecha o modal primeiro
       router('/categories'); // Recarregar categorias
-      alert('Categoria atualizada com sucesso!');
+      Snackbar({ message: 'Categoria atualizada com sucesso!', type: 'success' });
     } catch (error) {
       console.error('Erro ao atualizar categoria:', error);
-      alert('Erro ao atualizar categoria: ' + error.message);
+      Snackbar({ message: 'Erro ao atualizar categoria: ' + error.message, type: 'error' });
     }
   });
 };
@@ -1064,60 +1108,64 @@ window.showCategoryHistory = function(id) {
   
   const saldo = totalReceitas - totalDespesas;
   
-  const modal = createModal(`Histórico - ${category.nome}`, `
-    <div class="space-y-6">
-      <!-- Resumo -->
-      <div class="bg-gray-50 rounded-lg p-4">
-        <h3 class="font-semibold text-lg mb-3">Resumo</h3>
-        <div class="grid grid-cols-3 gap-4 text-center">
-          <div>
-            <p class="text-sm text-gray-600">Receitas</p>
-            <p class="text-lg font-bold text-green-600">R$ ${totalReceitas.toFixed(2)}</p>
-          </div>
-          <div>
-            <p class="text-sm text-gray-600">Despesas</p>
-            <p class="text-lg font-bold text-red-600">R$ ${totalDespesas.toFixed(2)}</p>
-          </div>
-          <div>
-            <p class="text-sm text-gray-600">Saldo</p>
-            <p class="text-lg font-bold ${saldo >= 0 ? 'text-green-600' : 'text-red-600'}">R$ ${saldo.toFixed(2)}</p>
+  const modal = Modal({
+    title: `Histórico - ${category.nome}`,
+    content: `
+      <div class="space-y-6">
+        <!-- Resumo -->
+        <div class="bg-gray-50 rounded-lg p-4">
+          <h3 class="font-semibold text-lg mb-3">Resumo</h3>
+          <div class="grid grid-cols-3 gap-4 text-center">
+            <div>
+              <p class="text-sm text-gray-600">Receitas</p>
+              <p class="text-lg font-bold text-green-600">R$ ${totalReceitas.toFixed(2)}</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-600">Despesas</p>
+              <p class="text-lg font-bold text-red-600">R$ ${totalDespesas.toFixed(2)}</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-600">Saldo</p>
+              <p class="text-lg font-bold ${saldo >= 0 ? 'text-green-600' : 'text-red-600'}">R$ ${saldo.toFixed(2)}</p>
+            </div>
           </div>
         </div>
-      </div>
-      
-      <!-- Lista de Transações -->
-      <div>
-        <h3 class="font-semibold text-lg mb-3">Transações (${transactions.length})</h3>
-        ${transactions.length === 0 ? `
-          <p class="text-gray-500 text-center py-4">Nenhuma transação encontrada nesta categoria</p>
-        ` : `
-          <div class="space-y-2 max-h-64 overflow-y-auto">
-            ${transactions.map(t => `
-              <div class="flex justify-between items-center p-3 border rounded-lg">
-                <div>
-                  <p class="font-medium">${t.descricao}</p>
-                  <p class="text-sm text-gray-500">${new Date(t.createdAt?.toDate()).toLocaleDateString()}</p>
+        
+        <!-- Lista de Transações -->
+        <div>
+          <h3 class="font-semibold text-lg mb-3">Transações (${transactions.length})</h3>
+          ${transactions.length === 0 ? `
+            <p class="text-gray-500 text-center py-4">Nenhuma transação encontrada nesta categoria</p>
+          ` : `
+            <div class="space-y-2 max-h-64 overflow-y-auto">
+              ${transactions.map(t => `
+                <div class="flex justify-between items-center p-3 border rounded-lg">
+                  <div>
+                    <p class="font-medium">${t.descricao}</p>
+                    <p class="text-sm text-gray-500">${new Date(t.createdAt?.toDate()).toLocaleDateString()}</p>
+                  </div>
+                  <div class="text-right">
+                    <span class="font-bold ${t.tipo === 'receita' ? 'text-green-600' : 'text-red-600'}">
+                      ${t.tipo === 'receita' ? '+' : '-'}R$ ${parseFloat(t.valor).toFixed(2)}
+                    </span>
+                    <p class="text-xs text-gray-500">${t.tipo}</p>
+                  </div>
                 </div>
-                <div class="text-right">
-                  <span class="font-bold ${t.tipo === 'receita' ? 'text-green-600' : 'text-red-600'}">
-                    ${t.tipo === 'receita' ? '+' : '-'}R$ ${parseFloat(t.valor).toFixed(2)}
-                  </span>
-                  <p class="text-xs text-gray-500">${t.tipo}</p>
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        `}
+              `).join('')}
+            </div>
+          `}
+        </div>
+        
+        <div class="flex justify-end">
+          <button onclick="closeModal()" 
+                  class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600">
+            Fechar
+          </button>
+        </div>
       </div>
-      
-      <div class="flex justify-end">
-        <button onclick="closeModal()" 
-                class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600">
-          Fechar
-        </button>
-      </div>
-    </div>
-  `);
+    `,
+    onClose: () => modal.remove()
+  });
 };
 
 window.copyBudgetId = function(id) {
@@ -1269,48 +1317,89 @@ window.startVoiceRecognition = function(type) {
   recognition.maxAlternatives = 1;
   
   // Mostrar modal de reconhecimento
-  const modal = createModal('Reconhecimento de Voz', `
-    <div class="text-center space-y-4">
-      <div class="w-16 h-16 bg-red-500 rounded-full mx-auto flex items-center justify-center animate-pulse">
-        <svg class="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-        </svg>
+  const modal = Modal({
+    title: 'Reconhecimento de Voz',
+    content: `
+      <div class="text-center space-y-4">
+        <div class="w-16 h-16 bg-red-500 rounded-full mx-auto flex items-center justify-center animate-pulse">
+          <svg class="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+          </svg>
+        </div>
+        <p class="text-lg font-semibold">Fale agora...</p>
+        <p class="text-sm text-gray-600" id="voice-instructions">
+          ${type === 'transaction' ? 
+            'Exemplo: "Supermercado 150 despesa alimentação"' :
+            'Exemplo: "Alimentação despesa 500"'
+          }
+        </p>
+        <div id="voice-status" class="text-sm text-blue-600">Aguardando comando...</div>
+        <div class="flex justify-center space-x-3">
+          <button onclick="closeModal()" class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600">
+            Cancelar
+          </button>
+        </div>
       </div>
-      <p class="text-lg font-semibold">Fale agora...</p>
-      <p class="text-sm text-gray-600" id="voice-instructions">
-        ${type === 'transaction' ? 
-          'Exemplo: "Supermercado 150 despesa alimentação"' :
-          'Exemplo: "Alimentação despesa 500"'
-        }
-      </p>
-      <div id="voice-status" class="text-sm text-blue-600">Aguardando comando...</div>
-      <div class="flex justify-center space-x-3">
-        <button onclick="closeModal()" class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600">
-          Cancelar
-        </button>
-      </div>
-    </div>
-  `);
+    `,
+    onClose: () => modal.remove()
+  });
+  document.body.appendChild(modal); // <-- garantir que está no DOM
   
   // Eventos de reconhecimento
   recognition.onstart = function() {
-    document.getElementById('voice-status').textContent = 'Ouvindo...';
-    document.getElementById('voice-status').className = 'text-sm text-green-600';
+    const statusEl = document.getElementById('voice-status');
+    if (statusEl) {
+      statusEl.textContent = 'Ouvindo...';
+      statusEl.className = 'text-sm text-green-600';
+    }
   };
   
   recognition.onresult = function(event) {
     const transcript = event.results[0][0].transcript.toLowerCase();
-    document.getElementById('voice-status').textContent = `Reconhecido: "${transcript}"`;
-    document.getElementById('voice-status').className = 'text-sm text-blue-600';
-    
-    // Processar comando de voz
-    processVoiceCommand(transcript, type);
+    const statusEl = document.getElementById('voice-status');
+    if (statusEl) {
+      statusEl.textContent = `Reconhecido: "${transcript}"`;
+      statusEl.className = 'text-sm text-blue-600';
+    }
+    // Novo modal para confirmação/edição
+    setTimeout(() => {
+      modal.remove();
+      const confirmModal = Modal({
+        title: 'Confirme ou edite o comando',
+        content: `
+          <form id="voice-confirm-form" class="space-y-4">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Comando reconhecido</label>
+            <input type="text" id="voice-confirm-input" value="${transcript.replace(/"/g, '&quot;')}" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+            <div class="flex justify-end space-x-3 pt-4">
+              <button type="button" onclick="closeModal()" class="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200">Cancelar</button>
+              <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Confirmar</button>
+            </div>
+          </form>
+        `,
+        onClose: () => confirmModal.remove()
+      });
+      document.body.appendChild(confirmModal);
+      const form = confirmModal.querySelector('#voice-confirm-form');
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const textoEditado = confirmModal.querySelector('#voice-confirm-input').value;
+        try {
+          await processVoiceCommand(textoEditado, type);
+          confirmModal.remove();
+        } catch (error) {
+          Snackbar({ message: 'Erro ao processar comando de voz: ' + error.message, type: 'error' });
+        }
+      });
+    }, 500);
   };
   
   recognition.onerror = function(event) {
     console.error('Erro no reconhecimento de voz:', event.error);
-    document.getElementById('voice-status').textContent = `Erro: ${event.error}`;
-    document.getElementById('voice-status').className = 'text-sm text-red-600';
+    const statusEl = document.getElementById('voice-status');
+    if (statusEl) {
+      statusEl.textContent = `Erro: ${event.error}`;
+      statusEl.className = 'text-sm text-red-600';
+    }
   };
   
   recognition.onend = function() {
@@ -1327,6 +1416,95 @@ window.startVoiceRecognition = function(type) {
 // Função para processar comandos de voz
 async function processVoiceCommand(transcript, type) {
   try {
+    // Normalizar texto
+    const texto = transcript.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
+    // Comandos de consulta
+    if (/\b(saldo|qual.*saldo|saldo atual)\b/.test(texto)) {
+      const receitas = window.appState.transactions.filter(t => t.tipo === 'receita').reduce((sum, t) => sum + parseFloat(t.valor), 0);
+      const despesas = window.appState.transactions.filter(t => t.tipo === 'despesa').reduce((sum, t) => sum + parseFloat(t.valor), 0);
+      const saldo = receitas - despesas;
+      Snackbar({ message: `Saldo atual: R$ ${saldo.toFixed(2)}`, type: 'info' });
+      return;
+    }
+    if (/\b(ultimas transacoes|mostrar transacoes|quais.*gastos|listar transacoes)\b/.test(texto)) {
+      const ultimas = window.appState.transactions.slice(-5).reverse();
+      if (ultimas.length === 0) {
+        Snackbar({ message: 'Nenhuma transação encontrada.', type: 'info' });
+        return;
+      }
+      let msg = 'Últimas transações:\n';
+      ultimas.forEach(t => {
+        const cat = window.appState.categories.find(c => c.id === t.categoriaId)?.nome || '';
+        msg += `${t.descricao} - R$ ${parseFloat(t.valor).toFixed(2)} - ${t.tipo} - ${cat}\n`;
+      });
+      alert(msg);
+      return;
+    }
+    // Comando de editar transação
+    const editarMatch = texto.match(/editar transacao (.+)/);
+    if (editarMatch) {
+      const desc = editarMatch[1].trim();
+      const trans = window.appState.transactions.find(t => t.descricao.toLowerCase().includes(desc));
+      if (trans) {
+        window.editTransaction(trans.id);
+      } else {
+        Snackbar({ message: `Transação '${desc}' não encontrada.`, type: 'error' });
+      }
+      return;
+    }
+    // Comando de excluir transação
+    const excluirMatch = texto.match(/excluir transacao (.+)/);
+    if (excluirMatch) {
+      const desc = excluirMatch[1].trim();
+      const trans = window.appState.transactions.find(t => t.descricao.toLowerCase().includes(desc));
+      if (trans) {
+        if (confirm(`Excluir transação '${trans.descricao}'?`)) {
+          await deleteTransaction(trans.id);
+          Snackbar({ message: 'Transação excluída!', type: 'success' });
+          renderDashboard();
+        }
+      } else {
+        Snackbar({ message: `Transação '${desc}' não encontrada.`, type: 'error' });
+      }
+      return;
+    }
+    // Comandos naturais para adicionar transação
+    // Ex: "gastei 50 reais no supermercado em alimentação", "recebi 2000 de salário em rendimentos"
+    const addMatch = texto.match(/(gastei|paguei|recebi|ganhei)\s+(\d+[\.,]?\d*)\s*(reais|rs)?\s*(no|na|em|de)?\s*([\w\s]+?)(?:\s+em\s+([\w\s]+))?$/);
+    if (addMatch) {
+      const verbo = addMatch[1];
+      const valor = parseFloat(addMatch[2].replace(',', '.'));
+      let tipo = 'despesa';
+      if (verbo === 'recebi' || verbo === 'ganhei') tipo = 'receita';
+      let descricao = (addMatch[5] || '').trim();
+      let categoriaNome = (addMatch[6] || '').trim();
+      // Se não houver 'em categoria', usar última palavra da descrição como categoria
+      if (!categoriaNome && descricao.includes(' ')) {
+        const partes = descricao.split(' ');
+        categoriaNome = partes[partes.length - 1];
+        descricao = partes.slice(0, -1).join(' ');
+      }
+      // Procurar categoria
+      let categoria = window.appState.categories.find(c => c.nome.toLowerCase().includes(categoriaNome));
+      if (!categoria) {
+        // Se não encontrar, pega a primeira do tipo
+        categoria = window.appState.categories.find(c => c.tipo === tipo);
+      }
+      if (!categoria) {
+        alert('Nenhuma categoria encontrada para o tipo. Crie uma categoria primeiro.');
+        return;
+      }
+      // Se descrição ficar vazia, usar categoria como fallback
+      if (!descricao) descricao = categoria.nome;
+      window.showAddTransactionModal({
+        descricao,
+        valor,
+        tipo,
+        categoriaId: categoria.id
+      });
+      return;
+    }
+    // Fallback: comandos antigos
     if (type === 'transaction') {
       await processTransactionVoice(transcript);
     } else if (type === 'category') {
@@ -1334,7 +1512,7 @@ async function processVoiceCommand(transcript, type) {
     }
   } catch (error) {
     console.error('Erro ao processar comando de voz:', error);
-    alert('Erro ao processar comando de voz: ' + error.message);
+    Snackbar({ message: 'Erro ao processar comando de voz: ' + error.message, type: 'error' });
   }
 }
 
@@ -1411,17 +1589,13 @@ async function processTransactionVoice(transcript) {
     return;
   }
   
-  // Criar transação
-  await addTransaction({
+  // Exibir formulário real já preenchido para revisão
+  window.showAddTransactionModal({
     descricao,
     valor,
     tipo,
     categoriaId: categoria.id
   });
-  
-  await refreshCurrentView();
-  alert(`Transação criada: ${descricao} - R$ ${valor.toFixed(2)} - ${tipo} - ${categoria.nome}`);
-  router('/dashboard');
 }
 
 // Processar comando de voz para categoria
@@ -1469,69 +1643,22 @@ async function processCategoryVoice(transcript) {
   // Gerar cor aleatória
   const cores = ['#4F46E5', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16'];
   const cor = cores[Math.floor(Math.random() * cores.length)];
-  // Criar categoria
-  await addCategory({
+  // Exibir formulário real já preenchido para revisão
+  window.showAddCategoryModal({
     nome,
     tipo,
     limite,
     cor
   });
-  alert(`Categoria criada: ${nome} - ${tipo} - R$ ${limite.toFixed(2)}`);
-  router('/categories');
 }
 
 // Funções auxiliares para modais
-function createModal(title, content) {
-  // Remover modal existente se houver
-  const existingModal = document.getElementById('app-modal');
-  if (existingModal) {
-    existingModal.remove();
-  }
-  
-  const modal = document.createElement('div');
-  modal.id = 'app-modal';
-  modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-  modal.innerHTML = `
-    <div class="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
-      <div class="p-6">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="text-xl font-bold text-gray-900">${title}</h2>
-          <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 text-2xl">
-            ×
-          </button>
-        </div>
-        ${content}
-      </div>
-    </div>
-  `;
-  
-  document.body.appendChild(modal);
-  
-  // Fechar modal ao clicar fora
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) {
-      closeModal();
-    }
-  });
-  
-  return modal;
-}
-
-window.closeModal = function() {
+function closeModal() {
   const modal = document.getElementById('app-modal');
   if (modal) {
     modal.remove();
   }
-};
-
-// Função de logout global
-window.logout = async () => {
-  try {
-    await signOut(auth);
-  } catch (error) {
-    console.error('Erro no logout:', error);
-  }
-};
+}
 
 // Configurar navegação
 function setupNavigation() {
@@ -1547,19 +1674,8 @@ function setupNavigation() {
 // Configurar botão de login
 function setupLoginButton() {
   const btn = document.getElementById('btn-entrar');
-  
   if (btn) {
-    btn.onclick = function() {
-      const provider = new GoogleAuthProvider();
-      signInWithPopup(auth, provider)
-        .then((result) => {
-          // Login bem-sucedido
-        })
-        .catch((error) => {
-          console.error('Erro no login:', error);
-          alert('Erro ao fazer login: ' + error.message);
-        });
-    };
+    btn.onclick = loginWithGoogle;
   }
 }
 
@@ -1621,44 +1737,47 @@ document.addEventListener('DOMContentLoaded', () => {
   setupNavigation();
   
   // Configurar FAB
-  const fab = document.getElementById('fab-add');
-  if (fab) {
-    fab.addEventListener('click', () => {
-      showAddTransactionModal();
-    });
-  }
+  renderFAB();
 
   // Configurar microfone do topo
   const voiceBtn = document.getElementById('voice-control');
   if (voiceBtn) {
     voiceBtn.addEventListener('click', () => {
-      createModal('Comando de Voz', `
-        <div class='space-y-4 text-center'>
-          <p class='text-lg font-semibold'>O que você quer fazer por voz?</p>
-          <div class='flex flex-col gap-3'>
-            <button onclick='window.startVoiceRecognition("transaction")' class='px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600'>Adicionar Transação</button>
-            <button onclick='window.startVoiceRecognition("category")' class='px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600'>Adicionar Categoria</button>
+      Modal({
+        title: 'Comando de Voz',
+        content: `
+          <div class='space-y-4 text-center'>
+            <p class='text-lg font-semibold'>O que você quer fazer por voz?</p>
+            <div class='flex flex-col gap-3'>
+              <button onclick='window.startVoiceRecognition("transaction")' class='px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600'>Adicionar Transação</button>
+              <button onclick='window.startVoiceRecognition("category")' class='px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600'>Adicionar Categoria</button>
+            </div>
+            <button onclick='closeModal()' class='mt-4 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600'>Cancelar</button>
           </div>
-          <button onclick='closeModal()' class='mt-4 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600'>Cancelar</button>
-        </div>
-      `);
+        `,
+        onClose: () => modal.remove()
+      });
     });
   }
 });
 
 window.selectSharedBudget = function() {
-  createModal('Entrar em Orçamento Compartilhado', `
-    <form id='shared-budget-form' class='space-y-4'>
-      <div>
-        <label class='block text-sm font-medium text-gray-700 mb-1'>Cole o ID do orçamento compartilhado</label>
-        <input type='text' id='shared-budget-id' required class='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500' placeholder='ID do orçamento'>
-      </div>
-      <div class='flex justify-end space-x-3 pt-4'>
-        <button type='button' onclick='closeModal()' class='px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200'>Cancelar</button>
-        <button type='submit' class='px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600'>Entrar</button>
-      </div>
-    </form>
-  `);
+  Modal({
+    title: 'Entrar em Orçamento Compartilhado',
+    content: `
+      <form id='shared-budget-form' class='space-y-4'>
+        <div>
+          <label class='block text-sm font-medium text-gray-700 mb-1'>Cole o ID do orçamento compartilhado</label>
+          <input type='text' id='shared-budget-id' required class='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500' placeholder='ID do orçamento'>
+        </div>
+        <div class='flex justify-end space-x-3 pt-4'>
+          <button type='button' onclick='closeModal()' class='px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200'>Cancelar</button>
+          <button type='submit' class='px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600'>Entrar</button>
+        </div>
+      </form>
+    `,
+    onClose: () => modal.remove()
+  });
   document.getElementById('shared-budget-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const id = document.getElementById('shared-budget-id').value.trim();
@@ -1678,9 +1797,9 @@ window.selectSharedBudget = function() {
       await loadTransactions();
       await loadCategories();
       router('/dashboard');
-      alert('Você entrou no orçamento compartilhado!');
+      Snackbar({ message: 'Você entrou no orçamento compartilhado!', type: 'success' });
     } catch (err) {
-      alert('Erro ao entrar no orçamento: ' + err.message);
+      Snackbar({ message: 'Erro ao entrar no orçamento: ' + err.message, type: 'error' });
     }
   });
 };
@@ -2249,7 +2368,22 @@ window.generateUserGuide = function() {
   doc.save('Servo-Tech-Financas-Guia-Usuario.pdf');
   } catch (error) {
     console.error('Erro ao gerar PDF:', error);
-    alert('Erro ao gerar PDF. Verifique se a biblioteca jsPDF está carregada.');
+    Snackbar({ message: 'Erro ao gerar PDF. Verifique se a biblioteca jsPDF está carregada.', type: 'error' });
   }
 };
 // ... existing code ...
+
+function renderFAB() {
+  const oldFab = document.getElementById('fab-add');
+  if (oldFab) oldFab.remove();
+  const fab = FAB({
+    onClick: showAddTransactionModal,
+    icon: '<svg width="24" height="24" fill="none" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>',
+    label: 'Adicionar transação'
+  });
+  fab.id = 'fab-add';
+  document.body.appendChild(fab);
+}
+
+// ... após a definição das funções ...
+window.closeModal = closeModal;
