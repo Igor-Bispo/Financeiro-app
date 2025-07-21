@@ -23,10 +23,7 @@ window.FirebaseApp = app;
 window.FirebaseAuth = auth;
 window.FirebaseDB = db;
 
-// Remover console.log de debug e manter apenas logs essenciais
-console.log('Firebase initialized successfully');
-console.log('Auth:', auth);
-console.log('DB:', db);
+// Firebase inicializado com sucesso
 
 // Estado global da aplicação
 window.appState = {
@@ -135,12 +132,12 @@ async function deleteTransaction(transactionId) {
 
 async function loadTransactions() {
   try {
-    console.log('Loading transactions for user:', window.appState.currentUser.uid);
-    console.log('Current budget:', window.appState.currentBudget?.id);
+    const user = auth.currentUser;
+    if (!user) return;
     
     const q = query(
       collection(db, 'transactions'),
-      where('userId', '==', window.appState.currentUser.uid),
+      where('userId', '==', user.uid),
       where('budgetId', '==', window.appState.currentBudget?.id)
     );
     const querySnapshot = await getDocs(q);
@@ -148,7 +145,6 @@ async function loadTransactions() {
       id: doc.id,
       ...doc.data()
     }));
-    console.log('Transactions loaded successfully:', window.appState.transactions.length);
   } catch (error) {
     console.error('Erro ao carregar transações:', error);
   }
@@ -159,15 +155,13 @@ async function addCategory(categoryData) {
   try {
     const user = auth.currentUser;
     if (!user) throw new Error('Usuário não autenticado');
-
     const docRef = await addDoc(collection(db, 'categories'), {
       ...categoryData,
       userId: user.uid,
+      budgetId: window.appState.currentBudget?.id,
       createdAt: serverTimestamp()
     });
-
-    console.log('Categoria adicionada com ID:', docRef.id);
-    refreshCurrentView(); // Atualizar interface
+    await refreshCurrentView();
     return docRef.id;
   } catch (error) {
     console.error('Erro ao adicionar categoria:', error);
@@ -179,14 +173,11 @@ async function updateCategory(categoryId, categoryData) {
   try {
     const user = auth.currentUser;
     if (!user) throw new Error('Usuário não autenticado');
-
     await updateDoc(doc(db, 'categories', categoryId), {
       ...categoryData,
       updatedAt: serverTimestamp()
     });
-
-    console.log('Categoria atualizada:', categoryId);
-    refreshCurrentView(); // Atualizar interface
+    await refreshCurrentView();
   } catch (error) {
     console.error('Erro ao atualizar categoria:', error);
     throw error;
@@ -197,10 +188,8 @@ async function deleteCategory(categoryId) {
   try {
     const user = auth.currentUser;
     if (!user) throw new Error('Usuário não autenticado');
-
     await deleteDoc(doc(db, 'categories', categoryId));
-    console.log('Categoria excluída:', categoryId);
-    refreshCurrentView(); // Atualizar interface
+    await refreshCurrentView();
   } catch (error) {
     console.error('Erro ao excluir categoria:', error);
     throw error;
@@ -209,12 +198,12 @@ async function deleteCategory(categoryId) {
 
 async function loadCategories() {
   try {
-    console.log('Loading categories for user:', window.appState.currentUser.uid);
-    console.log('Current budget:', window.appState.currentBudget?.id);
+    const user = auth.currentUser;
+    if (!user) return;
     
     const q = query(
       collection(db, 'categories'),
-      where('userId', '==', window.appState.currentUser.uid),
+      where('userId', '==', user.uid),
       where('budgetId', '==', window.appState.currentBudget?.id)
     );
     const querySnapshot = await getDocs(q);
@@ -222,7 +211,6 @@ async function loadCategories() {
       id: doc.id,
       ...doc.data()
     }));
-    console.log('Categories loaded successfully:', window.appState.categories.length);
   } catch (error) {
     console.error('Erro ao carregar categorias:', error);
   }
@@ -233,15 +221,12 @@ async function addBudget(budgetData) {
   try {
     const user = auth.currentUser;
     if (!user) throw new Error('Usuário não autenticado');
-
     const docRef = await addDoc(collection(db, 'budgets'), {
       ...budgetData,
       userId: user.uid,
       createdAt: serverTimestamp()
     });
-
-    console.log('Orçamento adicionado com ID:', docRef.id);
-    refreshCurrentView(); // Atualizar interface
+    await refreshCurrentView();
     return docRef.id;
   } catch (error) {
     console.error('Erro ao adicionar orçamento:', error);
@@ -251,18 +236,18 @@ async function addBudget(budgetData) {
 
 async function loadBudgets() {
   try {
-    console.log('Loading budgets for user:', window.appState.currentUser.uid);
+    const user = auth.currentUser;
+    if (!user) return;
     
     const q = query(
       collection(db, 'budgets'),
-      where('userId', '==', window.appState.currentUser.uid)
+      where('userId', '==', user.uid)
     );
     const querySnapshot = await getDocs(q);
     window.appState.budgets = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
-    console.log('Budgets loaded successfully:', window.appState.budgets.length);
   } catch (error) {
     console.error('Erro ao carregar orçamentos:', error);
   }
@@ -1543,7 +1528,6 @@ window.closeModal = function() {
 window.logout = async () => {
   try {
     await signOut(auth);
-    console.log('Logout realizado com sucesso');
   } catch (error) {
     console.error('Erro no logout:', error);
   }
@@ -1595,31 +1579,39 @@ function showLoading(show) {
 // Listener de autenticação
 auth.onAuthStateChanged(async (user) => {
   showLoading(true);
-  console.log('Auth state changed:', user ? 'User logged in' : 'User logged out');
+  
   if (user) {
     window.appState.currentUser = user;
     try {
       await loadBudgets();
       if (window.appState.budgets.length === 0) {
-        const defaultBudgetId = await addBudget({ nome: 'Orçamento Principal', descricao: 'Orçamento padrão criado automaticamente' });
-        window.appState.currentBudget = { id: defaultBudgetId, nome: 'Orçamento Principal' };
+        // Criar orçamento padrão se não existir
+        const budgetId = await addBudget({
+          nome: 'Orçamento Principal',
+          descricao: 'Orçamento padrão do usuário'
+        });
+        await setCurrentBudget({ id: budgetId, nome: 'Orçamento Principal' });
       } else {
-        window.appState.currentBudget = window.appState.budgets[0];
+        // Usar o primeiro orçamento como padrão
+        await setCurrentBudget(window.appState.budgets[0]);
       }
-      // Só agora ativar o listener
-      listenTransactions();
+      
+      await loadTransactions();
       await loadCategories();
-      showLoading(false);
+      renderDashboard();
       toggleLoginPage(false);
-      router('/dashboard');
-    } catch (e) {
-      showLoading(false);
-      alert('Erro ao carregar dados: ' + e.message);
+    } catch (error) {
+      console.error('Erro ao carregar dados do usuário:', error);
     }
   } else {
-    showLoading(false);
+    window.appState.currentUser = null;
+    window.appState.transactions = [];
+    window.appState.categories = [];
+    window.appState.budgets = [];
+    window.appState.currentBudget = null;
     toggleLoginPage(true);
   }
+  showLoading(false);
 });
 
 // Inicialização quando o DOM estiver pronto

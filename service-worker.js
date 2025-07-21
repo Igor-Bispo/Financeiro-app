@@ -16,25 +16,11 @@ const ASSETS = [
   '/',
   '/index.html',
   '/css/styles.css',
-  '/js/firebase/config.js',
-  '/js/firebase/auth.js',
-  '/js/firebase/database.js',
-  '/js/utils/helpers.js',
-  '/js/utils/ui.js',
-  '/js/utils/storage.js',
-  '/js/utils/notifications.js',
-  '/js/utils/i18n.js',
-  '/js/modules/transactions.js',
-  '/js/modules/categorias.js',
-  '/js/modules/goals.js',
-  '/js/modules/budgets.js',
-  '/js/modules/voice-recognition.js',
   '/js/app.js',
   '/manifest.json',
   '/favicon.ico',
-  '/icon-192.webp',
-  '/icon-512.webp',
-  '/splash-screen.webp'
+  '/icon-192.png',
+  '/icon-512.png'
 ];
 
 // Recursos externos para cache
