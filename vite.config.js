@@ -7,6 +7,10 @@ export default defineConfig({
   build: {
     outDir: '../dist',
     emptyOutDir: true,
+    cssCodeSplit: false,
+  },
+  css: {
+    postcss: false
   },
   resolve: {
     alias: {
