@@ -8,10 +8,11 @@ export default defineConfig({
     outDir: '../dist',
     emptyOutDir: true,
     cssCodeSplit: false,
+    rollupOptions: {
+      external: ['css']
+    }
   },
-  css: {
-    postcss: false
-  },
+  css: false,
   resolve: {
     alias: {
       '@js': resolve(__dirname, 'src/js'),
