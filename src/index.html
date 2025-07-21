@@ -18,258 +18,6 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/css/styles.css" />
-    <style>
-      body {
-        font-family: 'Inter', sans-serif;
-        padding-bottom: 80px; /* Espaço para bottom navigation */
-        transition:
-          background-color 0.3s ease,
-          color 0.3s ease;
-      }
-
-      /* Dark mode transitions */
-      * {
-        transition:
-          background-color 0.3s ease,
-          border-color 0.3s ease,
-          color 0.3s ease;
-      }
-
-      /* Bottom Navigation */
-      .bottom-nav {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        background: white;
-        border-top: 1px solid #e5e7eb;
-        z-index: 1000;
-        padding: 8px 0;
-        box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1);
-        transition:
-          background-color 0.3s ease,
-          border-color 0.3s ease;
-      }
-
-      .dark .bottom-nav {
-        background: #1f2937;
-        border-top-color: #374151;
-        box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.3);
-      }
-
-      .nav-item {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 8px 12px;
-        border-radius: 8px;
-        transition: all 0.2s;
-        min-height: 44px; /* Touch-friendly */
-        justify-content: center;
-        color: #6b7280;
-      }
-
-      .nav-item.active {
-        background: #f3f4f6;
-        color: #4f46e5;
-      }
-
-      .dark .nav-item {
-        color: #9ca3af;
-      }
-
-      .dark .nav-item.active {
-        background: #374151;
-        color: #6366f1;
-      }
-
-      .nav-item:active {
-        background: #e5e7eb;
-        transform: scale(0.95);
-      }
-
-      .dark .nav-item:active {
-        background: #4b5563;
-      }
-
-      /* Floating Action Button */
-      .fab {
-        position: fixed;
-        bottom: 100px;
-        right: 20px;
-        width: 56px;
-        height: 56px;
-        border-radius: 50%;
-        background: #4f46e5;
-        color: white;
-        border: none;
-        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
-        z-index: 999;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s;
-        min-height: 44px; /* Touch-friendly */
-      }
-
-      .fab:hover {
-        background: #4338ca;
-        transform: scale(1.05);
-      }
-
-      .fab:active {
-        transform: scale(0.95);
-      }
-
-      /* Content sections */
-      .content-section {
-        display: none;
-      }
-
-      .content-section.active {
-        display: block;
-      }
-
-      /* Touch-friendly buttons */
-      .touch-btn {
-        min-height: 44px;
-        min-width: 44px;
-        padding: 12px 16px;
-        border-radius: 8px;
-        font-weight: 500;
-        transition: all 0.2s;
-      }
-
-      .touch-btn:active {
-        transform: scale(0.95);
-      }
-
-      /* Dark mode specific styles */
-      .dark body {
-        background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-      }
-
-      .dark .bg-gray-50 {
-        background-color: #111827;
-      }
-
-      .dark .bg-white {
-        background-color: #1f2937;
-      }
-
-      .dark .text-gray-900 {
-        color: #f9fafb;
-      }
-
-      .dark .text-gray-700 {
-        color: #d1d5db;
-      }
-
-      .dark .text-gray-600 {
-        color: #9ca3af;
-      }
-
-      .dark .text-gray-400 {
-        color: #6b7280;
-      }
-
-      .dark .border-gray-200 {
-        border-color: #374151;
-      }
-
-      .dark .border-gray-300 {
-        border-color: #4b5563;
-      }
-
-      .dark .shadow {
-        box-shadow:
-          0 1px 3px 0 rgba(0, 0, 0, 0.3),
-          0 1px 2px 0 rgba(0, 0, 0, 0.2);
-      }
-
-      .dark .shadow-sm {
-        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
-      }
-
-      .dark .shadow-lg {
-        box-shadow:
-          0 10px 15px -3px rgba(0, 0, 0, 0.3),
-          0 4px 6px -2px rgba(0, 0, 0, 0.2);
-      }
-
-      /* Theme toggle button */
-      .theme-toggle {
-        position: relative;
-        width: 48px;
-        height: 24px;
-        background: #e5e7eb;
-        border-radius: 12px;
-        cursor: pointer;
-        transition: background-color 0.3s ease;
-        border: none;
-        outline: none;
-      }
-
-      .dark .theme-toggle {
-        background: #4f46e5;
-      }
-
-      .theme-toggle::after {
-        content: '';
-        position: absolute;
-        top: 2px;
-        left: 2px;
-        width: 20px;
-        height: 20px;
-        background: white;
-        border-radius: 50%;
-        transition: transform 0.3s ease;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-      }
-
-      .dark .theme-toggle::after {
-        transform: translateX(24px);
-      }
-
-      .theme-toggle .icon {
-        position: absolute;
-        top: 50%;
-        transform: translateY(-50%);
-        font-size: 12px;
-        transition: opacity 0.3s ease;
-      }
-
-      .theme-toggle .sun-icon {
-        left: 6px;
-        opacity: 1;
-      }
-
-      .theme-toggle .moon-icon {
-        right: 6px;
-        opacity: 0;
-      }
-
-      .dark .theme-toggle .sun-icon {
-        opacity: 0;
-      }
-
-      .dark .theme-toggle .moon-icon {
-        opacity: 1;
-      }
-
-      /* Mobile optimizations */
-      @media (max-width: 768px) {
-        .mobile-card {
-          margin: 8px 0;
-          padding: 16px;
-        }
-
-        .mobile-grid {
-          grid-template-columns: 1fr;
-          gap: 16px;
-        }
-      }
-    </style>
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-7RW2F269V6"></script>
     <script>
@@ -286,7 +34,7 @@
         <h1 id="page-title">Dashboard</h1>
         <button id="voice-control" class="voice-btn" aria-label="Controle por voz">
           <svg><!-- Ícone microfone --></svg>
-              </button>
+        </button>
       </header>
       <!-- Conteúdo Dinâmico SPA -->
       <main id="app-content" class="content-area">
@@ -297,19 +45,19 @@
         <button data-route="/dashboard" class="nav-btn active">
           <svg><!-- Ícone home --></svg>
           <span>Dashboard</span>
-                  </button>
+        </button>
         <button data-route="/transactions" class="nav-btn">
           <svg><!-- Ícone transação --></svg>
           <span>Transações</span>
-              </button>
+        </button>
         <button data-route="/categories" class="nav-btn">
           <svg><!-- Ícone categorias --></svg>
           <span>Categorias</span>
-                  </button>
+        </button>
         <button data-route="/settings" class="nav-btn">
           <svg><!-- Ícone configurações --></svg>
           <span>Config</span>
-              </button>
+        </button>
       </nav>
       <!-- Modal de Voz -->
       <div id="voice-modal" class="modal" style="display:none;">
@@ -319,9 +67,9 @@
             <p>Ouvindo: <span id="voice-text"></span></p>
           </div>
           <button id="cancel-voice">Cancelar</button>
-            </div>
-          </div>
         </div>
+      </div>
+    </div>
 
     <!-- Floating Action Button -->
     <button

@@ -13,6 +13,7 @@
     "lint": "eslint src --ext .js",
     "format": "prettier --write src",
     "test": "vitest",
+    "clean": "rimraf dist",
     "postbuild": "copy manifest.json dist\\ && copy service-worker.js dist\\ && copy icon-192.png dist\\ && copy icon-512.png dist\\"
   },
   "keywords": [
@@ -22,7 +23,7 @@
     "voice",
     "controle"
   ],
-  "author": "Seu Nome",
+  "author": "Igor Bispo",
   "license": "MIT",
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.11",
@@ -33,6 +34,7 @@
     "firebase-tools": "^12.0.0",
     "postcss": "^8.5.6",
     "prettier": "^3.6.2",
+    "rimraf": "^5.0.5",
     "tailwindcss": "^4.1.11",
     "vite": "^7.0.5",
     "vite-plugin-compression": "^0.5.1",
@@ -49,8 +51,5 @@
   "bugs": {
     "url": "https://github.com/Igor-Bispo/Financeiro-app/issues"
   },
-  "homepage": "https://github.com/Igor-Bispo/Financeiro-app#readme",
-  "dependencies": {
-    "firebase-admin": "^13.4.0"
-  }
+  "homepage": "https://github.com/Igor-Bispo/Financeiro-app#readme"
 }

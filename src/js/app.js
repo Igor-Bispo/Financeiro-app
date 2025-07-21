@@ -23,6 +23,7 @@ window.FirebaseApp = app;
 window.FirebaseAuth = auth;
 window.FirebaseDB = db;
 
+// Remover console.log de debug e manter apenas logs essenciais
 console.log('Firebase initialized successfully');
 console.log('Auth:', auth);
 console.log('DB:', db);
@@ -100,8 +101,6 @@ async function addTransaction(transactionData) {
       budgetId,
       createdAt: serverTimestamp()
     });
-    console.log('Transação adicionada com ID:', docRef.id);
-    // refreshCurrentView(); // Não precisa mais, tempo real
     return docRef.id;
   } catch (error) {
     console.error('Erro ao adicionar transação:', error);
@@ -117,8 +116,6 @@ async function updateTransaction(transactionId, transactionData) {
       ...transactionData,
       updatedAt: serverTimestamp()
     });
-    console.log('Transação atualizada:', transactionId);
-    // refreshCurrentView(); // Não precisa mais, tempo real
   } catch (error) {
     console.error('Erro ao atualizar transação:', error);
     throw error;
@@ -130,8 +127,6 @@ async function deleteTransaction(transactionId) {
     const user = auth.currentUser;
     if (!user) throw new Error('Usuário não autenticado');
     await deleteDoc(doc(db, 'transactions', transactionId));
-    console.log('Transação excluída:', transactionId);
-    // refreshCurrentView(); // Não precisa mais, tempo real
   } catch (error) {
     console.error('Erro ao excluir transação:', error);
     throw error;
