@@ -8,7 +8,7 @@ export function BottomNav(activeRoute) {
     { icon: '♻️', label: 'Recorrentes', route: '/recorrentes' },
     { icon: '⚙️', label: 'Config.', route: '/settings' }
   ].map(tab => `
-    <button class="nav-btn flex flex-col items-center gap-0.5 text-gray-500 dark:text-gray-400 hover:text-blue-500 ${activeRoute === tab.route ? 'text-blue-600 font-semibold' : ''}"
+    <button class="nav-btn flex flex-col items-center gap-0.5 px-2 py-1 md:px-4 md:py-2 text-gray-500 dark:text-gray-400 hover:text-blue-500 transition-all duration-200 ${activeRoute === tab.route ? 'bg-blue-500 text-white font-semibold rounded-xl px-4 py-2 shadow-md scale-105' : ''}"
             data-route="${tab.route}">
       <span class="text-xl">${tab.icon}</span>
       <span>${tab.label}</span>

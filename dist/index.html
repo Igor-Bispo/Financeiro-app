@@ -24,7 +24,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css" />
+    <!-- Removido: <link rel="stylesheet" href="styles.css" /> -->
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-7RW2F269V6"></script>
     <script>
@@ -36,14 +36,10 @@
     <!-- Scripts removidos - usando app.js direto -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <style>
-body, .font-inter {
-  font-family: 'Inter', sans-serif !important;
-}
-</style>
-    <script type="module" crossorigin src="/assets/index-DiaJOjjL.js"></script>
+    <script type="module" crossorigin src="/assets/index-ev4vPP0a.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/style-CSCj5d0_.css">
   </head>
-  <body class="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-400 p-4" style="display: flex; flex-direction: column; min-height: 100vh;">
+  <body class="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-400 p-4 font-sans font-inter" style="display: flex; flex-direction: column; min-height: 100vh; font-family: 'Inter', sans-serif;">
     <!-- Página de Login dedicada -->
     <div id="login-page" class="fixed inset-0 flex items-center justify-center bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-400 z-50">
       <div class="bg-white/90 rounded-3xl shadow-2xl p-10 flex flex-col items-center gap-8 max-w-xs w-full mx-4">
@@ -58,7 +54,10 @@ body, .font-inter {
     <div class="app-container" style="flex: 1 0 auto; display: flex; flex-direction: column;">
       <!-- Top Bar -->
       <header class="app-header" style="display: flex; align-items: center; justify-content: space-between; padding: 1rem; background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.04); position: sticky; top: 0; z-index: 10; border-radius: 12px; margin-bottom: 1rem;">
-        <h1 id="page-title" style="font-size: 1.5rem; font-weight: 700; color: #1f2937; margin: 0;">Servo Tech Finanças</h1>
+        <button id="menu-btn" aria-label="Abrir menu" style="background: none; border: none; margin-right: 1rem; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; width: 40px; height: 40px;">
+          <svg width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="#4F46E5" stroke-width="2"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
+        </button>
+        <h1 id="page-title" style="font-size: 1.5rem; font-weight: 700; color: #1f2937; margin: 0; flex:1;">Servo Tech Finanças</h1>
         <button id="voice-control" class="voice-btn" aria-label="Controle por voz" style="background: #4f46e5; color: white; border: none; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;">
           <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />

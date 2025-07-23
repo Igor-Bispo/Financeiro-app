@@ -12,7 +12,6 @@ export default defineConfig({
       external: ['css']
     }
   },
-  css: false,
   resolve: {
     alias: {
       '@js': resolve(__dirname, 'src/js'),

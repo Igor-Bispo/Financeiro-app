@@ -3,33 +3,48 @@ import { RecorrenteForm } from './ui/RecorrenteForm.js';
 import { addDespesaRecorrente } from './recorrentes.js';
 import { Snackbar } from './ui/Snackbar.js';
 
-window.showAddRecorrenteModal = function () {
+window.showAddRecorrenteModal = function (dados = {}) {
+  const isEdicao = !!dados && Object.keys(dados).length > 0;
   const modal = Modal({
-    title: 'Nova Despesa Recorrente',
+    title: isEdicao ? 'Editar Despesa Recorrente' : 'Nova Despesa Recorrente',
     content: '',
     onClose: () => modal.remove()
   });
 
   const user = window.FirebaseAuth.currentUser;
   const budget = window.appState.currentBudget;
-  if (!user || !budget) return;
+  if (!user) {
+    Snackbar({ message: 'Você precisa estar logado para adicionar recorrentes.', type: 'error' });
+    return;
+  }
+  if (!budget) {
+    Snackbar({ message: 'Selecione um orçamento antes de adicionar recorrentes.', type: 'error' });
+    return;
+  }
 
   const form = RecorrenteForm({
-    onSubmit: async (dados) => {
+    initialData: dados,
+    onSubmit: async (dadosForm) => {
       try {
-        await addDespesaRecorrente(user.uid, budget.id, dados);
+        console.log('Iniciando adição de recorrente');
+        await addDespesaRecorrente(user.uid, budget.id, dadosForm);
+        console.log('Recorrente adicionada, aguardando delay');
+        await new Promise(res => setTimeout(res, 200));
+        console.log('Delay concluído, carregando recorrentes');
+        await window.loadRecorrentes();
         modal.remove();
-        Snackbar({ message: 'Despesa recorrente salva!', type: 'success' });
-        if (typeof window.loadRecorrentes === 'function') {
-          await window.loadRecorrentes();
-        }
-        if (window.location.hash.includes('recorrentes')) {
-          if (typeof window.renderRecorrentes === 'function') await window.renderRecorrentes();
-        } else {
-          if (typeof window.renderDashboard === 'function') await window.renderDashboard();
-        }
+        setTimeout(() => {
+          // Remover alternância de abas automática
+          if (window.location.hash.includes('recorrentes')) {
+            window._renderRecorrentes();
+          } else if (window.location.hash.includes('dashboard')) {
+            window.renderDashboard();
+          }
+          Snackbar({ message: isEdicao ? 'Despesa recorrente editada!' : 'Despesa recorrente salva!', type: 'success' });
+          document.dispatchEvent(new CustomEvent('recorrente-adicionada'));
+        }, 50);
       } catch (err) {
-        console.error(err);
+        console.error('Erro ao adicionar recorrente:', err);
         Snackbar({ message: 'Erro ao salvar recorrente', type: 'error' });
       }
     }

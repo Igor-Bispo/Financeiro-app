@@ -1,3 +1,4 @@
+import '../css/styles.css';
 import { aplicarRecorrentesDoMes } from './recorrentes/aplicarRecorrentes.js';
 import './showAddRecorrenteModal.js';
 import { setupThemeToggle } from './ui/ThemeToggle.js';
@@ -12,6 +13,8 @@ import { Snackbar } from './ui/Snackbar.js';
 import { FAB } from './ui/FAB.js';
 import { BottomNav } from './ui/BottomNav.js';
 import { renderRecorrentes as _renderRecorrentes } from './recorrentes/RecorrentesPage.js';
+import { renderDrawer, toggleDrawer } from './ui/Drawer.js';
+window._renderRecorrentes = _renderRecorrentes;
 
 // Configurar persistência da sessão
 // setPersistence(auth, browserLocalPersistence);
@@ -249,6 +252,15 @@ async function loadBudgets() {
   }
 }
 
+// ... existing code ...
+// Após a função loadBudgets (linha ~235), inserir:
+function setCurrentBudget(budget) {
+  window.appState.currentBudget = budget;
+  listenTransactions();
+  listenRecorrentes();
+}
+// ... existing code ...
+
 // Funções de renderização das telas
 function setSubtitle(subtitle) {
   // Função agora não faz nada para evitar duplicidade de título
@@ -421,8 +433,8 @@ async function renderDashboard() {
     `;
     // Após renderizar o conteúdo:
     renderFAB();
-    enableSwipeNavigation();
     renderBottomNav('/dashboard');
+    setTimeout(() => enableSwipeNavigation(), 0);
   } catch (err) {
     console.error('Erro ao renderizar dashboard:', err);
     const content = document.getElementById('app-content');
@@ -431,6 +443,7 @@ async function renderDashboard() {
     }
   }
 }
+window.renderDashboard = renderDashboard;
 
 function renderTransactions() {
   const content = document.getElementById('app-content');
@@ -472,8 +485,8 @@ function renderTransactions() {
     </div>
   `;
   renderFAB();
-  enableSwipeNavigation();
   renderBottomNav('/transactions');
+  setTimeout(() => enableSwipeNavigation(), 0);
 }
 
 function renderCategories() {
@@ -532,8 +545,8 @@ function renderCategories() {
     </div>
   `;
   renderFAB();
-  enableSwipeNavigation();
   renderBottomNav('/categories');
+  setTimeout(() => enableSwipeNavigation(), 0);
 }
 
 // ... existing code ...
@@ -662,8 +675,8 @@ function renderSettings() {
     };
   }
   renderFAB();
-  enableSwipeNavigation();
   renderBottomNav('/settings');
+  setTimeout(() => enableSwipeNavigation(), 0);
 }
 // ... existing code ...
 
@@ -701,12 +714,7 @@ async function router(path) {
       await renderDashboard();
   }
 }
-
-// Reforçar listener ao trocar de orçamento
-function setCurrentBudget(budget) {
-  window.appState.currentBudget = budget;
-  listenTransactions();
-}
+window.router = router;
 
 // Funções globais para modais e ações
 window.showAddTransactionModal = function(initialData = {}) {
@@ -927,7 +935,7 @@ window.showAddBudgetModal = function() {
       });
       
       modal.remove(); // Fecha o modal primeiro
-      router('/settings'); // Recarregar configurações
+      // router('/settings'); // Removido para não trocar de aba
       Snackbar({ message: 'Orçamento adicionado com sucesso!', type: 'success' });
     } catch (error) {
       console.error('Erro ao adicionar orçamento:', error);
@@ -1010,7 +1018,7 @@ window.editTransaction = function(id) {
             categoriaId
           });
           modal.remove();
-          router('/dashboard');
+          // router('/dashboard'); // Removido para não trocar de aba
           Snackbar({ message: 'Transação atualizada com sucesso!', type: 'success' });
         } catch (error) {
           console.error('Erro ao atualizar transação:', error);
@@ -1097,7 +1105,7 @@ window.editCategory = function(id) {
             cor
           });
           modal.remove();
-          router('/categories');
+          // router('/categories'); // Removido para não trocar de aba
           Snackbar({ message: 'Categoria atualizada com sucesso!', type: 'success' });
         } catch (error) {
           console.error('Erro ao atualizar categoria:', error);
@@ -1175,7 +1183,7 @@ window.selectBudget = function(id) {
   window.appState.currentBudget = window.appState.budgets.find(b => b.id === id);
   loadTransactions();
   loadCategories();
-  router('/dashboard');
+  // router('/dashboard'); // Removido para não trocar de aba
 };
 
 window.exportToExcel = function() {
@@ -1739,6 +1747,13 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
   }
+  renderDrawer();
+  const menuBtn = document.getElementById('menu-btn');
+  if (menuBtn) {
+    menuBtn.addEventListener('click', () => {
+      toggleDrawer();
+    });
+  }
 });
 
 window.selectSharedBudget = function() {
@@ -1776,7 +1791,7 @@ window.selectSharedBudget = function() {
       closeModal();
       await loadTransactions();
       await loadCategories();
-      router('/dashboard');
+      // router('/dashboard'); // Removido para não trocar de aba
       Snackbar({ message: 'Você entrou no orçamento compartilhado!', type: 'success' });
     } catch (err) {
       Snackbar({ message: 'Erro ao entrar no orçamento: ' + err.message, type: 'error' });
@@ -2514,16 +2529,18 @@ rotinaFechamentoMensal();
 async function loadRecorrentes() {
   try {
     const user = window.FirebaseAuth.currentUser;
-    if (!user) {
+    const budget = window.appState.currentBudget;
+    if (!user || !budget) {
       window.appState.recorrentes = [];
       return;
     }
-    window.appState.recorrentes = await getDespesasRecorrentes(user.uid);
+    window.appState.recorrentes = await getDespesasRecorrentes(user.uid, budget.id);
   } catch (error) {
     window.appState.recorrentes = [];
     console.error('Erro ao carregar despesas recorrentes:', error);
   }
 }
+window.loadRecorrentes = loadRecorrentes;
 
 // Adicionar função para renderizar o BottomNav
 function renderBottomNav(activeRoute) {
@@ -2543,7 +2560,9 @@ async function renderRecorrentes() {
   await _renderRecorrentes();
   renderFAB();
   renderBottomNav('/recorrentes');
+  setTimeout(() => enableSwipeNavigation(), 0);
 }
+window.renderRecorrentes = renderRecorrentes;
 
 // Atualizar o objeto de rotas
 const routes = {
@@ -2553,3 +2572,35 @@ const routes = {
   '/recorrentes': renderRecorrentes,
   '/settings': renderSettings,
 };
+
+// ... existing code ...
+document.addEventListener('recorrente-adicionada', () => {
+  window.renderDashboard();
+});
+// ... existing code ...
+
+// ... existing code ...
+let unsubscribeRecorrentes = null;
+function listenRecorrentes() {
+  if (unsubscribeRecorrentes) unsubscribeRecorrentes();
+  const userId = window.appState.currentUser?.uid;
+  const budgetId = window.appState.currentBudget?.id;
+  if (!userId || !budgetId) return;
+  const ref = collection(db, 'users', userId, 'despesasRecorrentes');
+  let q = ref;
+  if (budgetId) {
+    q = query(ref, where('budgetId', '==', budgetId));
+  }
+  unsubscribeRecorrentes = onSnapshot(q, (querySnapshot) => {
+    window.appState.recorrentes = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    // Atualizar interface se estiver na aba de recorrentes ou dashboard
+    const currentTab = document.querySelector('.nav-item.active')?.getAttribute('data-tab');
+    if (["recorrentes", "dashboard"].includes(currentTab)) {
+      if (currentTab === "recorrentes") window.renderRecorrentes();
+      if (currentTab === "dashboard") window.renderDashboard();
+    }
+  });
+}
+// Chamar listenRecorrentes após login e ao trocar de orçamento
+// No onAuthStateChanged, após definir currentUser e currentBudget:
+// ... existing code ...

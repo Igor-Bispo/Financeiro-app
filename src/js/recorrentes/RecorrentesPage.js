@@ -7,14 +7,8 @@ async function handleDeleteRecorrente(id) {
   if (!user) return;
   await deleteDespesaRecorrente(user.uid, id);
   Snackbar({ message: 'Recorrente excluída com sucesso.', type: 'success' });
-  if (typeof window.loadRecorrentes === 'function') {
-    await window.loadRecorrentes();
-  }
-  if (window.location.hash.includes('recorrentes')) {
-    if (typeof window.renderRecorrentes === 'function') await window.renderRecorrentes();
-  } else {
-    if (typeof window.renderDashboard === 'function') await window.renderDashboard();
-  }
+  await window.loadRecorrentes();
+  renderRecorrentes();
 }
 
 function handleToggleRecorrente(rec) {
@@ -22,7 +16,7 @@ function handleToggleRecorrente(rec) {
   if (!user) return;
   updateDespesaRecorrente(user.uid, rec.id, { ativa: !rec.ativa });
   Snackbar({ message: 'Status atualizado com sucesso.', type: 'info' });
-  if (typeof window.renderRecorrentes === 'function') window.renderRecorrentes();
+  window.loadRecorrentes().then(renderRecorrentes);
 }
 window.handleDeleteRecorrente = handleDeleteRecorrente;
 window.handleToggleRecorrente = handleToggleRecorrente;
@@ -56,7 +50,7 @@ function tentarNotificar(rec) {
   });
 }
 
-export async function renderRecorrentes() {
+export function renderRecorrentes() {
   const user = window.FirebaseAuth?.currentUser;
   const budget = window.appState?.currentBudget;
   const content = document.getElementById('app-content');
@@ -73,7 +67,8 @@ export async function renderRecorrentes() {
     return;
   }
 
-  const recorrentes = await getDespesasRecorrentes(user.uid, budget.id);
+  const recorrentes = window.appState.recorrentes || [];
+  console.log('RenderRecorrentes:', recorrentes);
   const lista = document.getElementById('recorrentes-list');
   if (!recorrentes.length) {
     lista.innerHTML = '<p class="text-gray-500">Nenhuma despesa recorrente cadastrada.</p>';
@@ -89,7 +84,7 @@ export async function renderRecorrentes() {
     card.innerHTML = `
       <div>
         <p class="font-semibold">${rec.descricao}</p>
-        <p class="text-sm text-gray-500">R$ ${parseFloat(rec.valor).toFixed(2)} • ${rec.categoriaId || 'Sem categoria'}</p>
+        <p class="text-sm text-gray-500">R$ ${parseFloat(rec.valor).toFixed(2)} 2 ${rec.categoriaId || 'Sem categoria'}</p>
         <p class="text-xs text-gray-400">${rec.parcelasRestantes === null ? 'Infinito' : rec.parcelasRestantes + ' parcelas restantes'}</p>
         ${rec.ativa !== false ? '<p class="text-xs text-green-500 mt-1">Próxima aplicação: ' + proximaStr + '</p>' : ''}
       </div>
@@ -97,10 +92,14 @@ export async function renderRecorrentes() {
         <button class="text-sm text-blue-500 hover:underline font-inter" onclick="window.showAddRecorrenteModal(${JSON.stringify(rec).replace(/\"/g, '&quot;')})">Editar</button>
         <button class="text-sm text-red-500 hover:underline font-inter" onclick="window.handleDeleteRecorrente('${rec.id}')">Excluir</button>
         <button class="text-sm text-yellow-500 hover:underline font-inter" onclick='window.handleToggleRecorrente(${JSON.stringify(rec).replace(/\"/g, '&quot;')})'>
-          ${rec.ativa === false ? '▶️ Ativar' : '⏸️ Pausar'}
+          ${rec.ativa === false ? '\u25b6\ufe0f Ativar' : '\u23f8\ufe0f Pausar'}
         </button>
       </div>
     `;
     lista.appendChild(card);
   });
 }
+
+document.addEventListener('recorrente-adicionada', () => {
+  renderRecorrentes();
+});
