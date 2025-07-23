@@ -36,21 +36,26 @@
     <!-- Scripts removidos - usando app.js direto -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script type="module" crossorigin src="/assets/index-mpj905SQ.js"></script>
+    <style>
+body, .font-inter {
+  font-family: 'Inter', sans-serif !important;
+}
+</style>
+    <script type="module" crossorigin src="/assets/index-DiaJOjjL.js"></script>
   </head>
-  <body class="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-400 p-4">
+  <body class="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-400 p-4" style="display: flex; flex-direction: column; min-height: 100vh;">
     <!-- Página de Login dedicada -->
     <div id="login-page" class="fixed inset-0 flex items-center justify-center bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-400 z-50">
       <div class="bg-white/90 rounded-3xl shadow-2xl p-10 flex flex-col items-center gap-8 max-w-xs w-full mx-4">
         <h1 class="text-3xl font-extrabold text-indigo-700 text-center">Bem-vindo ao Servo Tech Finanças</h1>
         <p class="text-gray-600 text-center text-lg">Clique abaixo para fazer o login</p>
-        <button id="btn-entrar" class="w-full bg-gradient-to-r from-indigo-500 to-pink-500 hover:from-indigo-600 hover:to-pink-600 text-white font-bold py-4 px-8 rounded-full shadow-lg text-xl flex items-center justify-center gap-3 transition">
+        <button id="btn-entrar" class="w-full bg-gradient-to-r from-indigo-500 to-pink-500 hover:from-indigo-600 hover:to-pink-600 text-white font-bold py-4 px-8 rounded-full shadow-lg text-xl flex items-center justify-content: center gap-3 transition">
           <svg width="28" height="28" fill="none" viewBox="0 0 24 24"><path d="M21.805 10.023h-9.765v3.954h5.617c-.242 1.242-1.484 3.648-5.617 3.648-3.375 0-6.125-2.789-6.125-6.25s2.75-6.25 6.125-6.25c1.922 0 3.211.82 3.953 1.523l2.703-2.633c-1.703-1.57-3.898-2.523-6.656-2.523-5.523 0-10 4.477-10 10s4.477 10 10 10c5.75 0 9.563-4.031 9.563-9.719 0-.656-.07-1.156-.156-1.523z" fill="#4285F4"/><path d="M3.545 7.345l3.25 2.383c.883-1.68 2.523-2.883 4.48-2.883 1.32 0 2.484.453 3.406 1.344l2.703-2.633c-1.703-1.57-3.898-2.523-6.656-2.523-3.828 0-7.07 2.477-8.438 5.938z" fill="#34A853"/><path d="M12 22c2.672 0 4.922-.883 6.563-2.406l-3.047-2.492c-.844.57-1.922.906-3.516.906-2.797 0-5.172-1.883-6.023-4.406l-3.25 2.523c1.352 3.406 4.672 5.875 8.273 5.875z" fill="#FBBC05"/><path d="M21.805 10.023h-9.765v3.954h5.617c-.242 1.242-1.484 3.648-5.617 3.648-3.375 0-6.125-2.789-6.125-6.25s2.75-6.25 6.125-6.25c1.922 0 3.211.82 3.953 1.523l2.703-2.633c-1.703-1.57-3.898-2.523-6.656-2.523-5.523 0-10 4.477-10 10s4.477 10 10 10c5.75 0 9.563-4.031 9.563-9.719 0-.656-.07-1.156-.156-1.523z" fill="#EA4335"/></svg>
           Entrar com Google
-        </button>
-      </div>
-    </div>
-    <div class="app-container">
+              </button>
+            </div>
+          </div>
+    <div class="app-container" style="flex: 1 0 auto; display: flex; flex-direction: column;">
       <!-- Top Bar -->
       <header class="app-header" style="display: flex; align-items: center; justify-content: space-between; padding: 1rem; background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.04); position: sticky; top: 0; z-index: 10; border-radius: 12px; margin-bottom: 1rem;">
         <h1 id="page-title" style="font-size: 1.5rem; font-weight: 700; color: #1f2937; margin: 0;">Servo Tech Finanças</h1>
@@ -61,38 +66,9 @@
         </button>
       </header>
       <!-- Conteúdo Dinâmico SPA -->
-      <main id="app-content" class="content-area" style="padding: 1rem; padding-bottom: 100px; min-height: calc(100vh - 200px); flex: 1;">
+      <main id="app-content" class="content-area" style="padding: 1rem; padding-bottom: 180px; min-height: calc(100vh - 200px); flex: 1;">
         <!-- As telas serão carregadas dinamicamente aqui pelo roteador SPA -->
       </main>
-      <!-- Bottom Navigation SPA -->
-      <nav class="bottom-nav" style="position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #e5e7eb; z-index: 1000; padding: 8px 0; box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1); transition: background-color 0.3s ease, border-color 0.3s ease; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;">
-        <button data-route="/dashboard" class="nav-btn active" style="display: flex; flex-direction: column; align-items: center; padding: 8px 12px; border-radius: 8px; transition: all 0.2s; min-height: 44px; justify-content: center; color: #6b7280; background: none; border: none; cursor: pointer; font-size: 0.75rem; font-weight: 500;">
-          <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 20px; height: 20px; margin-bottom: 4px;">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v6H8V5z" />
-          </svg>
-          <span style="font-size: 0.7rem; line-height: 1;">Dashboard</span>
-        </button>
-        <button data-route="/transactions" class="nav-btn" style="display: flex; flex-direction: column; align-items: center; padding: 8px 12px; border-radius: 8px; transition: all 0.2s; min-height: 44px; justify-content: center; color: #6b7280; background: none; border: none; cursor: pointer; font-size: 0.75rem; font-weight: 500;">
-          <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 20px; height: 20px; margin-bottom: 4px;">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-          </svg>
-          <span style="font-size: 0.7rem; line-height: 1;">Transações</span>
-        </button>
-        <button data-route="/categories" class="nav-btn" style="display: flex; flex-direction: column; align-items: center; padding: 8px 12px; border-radius: 8px; transition: all 0.2s; min-height: 44px; justify-content: center; color: #6b7280; background: none; border: none; cursor: pointer; font-size: 0.75rem; font-weight: 500;">
-          <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 20px; height: 20px; margin-bottom: 4px;">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-          </svg>
-          <span style="font-size: 0.7rem; line-height: 1;">Categorias</span>
-        </button>
-        <button data-route="/settings" class="nav-btn" style="display: flex; flex-direction: column; align-items: center; padding: 8px 12px; border-radius: 8px; transition: all 0.2s; min-height: 44px; justify-content: center; color: #6b7280; background: none; border: none; cursor: pointer; font-size: 0.75rem; font-weight: 500;">
-          <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 20px; height: 20px; margin-bottom: 4px;">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-          <span style="font-size: 0.7rem; line-height: 1;">Config</span>
-        </button>
-      </nav>
       <!-- Modal de Voz -->
       <div id="voice-modal" class="modal" style="display:none;">
         <div class="modal-content">
@@ -103,24 +79,12 @@
           <button id="cancel-voice">Cancelar</button>
         </div>
       </div>
-      
-      <!-- Footer -->
-      <footer style="width: 100%; text-align: center; padding: 18px 0; background: #f3f4f6; color: #4f46e5; font-size: 15px; font-weight: 500; letter-spacing: 0.5px; position: relative; z-index: 10; margin-top: auto;">
-        © 2025 • Financeiro App • Fundador: Igor Bispo
-      </footer>
     </div>
 
-    <!-- Floating Action Button -->
-    <button
-      id="fab-add"
-      class="fab"
-      aria-label="Adicionar transação"
-      style="position: fixed; bottom: 100px; right: 20px; width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: white; border: none; box-shadow: 0 8px 25px rgba(79, 70, 229, 0.4); z-index: 999; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; cursor: pointer; font-size: 1.5rem; font-weight: bold;"
-    >
-      <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
-        <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-      </svg>
-    </button>
+    <!-- Footer institucional -->
+    <footer style="width: 100%; text-align: center; padding: 14px 0 12px 0; background: #f3f4f6; color: #4f46e5; font-size: 15px; font-weight: 500; letter-spacing: 0.5px; box-shadow: 0 -1px 4px rgba(0,0,0,0.04); flex-shrink: 0;">
+      © 2025 • Financeiro App • Fundador: Igor Bispo
+    </footer>
 
     <!-- App Principal -->
 
