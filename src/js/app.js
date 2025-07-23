@@ -266,30 +266,54 @@ function setSubtitle(subtitle) {
   // Função agora não faz nada para evitar duplicidade de título
 }
 
-async function renderDashboard() {
+async function getTransacoesDoMes(userId, ano, mes) {
+  const now = new Date();
+  if (ano === now.getFullYear() && mes === now.getMonth() + 1) {
+    // Mês atual: usar transações em memória
+    return window.appState.transactions;
+  }
+  // Buscar histórico mensal
+  const mesPad = String(mes).padStart(2, '0');
+  const mesAno = `${ano}-${mesPad}`;
+  const db = getFirestore();
+  const ref = collection(db, 'users', userId, 'historico', mesAno, 'transacoes');
+  const snapshot = await getDocs(ref);
+  return snapshot.docs.map(doc => doc.data());
+}
+
+async function renderDashboard(selectedYear, selectedMonth) {
   try {
     const content = document.getElementById('app-content');
     if (!content) return;
     setSubtitle('Dashboard');
     content.innerHTML = '';
 
+    // Seletor de mês (apenas no topo)
+    let now = new Date();
+    let year = selectedYear || now.getFullYear();
+    let month = selectedMonth || (now.getMonth() + 1);
+    const meses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    content.innerHTML += `
+      <div id="mes-selector" class="flex items-center justify-center gap-4 mb-4">
+        <button id="mes-anterior" class="text-blue-600 bg-blue-100 rounded-full w-8 h-8 flex items-center justify-center text-xl hover:bg-blue-200">&#8592;</button>
+        <span class="font-bold text-lg">${meses[month-1]} ${year}</span>
+        <button id="mes-proximo" class="text-blue-600 bg-blue-100 rounded-full w-8 h-8 flex items-center justify-center text-xl hover:bg-blue-200">&#8594;</button>
+      </div>
+    `;
+
+    // Buscar transações do mês selecionado
+    const user = window.appState.currentUser;
+    const transacoes = user ? await getTransacoesDoMes(user.uid, year, month) : [];
+
     // Calcular totais
-    const receitas = window.appState.transactions
-      .filter(t => t.tipo === 'receita')
-      .reduce((sum, t) => sum + parseFloat(t.valor), 0);
-
-    const despesas = window.appState.transactions
-      .filter(t => t.tipo === 'despesa')
-      .reduce((sum, t) => sum + parseFloat(t.valor), 0);
-
+    const receitas = transacoes.filter(t => t.tipo === 'receita').reduce((sum, t) => sum + parseFloat(t.valor), 0);
+    const despesas = transacoes.filter(t => t.tipo === 'despesa').reduce((sum, t) => sum + parseFloat(t.valor), 0);
     const saldo = receitas - despesas;
-
-    // Calcular limites das categorias e orçado
-    const totalLimite = window.appState.categories
-      .reduce((sum, cat) => sum + parseFloat(cat.limite || 0), 0);
+    const totalLimite = window.appState.categories.reduce((sum, cat) => sum + parseFloat(cat.limite || 0), 0);
     const orcado = totalLimite - despesas;
 
-    content.innerHTML = `<div id="dashboard-cards" class="grid grid-cols-4 gap-1 md:gap-4 mb-4"></div>` + content.innerHTML;
+    // Cards de resumo
+    content.innerHTML += `<div id="dashboard-cards" class="grid grid-cols-4 gap-1 md:gap-4 mb-4"></div>`;
     const cardsContainer = document.getElementById('dashboard-cards');
     cardsContainer.innerHTML = '';
     const cards = [
@@ -322,17 +346,15 @@ async function renderDashboard() {
       cardsContainer.appendChild(CardResumo(cardData));
     });
 
-    // Adicionar o restante do dashboard
+    // Espaço entre cards e categorias
+    content.innerHTML += `<div style="height: 1.5rem;"></div>`;
+    // Categorias com progresso
     content.innerHTML += `
-      <!-- Espaço entre cards e categorias -->
-      <div style="height: 1.5rem;"></div>
-      <!-- Categorias com Progresso -->
       <div class="bg-white rounded-xl shadow-lg p-2 md:p-6">
         <h3 class="text-base md:text-xl font-bold mb-2 md:mb-4">Categorias</h3>
         <div class="space-y-2 md:space-y-4">
           ${window.appState.categories.map(cat => {
-            const transacoesCategoria = window.appState.transactions
-              .filter(t => t.categoriaId === cat.id && t.tipo === 'despesa');
+            const transacoesCategoria = transacoes.filter(t => t.categoriaId === cat.id && t.tipo === 'despesa');
             const gasto = transacoesCategoria.reduce((sum, t) => sum + parseFloat(t.valor), 0);
             const limite = parseFloat(cat.limite || 0);
             const percentual = limite > 0 ? (gasto / limite) * 100 : 0;
@@ -356,29 +378,25 @@ async function renderDashboard() {
                     percentual > 100 ? 'bg-red-500' : percentual > 80 ? 'bg-yellow-500' : 'bg-green-500'
                   }" style="width: ${Math.min(percentual, 100)}%"></div>
                 </div>
-                <div class="flex flex-wrap justify-end gap-1 md:space-x-2">
-                  <button onclick="editCategory('${cat.id}')" class="text-blue-600 hover:text-blue-800 text-xs md:text-sm px-2 py-1 md:px-3 md:py-1 rounded">Editar</button>
-                  <button onclick="deleteCategory('${cat.id}')" class="text-red-600 hover:text-red-800 text-xs md:text-sm px-2 py-1 md:px-3 md:py-1 rounded">Excluir</button>
-                  <button onclick="showCategoryHistory('${cat.id}')" class="text-gray-600 hover:text-gray-800 text-xs md:text-sm px-2 py-1 md:px-3 md:py-1 rounded">Histórico</button>
-                </div>
               </div>
             `;
           }).join('')}
         </div>
       </div>
-      <!-- Espaço entre categorias e despesas recorrentes -->
-      <div style="height: 1.5rem;"></div>
-      <!-- === Despesas Recorrentes === -->
+    `;
+
+    // Espaço entre categorias e recorrentes
+    content.innerHTML += `<div style="height: 1.5rem;"></div>`;
+    // Bloco de Despesas Recorrentes do mês selecionado
+    const recorrentesMes = transacoes.filter(t => t.recorrenteId);
+    content.innerHTML += `
       <div class="bg-white rounded-xl shadow-lg p-4 flex flex-col gap-2 md:p-6 mb-4">
         <div class="flex flex-wrap justify-between items-center mb-2 md:mb-4 gap-1 md:gap-0">
-          <h3 class="text-base md:text-xl font-bold text-gray-900 font-inter">Despesas Recorrentes</h3>
-          <button onclick="window.showAddRecorrenteModal()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 text-sm font-semibold font-inter">
-            + Nova Despesa Recorrente
-          </button>
+          <h3 class="text-base md:text-xl font-bold text-gray-900 font-inter">Despesas Recorrentes do Mês</h3>
         </div>
         <div class="space-y-2 md:space-y-3">
-          ${(window.appState.recorrentes || []).length === 0 ? `<p class='text-gray-500 text-center py-4 font-inter'>Nenhuma despesa recorrente cadastrada</p>` :
-            (window.appState.recorrentes || []).map(r => {
+          ${recorrentesMes.length === 0 ? `<p class='text-gray-500 text-center py-4 font-inter'>Nenhuma despesa recorrente aplicada neste mês</p>` :
+            recorrentesMes.map(r => {
               const categoria = (window.appState.categories || []).find(c => c.id === r.categoriaId);
               return `
                 <div class="flex flex-wrap justify-between items-center p-2 md:p-3 border rounded-lg hover:bg-gray-50 gap-1 md:gap-0 bg-white shadow font-inter">
@@ -390,18 +408,17 @@ async function renderDashboard() {
                       ${r.parcelasRestantes !== undefined ? `• ${r.parcelasRestantes}x restantes` : ''}
                     </p>
                   </div>
-                  <div class="flex items-center space-x-1 md:space-x-2">
-                    <button onclick="window.showAddRecorrenteModal(${JSON.stringify(r).replace(/\"/g, '&quot;')})" class="text-blue-600 hover:text-blue-800 text-xs md:text-base ml-2">✏️</button>
-                    <button onclick="window.handleDeleteRecorrente('${r.id}')" class="text-red-600 hover:text-red-800 text-xs md:text-base ml-2">🗑️</button>
-                  </div>
                 </div>
               `;
             }).join('')}
         </div>
       </div>
-      <!-- Espaço entre categorias e transações recentes -->
-      <div style="height: 1.5rem;"></div>
-      <!-- Transações Recentes -->
+    `;
+
+    // Espaço entre recorrentes e transações recentes
+    content.innerHTML += `<div style="height: 1.5rem;"></div>`;
+    // Transações Recentes
+    content.innerHTML += `
       <div class="bg-white rounded-xl shadow-lg p-2 md:p-6">
         <div class="flex flex-wrap justify-between items-center mb-2 md:mb-4 gap-1 md:gap-0">
           <h3 class="text-base md:text-xl font-bold">Transações Recentes</h3>
@@ -410,20 +427,20 @@ async function renderDashboard() {
           </button>
         </div>
         <div class="space-y-2 md:space-y-3">
-          ${window.appState.transactions.slice(0, 10).map(t => {
+          ${transacoes.slice(0, 10).map(t => {
             const categoria = window.appState.categories.find(c => c.id === t.categoriaId);
             return `
               <div class="flex flex-wrap justify-between items-center p-2 md:p-3 border rounded-lg hover:bg-gray-50 gap-1 md:gap-0">
                 <div class="flex-1 min-w-[120px]">
                   <p class="font-medium text-xs md:text-base">${t.descricao}</p>
-                  <p class="text-xs md:text-sm text-gray-500">${categoria?.nome || 'Sem categoria'} • ${t.createdAt && t.createdAt.toDate ? t.createdAt.toDate().toLocaleDateString() : ''}</p>
+                  <p class="text-xs md:text-sm text-gray-500">${categoria?.nome || 'Sem categoria'} • ${t.createdAt && t.createdAt.toDate ? t.createdAt.toDate().toLocaleDateString() : (t.createdAt ? new Date(t.createdAt).toLocaleDateString() : '')}</p>
                 </div>
                 <div class="flex items-center space-x-1 md:space-x-2">
                   <span class="font-bold text-xs md:text-base ${t.tipo === 'receita' ? 'text-green-600' : 'text-red-600'}">
                     ${t.tipo === 'receita' ? '+' : '-'}R$ ${parseFloat(t.valor).toFixed(2)}
                   </span>
-                  <button onclick="window.editTransaction('${t.id}')" class="text-blue-600 hover:text-blue-800 text-xs md:text-base ml-2">✏️</button>
-                  <button onclick="window.deleteTransaction('${t.id}')" class="text-red-600 hover:text-red-800 text-xs md:text-base ml-2">🗑️</button>
+                  <button onclick="window.editTransaction && window.editTransaction('${t.id}')" class="text-blue-600 hover:text-blue-800 text-xs md:text-base ml-2">✏️</button>
+                  <button onclick="window.deleteTransaction && window.deleteTransaction('${t.id}')" class="text-red-600 hover:text-red-800 text-xs md:text-base ml-2">🗑️</button>
                 </div>
               </div>
             `;
@@ -431,10 +448,26 @@ async function renderDashboard() {
         </div>
       </div>
     `;
-    // Após renderizar o conteúdo:
+
     renderFAB();
     renderBottomNav('/dashboard');
     setTimeout(() => enableSwipeNavigation(), 0);
+
+    // Eventos das setas
+    setTimeout(() => {
+      document.getElementById('mes-anterior')?.addEventListener('click', async () => {
+        let newMonth = month - 1;
+        let newYear = year;
+        if (newMonth < 1) { newMonth = 12; newYear--; }
+        await renderDashboard(newYear, newMonth);
+      });
+      document.getElementById('mes-proximo')?.addEventListener('click', async () => {
+        let newMonth = month + 1;
+        let newYear = year;
+        if (newMonth > 12) { newMonth = 1; newYear++; }
+        await renderDashboard(newYear, newMonth);
+      });
+    }, 0);
   } catch (err) {
     console.error('Erro ao renderizar dashboard:', err);
     const content = document.getElementById('app-content');
@@ -2603,4 +2636,26 @@ function listenRecorrentes() {
 }
 // Chamar listenRecorrentes após login e ao trocar de orçamento
 // No onAuthStateChanged, após definir currentUser e currentBudget:
+// ... existing code ...
+
+// ... existing code ...
+window.showExportOptions = function() {
+  Modal({
+    title: 'Exportar Dados',
+    content: `
+      <div class="space-y-4">
+        <button onclick="window.exportToExcel()" class="w-full bg-green-500 text-white py-2 rounded-lg font-semibold hover:bg-green-600 flex items-center justify-center gap-2 text-base">
+          <span>📊</span> Exportar Excel
+        </button>
+        <button onclick="window.exportToPDF()" class="w-full bg-red-500 text-white py-2 rounded-lg font-semibold hover:bg-red-600 flex items-center justify-center gap-2 text-base">
+          <span>📄</span> Exportar PDF
+        </button>
+        <button onclick="window.downloadBackup()" class="w-full bg-purple-500 text-white py-2 rounded-lg font-semibold hover:bg-purple-600 flex items-center justify-center gap-2 text-base">
+          <span>💾</span> Backup Completo (JSON)
+        </button>
+      </div>
+    `,
+    onClose: () => document.querySelector('.modal')?.remove()
+  });
+};
 // ... existing code ...
