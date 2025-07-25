@@ -15,7 +15,7 @@ export async function renderLogAplicacoes() {
   const ano = hoje.getFullYear();
   const mes = String(hoje.getMonth() + 1).padStart(2, '0');
   const mesAno = `${ano}-${mes}`;
-  const ref = collection(db, "users", user.uid, "logs", mesAno, "itens");
+  const ref = collection(db, 'users', user.uid, 'logs', mesAno, 'itens');
   const snap = await getDocs(ref);
 
   if (snap.empty) {

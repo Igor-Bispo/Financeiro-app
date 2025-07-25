@@ -3,8 +3,8 @@ export function Modal({ title = '', content = '', onClose = null }) {
   overlay.id = 'app-modal';
   overlay.className = 'modal fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50';
   overlay.onclick = (e) => {
-    if (e.target === overlay && onClose) onClose();
-    if (window.toggleFABOnModal) window.toggleFABOnModal();
+    if (e.target === overlay && onClose) {onClose();}
+    if (window.toggleFABOnModal) {window.toggleFABOnModal();}
   };
 
   const modal = document.createElement('div');
@@ -19,10 +19,10 @@ export function Modal({ title = '', content = '', onClose = null }) {
 
   modal.querySelector('#modal-close-btn').onclick = (e) => {
     e.stopPropagation();
-    if (onClose) onClose();
-    if (window.toggleFABOnModal) window.toggleFABOnModal();
+    if (onClose) {onClose();}
+    if (window.toggleFABOnModal) {window.toggleFABOnModal();}
   };
 
-  if (window.toggleFABOnModal) window.toggleFABOnModal();
+  if (window.toggleFABOnModal) {window.toggleFABOnModal();}
   return overlay;
-} 
+}

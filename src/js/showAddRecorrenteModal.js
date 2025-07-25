@@ -29,11 +29,9 @@ window.showAddRecorrenteModal = function (dados = {}) {
       try {
         // Esconder FAB enquanto o modal está aberto
         document.querySelector('.fab')?.classList.add('hidden');
-        console.log('Iniciando adição de recorrente');
         if (isEdicao && dados.id) {
           // Edição: atualizar recorrente existente
           await updateDespesaRecorrente(user.uid, dados.id, dadosForm);
-          console.log('Recorrente editada, aguardando delay');
         } else {
           // Nova recorrente
           const recRef = await addDespesaRecorrente(user.uid, budget.id, dadosForm);
@@ -65,9 +63,7 @@ window.showAddRecorrenteModal = function (dados = {}) {
             }
           }
         }
-        console.log('Recorrente adicionada, aguardando delay');
         await new Promise(res => setTimeout(res, 200));
-        console.log('Delay concluído, carregando recorrentes');
         await window.loadRecorrentes();
         modal.remove();
         setTimeout(() => {

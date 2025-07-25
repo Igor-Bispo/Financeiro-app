@@ -24,4 +24,4 @@ setPersistence(auth, browserLocalPersistence)
     console.error('Erro ao configurar persistência do Firebase Auth:', error);
   });
 
-export { app, auth, db }; 
+export { app, auth, db };

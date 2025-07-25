@@ -5,7 +5,7 @@ const db = getFirestore();
 export async function renderHistoricoMensal(userId, ano, mes) {
   const mesPad = String(mes).padStart(2, '0');
   const mesAno = `${ano}-${mesPad}`;
-  const ref = collection(db, "users", userId, "historico", mesAno, "transacoes");
+  const ref = collection(db, 'users', userId, 'historico', mesAno, 'transacoes');
   const snapshot = await getDocs(ref);
   const transacoes = snapshot.docs.map(doc => doc.data());
 

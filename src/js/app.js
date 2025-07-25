@@ -42,7 +42,7 @@ window.appState = {
 function toggleLoginPage(show) {
   const loginPage = document.getElementById('login-page');
   const mainApp = document.querySelector('.app-container');
-  
+
   if (show) {
     if (loginPage) {
       loginPage.style.display = 'flex';
@@ -67,24 +67,24 @@ async function refreshCurrentView() {
   const currentTab = document.querySelector('.nav-item.active')?.getAttribute('data-tab');
   if (currentTab) {
     switch (currentTab) {
-      case 'dashboard':
-        await loadTransactions();
-        await loadCategories();
-        await loadBudgets();
-        renderDashboard();
-        break;
-      case 'transactions':
-        await loadTransactions();
-        renderTransactions();
-        break;
-      case 'categories':
-        await loadCategories();
-        renderCategories();
-        break;
-      case 'settings':
-        await loadBudgets();
-        renderSettings();
-        break;
+    case 'dashboard':
+      await loadTransactions();
+      await loadCategories();
+      await loadBudgets();
+      renderDashboard();
+      break;
+    case 'transactions':
+      await loadTransactions();
+      renderTransactions();
+      break;
+    case 'categories':
+      await loadCategories();
+      renderCategories();
+      break;
+    case 'settings':
+      await loadBudgets();
+      renderSettings();
+      break;
     }
   }
 }
@@ -93,9 +93,9 @@ async function refreshCurrentView() {
 async function addTransaction(transactionData) {
   try {
     const user = auth.currentUser;
-    if (!user) throw new Error('Usuário não autenticado');
+    if (!user) {throw new Error('Usuário não autenticado');}
     const budgetId = window.appState.currentBudget?.id;
-    if (!budgetId) throw new Error('Nenhum orçamento selecionado');
+    if (!budgetId) {throw new Error('Nenhum orçamento selecionado');}
     const docRef = await addDoc(collection(db, 'transactions'), {
       ...transactionData,
       userId: user.uid,
@@ -136,8 +136,8 @@ async function deleteTransaction(transactionId) {
 async function loadTransactions() {
   try {
     const user = auth.currentUser;
-    if (!user) return;
-    
+    if (!user) {return;}
+
     const q = query(
       collection(db, 'transactions'),
       where('userId', '==', user.uid),
@@ -157,9 +157,9 @@ async function loadTransactions() {
 async function addCategory(categoryData) {
   try {
     const user = auth.currentUser;
-    if (!user) throw new Error('Usuário não autenticado');
+    if (!user) {throw new Error('Usuário não autenticado');}
     const budgetId = window.appState.currentBudget?.id;
-    if (!budgetId) throw new Error('Nenhum orçamento selecionado');
+    if (!budgetId) {throw new Error('Nenhum orçamento selecionado');}
     const docRef = await addDoc(collection(db, 'categories'), {
       ...categoryData,
       nome: normalizarTexto(categoryData.nome), // salva nome limpo
@@ -203,8 +203,8 @@ async function deleteCategory(categoryId) {
 async function loadCategories() {
   try {
     const user = auth.currentUser;
-    if (!user) return;
-    
+    if (!user) {return;}
+
     const q = query(
       collection(db, 'categories'),
       where('userId', '==', user.uid),
@@ -224,7 +224,7 @@ async function loadCategories() {
 async function addBudget(budgetData) {
   try {
     const user = auth.currentUser;
-    if (!user) throw new Error('Usuário não autenticado');
+    if (!user) {throw new Error('Usuário não autenticado');}
     const docRef = await addDoc(collection(db, 'budgets'), {
       ...budgetData,
       userId: user.uid,
@@ -241,8 +241,8 @@ async function addBudget(budgetData) {
 async function loadBudgets() {
   try {
     const user = auth.currentUser;
-    if (!user) return;
-    
+    if (!user) {return;}
+
     const q = query(
       collection(db, 'budgets'),
       where('userId', '==', user.uid)
@@ -289,7 +289,7 @@ async function getTransacoesDoMes(userId, ano, mes) {
 async function renderDashboard(selectedYear, selectedMonth) {
   try {
     const content = document.getElementById('app-content');
-    if (!content) return;
+    if (!content) {return;}
     setSubtitle('Dashboard');
     content.innerHTML = '';
 
@@ -319,14 +319,14 @@ async function renderDashboard(selectedYear, selectedMonth) {
     const recorrentesMes = transacoes.filter(t => t.recorrenteId);
     const preAgendadas = recorrentes.filter(rec => {
       const jaLancada = recorrentesMes.some(t => t.recorrenteId === rec.id);
-      if (jaLancada) return false;
+      if (jaLancada) {return false;}
       const dataInicio = new Date(rec.dataInicio);
       const anoInicio = dataInicio.getFullYear();
       const mesInicio = dataInicio.getMonth() + 1;
       // Só mostra se o mês/ano exibido for igual ou posterior ao início
-      if (anoSelecionado < anoInicio || (anoSelecionado === anoInicio && mesSelecionado < mesInicio)) return false;
+      if (anoSelecionado < anoInicio || (anoSelecionado === anoInicio && mesSelecionado < mesInicio)) {return false;}
       // Se não for para efetivar no mês atual, só mostra a partir do próximo mês
-      if (!rec.efetivarMesAtual && anoSelecionado === anoInicio && mesSelecionado === mesInicio) return false;
+      if (!rec.efetivarMesAtual && anoSelecionado === anoInicio && mesSelecionado === mesInicio) {return false;}
       if (rec.parcelasRestantes !== null && rec.parcelasRestantes !== undefined) {
         let mesesDesdeInicio = (anoSelecionado - anoInicio) * 12 + (mesSelecionado - mesInicio);
         // Ajuste: se não for para efetivar no mês atual e já passou do mês de início, desconta 1
@@ -345,7 +345,7 @@ async function renderDashboard(selectedYear, selectedMonth) {
     const orcado = totalLimite - despesas;
 
     // Cards de resumo
-    content.innerHTML += `<div id="dashboard-cards" class="grid grid-cols-4 gap-1 md:gap-4 mb-4"></div>`;
+    content.innerHTML += '<div id="dashboard-cards" class="grid grid-cols-4 gap-1 md:gap-4 mb-4"></div>';
     const cardsContainer = document.getElementById('dashboard-cards');
     cardsContainer.innerHTML = '';
     const cards = [
@@ -379,30 +379,30 @@ async function renderDashboard(selectedYear, selectedMonth) {
     });
 
     // Espaço entre cards e categorias
-    content.innerHTML += `<div class="h-6"></div>`;
+    content.innerHTML += '<div class="h-6"></div>';
     // Categorias com progresso
     content.innerHTML += `
       <div class="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-2 md:p-6 border border-gray-300 dark:border-gray-700">
         <h3 class="text-base md:text-xl font-bold mb-2 md:mb-4 text-gray-900 dark:text-gray-100">Categorias</h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-6">
           ${window.appState.categories.map(cat => {
-            const transacoesCategoria = (window.appState.transactions || []).filter(t => t.categoriaId === cat.id && t.tipo === 'despesa');
-            const gasto = transacoesCategoria.reduce((sum, t) => sum + parseFloat(t.valor), 0);
-            const limite = parseFloat(cat.limite || 0);
-            const percentual = limite > 0 ? (gasto / limite) * 100 : 0;
-            const saldo = limite - gasto;
-            return `
+    const transacoesCategoria = (window.appState.transactions || []).filter(t => t.categoriaId === cat.id && t.tipo === 'despesa');
+    const gasto = transacoesCategoria.reduce((sum, t) => sum + parseFloat(t.valor), 0);
+    const limite = parseFloat(cat.limite || 0);
+    const percentual = limite > 0 ? (gasto / limite) * 100 : 0;
+    const saldo = limite - gasto;
+    return `
               <div class="border border-gray-300 dark:border-gray-700 rounded-lg p-2 md:p-4 bg-white dark:bg-gray-900">
                 <div class="flex items-center space-x-2 md:space-x-3 mb-2">
-                  <div class="w-4 h-4 rounded-full" style="background-color: ${cat.cor || '#4F46E5'}"></div>
+                    <div class="w-4 h-4 rounded-full" style="background-color: ${cat.cor || '#4F46E5'}"></div>
                   <span class="font-semibold text-xs md:text-base text-gray-900 dark:text-gray-100">${cat.nome}</span>
-                </div>
+                  </div>
                 <p class="text-xs md:text-sm text-gray-500 dark:text-gray-300">Tipo: ${cat.tipo}</p>
                 <p class="text-xs md:text-sm text-gray-500 dark:text-gray-300">Limite: R$ ${cat.limite || '0,00'}</p>
                 <div class="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2 md:h-3 mb-1 md:mb-2">
                   <div class="h-2 md:h-3 rounded-full transition-all duration-300 ${
-                    percentual > 100 ? 'bg-red-500' : percentual > 80 ? 'bg-yellow-500' : 'bg-green-500'
-                  }" style="width: ${Math.min(percentual, 100)}%"></div>
+  percentual > 100 ? 'bg-red-500' : percentual > 80 ? 'bg-yellow-500' : 'bg-green-500'
+}" style="width: ${Math.min(percentual, 100)}%"></div>
                 </div>
                 <div class="flex flex-wrap justify-end gap-1 md:space-x-2 mt-2">
                   <button onclick="editCategory('${cat.id}')" class="text-blue-600 hover:text-blue-800 text-xs md:text-sm px-2 py-1 md:px-3 md:py-1 rounded">Editar</button>
@@ -411,13 +411,13 @@ async function renderDashboard(selectedYear, selectedMonth) {
                 </div>
               </div>
             `;
-          }).join('')}
+  }).join('')}
         </div>
       </div>
     `;
 
     // Espaço entre categorias e recorrentes
-    content.innerHTML += `<div class="h-6"></div>`;
+    content.innerHTML += '<div class="h-6"></div>';
     // Bloco de Despesas Recorrentes do mês selecionado
     content.innerHTML += `
       <div class="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-4 flex flex-col gap-2 md:p-6 mb-4 border border-gray-300 dark:border-gray-700">
@@ -428,10 +428,10 @@ async function renderDashboard(selectedYear, selectedMonth) {
           </button>
         </div>
         <div class="space-y-2 md:space-y-3">
-          ${recorrentesMes.length === 0 && preAgendadas.length === 0 ? `<p class='text-gray-500 text-center py-4 font-inter dark:text-gray-300'>Nenhuma despesa recorrente aplicada ou agendada neste mês</p>` : ''}
+          ${recorrentesMes.length === 0 && preAgendadas.length === 0 ? '<p class=\'text-gray-500 text-center py-4 font-inter dark:text-gray-300\'>Nenhuma despesa recorrente aplicada ou agendada neste mês</p>' : ''}
           ${recorrentesMes.map(r => {
-            const categoria = (window.appState.categories || []).find(c => c.id === r.categoriaId);
-            return `
+    const categoria = (window.appState.categories || []).find(c => c.id === r.categoriaId);
+    return `
               <div class="flex flex-wrap justify-between items-center p-2 md:p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 gap-1 md:gap-0 bg-white dark:bg-gray-900 shadow font-inter">
                 <div class="flex-1 min-w-[120px]">
                   <p class="font-medium text-xs md:text-base text-gray-900 dark:text-gray-100">✔️ ${r.descricao}</p>
@@ -443,19 +443,19 @@ async function renderDashboard(selectedYear, selectedMonth) {
                 </div>
               </div>
             `;
-          }).join('')}
+  }).join('')}
           ${preAgendadas.map(rec => {
-            const categoria = (window.appState.categories || []).find(c => c.id === rec.categoriaId);
-            const dataInicio = new Date(rec.dataInicio);
-            const anoInicio = dataInicio.getFullYear();
-            const mesInicio = dataInicio.getMonth() + 1;
-            let mesesDesdeInicio = (anoSelecionado - anoInicio) * 12 + (mesSelecionado - mesInicio);
-            if (!rec.efetivarMesAtual && (anoSelecionado > anoInicio || (anoSelecionado === anoInicio && mesSelecionado > mesInicio))) {
-              mesesDesdeInicio -= 1;
-            }
-            const parcelasRestantesExibidas = rec.parcelasRestantes !== null && rec.parcelasRestantes !== undefined ? rec.parcelasRestantes - mesesDesdeInicio : null;
-            const numParcela = rec.parcelasRestantes !== null && rec.parcelasRestantes !== undefined ? (rec.parcelasRestantes - parcelasRestantesExibidas + 1) : null;
-            return `
+    const categoria = (window.appState.categories || []).find(c => c.id === rec.categoriaId);
+    const dataInicio = new Date(rec.dataInicio);
+    const anoInicio = dataInicio.getFullYear();
+    const mesInicio = dataInicio.getMonth() + 1;
+    let mesesDesdeInicio = (anoSelecionado - anoInicio) * 12 + (mesSelecionado - mesInicio);
+    if (!rec.efetivarMesAtual && (anoSelecionado > anoInicio || (anoSelecionado === anoInicio && mesSelecionado > mesInicio))) {
+      mesesDesdeInicio -= 1;
+    }
+    const parcelasRestantesExibidas = rec.parcelasRestantes !== null && rec.parcelasRestantes !== undefined ? rec.parcelasRestantes - mesesDesdeInicio : null;
+    const numParcela = rec.parcelasRestantes !== null && rec.parcelasRestantes !== undefined ? (rec.parcelasRestantes - parcelasRestantesExibidas + 1) : null;
+    return `
               <div class="flex flex-wrap justify-between items-center p-2 md:p-3 border border-dashed border-yellow-400 rounded-lg bg-yellow-50 dark:bg-yellow-900/10 gap-1 md:gap-0 shadow font-inter">
                 <div class="flex-1 min-w-[120px]">
                   <p class="font-medium text-xs md:text-base text-yellow-700 dark:text-yellow-300">⏳ ${rec.descricao}</p>
@@ -467,13 +467,13 @@ async function renderDashboard(selectedYear, selectedMonth) {
                 </div>
               </div>
             `;
-          }).join('')}
+  }).join('')}
         </div>
       </div>
     `;
 
     // Espaço entre recorrentes e transações recentes
-    content.innerHTML += `<div class="h-6"></div>`;
+    content.innerHTML += '<div class="h-6"></div>';
     // Transações Recentes
     content.innerHTML += `
       <div class="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-2 md:p-6 border border-gray-300 dark:border-gray-700">
@@ -485,26 +485,26 @@ async function renderDashboard(selectedYear, selectedMonth) {
         </div>
         <div class="space-y-2 md:space-y-3">
           ${transacoes.slice(0, 10).map(t => {
-            const categoria = window.appState.categories.find(c => c.id === t.categoriaId);
-            let parcelaInfo = '';
-            if (t.recorrenteId) {
-              const rec = (window.appState.recorrentes || []).find(r => r.id === t.recorrenteId);
-              if (rec) {
-                // Calcular número da parcela
-                let numParcela = 1;
-                if (rec.dataInicio && t.createdAt) {
-                  const dataInicio = new Date(rec.dataInicio);
-                  const dataTrans = t.createdAt && t.createdAt.toDate ? t.createdAt.toDate() : (t.createdAt ? new Date(t.createdAt) : null);
-                  if (dataTrans) {
-                    // Considera mês/ano
-                    numParcela = (dataTrans.getFullYear() - dataInicio.getFullYear()) * 12 + (dataTrans.getMonth() - dataInicio.getMonth()) + 1;
-                  }
-                }
-                let totalParcelas = rec.parcelasRestantes !== null && rec.parcelasRestantes !== undefined ? (rec.parcelasRestantes + numParcela - 1) : '∞';
-                parcelaInfo = `<span class='text-xs text-blue-500 ml-2'>Parcela ${numParcela} de ${totalParcelas}</span>`;
-              }
-            }
-            return `
+    const categoria = window.appState.categories.find(c => c.id === t.categoriaId);
+    let parcelaInfo = '';
+    if (t.recorrenteId) {
+      const rec = (window.appState.recorrentes || []).find(r => r.id === t.recorrenteId);
+      if (rec) {
+        // Calcular número da parcela
+        let numParcela = 1;
+        if (rec.dataInicio && t.createdAt) {
+          const dataInicio = new Date(rec.dataInicio);
+          const dataTrans = t.createdAt && t.createdAt.toDate ? t.createdAt.toDate() : (t.createdAt ? new Date(t.createdAt) : null);
+          if (dataTrans) {
+            // Considera mês/ano
+            numParcela = (dataTrans.getFullYear() - dataInicio.getFullYear()) * 12 + (dataTrans.getMonth() - dataInicio.getMonth()) + 1;
+          }
+        }
+        let totalParcelas = rec.parcelasRestantes !== null && rec.parcelasRestantes !== undefined ? (rec.parcelasRestantes + numParcela - 1) : '∞';
+        parcelaInfo = `<span class='text-xs text-blue-500 ml-2'>Parcela ${numParcela} de ${totalParcelas}</span>`;
+      }
+    }
+    return `
               <div class="flex flex-wrap justify-between items-center p-2 md:p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 gap-1 md:gap-0 bg-white dark:bg-gray-900">
                 <div class="flex-1 min-w-[120px]">
                   <p class="font-medium text-xs md:text-base text-gray-900 dark:text-gray-100">${t.descricao}</p>
@@ -519,7 +519,7 @@ async function renderDashboard(selectedYear, selectedMonth) {
                 </div>
               </div>
             `;
-          }).join('')}
+  }).join('')}
         </div>
       </div>
     `;
@@ -555,7 +555,7 @@ async function renderDashboard(selectedYear, selectedMonth) {
     console.error('Erro ao renderizar dashboard:', err);
     const content = document.getElementById('app-content');
     if (content) {
-      content.innerHTML += `<div class='text-red-600 text-center mt-4'>Erro ao carregar dashboard. Tente novamente.</div>`;
+      content.innerHTML += '<div class=\'text-red-600 text-center mt-4\'>Erro ao carregar dashboard. Tente novamente.</div>';
     }
   }
 }
@@ -581,8 +581,8 @@ function renderTransactions() {
             <p class="text-xs md:text-sm">Adicione sua primeira transação!</p>
           </div>
         ` : window.appState.transactions.map(t => {
-          const categoria = window.appState.categories.find(c => c.id === t.categoriaId);
-          return `
+    const categoria = window.appState.categories.find(c => c.id === t.categoriaId);
+    return `
             <div class="flex flex-wrap justify-between items-center p-2 md:p-4 border-b last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-800 gap-1 md:gap-0 bg-white dark:bg-gray-900">
               <div class="flex-1 min-w-[120px]">
                 <p class="font-medium text-xs md:text-base text-gray-900 dark:text-gray-100">${t.descricao}</p>
@@ -597,7 +597,7 @@ function renderTransactions() {
               </div>
             </div>
           `;
-        }).join('')}
+  }).join('')}
       </div>
     </div>
   `;
@@ -624,7 +624,7 @@ async function renderCategories() {
           <p><strong>Nome:</strong> ${window.appState.currentBudget ? (window.appState.currentBudget.nome || '(sem nome)') : ''}</p>
           <p><strong>ID:</strong> <span id="orcamento-id">${window.appState.currentBudget ? window.appState.currentBudget.id : ''}</span> <button onclick="window.copyBudgetId('${window.appState.currentBudget ? window.appState.currentBudget.id : ''}')" class="ml-2 px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 text-xs">Copiar</button></p>
           <button onclick="window.compartilharOrcamento()" class="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 mt-2 text-xs md:text-sm">Compartilhar Orçamento</button>
-        </div>
+          </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-6 mt-4">
           <button onclick="window.exportToExcel()" class="bg-green-500 text-white py-2 rounded-lg font-semibold hover:bg-green-600 flex items-center justify-center gap-2 text-base"><span>📊</span> Exportar Excel</button>
           <button onclick="window.exportToPDF()" class="bg-red-500 text-white py-2 rounded-lg font-semibold hover:bg-red-600 flex items-center justify-center gap-2 text-base"><span>📄</span> Exportar PDF</button>
@@ -649,32 +649,32 @@ async function router(path) {
     item.classList.remove('active');
   });
   const navBtn = document.querySelector(`.nav-btn[data-route='${path}']`);
-  if (navBtn) navBtn.classList.add('active');
+  if (navBtn) {navBtn.classList.add('active');}
 
   switch (path) {
-    case '/dashboard':
-      await loadCategories();
-      await loadRecorrentes();
-      await renderDashboard();
-      break;
-    case '/transactions':
-      renderTransactions();
-      break;
-    case '/categories':
-      await loadCategories();
-      await renderCategories();
-      break;
-    case '/recorrentes':
-      await loadRecorrentes();
-      await renderRecorrentes();
-      break;
-    case '/settings':
-      loadBudgets().then(renderSettings);
-      break;
-    default:
-      await loadCategories();
-      await loadRecorrentes();
-      await renderDashboard();
+  case '/dashboard':
+    await loadCategories();
+    await loadRecorrentes();
+    await renderDashboard();
+    break;
+  case '/transactions':
+    renderTransactions();
+    break;
+  case '/categories':
+    await loadCategories();
+    await renderCategories();
+    break;
+  case '/recorrentes':
+    await loadRecorrentes();
+    await renderRecorrentes();
+    break;
+  case '/settings':
+    loadBudgets().then(renderSettings);
+    break;
+  default:
+    await loadCategories();
+    await loadRecorrentes();
+    await renderDashboard();
   }
 }
 window.router = router;
@@ -716,16 +716,16 @@ window.showAddTransactionModal = function(initialData = {}) {
           <select id="transaction-categoria" required
                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             <option value="">Selecione...</option>
-            ${window.appState.categories.length > 0 ? 
-              window.appState.categories.map(cat => 
-                `<option value="${cat.id}" ${initialData.categoriaId === cat.id ? 'selected' : ''}>${cat.nome}</option>`
-              ).join('') : 
-              '<option value="" disabled>Nenhuma categoria disponível</option>'
-            }
+            ${window.appState.categories.length > 0 ?
+    window.appState.categories.map(cat =>
+      `<option value="${cat.id}" ${initialData.categoriaId === cat.id ? 'selected' : ''}>${cat.nome}</option>`
+    ).join('') :
+    '<option value="" disabled>Nenhuma categoria disponível</option>'
+}
           </select>
-          ${window.appState.categories.length === 0 ? 
-            '<p class="text-sm text-red-500 mt-1">Crie uma categoria primeiro</p>' : ''
-          }
+          ${window.appState.categories.length === 0 ?
+    '<p class="text-sm text-red-500 mt-1">Crie uma categoria primeiro</p>' : ''
+}
         </div>
         
         <div class="flex justify-end space-x-3 pt-4">
@@ -743,16 +743,16 @@ window.showAddTransactionModal = function(initialData = {}) {
     onClose: () => modal.remove()
   });
   document.body.appendChild(modal);
-  
+
   // Adicionar evento de submit
   document.getElementById('transaction-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    
+
     const descricao = document.getElementById('transaction-descricao').value;
     const valor = parseFloat(document.getElementById('transaction-valor').value);
     const tipo = document.getElementById('transaction-tipo').value;
     const categoriaId = document.getElementById('transaction-categoria').value;
-    
+
     try {
       await addTransaction({
         descricao,
@@ -823,16 +823,16 @@ window.showAddCategoryModal = function(initialData = {}) {
     onClose: () => modal.remove()
   });
   document.body.appendChild(modal);
-  
+
   // Adicionar evento de submit
   document.getElementById('category-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    
+
     const nome = document.getElementById('category-nome').value;
     const tipo = document.getElementById('category-tipo').value;
     const limite = parseFloat(document.getElementById('category-limite').value) || 0;
     const cor = document.getElementById('category-cor').value;
-    
+
     try {
       await addCategory({
         nome,
@@ -941,9 +941,9 @@ window.editTransaction = function(id) {
           <select id="edit-transaction-categoria" required
                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             <option value="">Selecione...</option>
-            ${window.appState.categories.map(cat => 
-              `<option value="${cat.id}" ${transaction.categoriaId === cat.id ? 'selected' : ''}>${cat.nome}</option>`
-            ).join('')}
+            ${window.appState.categories.map(cat =>
+    `<option value="${cat.id}" ${transaction.categoriaId === cat.id ? 'selected' : ''}>${cat.nome}</option>`
+  ).join('')}
           </select>
         </div>
         <div class="flex justify-end space-x-3 pt-4">
@@ -1245,7 +1245,7 @@ window.importBackup = function() {
   input.accept = 'application/json';
   input.onchange = async (e) => {
     const file = e.target.files[0];
-    if (!file) return;
+    if (!file) {return;}
     const text = await file.text();
     try {
       const data = JSON.parse(text);
@@ -1415,7 +1415,7 @@ async function processVoiceCommand(transcript, type) {
       const verbo = addMatch[1];
       const valor = parseFloat(addMatch[2].replace(',', '.'));
       let tipo = 'despesa';
-      if (verbo === 'recebi' || verbo === 'ganhei') tipo = 'receita';
+      if (verbo === 'recebi' || verbo === 'ganhei') {tipo = 'receita';}
       let descricao = (addMatch[5] || '').trim();
       let categoriaNome = (addMatch[6] || '').trim();
       // Se não houver 'em categoria', usar última palavra da descrição como categoria
@@ -1435,7 +1435,7 @@ async function processVoiceCommand(transcript, type) {
         return;
       }
       // Se descrição ficar vazia, usar categoria como fallback
-      if (!descricao) descricao = categoria.nome;
+      if (!descricao) {descricao = categoria.nome;}
       closeVoiceModalIfOpen();
       console.log('DEBUG: Abrindo formulário de transação/categoria por voz', {descricao, valor, tipo, categoriaId: categoria.id});
       window.showAddTransactionModal({
@@ -1472,9 +1472,9 @@ function parseNumeroPorExtenso(palavra) {
     'cem': 100, 'cento': 100, 'sem': 100, 'duzentos': 200, 'trezentos': 300, 'quatrocentos': 400, 'quinhentos': 500, 'seiscentos': 600, 'setecentos': 700, 'oitocentos': 800, 'novecentos': 900,
     'mil': 1000
   };
-  if (!palavra) return NaN;
+  if (!palavra) {return NaN;}
   palavra = palavra.toLowerCase().replace(/\./g, '');
-  if (mapa[palavra] !== undefined) return mapa[palavra];
+  if (mapa[palavra] !== undefined) {return mapa[palavra];}
   // Tenta converter por extenso composto (ex: cento e vinte)
   if (palavra.includes(' e ')) {
     return palavra.split(' e ').map(parseNumeroPorExtenso).reduce((a, b) => a + b, 0);
@@ -1519,8 +1519,8 @@ async function processTransactionVoice(transcript) {
     return;
   }
   let tipo = words[tipoIndex];
-  if (/^receita/.test(tipo)) tipo = 'receita';
-  if (/^despesa/.test(tipo)) tipo = 'despesa';
+  if (/^receita/.test(tipo)) {tipo = 'receita';}
+  if (/^despesa/.test(tipo)) {tipo = 'despesa';}
   // Extrair categoria (última palavra)
   const categoriaNome = words[words.length - 1];
   // Extrair descrição (tudo antes do valor)
@@ -1646,7 +1646,7 @@ function showLoading(show) {
 // Listener de autenticação
 auth.onAuthStateChanged(async (user) => {
   showLoading(true);
-  
+
   if (user) {
     window.appState.currentUser = user;
     try {
@@ -1662,7 +1662,7 @@ auth.onAuthStateChanged(async (user) => {
         // Usar o primeiro orçamento como padrão
         await setCurrentBudget(window.appState.budgets[0]);
       }
-      
+
       await loadTransactions();
       await loadCategories();
       await loadRecorrentes();
@@ -1689,7 +1689,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupLoginButton();
   toggleLoginPage(true);
   setupNavigation();
-  
+
   // Configurar FAB
   renderFAB();
 
@@ -1745,7 +1745,7 @@ window.selectSharedBudget = function() {
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
         const budgetId = document.getElementById('shared-budget-id').value;
-        if (!budgetId) return;
+        if (!budgetId) {return;}
         const budget = await buscarOrcamentoPorId(budgetId);
         if (budget) {
           window.appState.currentBudget = budget;
@@ -1767,10 +1767,10 @@ window.selectSharedBudget = function() {
 // Listener em tempo real para transações
 let unsubscribeTransactions = null;
 function listenTransactions() {
-  if (unsubscribeTransactions) unsubscribeTransactions();
+  if (unsubscribeTransactions) {unsubscribeTransactions();}
   const userId = window.appState.currentUser?.uid;
   const budgetId = window.appState.currentBudget?.id;
-  if (!userId || !budgetId) return;
+  if (!userId || !budgetId) {return;}
   const q = query(
     collection(db, 'transactions'),
     where('userId', '==', userId),
@@ -1781,8 +1781,8 @@ function listenTransactions() {
     // Atualizar interface se estiver na aba de transações ou dashboard
     const currentTab = document.querySelector('.nav-item.active')?.getAttribute('data-tab');
     if (['transactions', 'dashboard'].includes(currentTab)) {
-      if (currentTab === 'transactions') renderTransactions();
-      if (currentTab === 'dashboard') renderDashboard();
+      if (currentTab === 'transactions') {renderTransactions();}
+      if (currentTab === 'dashboard') {renderDashboard();}
     }
   });
 }
@@ -1796,7 +1796,7 @@ listenTransactions();
 // Ao iniciar, esconder tela de login e mostrar loading
 window.addEventListener('DOMContentLoaded', () => {
   const loginPage = document.getElementById('login-page');
-  if (loginPage) loginPage.style.display = 'none';
+  if (loginPage) {loginPage.style.display = 'none';}
   showLoading(true);
 });
 // ... existing code ...
@@ -1807,10 +1807,10 @@ window.generateUserGuide = function() {
   try {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
-    
+
     // Configurações do documento
     doc.setFont('helvetica');
-    
+
     // Função para adicionar texto com quebra de página automática
     function addText(text, x, y, maxWidth = 170) {
       const lines = doc.splitTextToSize(text, maxWidth);
@@ -1821,7 +1821,7 @@ window.generateUserGuide = function() {
       doc.text(lines, x, y);
       return y + (lines.length * 8) + 2;
     }
-    
+
     // Função para adicionar título de seção
     function addSectionTitle(title, y) {
       if (y > 250) {
@@ -1833,7 +1833,7 @@ window.generateUserGuide = function() {
       doc.text(title, 20, y);
       return y + 12;
     }
-    
+
     // Função para adicionar subtítulo
     function addSubtitle(subtitle, y) {
       if (y > 260) {
@@ -1845,7 +1845,7 @@ window.generateUserGuide = function() {
       doc.text(subtitle, 20, y);
       return y + 8;
     }
-    
+
     // Função para adicionar item de lista
     function addListItem(item, y, indent = 25) {
       if (y > 270) {
@@ -1857,7 +1857,7 @@ window.generateUserGuide = function() {
       doc.text(item, indent, y);
       return y + 8;
     }
-    
+
     // Cabeçalho da primeira página
     doc.setFillColor(79, 70, 229);
     doc.rect(0, 0, 210, 40, 'F');
@@ -1866,466 +1866,466 @@ window.generateUserGuide = function() {
     doc.text('Servo Tech Finanças', 20, 25);
     doc.setFontSize(14);
     doc.text('Guia Completo do Usuário', 20, 35);
-    
+
     let yPosition = 50;
     doc.setTextColor(0, 0, 0);
-  
-  // Introdução
-  yPosition = addSectionTitle('🎯 Bem-vindo ao Servo Tech Finanças!', yPosition);
-  
-  yPosition = addText('O Servo Tech Finanças é um aplicativo completo e intuitivo para controle financeiro pessoal. Desenvolvido com foco na praticidade e simplicidade, ele oferece todas as ferramentas necessárias para você gerenciar suas finanças de forma eficiente e organizada.', 20, yPosition);
-  
-  yPosition = addSubtitle('🌟 Principais Funcionalidades:', yPosition);
-  yPosition = addListItem('📊 Dashboard completo com visão geral das finanças', yPosition);
-  yPosition = addListItem('💰 Gestão completa de receitas e despesas', yPosition);
-  yPosition = addListItem('🏷️ Categorização inteligente com limites de gastos', yPosition);
-  yPosition = addListItem('🎤 Comandos de voz para adicionar transações rapidamente', yPosition);
-  yPosition = addListItem('📈 Controle de orçamentos com compartilhamento', yPosition);
-  yPosition = addListItem('💾 Backup e restauração de dados', yPosition);
-  yPosition = addListItem('📱 Instalação como aplicativo (PWA)', yPosition);
-  yPosition = addListItem('🌙 Modo escuro para conforto visual', yPosition);
-  yPosition = addListItem('📊 Exportação de relatórios em Excel, PDF e JSON', yPosition);
-  
-  // Dashboard
-  yPosition = addSectionTitle('📊 Dashboard - Centro de Controle Financeiro', yPosition);
-  yPosition = addText('O Dashboard é o coração do aplicativo, oferecendo uma visão completa e em tempo real de suas finanças. Aqui você encontra todos os dados importantes organizados de forma clara e intuitiva.', 20, yPosition);
-  yPosition += 8;
-  yPosition = addSubtitle('📈 Cards Principais:', yPosition);
-  yPosition = addListItem('🟢 Receitas: Soma total de todo dinheiro recebido no período', yPosition);
-  yPosition = addListItem('   Inclui salários, bônus, rendimentos extras, etc.', yPosition, 30);
-  yPosition = addListItem('🔴 Despesas: Soma total de todos os gastos realizados', yPosition);
-  yPosition = addListItem('   Contas, compras, lazer, transporte, etc.', yPosition, 30);
-  yPosition = addListItem('🔵 Saldo: Receitas - Despesas (dinheiro disponível)', yPosition);
-  yPosition = addListItem('   Indica se você está no azul ou no vermelho', yPosition, 30);
-  yPosition = addListItem('🟡 Orçado: Limite das categorias - Despesas', yPosition);
-  yPosition = addListItem('   Mostra quanto ainda pode gastar dentro dos limites', yPosition, 30);
-  yPosition += 8;
-  yPosition = addSubtitle('📊 Seção de Categorias:', yPosition);
-  yPosition = addListItem('Barras de progresso coloridas para cada categoria', yPosition);
-  yPosition = addListItem('Verde: Dentro do limite estabelecido', yPosition, 30);
-  yPosition = addListItem('Amarelo: Próximo do limite (80% ou mais)', yPosition, 30);
-  yPosition = addListItem('Vermelho: Acima do limite (gasto excessivo)', yPosition, 30);
-  yPosition = addListItem('Porcentagem de uso visível em cada barra', yPosition, 30);
-  yPosition += 8;
-  yPosition = addSubtitle('📝 Transações Recentes:', yPosition);
-  yPosition = addListItem('Lista das últimas 10 transações realizadas', yPosition);
-  yPosition = addListItem('Mostra: Data, Descrição, Valor, Categoria e Tipo', yPosition, 30);
-  yPosition = addListItem('Atualização automática em tempo real', yPosition, 30);
-  yPosition = addListItem('Acesso rápido para editar ou excluir', yPosition, 30);
-  yPosition += 8;
-  
-  // Transações
-  yPosition = addSectionTitle('💰 Transações - Gestão Completa de Receitas e Despesas', yPosition);
-  yPosition = addText('A aba Transações é onde você gerencia todas as suas movimentações financeiras. Aqui você pode adicionar, editar, excluir e visualizar todas as transações.', 20, yPosition);
-  yPosition += 8;
-  yPosition = addSubtitle('📝 Como Adicionar uma Transação:', yPosition);
-  yPosition = addListItem('Método 1 - Botão Flutuante (FAB):', yPosition);
-  yPosition = addListItem('1. Toque no botão + (canto inferior direito)', yPosition, 30);
-  yPosition = addListItem('2. Preencha os campos obrigatórios:', yPosition, 30);
-  yPosition = addListItem('   • Descrição: Nome da transação (ex: "Supermercado")', yPosition, 35);
-  yPosition = addListItem('   • Valor: Quantia em reais (ex: 150,50)', yPosition, 35);
-  yPosition = addListItem('   • Tipo: Receita ou Despesa', yPosition, 35);
-  yPosition = addListItem('   • Categoria: Selecione uma categoria existente', yPosition, 35);
-  yPosition = addListItem('3. Toque em "Adicionar"', yPosition, 30);
-  yPosition += 8;
-  yPosition = addListItem('Método 2 - Aba Transações:', yPosition);
-  yPosition = addListItem('1. Vá na aba "Transações" (navegação inferior)', yPosition, 30);
-  yPosition = addListItem('2. Toque em "+ Nova Transação"', yPosition, 30);
-  yPosition = addListItem('3. Preencha os campos e confirme', yPosition, 30);
-  yPosition += 8;
-  yPosition = addSubtitle('✏️ Como Editar uma Transação:', yPosition);
-  yPosition = addListItem('1. Localize a transação na lista', yPosition);
-  yPosition = addListItem('2. Toque no ícone ✏️ (lápis) ao lado', yPosition, 30);
-  yPosition = addListItem('3. Modifique os campos desejados', yPosition, 30);
-  yPosition = addListItem('4. Toque em "Salvar"', yPosition, 30);
-  yPosition += 8;
-  yPosition = addSubtitle('🗑️ Como Excluir uma Transação:', yPosition);
-  yPosition = addListItem('1. Localize a transação na lista', yPosition);
-  yPosition = addListItem('2. Toque no ícone 🗑️ (lixeira) ao lado', yPosition, 30);
-  yPosition = addListItem('3. Confirme a exclusão', yPosition, 30);
-  yPosition += 8;
-  yPosition = addSubtitle('📊 Visualização de Transações:', yPosition);
-  yPosition = addListItem('Lista completa de todas as transações', yPosition);
-  yPosition = addListItem('Ordenadas por data (mais recentes primeiro)', yPosition, 30);
-  yPosition = addListItem('Filtros por tipo (Receita/Despesa)', yPosition, 30);
-  yPosition = addListItem('Busca por descrição', yPosition, 30);
-  yPosition = addListItem('Atualização automática em tempo real', yPosition, 30);
-  yPosition += 8;
-  yPosition = addSubtitle('💡 Dicas Importantes:', yPosition);
-  yPosition = addListItem('Use comandos de voz para adicionar mais rapidamente', yPosition);
-  yPosition = addListItem('Mantenha descrições claras e específicas', yPosition);
-  yPosition = addListItem('Categorize corretamente para melhor controle', yPosition);
-  yPosition = addListItem('Revise transações regularmente', yPosition);
-  yPosition += 8;
-  
-  // Comandos de Voz
-  doc.setFontSize(16);
-  doc.setTextColor(79, 70, 229);
-  doc.text('🎤 Comandos de Voz - Revolução na Praticidade', 20, yPosition);
-  yPosition += 12;
-  doc.setFontSize(11);
-  doc.setTextColor(0, 0, 0);
-  doc.text('O sistema de comandos de voz é uma das funcionalidades mais inovadoras do app.', 20, yPosition);
-  yPosition += 8;
-  doc.text('Permite adicionar transações e criar categorias sem precisar digitar,', 20, yPosition);
-  yPosition += 8;
-  doc.text('tornando o controle financeiro muito mais rápido e prático.', 20, yPosition);
-  yPosition += 12;
-  doc.text('🎯 Como Ativar o Comando de Voz:', 20, yPosition);
-  yPosition += 8;
-  doc.text('1. Toque no ícone do microfone no cabeçalho', 25, yPosition);
-  yPosition += 8;
-  doc.text('2. Aguarde a animação de "Ouvindo"', 30, yPosition);
-  yPosition += 8;
-  doc.text('3. Fale claramente o comando', 30, yPosition);
-  yPosition += 8;
-  doc.text('4. Aguarde a confirmação', 30, yPosition);
-  yPosition += 12;
-  doc.text('📝 Comando para Adicionar Transação:', 20, yPosition);
-  yPosition += 8;
-  doc.text('Formato: "descrição valor tipo categoria"', 25, yPosition);
-  yPosition += 8;
-  doc.text('Exemplos Práticos:', 25, yPosition);
-  yPosition += 8;
-  doc.text('• "supermercado cem despesa alimentação"', 30, yPosition);
-  yPosition += 8;
-  doc.text('• "salário mil quinhentos receita trabalho"', 30, yPosition);
-  yPosition += 8;
-  doc.text('• "padaria cinquenta despesa alimentação"', 30, yPosition);
-  yPosition += 8;
-  doc.text('• "uber trinta despesa transporte"', 30, yPosition);
-  yPosition += 8;
-  doc.text('• "bônus quinhentos receita trabalho"', 30, yPosition);
-  yPosition += 8;
-  doc.text('• "cinema oitenta despesa lazer"', 30, yPosition);
-  yPosition += 12;
-  doc.text('🏷️ Comando para Criar Categoria:', 20, yPosition);
-  yPosition += 8;
-  doc.text('Formato: "nome tipo limite"', 25, yPosition);
-  yPosition += 8;
-  doc.text('Exemplos Práticos:', 25, yPosition);
-  yPosition += 8;
-  doc.text('• "alimentação despesa cem"', 30, yPosition);
-  yPosition += 8;
-  doc.text('• "transporte despesa duzentos"', 30, yPosition);
-  yPosition += 8;
-  doc.text('• "lazer despesa cento cinquenta"', 30, yPosition);
-  yPosition += 8;
-  doc.text('• "trabalho receita zero"', 30, yPosition);
-  yPosition += 12;
-  doc.text('🔢 Valores por Extenso Suportados:', 20, yPosition);
-  yPosition += 8;
-  doc.text('Números: "zero", "um", "dois", "três", "quatro", "cinco"', 25, yPosition);
-  yPosition += 8;
-  doc.text('Dezenas: "dez", "vinte", "trinta", "quarenta", "cinquenta"', 25, yPosition);
-  yPosition += 8;
-  doc.text('Centenas: "cem", "duzentos", "trezentos", "quatrocentos"', 25, yPosition);
-  yPosition += 8;
-  doc.text('Milhares: "mil", "mil quinhentos", "dois mil"', 25, yPosition);
-  yPosition += 8;
-  doc.text('Compostos: "cento cinquenta", "mil duzentos"', 25, yPosition);
-  yPosition += 8;
-  doc.text('Sinônimos: "sem" = "cem" (para evitar confusão)', 25, yPosition);
-  yPosition += 12;
-  doc.text('💡 Dicas para Comandos de Voz:', 20, yPosition);
-  yPosition += 8;
-  doc.text('• Fale claramente e pausadamente', 25, yPosition);
-  yPosition += 8;
-  doc.text('• Use valores por extenso ao invés de números', 25, yPosition);
-  yPosition += 8;
-  doc.text('• Mantenha o microfone próximo', 25, yPosition);
-  yPosition += 8;
-  doc.text('• Evite ambientes muito barulhentos', 25, yPosition);
-  yPosition += 8;
-  doc.text('• Confirme sempre se o comando foi entendido', 25, yPosition);
-  yPosition += 15;
-  
-  // Categorias
-  doc.setFontSize(16);
-  doc.setTextColor(79, 70, 229);
-  doc.text('🏷️ Categorias - Organização Inteligente dos Gastos', 20, yPosition);
-  yPosition += 12;
-  doc.setFontSize(11);
-  doc.setTextColor(0, 0, 0);
-  doc.text('As categorias são fundamentais para organizar e controlar seus gastos de forma eficiente.', 20, yPosition);
-  yPosition += 8;
-  doc.text('Elas permitem que você estabeleça limites de gastos e monitore o progresso em tempo real.', 20, yPosition);
-  yPosition += 12;
-  doc.text('📝 Como Criar uma Categoria:', 20, yPosition);
-  yPosition += 8;
-  doc.text('Método 1 - Interface:', 25, yPosition);
-  yPosition += 8;
-  doc.text('1. Vá na aba "Categorias" (navegação inferior)', 30, yPosition);
-  yPosition += 8;
-  doc.text('2. Toque em "+ Nova Categoria"', 30, yPosition);
-  yPosition += 8;
-  doc.text('3. Preencha os campos:', 30, yPosition);
-  yPosition += 8;
-  doc.text('   • Nome: Nome da categoria (ex: "Alimentação")', 35, yPosition);
-  yPosition += 8;
-  doc.text('   • Tipo: Receita ou Despesa', 35, yPosition);
-  yPosition += 8;
-  doc.text('   • Limite: Valor máximo mensal (opcional)', 35, yPosition);
-  yPosition += 8;
-  doc.text('   • Cor: Escolha uma cor para identificação', 35, yPosition);
-  yPosition += 8;
-  doc.text('4. Toque em "Criar"', 30, yPosition);
-  yPosition += 12;
-  doc.text('Método 2 - Comando de Voz:', 25, yPosition);
-  yPosition += 8;
-  doc.text('1. Ative o microfone', 30, yPosition);
-  yPosition += 8;
-  doc.text('2. Diga: "nome tipo limite"', 30, yPosition);
-  yPosition += 8;
-  doc.text('3. Exemplo: "alimentação despesa cem"', 30, yPosition);
-  yPosition += 12;
-  doc.text('📊 Sistema de Controle por Cores:', 20, yPosition);
-  yPosition += 8;
-  doc.text('🟢 Verde: Dentro do limite estabelecido', 25, yPosition);
-  yPosition += 8;
-  doc.text('   • Gasto abaixo de 80% do limite', 30, yPosition);
-  yPosition += 8;
-  doc.text('   • Situação financeira saudável', 30, yPosition);
-  yPosition += 8;
-  doc.text('🟡 Amarelo: Próximo do limite', 25, yPosition);
-  yPosition += 8;
-  doc.text('   • Gasto entre 80% e 100% do limite', 30, yPosition);
-  yPosition += 8;
-  doc.text('   • Atenção: Reduza gastos nesta categoria', 30, yPosition);
-  yPosition += 8;
-  doc.text('🔴 Vermelho: Acima do limite', 25, yPosition);
-  yPosition += 8;
-  doc.text('   • Gasto superior ao limite estabelecido', 30, yPosition);
-  yPosition += 8;
-  doc.text('   • Alerta: Necessário ajuste imediato', 30, yPosition);
-  yPosition += 12;
-  doc.text('📈 Categorias Recomendadas:', 20, yPosition);
-  yPosition += 8;
-  doc.text('Para Despesas:', 25, yPosition);
-  yPosition += 8;
-  doc.text('• Alimentação (supermercado, restaurantes)', 30, yPosition);
-  yPosition += 8;
-  doc.text('• Transporte (combustível, Uber, transporte público)', 30, yPosition);
-  yPosition += 8;
-  doc.text('• Moradia (aluguel, contas, manutenção)', 30, yPosition);
-  yPosition += 8;
-  doc.text('• Lazer (cinema, shows, viagens)', 30, yPosition);
-  yPosition += 8;
-  doc.text('• Saúde (médico, farmácia, plano de saúde)', 30, yPosition);
-  yPosition += 8;
-  doc.text('• Educação (cursos, livros, material escolar)', 30, yPosition);
-  yPosition += 8;
-  doc.text('Para Receitas:', 25, yPosition);
-  yPosition += 8;
-  doc.text('• Trabalho (salário, bônus, comissões)', 30, yPosition);
-  yPosition += 8;
-  doc.text('• Investimentos (rendimentos, dividendos)', 30, yPosition);
-  yPosition += 8;
-  doc.text('• Freelance (trabalhos extras)', 30, yPosition);
-  yPosition += 12;
-  doc.text('✏️ Gerenciando Categorias:', 20, yPosition);
-  yPosition += 8;
-  doc.text('• Editar: Toque no ícone ✏️ ao lado da categoria', 25, yPosition);
-  yPosition += 8;
-  doc.text('• Excluir: Toque no ícone 🗑️ ao lado da categoria', 25, yPosition);
-  yPosition += 8;
-  doc.text('• Visualizar transações: Toque na categoria', 25, yPosition);
-  yPosition += 8;
-  doc.text('• Ajustar limites: Edite conforme necessário', 25, yPosition);
-  yPosition += 12;
-  doc.text('💡 Dicas para Categorias Eficientes:', 20, yPosition);
-  yPosition += 8;
-  doc.text('• Crie categorias específicas e claras', 25, yPosition);
-  yPosition += 8;
-  doc.text('• Estabeleça limites realistas baseados na renda', 25, yPosition);
-  yPosition += 8;
-  doc.text('• Use cores diferentes para fácil identificação', 25, yPosition);
-  yPosition += 8;
-  doc.text('• Revise e ajuste limites mensalmente', 25, yPosition);
-  yPosition += 8;
-  doc.text('• Monitore as barras de progresso regularmente', 25, yPosition);
-  yPosition += 15;
-  
-  // Configurações
-  doc.setFontSize(16);
-  doc.setTextColor(79, 70, 229);
-  doc.text('⚙️ Configurações - Centro de Personalização', 20, yPosition);
-  yPosition += 12;
-  doc.setFontSize(11);
-  doc.setTextColor(0, 0, 0);
-  doc.text('A aba Configurações é o centro de controle do aplicativo, onde você pode personalizar', 20, yPosition);
-  yPosition += 8;
-  doc.text('sua experiência, gerenciar dados e acessar funcionalidades avançadas.', 20, yPosition);
-  yPosition += 12;
-  doc.text('📖 Guia do Usuário:', 20, yPosition);
-  yPosition += 8;
-  doc.text('• Baixe este manual completo em PDF', 25, yPosition);
-  yPosition += 8;
-  doc.text('• Acesso offline ao guia de uso', 25, yPosition);
-  yPosition += 8;
-  doc.text('• Referência completa de todas as funcionalidades', 25, yPosition);
-  yPosition += 12;
-  doc.text('👤 Perfil do Usuário:', 20, yPosition);
-  yPosition += 8;
-  doc.text('• Visualizar email da conta Google', 25, yPosition);
-  yPosition += 8;
-  doc.text('• Fazer logout da aplicação', 25, yPosition);
-  yPosition += 8;
-  doc.text('• Gerenciar sessão de login', 25, yPosition);
-  yPosition += 12;
-  doc.text('💰 Sistema de Orçamentos:', 20, yPosition);
-  yPosition += 8;
-  doc.text('Criar Novo Orçamento:', 25, yPosition);
-  yPosition += 8;
-  doc.text('• Defina um nome para o orçamento', 30, yPosition);
-  yPosition += 8;
-  doc.text('• Estabeleça período de vigência', 30, yPosition);
-  yPosition += 8;
-  doc.text('• Configure categorias e limites', 30, yPosition);
-  yPosition += 8;
-  doc.text('Compartilhar Orçamento:', 25, yPosition);
-  yPosition += 8;
-  doc.text('• Gere um ID único do orçamento', 30, yPosition);
-  yPosition += 8;
-  doc.text('• Compartilhe com família ou amigos', 30, yPosition);
-  yPosition += 8;
-  doc.text('• Controle colaborativo de gastos', 30, yPosition);
-  yPosition += 8;
-  doc.text('Entrar em Orçamento Compartilhado:', 25, yPosition);
-  yPosition += 8;
-  doc.text('• Cole o ID do orçamento compartilhado', 30, yPosition);
-  yPosition += 8;
-  doc.text('• Acesse dados compartilhados', 30, yPosition);
-  yPosition += 8;
-  doc.text('• Contribua com transações', 30, yPosition);
-  yPosition += 12;
-  doc.text('📊 Exportação de Dados:', 20, yPosition);
-  yPosition += 8;
-  doc.text('Excel (.xlsx):', 25, yPosition);
-  yPosition += 8;
-  doc.text('• Formato ideal para análise em planilhas', 30, yPosition);
-  yPosition += 8;
-  doc.text('• Compatível com Microsoft Excel e Google Sheets', 30, yPosition);
-  yPosition += 8;
-  doc.text('• Inclui todas as transações e categorias', 30, yPosition);
-  yPosition += 8;
-  doc.text('PDF (.pdf):', 25, yPosition);
-  yPosition += 8;
-  doc.text('• Relatório formatado para impressão', 30, yPosition);
-  yPosition += 8;
-  doc.text('• Resumo financeiro completo', 30, yPosition);
-  yPosition += 8;
-  doc.text('• Gráficos e estatísticas', 30, yPosition);
-  yPosition += 8;
-  doc.text('JSON (.json):', 25, yPosition);
-  yPosition += 8;
-  doc.text('• Backup completo de todos os dados', 30, yPosition);
-  yPosition += 8;
-  doc.text('• Formato para restauração futura', 30, yPosition);
-  yPosition += 8;
-  doc.text('• Compatível com outros sistemas', 30, yPosition);
-  yPosition += 12;
-  doc.text('📱 Instalação como Aplicativo (PWA):', 20, yPosition);
-  yPosition += 8;
-  doc.text('• Baixe o app no seu celular', 25, yPosition);
-  yPosition += 8;
-  doc.text('• Acesso offline às funcionalidades', 25, yPosition);
-  yPosition += 8;
-  doc.text('• Experiência nativa de aplicativo', 25, yPosition);
-  yPosition += 8;
-  doc.text('• Notificações push (futuro)', 25, yPosition);
-  yPosition += 12;
-  doc.text('🌙 Modo Escuro:', 20, yPosition);
-  yPosition += 8;
-  doc.text('• Alternar entre tema claro e escuro', 25, yPosition);
-  yPosition += 8;
-  doc.text('• Reduz fadiga visual', 25, yPosition);
-  yPosition += 8;
-  doc.text('• Economiza bateria em telas OLED', 25, yPosition);
-  yPosition += 8;
-  doc.text('• Preferência salva automaticamente', 25, yPosition);
-  yPosition += 15;
-  
-  // Dicas e Truques
-  doc.setFontSize(16);
-  doc.setTextColor(79, 70, 229);
-  doc.text('💡 Dicas e Truques para Aproveitar Melhor', 20, yPosition);
-  yPosition += 12;
-  doc.setFontSize(11);
-  doc.setTextColor(0, 0, 0);
-  doc.text('🚀 Dicas de Produtividade:', 20, yPosition);
-  yPosition += 8;
-  doc.text('• Use comandos de voz para adicionar transações rapidamente', 25, yPosition);
-  yPosition += 8;
-  doc.text('• Configure limites realistas nas categorias', 25, yPosition);
-  yPosition += 8;
-  doc.text('• Faça backup regular dos seus dados', 25, yPosition);
-  yPosition += 8;
-  doc.text('• Instale o app para acesso offline', 25, yPosition);
-  yPosition += 8;
-  doc.text('• Compartilhe orçamentos com família/amigos', 25, yPosition);
-  yPosition += 8;
-  doc.text('• Monitore o card "Orçado" para controle de gastos', 25, yPosition);
-  yPosition += 8;
-  doc.text('• Use cores diferentes para categorias', 25, yPosition);
-  yPosition += 15;
-  
-  // Solução de Problemas
-  doc.setFontSize(16);
-  doc.setTextColor(79, 70, 229);
-  doc.text('🔧 Solução de Problemas Comuns', 20, yPosition);
-  yPosition += 12;
-  doc.setFontSize(11);
-  doc.setTextColor(0, 0, 0);
-  doc.text('❓ Comando de voz não funciona:', 20, yPosition);
-  yPosition += 8;
-  doc.text('• Verifique se o microfone está ativo', 25, yPosition);
-  yPosition += 8;
-  doc.text('• Fale claramente e pausadamente', 25, yPosition);
-  yPosition += 8;
-  doc.text('• Use valores por extenso: "cem" ao invés de "100"', 25, yPosition);
-  yPosition += 8;
-  doc.text('❓ Transação não aparece:', 20, yPosition);
-  yPosition += 8;
-  doc.text('• Aguarde alguns segundos (atualização automática)', 25, yPosition);
-  yPosition += 8;
-  doc.text('• Verifique se está na categoria correta', 25, yPosition);
-  yPosition += 8;
-  doc.text('❓ App não carrega:', 20, yPosition);
-  yPosition += 8;
-  doc.text('• Verifique sua conexão com a internet', 25, yPosition);
-  yPosition += 8;
-  doc.text('• Faça login novamente se necessário', 25, yPosition);
-  yPosition += 15;
-  
-  // Suporte
-  doc.setFontSize(16);
-  doc.setTextColor(79, 70, 229);
-  doc.text('🆘 Suporte e Contato', 20, yPosition);
-  yPosition += 12;
-  doc.setFontSize(11);
-  doc.setTextColor(0, 0, 0);
-  doc.text('👨‍💻 Fundador: Igor Bispo', 20, yPosition);
-  yPosition += 8;
-  doc.text('📱 Versão do App: 1.0', 20, yPosition);
-  yPosition += 8;
-  doc.text('📅 Data do Guia: ' + new Date().toLocaleDateString('pt-BR'), 20, yPosition);
-  yPosition += 8;
-  doc.text('🌐 URL: https://controle-financeiro-b98ec.web.app', 20, yPosition);
-  yPosition += 8;
-  doc.text('💡 Para dúvidas, consulte este guia ou entre em contato.', 20, yPosition);
-  yPosition += 15;
-  
-  // Rodapé
-  doc.setFillColor(79, 70, 229);
-  doc.rect(0, 270, 210, 30, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(10);
-  doc.text('Servo Tech Finanças - Transformando sua vida financeira', 20, 280);
-  doc.text('© 2025 • Fundador: Igor Bispo • Versão 1.0', 20, 290);
-  
-  // Salvar PDF
-  doc.save('Servo-Tech-Financas-Guia-Usuario.pdf');
+
+    // Introdução
+    yPosition = addSectionTitle('🎯 Bem-vindo ao Servo Tech Finanças!', yPosition);
+
+    yPosition = addText('O Servo Tech Finanças é um aplicativo completo e intuitivo para controle financeiro pessoal. Desenvolvido com foco na praticidade e simplicidade, ele oferece todas as ferramentas necessárias para você gerenciar suas finanças de forma eficiente e organizada.', 20, yPosition);
+
+    yPosition = addSubtitle('🌟 Principais Funcionalidades:', yPosition);
+    yPosition = addListItem('📊 Dashboard completo com visão geral das finanças', yPosition);
+    yPosition = addListItem('💰 Gestão completa de receitas e despesas', yPosition);
+    yPosition = addListItem('🏷️ Categorização inteligente com limites de gastos', yPosition);
+    yPosition = addListItem('🎤 Comandos de voz para adicionar transações rapidamente', yPosition);
+    yPosition = addListItem('📈 Controle de orçamentos com compartilhamento', yPosition);
+    yPosition = addListItem('💾 Backup e restauração de dados', yPosition);
+    yPosition = addListItem('📱 Instalação como aplicativo (PWA)', yPosition);
+    yPosition = addListItem('🌙 Modo escuro para conforto visual', yPosition);
+    yPosition = addListItem('📊 Exportação de relatórios em Excel, PDF e JSON', yPosition);
+
+    // Dashboard
+    yPosition = addSectionTitle('📊 Dashboard - Centro de Controle Financeiro', yPosition);
+    yPosition = addText('O Dashboard é o coração do aplicativo, oferecendo uma visão completa e em tempo real de suas finanças. Aqui você encontra todos os dados importantes organizados de forma clara e intuitiva.', 20, yPosition);
+    yPosition += 8;
+    yPosition = addSubtitle('📈 Cards Principais:', yPosition);
+    yPosition = addListItem('🟢 Receitas: Soma total de todo dinheiro recebido no período', yPosition);
+    yPosition = addListItem('   Inclui salários, bônus, rendimentos extras, etc.', yPosition, 30);
+    yPosition = addListItem('🔴 Despesas: Soma total de todos os gastos realizados', yPosition);
+    yPosition = addListItem('   Contas, compras, lazer, transporte, etc.', yPosition, 30);
+    yPosition = addListItem('🔵 Saldo: Receitas - Despesas (dinheiro disponível)', yPosition);
+    yPosition = addListItem('   Indica se você está no azul ou no vermelho', yPosition, 30);
+    yPosition = addListItem('🟡 Orçado: Limite das categorias - Despesas', yPosition);
+    yPosition = addListItem('   Mostra quanto ainda pode gastar dentro dos limites', yPosition, 30);
+    yPosition += 8;
+    yPosition = addSubtitle('📊 Seção de Categorias:', yPosition);
+    yPosition = addListItem('Barras de progresso coloridas para cada categoria', yPosition);
+    yPosition = addListItem('Verde: Dentro do limite estabelecido', yPosition, 30);
+    yPosition = addListItem('Amarelo: Próximo do limite (80% ou mais)', yPosition, 30);
+    yPosition = addListItem('Vermelho: Acima do limite (gasto excessivo)', yPosition, 30);
+    yPosition = addListItem('Porcentagem de uso visível em cada barra', yPosition, 30);
+    yPosition += 8;
+    yPosition = addSubtitle('📝 Transações Recentes:', yPosition);
+    yPosition = addListItem('Lista das últimas 10 transações realizadas', yPosition);
+    yPosition = addListItem('Mostra: Data, Descrição, Valor, Categoria e Tipo', yPosition, 30);
+    yPosition = addListItem('Atualização automática em tempo real', yPosition, 30);
+    yPosition = addListItem('Acesso rápido para editar ou excluir', yPosition, 30);
+    yPosition += 8;
+
+    // Transações
+    yPosition = addSectionTitle('💰 Transações - Gestão Completa de Receitas e Despesas', yPosition);
+    yPosition = addText('A aba Transações é onde você gerencia todas as suas movimentações financeiras. Aqui você pode adicionar, editar, excluir e visualizar todas as transações.', 20, yPosition);
+    yPosition += 8;
+    yPosition = addSubtitle('📝 Como Adicionar uma Transação:', yPosition);
+    yPosition = addListItem('Método 1 - Botão Flutuante (FAB):', yPosition);
+    yPosition = addListItem('1. Toque no botão + (canto inferior direito)', yPosition, 30);
+    yPosition = addListItem('2. Preencha os campos obrigatórios:', yPosition, 30);
+    yPosition = addListItem('   • Descrição: Nome da transação (ex: "Supermercado")', yPosition, 35);
+    yPosition = addListItem('   • Valor: Quantia em reais (ex: 150,50)', yPosition, 35);
+    yPosition = addListItem('   • Tipo: Receita ou Despesa', yPosition, 35);
+    yPosition = addListItem('   • Categoria: Selecione uma categoria existente', yPosition, 35);
+    yPosition = addListItem('3. Toque em "Adicionar"', yPosition, 30);
+    yPosition += 8;
+    yPosition = addListItem('Método 2 - Aba Transações:', yPosition);
+    yPosition = addListItem('1. Vá na aba "Transações" (navegação inferior)', yPosition, 30);
+    yPosition = addListItem('2. Toque em "+ Nova Transação"', yPosition, 30);
+    yPosition = addListItem('3. Preencha os campos e confirme', yPosition, 30);
+    yPosition += 8;
+    yPosition = addSubtitle('✏️ Como Editar uma Transação:', yPosition);
+    yPosition = addListItem('1. Localize a transação na lista', yPosition);
+    yPosition = addListItem('2. Toque no ícone ✏️ (lápis) ao lado', yPosition, 30);
+    yPosition = addListItem('3. Modifique os campos desejados', yPosition, 30);
+    yPosition = addListItem('4. Toque em "Salvar"', yPosition, 30);
+    yPosition += 8;
+    yPosition = addSubtitle('🗑️ Como Excluir uma Transação:', yPosition);
+    yPosition = addListItem('1. Localize a transação na lista', yPosition);
+    yPosition = addListItem('2. Toque no ícone 🗑️ (lixeira) ao lado', yPosition, 30);
+    yPosition = addListItem('3. Confirme a exclusão', yPosition, 30);
+    yPosition += 8;
+    yPosition = addSubtitle('📊 Visualização de Transações:', yPosition);
+    yPosition = addListItem('Lista completa de todas as transações', yPosition);
+    yPosition = addListItem('Ordenadas por data (mais recentes primeiro)', yPosition, 30);
+    yPosition = addListItem('Filtros por tipo (Receita/Despesa)', yPosition, 30);
+    yPosition = addListItem('Busca por descrição', yPosition, 30);
+    yPosition = addListItem('Atualização automática em tempo real', yPosition, 30);
+    yPosition += 8;
+    yPosition = addSubtitle('💡 Dicas Importantes:', yPosition);
+    yPosition = addListItem('Use comandos de voz para adicionar mais rapidamente', yPosition);
+    yPosition = addListItem('Mantenha descrições claras e específicas', yPosition);
+    yPosition = addListItem('Categorize corretamente para melhor controle', yPosition);
+    yPosition = addListItem('Revise transações regularmente', yPosition);
+    yPosition += 8;
+
+    // Comandos de Voz
+    doc.setFontSize(16);
+    doc.setTextColor(79, 70, 229);
+    doc.text('🎤 Comandos de Voz - Revolução na Praticidade', 20, yPosition);
+    yPosition += 12;
+    doc.setFontSize(11);
+    doc.setTextColor(0, 0, 0);
+    doc.text('O sistema de comandos de voz é uma das funcionalidades mais inovadoras do app.', 20, yPosition);
+    yPosition += 8;
+    doc.text('Permite adicionar transações e criar categorias sem precisar digitar,', 20, yPosition);
+    yPosition += 8;
+    doc.text('tornando o controle financeiro muito mais rápido e prático.', 20, yPosition);
+    yPosition += 12;
+    doc.text('🎯 Como Ativar o Comando de Voz:', 20, yPosition);
+    yPosition += 8;
+    doc.text('1. Toque no ícone do microfone no cabeçalho', 25, yPosition);
+    yPosition += 8;
+    doc.text('2. Aguarde a animação de "Ouvindo"', 30, yPosition);
+    yPosition += 8;
+    doc.text('3. Fale claramente o comando', 30, yPosition);
+    yPosition += 8;
+    doc.text('4. Aguarde a confirmação', 30, yPosition);
+    yPosition += 12;
+    doc.text('📝 Comando para Adicionar Transação:', 20, yPosition);
+    yPosition += 8;
+    doc.text('Formato: "descrição valor tipo categoria"', 25, yPosition);
+    yPosition += 8;
+    doc.text('Exemplos Práticos:', 25, yPosition);
+    yPosition += 8;
+    doc.text('• "supermercado cem despesa alimentação"', 30, yPosition);
+    yPosition += 8;
+    doc.text('• "salário mil quinhentos receita trabalho"', 30, yPosition);
+    yPosition += 8;
+    doc.text('• "padaria cinquenta despesa alimentação"', 30, yPosition);
+    yPosition += 8;
+    doc.text('• "uber trinta despesa transporte"', 30, yPosition);
+    yPosition += 8;
+    doc.text('• "bônus quinhentos receita trabalho"', 30, yPosition);
+    yPosition += 8;
+    doc.text('• "cinema oitenta despesa lazer"', 30, yPosition);
+    yPosition += 12;
+    doc.text('🏷️ Comando para Criar Categoria:', 20, yPosition);
+    yPosition += 8;
+    doc.text('Formato: "nome tipo limite"', 25, yPosition);
+    yPosition += 8;
+    doc.text('Exemplos Práticos:', 25, yPosition);
+    yPosition += 8;
+    doc.text('• "alimentação despesa cem"', 30, yPosition);
+    yPosition += 8;
+    doc.text('• "transporte despesa duzentos"', 30, yPosition);
+    yPosition += 8;
+    doc.text('• "lazer despesa cento cinquenta"', 30, yPosition);
+    yPosition += 8;
+    doc.text('• "trabalho receita zero"', 30, yPosition);
+    yPosition += 12;
+    doc.text('🔢 Valores por Extenso Suportados:', 20, yPosition);
+    yPosition += 8;
+    doc.text('Números: "zero", "um", "dois", "três", "quatro", "cinco"', 25, yPosition);
+    yPosition += 8;
+    doc.text('Dezenas: "dez", "vinte", "trinta", "quarenta", "cinquenta"', 25, yPosition);
+    yPosition += 8;
+    doc.text('Centenas: "cem", "duzentos", "trezentos", "quatrocentos"', 25, yPosition);
+    yPosition += 8;
+    doc.text('Milhares: "mil", "mil quinhentos", "dois mil"', 25, yPosition);
+    yPosition += 8;
+    doc.text('Compostos: "cento cinquenta", "mil duzentos"', 25, yPosition);
+    yPosition += 8;
+    doc.text('Sinônimos: "sem" = "cem" (para evitar confusão)', 25, yPosition);
+    yPosition += 12;
+    doc.text('💡 Dicas para Comandos de Voz:', 20, yPosition);
+    yPosition += 8;
+    doc.text('• Fale claramente e pausadamente', 25, yPosition);
+    yPosition += 8;
+    doc.text('• Use valores por extenso ao invés de números', 25, yPosition);
+    yPosition += 8;
+    doc.text('• Mantenha o microfone próximo', 25, yPosition);
+    yPosition += 8;
+    doc.text('• Evite ambientes muito barulhentos', 25, yPosition);
+    yPosition += 8;
+    doc.text('• Confirme sempre se o comando foi entendido', 25, yPosition);
+    yPosition += 15;
+
+    // Categorias
+    doc.setFontSize(16);
+    doc.setTextColor(79, 70, 229);
+    doc.text('🏷️ Categorias - Organização Inteligente dos Gastos', 20, yPosition);
+    yPosition += 12;
+    doc.setFontSize(11);
+    doc.setTextColor(0, 0, 0);
+    doc.text('As categorias são fundamentais para organizar e controlar seus gastos de forma eficiente.', 20, yPosition);
+    yPosition += 8;
+    doc.text('Elas permitem que você estabeleça limites de gastos e monitore o progresso em tempo real.', 20, yPosition);
+    yPosition += 12;
+    doc.text('📝 Como Criar uma Categoria:', 20, yPosition);
+    yPosition += 8;
+    doc.text('Método 1 - Interface:', 25, yPosition);
+    yPosition += 8;
+    doc.text('1. Vá na aba "Categorias" (navegação inferior)', 30, yPosition);
+    yPosition += 8;
+    doc.text('2. Toque em "+ Nova Categoria"', 30, yPosition);
+    yPosition += 8;
+    doc.text('3. Preencha os campos:', 30, yPosition);
+    yPosition += 8;
+    doc.text('   • Nome: Nome da categoria (ex: "Alimentação")', 35, yPosition);
+    yPosition += 8;
+    doc.text('   • Tipo: Receita ou Despesa', 35, yPosition);
+    yPosition += 8;
+    doc.text('   • Limite: Valor máximo mensal (opcional)', 35, yPosition);
+    yPosition += 8;
+    doc.text('   • Cor: Escolha uma cor para identificação', 35, yPosition);
+    yPosition += 8;
+    doc.text('4. Toque em "Criar"', 30, yPosition);
+    yPosition += 12;
+    doc.text('Método 2 - Comando de Voz:', 25, yPosition);
+    yPosition += 8;
+    doc.text('1. Ative o microfone', 30, yPosition);
+    yPosition += 8;
+    doc.text('2. Diga: "nome tipo limite"', 30, yPosition);
+    yPosition += 8;
+    doc.text('3. Exemplo: "alimentação despesa cem"', 30, yPosition);
+    yPosition += 12;
+    doc.text('📊 Sistema de Controle por Cores:', 20, yPosition);
+    yPosition += 8;
+    doc.text('🟢 Verde: Dentro do limite estabelecido', 25, yPosition);
+    yPosition += 8;
+    doc.text('   • Gasto abaixo de 80% do limite', 30, yPosition);
+    yPosition += 8;
+    doc.text('   • Situação financeira saudável', 30, yPosition);
+    yPosition += 8;
+    doc.text('🟡 Amarelo: Próximo do limite', 25, yPosition);
+    yPosition += 8;
+    doc.text('   • Gasto entre 80% e 100% do limite', 30, yPosition);
+    yPosition += 8;
+    doc.text('   • Atenção: Reduza gastos nesta categoria', 30, yPosition);
+    yPosition += 8;
+    doc.text('🔴 Vermelho: Acima do limite', 25, yPosition);
+    yPosition += 8;
+    doc.text('   • Gasto superior ao limite estabelecido', 30, yPosition);
+    yPosition += 8;
+    doc.text('   • Alerta: Necessário ajuste imediato', 30, yPosition);
+    yPosition += 12;
+    doc.text('📈 Categorias Recomendadas:', 20, yPosition);
+    yPosition += 8;
+    doc.text('Para Despesas:', 25, yPosition);
+    yPosition += 8;
+    doc.text('• Alimentação (supermercado, restaurantes)', 30, yPosition);
+    yPosition += 8;
+    doc.text('• Transporte (combustível, Uber, transporte público)', 30, yPosition);
+    yPosition += 8;
+    doc.text('• Moradia (aluguel, contas, manutenção)', 30, yPosition);
+    yPosition += 8;
+    doc.text('• Lazer (cinema, shows, viagens)', 30, yPosition);
+    yPosition += 8;
+    doc.text('• Saúde (médico, farmácia, plano de saúde)', 30, yPosition);
+    yPosition += 8;
+    doc.text('• Educação (cursos, livros, material escolar)', 30, yPosition);
+    yPosition += 8;
+    doc.text('Para Receitas:', 25, yPosition);
+    yPosition += 8;
+    doc.text('• Trabalho (salário, bônus, comissões)', 30, yPosition);
+    yPosition += 8;
+    doc.text('• Investimentos (rendimentos, dividendos)', 30, yPosition);
+    yPosition += 8;
+    doc.text('• Freelance (trabalhos extras)', 30, yPosition);
+    yPosition += 12;
+    doc.text('✏️ Gerenciando Categorias:', 20, yPosition);
+    yPosition += 8;
+    doc.text('• Editar: Toque no ícone ✏️ ao lado da categoria', 25, yPosition);
+    yPosition += 8;
+    doc.text('• Excluir: Toque no ícone 🗑️ ao lado da categoria', 25, yPosition);
+    yPosition += 8;
+    doc.text('• Visualizar transações: Toque na categoria', 25, yPosition);
+    yPosition += 8;
+    doc.text('• Ajustar limites: Edite conforme necessário', 25, yPosition);
+    yPosition += 12;
+    doc.text('💡 Dicas para Categorias Eficientes:', 20, yPosition);
+    yPosition += 8;
+    doc.text('• Crie categorias específicas e claras', 25, yPosition);
+    yPosition += 8;
+    doc.text('• Estabeleça limites realistas baseados na renda', 25, yPosition);
+    yPosition += 8;
+    doc.text('• Use cores diferentes para fácil identificação', 25, yPosition);
+    yPosition += 8;
+    doc.text('• Revise e ajuste limites mensalmente', 25, yPosition);
+    yPosition += 8;
+    doc.text('• Monitore as barras de progresso regularmente', 25, yPosition);
+    yPosition += 15;
+
+    // Configurações
+    doc.setFontSize(16);
+    doc.setTextColor(79, 70, 229);
+    doc.text('⚙️ Configurações - Centro de Personalização', 20, yPosition);
+    yPosition += 12;
+    doc.setFontSize(11);
+    doc.setTextColor(0, 0, 0);
+    doc.text('A aba Configurações é o centro de controle do aplicativo, onde você pode personalizar', 20, yPosition);
+    yPosition += 8;
+    doc.text('sua experiência, gerenciar dados e acessar funcionalidades avançadas.', 20, yPosition);
+    yPosition += 12;
+    doc.text('📖 Guia do Usuário:', 20, yPosition);
+    yPosition += 8;
+    doc.text('• Baixe este manual completo em PDF', 25, yPosition);
+    yPosition += 8;
+    doc.text('• Acesso offline ao guia de uso', 25, yPosition);
+    yPosition += 8;
+    doc.text('• Referência completa de todas as funcionalidades', 25, yPosition);
+    yPosition += 12;
+    doc.text('👤 Perfil do Usuário:', 20, yPosition);
+    yPosition += 8;
+    doc.text('• Visualizar email da conta Google', 25, yPosition);
+    yPosition += 8;
+    doc.text('• Fazer logout da aplicação', 25, yPosition);
+    yPosition += 8;
+    doc.text('• Gerenciar sessão de login', 25, yPosition);
+    yPosition += 12;
+    doc.text('💰 Sistema de Orçamentos:', 20, yPosition);
+    yPosition += 8;
+    doc.text('Criar Novo Orçamento:', 25, yPosition);
+    yPosition += 8;
+    doc.text('• Defina um nome para o orçamento', 30, yPosition);
+    yPosition += 8;
+    doc.text('• Estabeleça período de vigência', 30, yPosition);
+    yPosition += 8;
+    doc.text('• Configure categorias e limites', 30, yPosition);
+    yPosition += 8;
+    doc.text('Compartilhar Orçamento:', 25, yPosition);
+    yPosition += 8;
+    doc.text('• Gere um ID único do orçamento', 30, yPosition);
+    yPosition += 8;
+    doc.text('• Compartilhe com família ou amigos', 30, yPosition);
+    yPosition += 8;
+    doc.text('• Controle colaborativo de gastos', 30, yPosition);
+    yPosition += 8;
+    doc.text('Entrar em Orçamento Compartilhado:', 25, yPosition);
+    yPosition += 8;
+    doc.text('• Cole o ID do orçamento compartilhado', 30, yPosition);
+    yPosition += 8;
+    doc.text('• Acesse dados compartilhados', 30, yPosition);
+    yPosition += 8;
+    doc.text('• Contribua com transações', 30, yPosition);
+    yPosition += 12;
+    doc.text('📊 Exportação de Dados:', 20, yPosition);
+    yPosition += 8;
+    doc.text('Excel (.xlsx):', 25, yPosition);
+    yPosition += 8;
+    doc.text('• Formato ideal para análise em planilhas', 30, yPosition);
+    yPosition += 8;
+    doc.text('• Compatível com Microsoft Excel e Google Sheets', 30, yPosition);
+    yPosition += 8;
+    doc.text('• Inclui todas as transações e categorias', 30, yPosition);
+    yPosition += 8;
+    doc.text('PDF (.pdf):', 25, yPosition);
+    yPosition += 8;
+    doc.text('• Relatório formatado para impressão', 30, yPosition);
+    yPosition += 8;
+    doc.text('• Resumo financeiro completo', 30, yPosition);
+    yPosition += 8;
+    doc.text('• Gráficos e estatísticas', 30, yPosition);
+    yPosition += 8;
+    doc.text('JSON (.json):', 25, yPosition);
+    yPosition += 8;
+    doc.text('• Backup completo de todos os dados', 30, yPosition);
+    yPosition += 8;
+    doc.text('• Formato para restauração futura', 30, yPosition);
+    yPosition += 8;
+    doc.text('• Compatível com outros sistemas', 30, yPosition);
+    yPosition += 12;
+    doc.text('📱 Instalação como Aplicativo (PWA):', 20, yPosition);
+    yPosition += 8;
+    doc.text('• Baixe o app no seu celular', 25, yPosition);
+    yPosition += 8;
+    doc.text('• Acesso offline às funcionalidades', 25, yPosition);
+    yPosition += 8;
+    doc.text('• Experiência nativa de aplicativo', 25, yPosition);
+    yPosition += 8;
+    doc.text('• Notificações push (futuro)', 25, yPosition);
+    yPosition += 12;
+    doc.text('🌙 Modo Escuro:', 20, yPosition);
+    yPosition += 8;
+    doc.text('• Alternar entre tema claro e escuro', 25, yPosition);
+    yPosition += 8;
+    doc.text('• Reduz fadiga visual', 25, yPosition);
+    yPosition += 8;
+    doc.text('• Economiza bateria em telas OLED', 25, yPosition);
+    yPosition += 8;
+    doc.text('• Preferência salva automaticamente', 25, yPosition);
+    yPosition += 15;
+
+    // Dicas e Truques
+    doc.setFontSize(16);
+    doc.setTextColor(79, 70, 229);
+    doc.text('💡 Dicas e Truques para Aproveitar Melhor', 20, yPosition);
+    yPosition += 12;
+    doc.setFontSize(11);
+    doc.setTextColor(0, 0, 0);
+    doc.text('🚀 Dicas de Produtividade:', 20, yPosition);
+    yPosition += 8;
+    doc.text('• Use comandos de voz para adicionar transações rapidamente', 25, yPosition);
+    yPosition += 8;
+    doc.text('• Configure limites realistas nas categorias', 25, yPosition);
+    yPosition += 8;
+    doc.text('• Faça backup regular dos seus dados', 25, yPosition);
+    yPosition += 8;
+    doc.text('• Instale o app para acesso offline', 25, yPosition);
+    yPosition += 8;
+    doc.text('• Compartilhe orçamentos com família/amigos', 25, yPosition);
+    yPosition += 8;
+    doc.text('• Monitore o card "Orçado" para controle de gastos', 25, yPosition);
+    yPosition += 8;
+    doc.text('• Use cores diferentes para categorias', 25, yPosition);
+    yPosition += 15;
+
+    // Solução de Problemas
+    doc.setFontSize(16);
+    doc.setTextColor(79, 70, 229);
+    doc.text('🔧 Solução de Problemas Comuns', 20, yPosition);
+    yPosition += 12;
+    doc.setFontSize(11);
+    doc.setTextColor(0, 0, 0);
+    doc.text('❓ Comando de voz não funciona:', 20, yPosition);
+    yPosition += 8;
+    doc.text('• Verifique se o microfone está ativo', 25, yPosition);
+    yPosition += 8;
+    doc.text('• Fale claramente e pausadamente', 25, yPosition);
+    yPosition += 8;
+    doc.text('• Use valores por extenso: "cem" ao invés de "100"', 25, yPosition);
+    yPosition += 8;
+    doc.text('❓ Transação não aparece:', 20, yPosition);
+    yPosition += 8;
+    doc.text('• Aguarde alguns segundos (atualização automática)', 25, yPosition);
+    yPosition += 8;
+    doc.text('• Verifique se está na categoria correta', 25, yPosition);
+    yPosition += 8;
+    doc.text('❓ App não carrega:', 20, yPosition);
+    yPosition += 8;
+    doc.text('• Verifique sua conexão com a internet', 25, yPosition);
+    yPosition += 8;
+    doc.text('• Faça login novamente se necessário', 25, yPosition);
+    yPosition += 15;
+
+    // Suporte
+    doc.setFontSize(16);
+    doc.setTextColor(79, 70, 229);
+    doc.text('🆘 Suporte e Contato', 20, yPosition);
+    yPosition += 12;
+    doc.setFontSize(11);
+    doc.setTextColor(0, 0, 0);
+    doc.text('👨‍💻 Fundador: Igor Bispo', 20, yPosition);
+    yPosition += 8;
+    doc.text('📱 Versão do App: 1.0', 20, yPosition);
+    yPosition += 8;
+    doc.text('📅 Data do Guia: ' + new Date().toLocaleDateString('pt-BR'), 20, yPosition);
+    yPosition += 8;
+    doc.text('🌐 URL: https://controle-financeiro-b98ec.web.app', 20, yPosition);
+    yPosition += 8;
+    doc.text('💡 Para dúvidas, consulte este guia ou entre em contato.', 20, yPosition);
+    yPosition += 15;
+
+    // Rodapé
+    doc.setFillColor(79, 70, 229);
+    doc.rect(0, 270, 210, 30, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(10);
+    doc.text('Servo Tech Finanças - Transformando sua vida financeira', 20, 280);
+    doc.text('© 2025 • Fundador: Igor Bispo • Versão 1.0', 20, 290);
+
+    // Salvar PDF
+    doc.save('Servo-Tech-Financas-Guia-Usuario.pdf');
   } catch (error) {
     console.error('Erro ao gerar PDF:', error);
     Snackbar({ message: 'Erro ao gerar PDF. Verifique se a biblioteca jsPDF está carregada.', type: 'error' });
@@ -2336,9 +2336,9 @@ window.generateUserGuide = function() {
 function renderFAB() {
   // Remove qualquer FAB existente
   let fab = document.querySelector('.fab');
-  if (fab) fab.remove();
+  if (fab) {fab.remove();}
   // Só renderiza se usuário estiver logado
-  if (!window.appState.currentUser) return;
+  if (!window.appState.currentUser) {return;}
   fab = FAB();
   document.body.appendChild(fab);
 }
@@ -2351,7 +2351,7 @@ window.closeModal = closeModal;
 function closeVoiceModalIfOpen() {
   console.log('DEBUG: closeVoiceModalIfOpen chamado');
   const modal = document.getElementById('app-modal');
-  if (modal) modal.remove();
+  if (modal) {modal.remove();}
 }
 
 // ---
@@ -2426,10 +2426,10 @@ function normalizarTexto(str) {
 // Destacar aba ativa ao clicar
 function setupTabHighlight() {
   const nav = document.querySelector('.bottom-nav');
-  if (!nav) return;
+  if (!nav) {return;}
   nav.addEventListener('click', (e) => {
     const btn = e.target.closest('.nav-btn');
-    if (!btn) return;
+    if (!btn) {return;}
     nav.querySelectorAll('.nav-btn').forEach(b => {
       b.classList.remove('active');
       b.style.background = '';
@@ -2453,11 +2453,11 @@ setupTabHighlight();
 
 async function rotinaFechamentoMensal() {
   const user = window.FirebaseAuth.currentUser;
-  if (!user) return;
+  if (!user) {return;}
   const hoje = new Date();
   const mesAno = hoje.toISOString().slice(0,7);
   const ultimoFechamento = localStorage.getItem('ultimoFechamentoMensal');
-  if (ultimoFechamento === mesAno) return; // Já executou este mês
+  if (ultimoFechamento === mesAno) {return;} // Já executou este mês
 
   // Salvar histórico
   await salvarHistoricoMensal(user.uid, window.appState.transactions, hoje);
@@ -2516,9 +2516,9 @@ window.loadRecorrentes = loadRecorrentes;
 function renderBottomNav(activeRoute) {
   // Remove qualquer BottomNav existente
   let nav = document.querySelector('nav.bottom-nav');
-  if (nav) nav.remove();
+  if (nav) {nav.remove();}
   // Só renderiza se usuário estiver logado
-  if (!window.appState.currentUser) return;
+  if (!window.appState.currentUser) {return;}
   nav = BottomNav(activeRoute);
   nav.classList.add('bottom-nav');
   document.body.appendChild(nav);
@@ -2527,10 +2527,10 @@ function renderBottomNav(activeRoute) {
     btn.addEventListener('click', () => {
       const route = btn.getAttribute('data-route');
       console.log('Clicou na aba:', route); // Debug
-      if (window.router) window.router(route);
+      if (window.router) {window.router(route);}
     });
   });
-  if (typeof setupNavigation === 'function') setupNavigation();
+  if (typeof setupNavigation === 'function') {setupNavigation();}
 }
 
 // Atualizar renderRecorrentes para também renderizar o BottomNav
@@ -2564,10 +2564,10 @@ document.addEventListener('recorrente-adicionada', () => {
 // ... existing code ...
 let unsubscribeRecorrentes = null;
 function listenRecorrentes() {
-  if (unsubscribeRecorrentes) unsubscribeRecorrentes();
+  if (unsubscribeRecorrentes) {unsubscribeRecorrentes();}
   const userId = window.appState.currentUser?.uid;
   const budgetId = window.appState.currentBudget?.id;
-  if (!userId || !budgetId) return;
+  if (!userId || !budgetId) {return;}
   const ref = collection(db, 'users', userId, 'despesasRecorrentes');
   let q = ref;
   if (budgetId) {
@@ -2577,9 +2577,9 @@ function listenRecorrentes() {
     window.appState.recorrentes = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     // Atualizar interface se estiver na aba de recorrentes ou dashboard
     const currentTab = document.querySelector('.nav-item.active')?.getAttribute('data-tab');
-    if (["recorrentes", "dashboard"].includes(currentTab)) {
-      if (currentTab === "recorrentes") window.renderRecorrentes();
-      if (currentTab === "dashboard") window.renderDashboard();
+    if (['recorrentes', 'dashboard'].includes(currentTab)) {
+      if (currentTab === 'recorrentes') {window.renderRecorrentes();}
+      if (currentTab === 'dashboard') {window.renderDashboard();}
     }
   });
 }
@@ -2636,13 +2636,13 @@ window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   window.deferredPrompt = e;
   const btn = document.getElementById('install-app-btn');
-  if (btn) btn.style.display = '';
+  if (btn) {btn.style.display = '';}
 });
 
 // Função para mostrar o botão de instalar
 window.showInstallButton = function(forceShow = false) {
   const btn = document.getElementById('install-app-btn');
-  if (!btn) return;
+  if (!btn) {return;}
   if (window.deferredPrompt || forceShow) {
     btn.style.display = '';
     btn.onclick = async () => {
@@ -2680,7 +2680,7 @@ window.renderSettings = async function() {
     if (Array.isArray(budget.usuariosPermitidos) && budget.usuariosPermitidos.length > 0) {
       emails = await buscarEmailsPorUids(budget.usuariosPermitidos);
     }
-    compartilhadosHtml = emails.length > 0 ? `<div class='mt-2'><h4 class='font-semibold'>Usuários com acesso:</h4><ul class='list-disc ml-6 text-sm'>` +
+    compartilhadosHtml = emails.length > 0 ? '<div class=\'mt-2\'><h4 class=\'font-semibold\'>Usuários com acesso:</h4><ul class=\'list-disc ml-6 text-sm\'>' +
       emails.map(u => `<li>${u.email ? u.email + ' (' + u.uid + ')' : u.uid}</li>`).join('') + '</ul></div>' : '';
     orcamentoAtualHtml = `
       <div class="mb-4">
@@ -2694,7 +2694,7 @@ window.renderSettings = async function() {
   }
   let listaOrcamentosHtml = '';
   if (budgets.length > 1) {
-    listaOrcamentosHtml = `<div class='mt-4'><h4 class='font-semibold'>Seus Orçamentos:</h4><ul class='list-disc ml-6 text-sm'>` +
+    listaOrcamentosHtml = '<div class=\'mt-4\'><h4 class=\'font-semibold\'>Seus Orçamentos:</h4><ul class=\'list-disc ml-6 text-sm\'>' +
       budgets.map(b => `<li>${b.nome || '(sem nome)'} <span class='text-xs text-gray-500'>(ID: ${b.id})</span> ${budget && b.id === budget.id ? '<span class="text-green-600 font-bold ml-2">(Atual)</span>' : `<button onclick="window.setCurrentBudget && window.setCurrentBudget(${JSON.stringify(b)})" class="ml-2 px-2 py-1 bg-blue-200 rounded hover:bg-blue-300 text-xs">Usar</button>`}</li>`).join('') + '</ul></div>';
   }
   content.innerHTML = `
@@ -2795,7 +2795,7 @@ window.compartilharOrcamento = async function() {
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
         const valor = document.getElementById('compartilhar-uid').value.trim();
-        if (!valor) return;
+        if (!valor) {return;}
         let uid = valor;
         // Se for e-mail, buscar UID pelo e-mail (requer função backend, aqui só UID direto)
         // Adicionar UID à lista de usuariosPermitidos

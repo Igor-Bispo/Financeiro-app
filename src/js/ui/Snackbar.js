@@ -10,4 +10,4 @@ export function Snackbar({ message, type = 'info', duration = 3000 }) {
     snackbar.classList.add('opacity-0');
     setTimeout(() => snackbar.remove(), 500);
   }, duration);
-} 
+}

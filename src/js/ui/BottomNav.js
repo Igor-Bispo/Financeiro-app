@@ -10,7 +10,7 @@ export function BottomNav(activeRoute) {
   ];
   tabs.forEach(tab => {
     const btn = document.createElement('button');
-    btn.className = `nav-btn flex flex-col items-center gap-0.5 px-2 py-1 md:px-4 md:py-2 text-gray-500 dark:text-gray-400 hover:text-blue-500 transition-all duration-200`;
+    btn.className = 'nav-btn flex flex-col items-center gap-0.5 px-2 py-1 md:px-4 md:py-2 text-gray-500 dark:text-gray-400 hover:text-blue-500 transition-all duration-200';
     if (activeRoute === tab.route) {
       btn.className += ' bg-blue-200 text-blue-700 font-semibold rounded-xl px-4 py-2 shadow-md scale-105 active';
     }
@@ -21,7 +21,7 @@ export function BottomNav(activeRoute) {
       document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active', 'bg-blue-200', 'text-blue-700', 'font-semibold', 'rounded-xl', 'px-4', 'py-2', 'shadow-md', 'scale-105'));
       // Adicionar classe 'active' ao botão clicado
       btn.className += ' bg-blue-200 text-blue-700 font-semibold rounded-xl px-4 py-2 shadow-md scale-105 active';
-      if (window.router) window.router(tab.route);
+      if (window.router) {window.router(tab.route);}
     });
     nav.appendChild(btn);
   });

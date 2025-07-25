@@ -29,4 +29,4 @@ export default defineConfig({
       threshold: 10240,
     }),
   ],
-}); 
+});

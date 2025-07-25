@@ -29,8 +29,8 @@ export function RecorrenteForm({ onSubmit, initialData = {} }) {
               class="w-full px-3 py-2 border border-gray-300 rounded-lg">
         <option value="">Selecione...</option>
         ${(window.appState.categories || []).map(cat =>
-          `<option value="${cat.id}" ${initialData.categoriaId === cat.id ? 'selected' : ''}>${cat.nome}</option>`
-        ).join('')}
+    `<option value="${cat.id}" ${initialData.categoriaId === cat.id ? 'selected' : ''}>${cat.nome}</option>`
+  ).join('')}
       </select>
     </div>
     <div>

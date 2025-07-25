@@ -7,7 +7,7 @@ import {
   doc,
   query,
   where
-} from "firebase/firestore";
+} from 'firebase/firestore';
 import { db } from './firebase.js';
 
 export async function getDespesasRecorrentes(userId, budgetId) {

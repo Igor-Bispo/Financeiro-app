@@ -18,7 +18,7 @@ export function enableSwipeNavigation(containerSelector = '#app-content') {
   }
 
   const container = document.querySelector(containerSelector);
-  if (!container) return;
+  if (!container) {return;}
 
   container.addEventListener('touchstart', e => {
     touchStartX = e.changedTouches[0].screenX;

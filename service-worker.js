@@ -8,7 +8,7 @@ const MAX_CACHE_ITEMS = 100;
 // Ativar modo debug durante desenvolvimento
 const DEBUG = true;
 function log(...args) {
-  if (DEBUG) console.log('[SW]', ...args);
+  if (DEBUG) {console.log('[SW]', ...args);}
 }
 
 // Assets críticos para pré-cache (arquivos corretos do projeto)
@@ -49,7 +49,7 @@ const NETWORK_ONLY_ROUTES = [
 // Instalação - Pré-cache de assets críticos
 self.addEventListener('install', (e) => {
   log('Instalando Service Worker');
-  
+
   e.waitUntil(
     caches.open(STATIC_CACHE)
       .then(cache => {
@@ -76,7 +76,7 @@ self.addEventListener('install', (e) => {
 // Ativação - Limpeza de caches antigos
 self.addEventListener('activate', (e) => {
   log('Ativando novo Service Worker');
-  
+
   e.waitUntil(
     caches.keys().then(keys => {
       return Promise.all(
@@ -88,13 +88,13 @@ self.addEventListener('activate', (e) => {
         })
       );
     })
-    .then(() => {
-      log('Pronto para controlar clientes');
-      return self.clients.claim();
-    })
-    .catch(err => {
-      log('Erro durante ativação:', err);
-    })
+      .then(() => {
+        log('Pronto para controlar clientes');
+        return self.clients.claim();
+      })
+      .catch(err => {
+        log('Erro durante ativação:', err);
+      })
   );
 });
 
@@ -123,8 +123,8 @@ self.addEventListener('fetch', (e) => {
   }
 
   // Estratégia para assets estáticos
-  if (CACHE_FIRST_ROUTES.some(route => 
-    url.pathname.startsWith(route) || 
+  if (CACHE_FIRST_ROUTES.some(route =>
+    url.pathname.startsWith(route) ||
     url.origin.includes(route)
   )) {
     log('Rota cache-first:', url.pathname);
@@ -143,7 +143,7 @@ self.addEventListener('fetch', (e) => {
 async function networkFirstWithFallback(request) {
   try {
     const networkResponse = await fetch(request);
-    
+
     // Verifica se a resposta é válida
     if (networkResponse && networkResponse.ok) {
       await addToCache(DYNAMIC_CACHE, request, networkResponse.clone());
@@ -152,16 +152,16 @@ async function networkFirstWithFallback(request) {
     throw new Error('Resposta inválida');
   } catch (err) {
     log('Fallback para cache:', request.url, err);
-    
+
     // Tenta retornar do cache dinâmico primeiro
     const cachedResponse = await caches.match(request);
-    if (cachedResponse) return cachedResponse;
-    
+    if (cachedResponse) {return cachedResponse;}
+
     // Fallback específico para navegação
     if (request.mode === 'navigate') {
       return caches.match('/index.html');
     }
-    
+
     // Fallback genérico
     return new Response('Recurso não encontrado', { status: 404 });
   }
@@ -174,7 +174,7 @@ async function cacheFirst(request) {
     log('Retornando do cache:', request.url);
     return cachedResponse;
   }
-  
+
   try {
     const networkResponse = await fetch(request);
     if (networkResponse.ok) {
@@ -192,7 +192,7 @@ async function cacheFirst(request) {
 async function staleWhileRevalidate(request) {
   const cache = await caches.open(DYNAMIC_CACHE);
   const cachedResponse = await cache.match(request);
-  
+
   const fetchPromise = fetch(request)
     .then(async networkResponse => {
       if (networkResponse.ok) {
@@ -214,14 +214,14 @@ async function staleWhileRevalidate(request) {
 async function addToCache(cacheName, request, response) {
   if (response && response.ok) {
     const cache = await caches.open(cacheName);
-    
+
     // Clona a resposta para adicionar headers personalizados
     const headers = new Headers(response.headers);
     headers.set('sw-cached-time', new Date().toISOString());
-    
+
     const cachedResponse = new Response(response.body, { headers });
     await cache.put(request, cachedResponse);
-    
+
     // Limita o tamanho do cache
     await trimCache(cacheName);
   }
@@ -231,17 +231,17 @@ async function addToCache(cacheName, request, response) {
 async function trimCache(cacheName) {
   const cache = await caches.open(cacheName);
   const keys = await cache.keys();
-  
+
   if (keys.length > MAX_CACHE_ITEMS) {
     log(`Limpeza de cache (${keys.length}/${MAX_CACHE_ITEMS})`);
-    
+
     // Ordena por data de cache (mais antigos primeiro)
     const items = await Promise.all(keys.map(async key => {
       const response = await cache.match(key);
       const date = response.headers.get('sw-cached-time');
       return { key, date: date ? new Date(date) : new Date(0) };
     }));
-    
+
     items.sort((a, b) => a.date - b.date);
     await cache.delete(items[0].key);
   }
@@ -284,25 +284,25 @@ async function updateContent() {
 // Comunicação com a página
 self.addEventListener('message', (e) => {
   switch (e.data.action) {
-    case 'skipWaiting':
-      log('Pulando espera de atualização');
-      self.skipWaiting();
-      break;
-      
-    case 'clearCache':
-      log('Limpando cache dinâmico');
-      caches.delete(DYNAMIC_CACHE)
-        .then(() => log('Cache dinâmico limpo'))
-        .catch(err => log('Erro ao limpar cache:', err));
-      break;
-      
-    case 'getCacheStatus':
-      e.ports[0].postMessage({
-        static: STATIC_CACHE,
-        dynamic: DYNAMIC_CACHE,
-        version: VERSION
-      });
-      break;
+  case 'skipWaiting':
+    log('Pulando espera de atualização');
+    self.skipWaiting();
+    break;
+
+  case 'clearCache':
+    log('Limpando cache dinâmico');
+    caches.delete(DYNAMIC_CACHE)
+      .then(() => log('Cache dinâmico limpo'))
+      .catch(err => log('Erro ao limpar cache:', err));
+    break;
+
+  case 'getCacheStatus':
+    e.ports[0].postMessage({
+      static: STATIC_CACHE,
+      dynamic: DYNAMIC_CACHE,
+      version: VERSION
+    });
+    break;
   }
 });
 
@@ -332,7 +332,7 @@ self.addEventListener('notificationclick', (e) => {
 // Cache de recursos externos na instalação
 self.addEventListener('install', (e) => {
   log('Instalando Service Worker');
-  
+
   e.waitUntil(
     Promise.all([
       // Cache estático
@@ -345,7 +345,7 @@ self.addEventListener('install', (e) => {
           }))
         );
       }),
-      
+
       // Cache de recursos externos
       caches.open(DYNAMIC_CACHE).then(cache => {
         log('Adicionando recursos externos ao cache');
@@ -397,8 +397,8 @@ self.addEventListener('fetch', (e) => {
   }
 
   // Estratégia para assets estáticos
-  if (CACHE_FIRST_ROUTES.some(route => 
-    url.pathname.startsWith(route) || 
+  if (CACHE_FIRST_ROUTES.some(route =>
+    url.pathname.startsWith(route) ||
     url.origin.includes(route)
   )) {
     log('Rota cache-first:', url.pathname);

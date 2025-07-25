@@ -10,7 +10,7 @@ export async function aplicarRecorrentesDoMes(userId, budgetId) {
   const mesAno = `${ano}-${String(mes).padStart(2, '0')}`; // ex: "2025-07"
   const chaveLocal = `recorrentes-executadas-${mesAno}`;
 
-  if (localStorage.getItem(chaveLocal)) return;
+  if (localStorage.getItem(chaveLocal)) {return;}
 
   const recorrentes = await getDespesasRecorrentes(userId, budgetId);
   const ativos = recorrentes.filter(r => r.ativa !== false);
@@ -27,7 +27,7 @@ export async function aplicarRecorrentesDoMes(userId, budgetId) {
       where('createdAt', '<', Timestamp.fromDate(new Date(ano, mes, 1)))
     );
     const snap = await getDocs(q);
-    if (!snap.empty) continue; // Já existe, não lança de novo
+    if (!snap.empty) {continue;} // Já existe, não lança de novo
 
     const dadosTransacao = {
       userId,

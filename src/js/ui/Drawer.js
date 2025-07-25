@@ -43,7 +43,7 @@ export function renderDrawer() {
 export function toggleDrawer(forceOpen) {
   const drawer = document.getElementById('drawer-menu');
   const overlay = document.getElementById('drawer-overlay');
-  if (!drawer || !overlay) return;
+  if (!drawer || !overlay) {return;}
   const isOpen = !drawer.classList.contains('-translate-x-full');
   const shouldOpen = forceOpen === undefined ? !isOpen : forceOpen;
   if (shouldOpen) {

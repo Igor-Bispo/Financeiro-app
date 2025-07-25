@@ -4,9 +4,9 @@ import { getFirestore, collection, getDocs, query, where } from 'firebase/firest
 import { Modal } from '../ui/Modal.js';
 
 async function handleDeleteRecorrente(id) {
-  if (!confirm('Tem certeza que deseja excluir esta despesa recorrente?')) return;
+  if (!confirm('Tem certeza que deseja excluir esta despesa recorrente?')) {return;}
   const user = window.FirebaseAuth?.currentUser;
-  if (!user) return;
+  if (!user) {return;}
   await deleteDespesaRecorrente(user.uid, id);
   Snackbar({ message: 'Recorrente excluída com sucesso.', type: 'success' });
   await window.loadRecorrentes();
@@ -15,7 +15,7 @@ async function handleDeleteRecorrente(id) {
 
 function handleToggleRecorrente(rec) {
   const user = window.FirebaseAuth?.currentUser;
-  if (!user) return;
+  if (!user) {return;}
   updateDespesaRecorrente(user.uid, rec.id, { ativa: !rec.ativa });
   Snackbar({ message: 'Status atualizado com sucesso.', type: 'info' });
   window.loadRecorrentes().then(renderRecorrentes);
@@ -62,18 +62,12 @@ async function showHistoricoRecorrente(recorrenteId) {
       }
     }
     transacoes.sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0));
-    console.log('[DEBUG] Histórico recorrente', {
-      recorrenteId,
-      transacoes,
-      userId: user.uid,
-      budgetId: window.appState.currentBudget?.id
-    });
     // Atualizar conteúdo do modal
     modal.querySelector('.modal-body').innerHTML = `
       <div class='space-y-2'>
         <div class='text-xs text-gray-400'>Recorrente ID: <b>${recorrenteId}</b></div>
-        ${transacoes.length === 0 ? `<p class="text-gray-500">Nenhuma aplicação encontrada.<br>Verifique se a recorrente foi efetivada neste mês, se o orçamento selecionado é o mesmo e se o campo <b>recorrenteId</b> está correto na transação.</p>` :
-          transacoes.map(t => `
+        ${transacoes.length === 0 ? '<p class="text-gray-500">Nenhuma aplicação encontrada.<br>Verifique se a recorrente foi efetivada neste mês, se o orçamento selecionado é o mesmo e se o campo <b>recorrenteId</b> está correto na transação.</p>' :
+    transacoes.map(t => `
             <div class='flex justify-between items-center border-b pb-1'>
               <span>${t.descricao || ''}</span>
               <span class='text-xs text-gray-500'>${t.createdAt?.seconds ? new Date(t.createdAt.seconds * 1000).toLocaleDateString() : ''}</span>
@@ -110,7 +104,7 @@ function calcularProximaData(dataISO, diaLancamento) {
 }
 
 function tentarNotificar(rec) {
-  if (!('Notification' in window)) return;
+  if (!('Notification' in window)) {return;}
   Notification.requestPermission().then(permission => {
     if (permission === 'granted') {
       const hoje = new Date();
@@ -184,17 +178,17 @@ export function renderRecorrentes() {
       <div class="flex items-center space-x-2 md:space-x-3 mb-2">
         <div class="w-4 h-4 rounded-full" style="background-color: ${rec.cor || '#4F46E5'}"></div>
         <span class="font-semibold text-xs md:text-base text-gray-900 dark:text-gray-100">${rec.descricao}</span>
-      </div>
+        </div>
       <p class="text-xs md:text-sm text-gray-500 dark:text-gray-300">Valor da parcela: R$ ${valorParcela.toFixed(2)}${(rec.parcelasRestantes && rec.parcelasRestantes > 1) ? ` &nbsp;|&nbsp; <span class='text-gray-400'>Total: R$ ${valorTotal.toFixed(2)}</span>` : ''}</p>
       <p class="text-xs md:text-sm text-gray-500 dark:text-gray-300">Categoria: ${rec.categoriaId || 'Sem categoria'}</p>
       <p class="text-xs md:text-sm text-gray-500 dark:text-gray-300">${parcelasRestantesExibidas === null ? 'Infinito' : `Parcela ${numParcela} de ${rec.parcelasRestantes}`}</p>
-      ${rec.ativa !== false && !jaLancadaEsteMes ? `<p class=\"text-xs text-green-500 mb-2\">Próxima aplicação: ${proximaStr}</p>` : jaLancadaEsteMes ? `<p class=\"text-xs text-blue-500 mb-2\">Efetivada este mês</p>` : ''}
+      ${rec.ativa !== false && !jaLancadaEsteMes ? `<p class=\"text-xs text-green-500 mb-2\">Próxima aplicação: ${proximaStr}</p>` : jaLancadaEsteMes ? '<p class=\"text-xs text-blue-500 mb-2\">Efetivada este mês</p>' : ''}
       <div class="flex flex-wrap justify-end gap-1 md:space-x-2 mt-2">
         <button class="text-blue-600 hover:text-blue-800 text-xs md:text-sm px-2 py-1 md:px-3 md:py-1 rounded" onclick="window.showAddRecorrenteModal(${JSON.stringify(rec).replace(/\"/g, '&quot;')})">Editar</button>
         <button class="text-red-600 hover:text-red-800 text-xs md:text-sm px-2 py-1 md:px-3 md:py-1 rounded" onclick="window.handleDeleteRecorrente('${rec.id}')">Excluir</button>
         <button class="text-yellow-500 hover:text-yellow-700 text-xs md:text-sm px-2 py-1 md:px-3 md:py-1 rounded" onclick='window.handleToggleRecorrente(${JSON.stringify(rec).replace(/\"/g, '&quot;')})'>${rec.ativa === false ? 'Ativar' : 'Pausar'}</button>
         <button class="text-gray-600 hover:text-gray-800 dark:text-gray-300 text-xs md:text-sm px-2 py-1 md:px-3 md:py-1 rounded" onclick="window.showHistoricoRecorrente('${rec.id}')">Histórico</button>
-      </div>
+        </div>
     `;
     lista.appendChild(card);
   });
