@@ -607,33 +607,31 @@ function renderTransactions() {
 }
 // ... existing code ...
 // Padronizar renderCategories
-function renderCategories() {
+async function renderCategories() {
+  await loadTransactions();
   const content = document.getElementById('app-content');
   content.innerHTML = `
     <div class="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-2 md:p-6 border border-gray-300 dark:border-gray-700">
       <div class="flex flex-wrap justify-between items-center gap-1 md:gap-0 mb-4">
-        <h2 class="tab-title-highlight bg-white text-gray-900 border border-gray-300 font-bold px-6 py-2 rounded-2xl shadow dark:bg-[#131826] dark:text-white dark:border-white">Categorias</h2>
-        <button onclick="showAddCategoryModal()" class="bg-blue-500 text-white px-2 py-1 md:px-6 md:py-3 rounded-lg hover:bg-blue-600 flex items-center space-x-2 text-xs md:text-base">
-          <span>+ Nova Categoria</span>
-          <button onclick="startVoiceRecognition('category')" class="ml-2 bg-blue-600 p-1 md:p-2 rounded-full text-xs md:text-base">🎤</button>
-        </button>
+        <h2 class="tab-title-highlight bg-white dark:bg-gray-900 rounded-2xl px-6 py-2 shadow text-gray-900 dark:text-white">Categorias</h2>
+        <button onclick="showAddCategoryModal()" class="bg-blue-500 text-white px-2 py-1 md:px-6 md:py-3 rounded-lg hover:bg-blue-600 flex items-center space-x-2 text-xs md:text-base font-semibold font-inter shadow-md">+ Nova Categoria</button>
+        <button onclick="window.showAddBudgetModal()" class="bg-green-500 text-white px-2 py-1 md:px-6 md:py-3 rounded-lg hover:bg-green-600 flex items-center space-x-2 text-xs md:text-base font-semibold font-inter shadow-md">Criar Orçamento</button>
+        <button onclick="window.selectSharedBudget()" class="bg-yellow-500 text-white px-2 py-1 md:px-6 md:py-3 rounded-lg hover:bg-yellow-600 flex items-center space-x-2 text-xs md:text-base font-semibold font-inter shadow-md">Entrar em Orçamento Compartilhado</button>
       </div>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-6">
-        ${window.appState.categories.map(cat => `
-          <div class="border border-gray-300 dark:border-gray-700 rounded-lg p-2 md:p-4 bg-white dark:bg-gray-900">
-            <div class="flex items-center space-x-2 md:space-x-3 mb-2">
-              <div class="w-4 h-4 rounded-full" style="background-color: ${cat.cor || '#4F46E5'}"></div>
-              <span class="font-semibold text-xs md:text-base text-gray-900 dark:text-gray-100">${cat.nome}</span>
-            </div>
-            <p class="text-xs md:text-sm text-gray-500 dark:text-gray-300">Tipo: ${cat.tipo}</p>
-            <p class="text-xs md:text-sm text-gray-500 dark:text-gray-300">Limite: R$ ${cat.limite || '0,00'}</p>
-            <div class="flex flex-wrap justify-end gap-1 md:space-x-2 mt-2">
-              <button onclick="editCategory('${cat.id}')" class="text-blue-600 hover:text-blue-800 text-xs md:text-sm px-2 py-1 md:px-3 md:py-1 rounded">Editar</button>
-              <button onclick="deleteCategory('${cat.id}')" class="text-red-600 hover:text-red-800 text-xs md:text-sm px-2 py-1 md:px-3 md:py-1 rounded">Excluir</button>
-              <button onclick="showCategoryHistory('${cat.id}')" class="text-gray-600 hover:text-gray-800 text-xs md:text-sm px-2 py-1 md:px-3 md:py-1 rounded">Histórico</button>
-            </div>
-          </div>
-        `).join('')}
+      <div class="space-y-4">
+        <div class="border border-gray-300 dark:border-gray-700 rounded-lg p-2 md:p-4 bg-white dark:bg-gray-900 mb-2">
+          <h3 class="font-semibold mb-2">Orçamento Atual:</h3>
+          <p><strong>Nome:</strong> ${window.appState.currentBudget ? (window.appState.currentBudget.nome || '(sem nome)') : ''}</p>
+          <p><strong>ID:</strong> <span id="orcamento-id">${window.appState.currentBudget ? window.appState.currentBudget.id : ''}</span> <button onclick="window.copyBudgetId('${window.appState.currentBudget ? window.appState.currentBudget.id : ''}')" class="ml-2 px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 text-xs">Copiar</button></p>
+          <button onclick="window.compartilharOrcamento()" class="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 mt-2 text-xs md:text-sm">Compartilhar Orçamento</button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-6 mt-4">
+          <button onclick="window.exportToExcel()" class="bg-green-500 text-white py-2 rounded-lg font-semibold hover:bg-green-600 flex items-center justify-center gap-2 text-base"><span>📊</span> Exportar Excel</button>
+          <button onclick="window.exportToPDF()" class="bg-red-500 text-white py-2 rounded-lg font-semibold hover:bg-red-600 flex items-center justify-center gap-2 text-base"><span>📄</span> Exportar PDF</button>
+          <button onclick="window.downloadBackup()" class="bg-purple-500 text-white py-2 rounded-lg font-semibold hover:bg-purple-600 flex items-center justify-center gap-2 text-base"><span>💾</span> Backup Completo (JSON)</button>
+          <button onclick="window.generateUserGuide()" class="bg-blue-500 text-white py-2 rounded-lg font-semibold hover:bg-blue-600 flex items-center justify-center gap-2 text-base"><span>📘</span> Baixar Guia do Usuário (PDF)</button>
+          <button id="install-app-btn" style="display:none" class="bg-yellow-500 text-white py-2 rounded-lg font-semibold hover:bg-yellow-600 flex items-center justify-center gap-2 text-base"><span>⬇️</span> Instalar App</button>
+        </div>
       </div>
     </div>
   `;
@@ -663,7 +661,8 @@ async function router(path) {
       renderTransactions();
       break;
     case '/categories':
-      loadCategories().then(renderCategories);
+      await loadCategories();
+      await renderCategories();
       break;
     case '/recorrentes':
       await loadRecorrentes();
