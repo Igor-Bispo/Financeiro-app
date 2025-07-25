@@ -12,9 +12,12 @@ import { Modal } from './ui/Modal.js';
 import { Snackbar } from './ui/Snackbar.js';
 import { FAB } from './ui/FAB.js';
 import { BottomNav } from './ui/BottomNav.js';
-import { renderRecorrentes as _renderRecorrentes } from './recorrentes/RecorrentesPage.js';
+import { renderRecorrentes as _renderRecorrentes, showHistoricoRecorrente } from './recorrentes/RecorrentesPage.js';
 import { renderDrawer, toggleDrawer } from './ui/Drawer.js';
+import { renderLogAplicacoes } from './ui/LogAplicacoes.js';
 window._renderRecorrentes = _renderRecorrentes;
+window.showHistoricoRecorrente = showHistoricoRecorrente;
+window.renderLogAplicacoes = renderLogAplicacoes;
 
 // Configurar persistência da sessão
 // setPersistence(auth, browserLocalPersistence);
@@ -103,6 +106,7 @@ async function addTransaction(transactionData) {
     renderDashboard(); // Atualiza dashboard imediatamente
     return docRef;
   } catch (error) {
+    Snackbar({ message: 'Erro ao adicionar transação: ' + error.message, type: 'error' });
     throw error;
   }
 }
@@ -168,6 +172,7 @@ async function addCategory(categoryData) {
     renderDashboard();
     return docRef;
   } catch (error) {
+    Snackbar({ message: 'Erro ao adicionar categoria: ' + error.message, type: 'error' });
     throw error;
   }
 }
@@ -228,7 +233,7 @@ async function addBudget(budgetData) {
     await refreshCurrentView();
     return docRef.id;
   } catch (error) {
-    console.error('Erro ao adicionar orçamento:', error);
+    Snackbar({ message: 'Erro ao adicionar orçamento: ' + error.message, type: 'error' });
     throw error;
   }
 }
@@ -305,9 +310,36 @@ async function renderDashboard(selectedYear, selectedMonth) {
     const user = window.appState.currentUser;
     const transacoes = user ? await getTransacoesDoMes(user.uid, year, month) : [];
 
-    // Calcular totais
+    // Calcular totais e recorrentes pré-agendadas (definir variáveis uma única vez)
     const receitas = transacoes.filter(t => t.tipo === 'receita').reduce((sum, t) => sum + parseFloat(t.valor), 0);
-    const despesas = transacoes.filter(t => t.tipo === 'despesa').reduce((sum, t) => sum + parseFloat(t.valor), 0);
+    const despesasTransacoes = transacoes.filter(t => t.tipo === 'despesa').reduce((sum, t) => sum + parseFloat(t.valor), 0);
+    const anoSelecionado = year;
+    const mesSelecionado = month;
+    const recorrentes = window.appState.recorrentes || [];
+    const recorrentesMes = transacoes.filter(t => t.recorrenteId);
+    const preAgendadas = recorrentes.filter(rec => {
+      const jaLancada = recorrentesMes.some(t => t.recorrenteId === rec.id);
+      if (jaLancada) return false;
+      const dataInicio = new Date(rec.dataInicio);
+      const anoInicio = dataInicio.getFullYear();
+      const mesInicio = dataInicio.getMonth() + 1;
+      // Só mostra se o mês/ano exibido for igual ou posterior ao início
+      if (anoSelecionado < anoInicio || (anoSelecionado === anoInicio && mesSelecionado < mesInicio)) return false;
+      // Se não for para efetivar no mês atual, só mostra a partir do próximo mês
+      if (!rec.efetivarMesAtual && anoSelecionado === anoInicio && mesSelecionado === mesInicio) return false;
+      if (rec.parcelasRestantes !== null && rec.parcelasRestantes !== undefined) {
+        let mesesDesdeInicio = (anoSelecionado - anoInicio) * 12 + (mesSelecionado - mesInicio);
+        // Ajuste: se não for para efetivar no mês atual e já passou do mês de início, desconta 1
+        if (!rec.efetivarMesAtual && (anoSelecionado > anoInicio || (anoSelecionado === anoInicio && mesSelecionado > mesInicio))) {
+          mesesDesdeInicio -= 1;
+        }
+        const parcelasRestantesExibidas = rec.parcelasRestantes - mesesDesdeInicio;
+        return parcelasRestantesExibidas > 0;
+      }
+      return true;
+    });
+    const despesasPreAgendadas = preAgendadas.reduce((sum, rec) => sum + parseFloat(rec.valor), 0);
+    const despesas = despesasTransacoes + despesasPreAgendadas;
     const saldo = receitas - despesas;
     const totalLimite = window.appState.categories.reduce((sum, cat) => sum + parseFloat(cat.limite || 0), 0);
     const orcado = totalLimite - despesas;
@@ -347,36 +379,35 @@ async function renderDashboard(selectedYear, selectedMonth) {
     });
 
     // Espaço entre cards e categorias
-    content.innerHTML += `<div style="height: 1.5rem;"></div>`;
+    content.innerHTML += `<div class="h-6"></div>`;
     // Categorias com progresso
     content.innerHTML += `
-      <div class="bg-white rounded-xl shadow-lg p-2 md:p-6">
-        <h3 class="text-base md:text-xl font-bold mb-2 md:mb-4">Categorias</h3>
-        <div class="space-y-2 md:space-y-4">
+      <div class="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-2 md:p-6 border border-gray-300 dark:border-gray-700">
+        <h3 class="text-base md:text-xl font-bold mb-2 md:mb-4 text-gray-900 dark:text-gray-100">Categorias</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-6">
           ${window.appState.categories.map(cat => {
-            const transacoesCategoria = transacoes.filter(t => t.categoriaId === cat.id && t.tipo === 'despesa');
+            const transacoesCategoria = (window.appState.transactions || []).filter(t => t.categoriaId === cat.id && t.tipo === 'despesa');
             const gasto = transacoesCategoria.reduce((sum, t) => sum + parseFloat(t.valor), 0);
             const limite = parseFloat(cat.limite || 0);
             const percentual = limite > 0 ? (gasto / limite) * 100 : 0;
             const saldo = limite - gasto;
             return `
-              <div class="border rounded-lg p-2 md:p-4">
-                <div class="flex justify-between items-center mb-1 md:mb-2">
-                  <div class="flex items-center space-x-2 md:space-x-3">
-                    <div class="w-4 h-4 rounded-full" style="background-color: ${cat.cor || '#4F46E5'}"></div>
-                    <span class="font-semibold text-xs md:text-base">${cat.nome}</span>
-                  </div>
-                  <div class="text-right">
-                    <p class="text-xs md:text-sm text-gray-600">R$ ${gasto.toFixed(2)} / R$ ${limite.toFixed(2)}</p>
-                    <p class="text-xs md:text-sm ${saldo >= 0 ? 'text-green-600' : 'text-red-600'}">
-                      Saldo: R$ ${saldo.toFixed(2)}
-                    </p>
-                  </div>
+              <div class="border border-gray-300 dark:border-gray-700 rounded-lg p-2 md:p-4 bg-white dark:bg-gray-900">
+                <div class="flex items-center space-x-2 md:space-x-3 mb-2">
+                  <div class="w-4 h-4 rounded-full" style="background-color: ${cat.cor || '#4F46E5'}"></div>
+                  <span class="font-semibold text-xs md:text-base text-gray-900 dark:text-gray-100">${cat.nome}</span>
                 </div>
-                <div class="w-full bg-gray-200 rounded-full h-2 md:h-3 mb-1 md:mb-2">
+                <p class="text-xs md:text-sm text-gray-500 dark:text-gray-300">Tipo: ${cat.tipo}</p>
+                <p class="text-xs md:text-sm text-gray-500 dark:text-gray-300">Limite: R$ ${cat.limite || '0,00'}</p>
+                <div class="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2 md:h-3 mb-1 md:mb-2">
                   <div class="h-2 md:h-3 rounded-full transition-all duration-300 ${
                     percentual > 100 ? 'bg-red-500' : percentual > 80 ? 'bg-yellow-500' : 'bg-green-500'
                   }" style="width: ${Math.min(percentual, 100)}%"></div>
+                </div>
+                <div class="flex flex-wrap justify-end gap-1 md:space-x-2 mt-2">
+                  <button onclick="editCategory('${cat.id}')" class="text-blue-600 hover:text-blue-800 text-xs md:text-sm px-2 py-1 md:px-3 md:py-1 rounded">Editar</button>
+                  <button onclick="deleteCategory('${cat.id}')" class="text-red-600 hover:text-red-800 text-xs md:text-sm px-2 py-1 md:px-3 md:py-1 rounded">Excluir</button>
+                  <button onclick="showCategoryHistory('${cat.id}')" class="text-gray-600 hover:text-gray-800 text-xs md:text-sm px-2 py-1 md:px-3 md:py-1 rounded">Histórico</button>
                 </div>
               </div>
             `;
@@ -386,42 +417,68 @@ async function renderDashboard(selectedYear, selectedMonth) {
     `;
 
     // Espaço entre categorias e recorrentes
-    content.innerHTML += `<div style="height: 1.5rem;"></div>`;
+    content.innerHTML += `<div class="h-6"></div>`;
     // Bloco de Despesas Recorrentes do mês selecionado
-    const recorrentesMes = transacoes.filter(t => t.recorrenteId);
     content.innerHTML += `
-      <div class="bg-white rounded-xl shadow-lg p-4 flex flex-col gap-2 md:p-6 mb-4">
+      <div class="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-4 flex flex-col gap-2 md:p-6 mb-4 border border-gray-300 dark:border-gray-700">
         <div class="flex flex-wrap justify-between items-center mb-2 md:mb-4 gap-1 md:gap-0">
-          <h3 class="text-base md:text-xl font-bold text-gray-900 font-inter">Despesas Recorrentes do Mês</h3>
+          <h3 class="text-base md:text-xl font-bold text-gray-900 dark:text-gray-100 font-inter">Despesas Recorrentes do Mês</h3>
+          <button onclick="window.showAddRecorrenteModal()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 text-sm font-semibold font-inter">
+            + Nova Despesa Recorrente
+          </button>
         </div>
         <div class="space-y-2 md:space-y-3">
-          ${recorrentesMes.length === 0 ? `<p class='text-gray-500 text-center py-4 font-inter'>Nenhuma despesa recorrente aplicada neste mês</p>` :
-            recorrentesMes.map(r => {
-              const categoria = (window.appState.categories || []).find(c => c.id === r.categoriaId);
-              return `
-                <div class="flex flex-wrap justify-between items-center p-2 md:p-3 border rounded-lg hover:bg-gray-50 gap-1 md:gap-0 bg-white shadow font-inter">
-                  <div class="flex-1 min-w-[120px]">
-                    <p class="font-medium text-xs md:text-base">${r.descricao}</p>
-                    <p class="text-xs md:text-sm text-gray-500">
-                      ${categoria?.nome || 'Sem categoria'}
-                      • R$ ${parseFloat(r.valor).toFixed(2)}
-                      ${r.parcelasRestantes !== undefined ? `• ${r.parcelasRestantes}x restantes` : ''}
-                    </p>
-                  </div>
+          ${recorrentesMes.length === 0 && preAgendadas.length === 0 ? `<p class='text-gray-500 text-center py-4 font-inter dark:text-gray-300'>Nenhuma despesa recorrente aplicada ou agendada neste mês</p>` : ''}
+          ${recorrentesMes.map(r => {
+            const categoria = (window.appState.categories || []).find(c => c.id === r.categoriaId);
+            return `
+              <div class="flex flex-wrap justify-between items-center p-2 md:p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 gap-1 md:gap-0 bg-white dark:bg-gray-900 shadow font-inter">
+                <div class="flex-1 min-w-[120px]">
+                  <p class="font-medium text-xs md:text-base text-gray-900 dark:text-gray-100">✔️ ${r.descricao}</p>
+                  <p class="text-xs md:text-sm text-gray-500 dark:text-gray-300">
+                    ${categoria?.nome || 'Sem categoria'}
+                    • R$ ${parseFloat(r.valor).toFixed(2)}
+                    ${r.parcelasRestantes !== undefined ? `• ${r.parcelasRestantes}x restantes` : ''}
+                  </p>
                 </div>
-              `;
-            }).join('')}
+              </div>
+            `;
+          }).join('')}
+          ${preAgendadas.map(rec => {
+            const categoria = (window.appState.categories || []).find(c => c.id === rec.categoriaId);
+            const dataInicio = new Date(rec.dataInicio);
+            const anoInicio = dataInicio.getFullYear();
+            const mesInicio = dataInicio.getMonth() + 1;
+            let mesesDesdeInicio = (anoSelecionado - anoInicio) * 12 + (mesSelecionado - mesInicio);
+            if (!rec.efetivarMesAtual && (anoSelecionado > anoInicio || (anoSelecionado === anoInicio && mesSelecionado > mesInicio))) {
+              mesesDesdeInicio -= 1;
+            }
+            const parcelasRestantesExibidas = rec.parcelasRestantes !== null && rec.parcelasRestantes !== undefined ? rec.parcelasRestantes - mesesDesdeInicio : null;
+            const numParcela = rec.parcelasRestantes !== null && rec.parcelasRestantes !== undefined ? (rec.parcelasRestantes - parcelasRestantesExibidas + 1) : null;
+            return `
+              <div class="flex flex-wrap justify-between items-center p-2 md:p-3 border border-dashed border-yellow-400 rounded-lg bg-yellow-50 dark:bg-yellow-900/10 gap-1 md:gap-0 shadow font-inter">
+                <div class="flex-1 min-w-[120px]">
+                  <p class="font-medium text-xs md:text-base text-yellow-700 dark:text-yellow-300">⏳ ${rec.descricao}</p>
+                  <p class="text-xs md:text-sm text-gray-500 dark:text-gray-300">
+                    ${categoria?.nome || 'Sem categoria'}
+                    • R$ ${parseFloat(rec.valor).toFixed(2)}
+                    ${parcelasRestantesExibidas !== null ? `• Parcela ${numParcela} de ${rec.parcelasRestantes}` : '• recorrente'}
+                  </p>
+                </div>
+              </div>
+            `;
+          }).join('')}
         </div>
       </div>
     `;
 
     // Espaço entre recorrentes e transações recentes
-    content.innerHTML += `<div style="height: 1.5rem;"></div>`;
+    content.innerHTML += `<div class="h-6"></div>`;
     // Transações Recentes
     content.innerHTML += `
-      <div class="bg-white rounded-xl shadow-lg p-2 md:p-6">
+      <div class="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-2 md:p-6 border border-gray-300 dark:border-gray-700">
         <div class="flex flex-wrap justify-between items-center mb-2 md:mb-4 gap-1 md:gap-0">
-          <h3 class="text-base md:text-xl font-bold">Transações Recentes</h3>
+          <h3 class="text-base md:text-xl font-bold text-gray-900 dark:text-gray-100">Transações Recentes</h3>
           <button onclick="showAddTransactionModal()" class="bg-blue-500 text-white px-2 py-1 md:px-4 md:py-2 rounded-lg hover:bg-blue-600 text-xs md:text-base">
             + Nova Transação
           </button>
@@ -429,11 +486,29 @@ async function renderDashboard(selectedYear, selectedMonth) {
         <div class="space-y-2 md:space-y-3">
           ${transacoes.slice(0, 10).map(t => {
             const categoria = window.appState.categories.find(c => c.id === t.categoriaId);
+            let parcelaInfo = '';
+            if (t.recorrenteId) {
+              const rec = (window.appState.recorrentes || []).find(r => r.id === t.recorrenteId);
+              if (rec) {
+                // Calcular número da parcela
+                let numParcela = 1;
+                if (rec.dataInicio && t.createdAt) {
+                  const dataInicio = new Date(rec.dataInicio);
+                  const dataTrans = t.createdAt && t.createdAt.toDate ? t.createdAt.toDate() : (t.createdAt ? new Date(t.createdAt) : null);
+                  if (dataTrans) {
+                    // Considera mês/ano
+                    numParcela = (dataTrans.getFullYear() - dataInicio.getFullYear()) * 12 + (dataTrans.getMonth() - dataInicio.getMonth()) + 1;
+                  }
+                }
+                let totalParcelas = rec.parcelasRestantes !== null && rec.parcelasRestantes !== undefined ? (rec.parcelasRestantes + numParcela - 1) : '∞';
+                parcelaInfo = `<span class='text-xs text-blue-500 ml-2'>Parcela ${numParcela} de ${totalParcelas}</span>`;
+              }
+            }
             return `
-              <div class="flex flex-wrap justify-between items-center p-2 md:p-3 border rounded-lg hover:bg-gray-50 gap-1 md:gap-0">
+              <div class="flex flex-wrap justify-between items-center p-2 md:p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 gap-1 md:gap-0 bg-white dark:bg-gray-900">
                 <div class="flex-1 min-w-[120px]">
-                  <p class="font-medium text-xs md:text-base">${t.descricao}</p>
-                  <p class="text-xs md:text-sm text-gray-500">${categoria?.nome || 'Sem categoria'} • ${t.createdAt && t.createdAt.toDate ? t.createdAt.toDate().toLocaleDateString() : (t.createdAt ? new Date(t.createdAt).toLocaleDateString() : '')}</p>
+                  <p class="font-medium text-xs md:text-base text-gray-900 dark:text-gray-100">${t.descricao}</p>
+                  <p class="text-xs md:text-sm text-gray-500 dark:text-gray-300">${categoria?.nome || 'Sem categoria'} • ${t.createdAt && t.createdAt.toDate ? t.createdAt.toDate().toLocaleDateString() : (t.createdAt ? new Date(t.createdAt).toLocaleDateString() : '')} ${parcelaInfo}</p>
                 </div>
                 <div class="flex items-center space-x-1 md:space-x-2">
                   <span class="font-bold text-xs md:text-base ${t.tipo === 'receita' ? 'text-green-600' : 'text-red-600'}">
@@ -455,6 +530,14 @@ async function renderDashboard(selectedYear, selectedMonth) {
 
     // Eventos das setas
     setTimeout(() => {
+      const btnAnterior = document.getElementById('mes-anterior');
+      const btnProximo = document.getElementById('mes-proximo');
+      if (btnAnterior) {
+        btnAnterior.replaceWith(btnAnterior.cloneNode(true));
+      }
+      if (btnProximo) {
+        btnProximo.replaceWith(btnProximo.cloneNode(true));
+      }
       document.getElementById('mes-anterior')?.addEventListener('click', async () => {
         let newMonth = month - 1;
         let newYear = year;
@@ -478,31 +561,32 @@ async function renderDashboard(selectedYear, selectedMonth) {
 }
 window.renderDashboard = renderDashboard;
 
+// ... existing code ...
+// Padronizar renderTransactions
 function renderTransactions() {
   const content = document.getElementById('app-content');
-  // setSubtitle('Transações'); // Removido para evitar duplicidade
   content.innerHTML = `
-    <div class="space-y-2 md:space-y-6">
-      <div class="flex flex-wrap justify-between items-center gap-1 md:gap-0">
-        <h2 class="tab-title-highlight">Transações</h2>
+    <div class="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-2 md:p-6 border border-gray-300 dark:border-gray-700">
+      <div class="flex flex-wrap justify-between items-center gap-1 md:gap-0 mb-4">
+        <h2 class="tab-title-highlight bg-white text-gray-900 border border-gray-300 font-bold px-6 py-2 rounded-2xl shadow dark:bg-[#131826] dark:text-white dark:border-white">Transações</h2>
         <button onclick="showAddTransactionModal()" class="bg-blue-500 text-white px-2 py-1 md:px-6 md:py-3 rounded-lg hover:bg-blue-600 flex items-center space-x-2 text-xs md:text-base">
           <span>+ Nova Transação</span>
           <button onclick="startVoiceRecognition('transaction')" class="ml-2 bg-blue-600 p-1 md:p-2 rounded-full text-xs md:text-base">🎤</button>
         </button>
       </div>
-      <div class="bg-white rounded-xl shadow-lg">
+      <div class="bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-300 dark:border-gray-700">
         ${window.appState.transactions.length === 0 ? `
-          <div class="p-4 md:p-8 text-center text-gray-500">
+          <div class="p-4 md:p-8 text-center text-gray-500 dark:text-gray-300">
             <p class="text-base md:text-lg">Nenhuma transação encontrada</p>
             <p class="text-xs md:text-sm">Adicione sua primeira transação!</p>
           </div>
         ` : window.appState.transactions.map(t => {
           const categoria = window.appState.categories.find(c => c.id === t.categoriaId);
           return `
-            <div class="flex flex-wrap justify-between items-center p-2 md:p-4 border-b last:border-b-0 hover:bg-gray-50 gap-1 md:gap-0">
+            <div class="flex flex-wrap justify-between items-center p-2 md:p-4 border-b last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-800 gap-1 md:gap-0 bg-white dark:bg-gray-900">
               <div class="flex-1 min-w-[120px]">
-                <p class="font-medium text-xs md:text-base">${t.descricao}</p>
-                <p class="text-xs md:text-sm text-gray-500">${categoria?.nome || 'Sem categoria'} • ${t.createdAt && t.createdAt.toDate ? t.createdAt.toDate().toLocaleDateString() : ''}</p>
+                <p class="font-medium text-xs md:text-base text-gray-900 dark:text-gray-100">${t.descricao}</p>
+                <p class="text-xs md:text-sm text-gray-500 dark:text-gray-300">${categoria?.nome || 'Sem categoria'} • ${t.createdAt && t.createdAt.toDate ? t.createdAt.toDate().toLocaleDateString() : ''}</p>
               </div>
               <div class="flex items-center space-x-1 md:space-x-2">
                 <span class="font-bold text-xs md:text-base ${t.tipo === 'receita' ? 'text-green-600' : 'text-red-600'}">
@@ -521,59 +605,35 @@ function renderTransactions() {
   renderBottomNav('/transactions');
   setTimeout(() => enableSwipeNavigation(), 0);
 }
-
+// ... existing code ...
+// Padronizar renderCategories
 function renderCategories() {
   const content = document.getElementById('app-content');
-  // setSubtitle('Categorias'); // Removido para evitar duplicidade
   content.innerHTML = `
-    <div class="space-y-2 md:space-y-6">
-      <div class="flex flex-wrap justify-between items-center gap-1 md:gap-0">
-        <h2 class="tab-title-highlight">Categorias</h2>
+    <div class="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-2 md:p-6 border border-gray-300 dark:border-gray-700">
+      <div class="flex flex-wrap justify-between items-center gap-1 md:gap-0 mb-4">
+        <h2 class="tab-title-highlight bg-white text-gray-900 border border-gray-300 font-bold px-6 py-2 rounded-2xl shadow dark:bg-[#131826] dark:text-white dark:border-white">Categorias</h2>
         <button onclick="showAddCategoryModal()" class="bg-blue-500 text-white px-2 py-1 md:px-6 md:py-3 rounded-lg hover:bg-blue-600 flex items-center space-x-2 text-xs md:text-base">
           <span>+ Nova Categoria</span>
           <button onclick="startVoiceRecognition('category')" class="ml-2 bg-blue-600 p-1 md:p-2 rounded-full text-xs md:text-base">🎤</button>
         </button>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-6">
-        ${window.appState.categories.map(cat => {
-          const transacoesCategoria = window.appState.transactions
-            .filter(t => t.categoriaId === cat.id && t.tipo === 'despesa');
-          const gasto = transacoesCategoria.reduce((sum, t) => sum + parseFloat(t.valor), 0);
-          const limite = parseFloat(cat.limite || 0);
-          const percentual = limite > 0 ? (gasto / limite) * 100 : 0;
-          const saldo = limite - gasto;
-          
-          return `
-            <div class="bg-white rounded-xl shadow-lg p-2 md:p-6">
-              <div class="flex items-center justify-between mb-2 md:mb-4">
-                <div class="flex items-center space-x-2 md:space-x-3">
-                  <div class="w-6 h-6 rounded-full" style="background-color: ${cat.cor || '#4F46E5'}"></div>
-                  <span class="font-bold text-xs md:text-lg">${cat.nome}</span>
-                </div>
-                <div class="text-right">
-                  <p class="text-xs md:text-sm text-gray-600">Limite: R$ ${limite.toFixed(2)}</p>
-                  <p class="text-xs md:text-sm ${saldo >= 0 ? 'text-green-600' : 'text-red-600'}">
-                    Saldo: R$ ${saldo.toFixed(2)}
-                  </p>
-                </div>
-              </div>
-              <div class="w-full bg-gray-200 rounded-full h-2 md:h-3 mb-2 md:mb-4">
-                <div class="h-2 md:h-3 rounded-full transition-all duration-300 ${
-                  percentual > 100 ? 'bg-red-500' : percentual > 80 ? 'bg-yellow-500' : 'bg-green-500'
-                }" style="width: ${Math.min(percentual, 100)}%"></div>
-              </div>
-              <div class="flex flex-wrap justify-between text-xs md:text-sm text-gray-600 mb-2 md:mb-4">
-                <span>Gasto: R$ ${gasto.toFixed(2)}</span>
-                <span>${percentual.toFixed(1)}% usado</span>
-              </div>
-              <div class="flex flex-wrap justify-end gap-1 md:space-x-2">
-                <button onclick="editCategory('${cat.id}')" class="bg-blue-100 text-blue-600 px-2 py-1 md:px-3 md:py-1 rounded-lg hover:bg-blue-200 text-xs md:text-base">Editar</button>
-                <button onclick="deleteCategory('${cat.id}')" class="bg-red-100 text-red-600 px-2 py-1 md:px-3 md:py-1 rounded-lg hover:bg-red-200 text-xs md:text-base">Excluir</button>
-                <button onclick="showCategoryHistory('${cat.id}')" class="bg-gray-100 text-gray-600 px-2 py-1 md:px-3 md:py-1 rounded-lg hover:bg-gray-200 text-xs md:text-base">Histórico</button>
-              </div>
+        ${window.appState.categories.map(cat => `
+          <div class="border border-gray-300 dark:border-gray-700 rounded-lg p-2 md:p-4 bg-white dark:bg-gray-900">
+            <div class="flex items-center space-x-2 md:space-x-3 mb-2">
+              <div class="w-4 h-4 rounded-full" style="background-color: ${cat.cor || '#4F46E5'}"></div>
+              <span class="font-semibold text-xs md:text-base text-gray-900 dark:text-gray-100">${cat.nome}</span>
             </div>
-          `;
-        }).join('')}
+            <p class="text-xs md:text-sm text-gray-500 dark:text-gray-300">Tipo: ${cat.tipo}</p>
+            <p class="text-xs md:text-sm text-gray-500 dark:text-gray-300">Limite: R$ ${cat.limite || '0,00'}</p>
+            <div class="flex flex-wrap justify-end gap-1 md:space-x-2 mt-2">
+              <button onclick="editCategory('${cat.id}')" class="text-blue-600 hover:text-blue-800 text-xs md:text-sm px-2 py-1 md:px-3 md:py-1 rounded">Editar</button>
+              <button onclick="deleteCategory('${cat.id}')" class="text-red-600 hover:text-red-800 text-xs md:text-sm px-2 py-1 md:px-3 md:py-1 rounded">Excluir</button>
+              <button onclick="showCategoryHistory('${cat.id}')" class="text-gray-600 hover:text-gray-800 text-xs md:text-sm px-2 py-1 md:px-3 md:py-1 rounded">Histórico</button>
+            </div>
+          </div>
+        `).join('')}
       </div>
     </div>
   `;
@@ -581,140 +641,11 @@ function renderCategories() {
   renderBottomNav('/categories');
   setTimeout(() => enableSwipeNavigation(), 0);
 }
-
-// ... existing code ...
-// Variável global para armazenar o evento de instalação
-let deferredPrompt = null;
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-  // Exibir botão de instalar se estiver na aba de configurações
-  if (document.querySelector('.nav-item.active[data-tab="settings"]')) {
-    showInstallButton(true);
-  }
-});
-
-function showInstallButton(show) {
-  const btn = document.getElementById('install-app-btn');
-  if (btn) btn.style.display = show ? 'block' : 'none';
-}
-
-// Adicionar botão na renderização das configurações
-function renderSettings() {
-  const content = document.getElementById('app-content');
-  // setSubtitle('Configurações'); // Removido para evitar duplicidade
-  content.innerHTML = `
-    <div class="space-y-2 md:space-y-8">
-      <h2 class="tab-title-highlight">Configurações</h2>
-      <!-- Botão de instalar aplicativo -->
-      <button id="install-app-btn" style="display:none" class="w-full bg-blue-500 text-white py-2 rounded-lg font-semibold mb-4">📱 Baixar aplicativo</button>
-      
-      <!-- Guia do Usuário -->
-      <div class="bg-white rounded-xl shadow-lg p-2 md:p-6">
-        <h3 class="text-base md:text-xl font-bold mb-2 md:mb-4">📖 Guia do Usuário</h3>
-        <p class="text-xs md:text-sm text-gray-600 mb-2 md:mb-4">Baixe o manual completo com todas as funcionalidades do aplicativo</p>
-        <button onclick="generateUserGuide()" class="w-full bg-purple-500 text-white px-2 py-1 md:px-6 md:py-3 rounded-lg hover:bg-purple-600 text-xs md:text-base">
-          📄 Baixar Guia Completo (PDF)
-        </button>
-      </div>
-      
-      <!-- Perfil do Usuário -->
-      <div class="bg-white rounded-xl shadow-lg p-2 md:p-6">
-        <h3 class="text-base md:text-xl font-bold mb-2 md:mb-4">Perfil</h3>
-        <div class="space-y-2 md:space-y-4">
-          <div>
-            <label class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Email</label>
-            <p class="text-gray-900 font-medium text-xs md:text-base">${window.appState.currentUser?.email || 'N/A'}</p>
-          </div>
-          <button onclick="logout()" class="bg-red-500 text-white px-2 py-1 md:px-6 md:py-3 rounded-lg hover:bg-red-600 text-xs md:text-base">
-            Sair da Conta
-          </button>
-        </div>
-      </div>
-      
-      <!-- Orçamentos -->
-      <div class="bg-white rounded-xl shadow-lg p-2 md:p-6">
-        <div class="flex flex-wrap justify-between items-center mb-2 md:mb-4 gap-1 md:gap-0">
-          <h3 class="text-base md:text-xl font-bold">Orçamentos</h3>
-          <div class="flex gap-1 md:gap-2">
-            <button onclick="showAddBudgetModal()" class="bg-blue-500 text-white px-2 py-1 md:px-4 md:py-2 rounded-lg hover:bg-blue-600 text-xs md:text-base">
-              + Novo Orçamento
-            </button>
-            <button onclick="selectSharedBudget()" class="bg-purple-500 text-white px-2 py-1 md:px-4 md:py-2 rounded-lg hover:bg-purple-600 text-xs md:text-base">
-              Entrar em Orçamento
-            </button>
-          </div>
-        </div>
-        <div class="space-y-2 md:space-y-4">
-          ${window.appState.budgets.map(budget => `
-            <div class="border rounded-lg p-2 md:p-4 flex flex-wrap justify-between items-center">
-              <div>
-                <p class="font-medium text-xs md:text-base">${budget.nome}</p>
-                <p class="text-xs md:text-sm text-gray-500">ID: <span class='select-all'>${budget.id}</span></p>
-              </div>
-              <div class="flex gap-1 md:space-x-2">
-                <button onclick="copyBudgetId('${budget.id}')" class="bg-gray-100 text-gray-600 px-2 py-1 md:px-3 md:py-1 rounded-lg hover:bg-gray-200 text-xs md:text-sm" title="Copiar ID do orçamento">
-                  📋 Copiar ID
-                </button>
-                <button onclick="selectBudget('${budget.id}')" class="bg-blue-100 text-blue-600 px-2 py-1 md:px-3 md:py-1 rounded-lg hover:bg-blue-200 text-xs md:text-sm">
-                  Selecionar
-                </button>
-              </div>
-            </div>
-          `).join('')}
-        </div>
-      </div>
-      
-      <!-- Exportar e Backup -->
-      <div class="bg-white rounded-xl shadow-lg p-2 md:p-6">
-        <h3 class="text-base md:text-xl font-bold mb-2 md:mb-4">Exportar e Backup</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4">
-          <button onclick="exportToExcel()" class="bg-green-500 text-white p-2 md:p-4 rounded-lg hover:bg-green-600 flex items-center justify-center space-x-2 text-xs md:text-base">
-            <span>📊</span>
-            <span>Exportar Excel</span>
-          </button>
-          <button onclick="exportToPDF()" class="bg-red-500 text-white p-2 md:p-4 rounded-lg hover:bg-red-600 flex items-center justify-center space-x-2 text-xs md:text-base">
-            <span>📄</span>
-            <span>Exportar PDF</span>
-          </button>
-          <button onclick="downloadBackup()" class="bg-purple-500 text-white p-2 md:p-4 rounded-lg hover:bg-purple-600 flex items-center justify-center space-x-2 text-xs md:text-base">
-            <span>💾</span>
-            <span>Backup Completo</span>
-          </button>
-          <button onclick="importBackup()" class="bg-orange-500 text-white p-2 md:p-4 rounded-lg hover:bg-orange-600 flex items-center justify-center space-x-2 text-xs md:text-base">
-            <span>📥</span>
-            <span>Importar Backup</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  `;
-  // Exibir botão se possível instalar
-  showInstallButton(!!deferredPrompt);
-  // Evento de clique para instalar
-  const installBtn = document.getElementById('install-app-btn');
-  if (installBtn) {
-    installBtn.onclick = async () => {
-      if (deferredPrompt) {
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        if (outcome === 'accepted') {
-          installBtn.textContent = 'Aplicativo instalado!';
-          installBtn.disabled = true;
-        }
-        deferredPrompt = null;
-        showInstallButton(false);
-      }
-    };
-  }
-  renderFAB();
-  renderBottomNav('/settings');
-  setTimeout(() => enableSwipeNavigation(), 0);
-}
 // ... existing code ...
 
 // Atualizar router para sempre renderizar e recarregar dados ao trocar de aba
 async function router(path) {
+  console.log('Router chamado para:', path); // Debug
   const content = document.getElementById('app-content');
   document.querySelectorAll('.nav-btn').forEach(item => {
     item.classList.remove('active');
@@ -931,14 +862,12 @@ window.showAddBudgetModal = function() {
                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                  placeholder="Ex: Orçamento Familiar">
         </div>
-        
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
           <textarea id="budget-descricao" rows="3"
                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Descrição opcional do orçamento"></textarea>
         </div>
-        
         <div class="flex justify-end space-x-3 pt-4">
           <button type="button" onclick="closeModal()" 
                   class="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200">
@@ -953,28 +882,27 @@ window.showAddBudgetModal = function() {
     `,
     onClose: () => modal.remove()
   });
-  
-  // Adicionar evento de submit
-  document.getElementById('budget-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const nome = document.getElementById('budget-nome').value;
-    const descricao = document.getElementById('budget-descricao').value;
-    
-    try {
-      await addBudget({
-        nome,
-        descricao
+  setTimeout(() => {
+    const form = document.getElementById('budget-form');
+    if (form) {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const nome = document.getElementById('budget-nome').value;
+        const descricao = document.getElementById('budget-descricao').value;
+        try {
+          await addBudget({
+            nome,
+            descricao
+          });
+          modal.remove(); // Fecha o modal primeiro
+          Snackbar({ message: 'Orçamento adicionado com sucesso!', type: 'success' });
+        } catch (error) {
+          console.error('Erro ao adicionar orçamento:', error);
+          Snackbar({ message: 'Erro ao adicionar orçamento: ' + error.message, type: 'error' });
+        }
       });
-      
-      modal.remove(); // Fecha o modal primeiro
-      // router('/settings'); // Removido para não trocar de aba
-      Snackbar({ message: 'Orçamento adicionado com sucesso!', type: 'success' });
-    } catch (error) {
-      console.error('Erro ao adicionar orçamento:', error);
-      Snackbar({ message: 'Erro ao adicionar orçamento: ' + error.message, type: 'error' });
     }
-  });
+  }, 0);
 };
 
 window.editTransaction = function(id) {
@@ -1209,7 +1137,7 @@ window.showCategoryHistory = function(id) {
 
 window.copyBudgetId = function(id) {
   navigator.clipboard.writeText(id);
-  alert('ID copiado para a área de transferência!');
+  Snackbar({ message: 'ID do orçamento copiado!', type: 'success' });
 };
 
 window.selectBudget = function(id) {
@@ -1323,16 +1251,22 @@ window.importBackup = function() {
     try {
       const data = JSON.parse(text);
       if (data.transactions && data.categories && data.budgets) {
-        // Aqui, para importar de verdade, seria necessário salvar no Firestore
-        alert('Importação de backup só está disponível para leitura neste protótipo.');
-        // window.appState.transactions = data.transactions;
-        // window.appState.categories = data.categories;
-        // window.appState.budgets = data.budgets;
-        // router('/dashboard');
+        Modal({
+          title: 'Importação de Backup (Somente Leitura)',
+          content: `<div class='space-y-2'>
+            <p class='text-gray-700'>O backup foi lido com sucesso, mas <b>não será gravado no sistema</b> por questões de segurança.</p>
+            <p class='text-gray-500 text-sm'>Se precisar restaurar dados, entre em contato com o suporte.</p>
+            <pre class='bg-gray-100 rounded p-2 text-xs overflow-x-auto max-h-48'>${JSON.stringify(data, null, 2)}</pre>
+            <button onclick='closeModal()' class='mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600'>Fechar</button>
+          </div>`
+        });
+        Snackbar({ message: 'Backup lido, mas não importado. Apenas leitura.', type: 'info' });
       } else {
+        Snackbar({ message: 'Arquivo de backup inválido.', type: 'error' });
         alert('Arquivo de backup inválido.');
       }
     } catch (err) {
+      Snackbar({ message: 'Erro ao importar backup: ' + err.message, type: 'error' });
       alert('Erro ao importar backup: ' + err.message);
     }
   };
@@ -1790,7 +1724,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 window.selectSharedBudget = function() {
-  Modal({
+  const modal = Modal({
     title: 'Entrar em Orçamento Compartilhado',
     content: `
       <form id='shared-budget-form' class='space-y-4'>
@@ -1800,36 +1734,35 @@ window.selectSharedBudget = function() {
         </div>
         <div class='flex justify-end space-x-3 pt-4'>
           <button type='button' onclick='closeModal()' class='px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200'>Cancelar</button>
-          <button type='submit' class='px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600'>Entrar</button>
+          <button type='submit' class='px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600'>Entrar</button>
         </div>
       </form>
     `,
     onClose: () => modal.remove()
   });
-  document.getElementById('shared-budget-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const id = document.getElementById('shared-budget-id').value.trim();
-    if (!id) return;
-    try {
-      // Buscar orçamento pelo ID
-      const docRef = doc(window.FirebaseDB, 'budgets', id);
-      const snap = await getDocs(query(collection(window.FirebaseDB, 'budgets')));
-      const found = snap.docs.find(d => d.id === id);
-      if (!found) {
-        alert('Orçamento não encontrado!');
-        return;
-      }
-      // Associar orçamento ao usuário (simplesmente seleciona para navegação)
-      window.appState.currentBudget = { id: found.id, ...found.data() };
-      closeModal();
-      await loadTransactions();
-      await loadCategories();
-      // router('/dashboard'); // Removido para não trocar de aba
-      Snackbar({ message: 'Você entrou no orçamento compartilhado!', type: 'success' });
-    } catch (err) {
-      Snackbar({ message: 'Erro ao entrar no orçamento: ' + err.message, type: 'error' });
+  setTimeout(() => {
+    const form = document.getElementById('shared-budget-form');
+    if (form) {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const budgetId = document.getElementById('shared-budget-id').value;
+        if (!budgetId) return;
+        const budget = await buscarOrcamentoPorId(budgetId);
+        if (budget) {
+          window.appState.currentBudget = budget;
+          await loadTransactions();
+          await loadCategories();
+          await loadRecorrentes();
+          await window.renderSettings();
+          renderDashboard();
+          Snackbar({ message: 'Orçamento compartilhado carregado com sucesso!', type: 'success' });
+        } else {
+          Snackbar({ message: 'Orçamento não encontrado ou você não tem permissão de acesso.', type: 'error' });
+        }
+        modal.remove();
+      });
     }
-  });
+  }, 0);
 };
 
 // Listener em tempo real para transações
@@ -2523,9 +2456,8 @@ async function rotinaFechamentoMensal() {
   const user = window.FirebaseAuth.currentUser;
   if (!user) return;
   const hoje = new Date();
-  if (hoje.getDate() !== 1) return; // Só executa no dia 1
-  const ultimoFechamento = localStorage.getItem('ultimoFechamentoMensal');
   const mesAno = hoje.toISOString().slice(0,7);
+  const ultimoFechamento = localStorage.getItem('ultimoFechamentoMensal');
   if (ultimoFechamento === mesAno) return; // Já executou este mês
 
   // Salvar histórico
@@ -2557,6 +2489,12 @@ async function rotinaFechamentoMensal() {
 
 // Chamar rotina ao iniciar o app
 rotinaFechamentoMensal();
+// Também rodar rotina ao mudar de mês (ex: ao abrir o app em qualquer dia do mês)
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    rotinaFechamentoMensal();
+  }
+});
 
 // Função para carregar despesas recorrentes no estado global
 async function loadRecorrentes() {
@@ -2585,6 +2523,14 @@ function renderBottomNav(activeRoute) {
   nav = BottomNav(activeRoute);
   nav.classList.add('bottom-nav');
   document.body.appendChild(nav);
+  // Adiciona event listener diretamente após append
+  nav.querySelectorAll('.nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const route = btn.getAttribute('data-route');
+      console.log('Clicou na aba:', route); // Debug
+      if (window.router) window.router(route);
+    });
+  });
   if (typeof setupNavigation === 'function') setupNavigation();
 }
 
@@ -2602,8 +2548,12 @@ const routes = {
   '/dashboard': renderDashboard,
   '/transactions': renderTransactions,
   '/categories': renderCategories,
-  '/recorrentes': renderRecorrentes,
-  '/settings': renderSettings,
+  '/recorrentes': async () => {
+    await loadTransactions();
+    await loadRecorrentes();
+    await renderRecorrentes();
+  },
+  '/settings': async () => { await window.renderSettings(); },
 };
 
 // ... existing code ...
@@ -2659,3 +2609,232 @@ window.showExportOptions = function() {
   });
 };
 // ... existing code ...
+
+// ... existing code ...
+// Função para esconder FAB quando modal está aberto e mostrar ao fechar
+function toggleFABOnModal() {
+  const fab = document.querySelector('.fab');
+  const modal = document.querySelector('.modal');
+  if (fab) {
+    if (modal && getComputedStyle(modal).display !== 'none') {
+      fab.classList.add('hidden');
+    } else {
+      fab.classList.remove('hidden');
+    }
+  }
+}
+// Observar abertura/fechamento de modais
+const observer = new MutationObserver(toggleFABOnModal);
+observer.observe(document.body, { childList: true, subtree: true });
+// Também rodar ao carregar
+setTimeout(toggleFABOnModal, 500);
+// ... existing code ...
+
+// ... existing code ...
+// Adicionar listener para beforeinstallprompt
+window.deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  window.deferredPrompt = e;
+  const btn = document.getElementById('install-app-btn');
+  if (btn) btn.style.display = '';
+});
+
+// Função para mostrar o botão de instalar
+window.showInstallButton = function(forceShow = false) {
+  const btn = document.getElementById('install-app-btn');
+  if (!btn) return;
+  if (window.deferredPrompt || forceShow) {
+    btn.style.display = '';
+    btn.onclick = async () => {
+      if (window.deferredPrompt) {
+        window.deferredPrompt.prompt();
+        const { outcome } = await window.deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          window.deferredPrompt = null;
+          btn.style.display = 'none';
+        }
+      }
+    };
+  } else {
+    btn.style.display = 'none';
+  }
+};
+
+// Em renderSettings, após inserir o botão:
+setTimeout(() => window.showInstallButton(), 0);
+// ... existing code ...
+
+window.renderSettings = async function() {
+  console.log('renderSettings', {
+    currentBudget: window.appState.currentBudget,
+    budgets: window.appState.budgets
+  });
+  const content = document.getElementById('app-content');
+  const budget = window.appState.currentBudget;
+  const budgets = window.appState.budgets || [];
+  let compartilhadosHtml = '';
+  let orcamentoAtualHtml = '';
+  if (budget) {
+    // Buscar e-mails dos usuários permitidos
+    let emails = [];
+    if (Array.isArray(budget.usuariosPermitidos) && budget.usuariosPermitidos.length > 0) {
+      emails = await buscarEmailsPorUids(budget.usuariosPermitidos);
+    }
+    compartilhadosHtml = emails.length > 0 ? `<div class='mt-2'><h4 class='font-semibold'>Usuários com acesso:</h4><ul class='list-disc ml-6 text-sm'>` +
+      emails.map(u => `<li>${u.email ? u.email + ' (' + u.uid + ')' : u.uid}</li>`).join('') + '</ul></div>' : '';
+    orcamentoAtualHtml = `
+      <div class="mb-4">
+        <h3 class="font-semibold">Orçamento Atual:</h3>
+        <p><strong>Nome:</strong> ${budget.nome || '(sem nome)'}</p>
+        <p><strong>ID:</strong> <span id="orcamento-id">${budget.id}</span> <button onclick="window.copyBudgetId('${budget.id}')" class="ml-2 px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 text-xs">Copiar</button></p>
+        <button onclick="window.compartilharOrcamento()" class="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 mt-2">Compartilhar Orçamento</button>
+        ${compartilhadosHtml}
+      </div>
+    `;
+  }
+  let listaOrcamentosHtml = '';
+  if (budgets.length > 1) {
+    listaOrcamentosHtml = `<div class='mt-4'><h4 class='font-semibold'>Seus Orçamentos:</h4><ul class='list-disc ml-6 text-sm'>` +
+      budgets.map(b => `<li>${b.nome || '(sem nome)'} <span class='text-xs text-gray-500'>(ID: ${b.id})</span> ${budget && b.id === budget.id ? '<span class="text-green-600 font-bold ml-2">(Atual)</span>' : `<button onclick="window.setCurrentBudget && window.setCurrentBudget(${JSON.stringify(b)})" class="ml-2 px-2 py-1 bg-blue-200 rounded hover:bg-blue-300 text-xs">Usar</button>`}</li>`).join('') + '</ul></div>';
+  }
+  content.innerHTML = `
+    <div class="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-2 md:p-6 border border-gray-300 dark:border-gray-700">
+      <div class="flex flex-wrap justify-between items-center gap-1 md:gap-0 mb-4">
+        <h2 class="tab-title-highlight bg-white dark:bg-gray-900 rounded-2xl px-6 py-2 shadow text-gray-900 dark:text-white">Configurações</h2>
+        <div class="flex gap-2">
+          <button onclick="window.showAddBudgetModal()" class="bg-blue-500 text-white px-2 py-1 md:px-6 md:py-3 rounded-lg hover:bg-blue-600 flex items-center space-x-2 text-xs md:text-base font-semibold font-inter shadow-md">Criar Orçamento</button>
+          <button onclick="window.selectSharedBudget()" class="bg-green-500 text-white px-2 py-1 md:px-6 md:py-3 rounded-lg hover:bg-green-600 flex items-center space-x-2 text-xs md:text-base font-semibold font-inter shadow-md">Entrar em Orçamento Compartilhado</button>
+        </div>
+      </div>
+      <div class="space-y-4">
+        <div class="border border-gray-300 dark:border-gray-700 rounded-lg p-2 md:p-4 bg-white dark:bg-gray-900 mb-2">
+          <h3 class="font-semibold mb-2">Orçamento Atual:</h3>
+          <p><strong>Nome:</strong> ${budget ? (budget.nome || '(sem nome)') : ''}</p>
+          <p><strong>ID:</strong> <span id="orcamento-id">${budget ? budget.id : ''}</span> <button onclick="window.copyBudgetId('${budget ? budget.id : ''}')" class="ml-2 px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 text-xs">Copiar</button></p>
+          <button onclick="window.compartilharOrcamento()" class="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 mt-2 text-xs md:text-sm">Compartilhar Orçamento</button>
+          ${compartilhadosHtml}
+        </div>
+        ${listaOrcamentosHtml}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-6 mt-4">
+          <button onclick="window.exportToExcel()" class="bg-green-500 text-white py-2 rounded-lg font-semibold hover:bg-green-600 flex items-center justify-center gap-2 text-base"><span>📊</span> Exportar Excel</button>
+          <button onclick="window.exportToPDF()" class="bg-red-500 text-white py-2 rounded-lg font-semibold hover:bg-red-600 flex items-center justify-center gap-2 text-base"><span>📄</span> Exportar PDF</button>
+          <button onclick="window.downloadBackup()" class="bg-purple-500 text-white py-2 rounded-lg font-semibold hover:bg-purple-600 flex items-center justify-center gap-2 text-base"><span>💾</span> Backup Completo (JSON)</button>
+          <button onclick="window.generateUserGuide()" class="bg-blue-500 text-white py-2 rounded-lg font-semibold hover:bg-blue-600 flex items-center justify-center gap-2 text-base"><span>📘</span> Baixar Guia do Usuário (PDF)</button>
+          <button id="install-app-btn" style="display:none" class="bg-yellow-500 text-white py-2 rounded-lg font-semibold hover:bg-yellow-600 flex items-center justify-center gap-2 text-base"><span>⬇️</span> Instalar App</button>
+        </div>
+      </div>
+    </div>
+  `;
+  setTimeout(() => window.showInstallButton(), 0);
+};
+
+// Após criar, entrar ou compartilhar orçamento, sempre chame renderSettings e logue o estado
+auth.onAuthStateChanged(async (user) => {
+  showLoading(true);
+  if (user) {
+    window.appState.currentUser = user;
+    try {
+      await loadBudgets();
+      if (window.appState.budgets.length === 0) {
+        const budgetId = await addBudget({
+          nome: 'Orçamento Principal',
+          descricao: 'Orçamento padrão do usuário'
+        });
+        const newBudget = await buscarOrcamentoPorId(budgetId);
+        await setCurrentBudget(newBudget);
+      } else {
+        await setCurrentBudget(window.appState.budgets[0]);
+      }
+      await loadTransactions();
+      await loadCategories();
+      await loadRecorrentes();
+      await window.renderSettings();
+      renderDashboard();
+      toggleLoginPage(false);
+      console.log('Após login, orçamento atual:', window.appState.currentBudget);
+    } catch (error) {
+      console.error('Erro ao carregar dados do usuário:', error);
+    }
+  } else {
+    window.appState.currentUser = null;
+    window.appState.transactions = [];
+    window.appState.categories = [];
+    window.appState.budgets = [];
+    window.appState.currentBudget = null;
+    toggleLoginPage(true);
+  }
+  showLoading(false);
+});
+
+// Função global para compartilhar orçamento
+window.compartilharOrcamento = async function() {
+  const budget = window.appState.currentBudget;
+  if (!budget) {
+    Snackbar({ message: 'Nenhum orçamento selecionado.', type: 'error' });
+    return;
+  }
+  const modal = Modal({
+    title: 'Compartilhar Orçamento',
+    content: `
+      <form id="compartilhar-form" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">E-mail ou UID do usuário para compartilhar</label>
+          <input type="text" id="compartilhar-uid" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="E-mail ou UID">
+        </div>
+        <div class="flex justify-end space-x-3 pt-4">
+          <button type="button" onclick="closeModal()" class="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200">Cancelar</button>
+          <button type="submit" class="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600">Compartilhar</button>
+        </div>
+      </form>
+    `,
+    onClose: () => modal.remove()
+  });
+  setTimeout(() => {
+    const form = document.getElementById('compartilhar-form');
+    if (form) {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const valor = document.getElementById('compartilhar-uid').value.trim();
+        if (!valor) return;
+        let uid = valor;
+        // Se for e-mail, buscar UID pelo e-mail (requer função backend, aqui só UID direto)
+        // Adicionar UID à lista de usuariosPermitidos
+        try {
+          const db = getFirestore();
+          const ref = doc(db, 'budgets', budget.id);
+          const usuariosPermitidos = Array.isArray(budget.usuariosPermitidos) ? [...budget.usuariosPermitidos] : [];
+          if (usuariosPermitidos.includes(uid)) {
+            Snackbar({ message: 'Usuário já possui acesso.', type: 'info' });
+            return;
+          }
+          usuariosPermitidos.push(uid);
+          await updateDoc(ref, { usuariosPermitidos });
+          // Atualizar localmente
+          budget.usuariosPermitidos = usuariosPermitidos;
+          await window.renderSettings();
+          Snackbar({ message: 'Orçamento compartilhado com sucesso!', type: 'success' });
+        } catch (error) {
+          Snackbar({ message: 'Erro ao compartilhar orçamento: ' + error.message, type: 'error' });
+        }
+        modal.remove();
+      });
+    }
+  }, 0);
+};
+
+// Função global para copiar o ID do orçamento
+window.copyBudgetId = function(id) {
+  navigator.clipboard.writeText(id);
+  Snackbar({ message: 'ID do orçamento copiado!', type: 'success' });
+};
+
+// Função global para trocar de orçamento
+window.setCurrentBudget = async function(budget) {
+  window.appState.currentBudget = budget;
+  await loadTransactions();
+  await loadCategories();
+  await loadRecorrentes();
+  await window.renderSettings();
+  renderDashboard();
+};

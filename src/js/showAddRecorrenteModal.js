@@ -1,7 +1,8 @@
 import { Modal } from './ui/Modal.js';
 import { RecorrenteForm } from './ui/RecorrenteForm.js';
-import { addDespesaRecorrente } from './recorrentes.js';
+import { addDespesaRecorrente, updateDespesaRecorrente } from './recorrentes.js';
 import { Snackbar } from './ui/Snackbar.js';
+import { collection, addDoc, getDocs, query, where } from 'firebase/firestore';
 
 window.showAddRecorrenteModal = function (dados = {}) {
   const isEdicao = !!dados && Object.keys(dados).length > 0;
@@ -26,15 +27,52 @@ window.showAddRecorrenteModal = function (dados = {}) {
     initialData: dados,
     onSubmit: async (dadosForm) => {
       try {
+        // Esconder FAB enquanto o modal está aberto
+        document.querySelector('.fab')?.classList.add('hidden');
         console.log('Iniciando adição de recorrente');
-        await addDespesaRecorrente(user.uid, budget.id, dadosForm);
+        if (isEdicao && dados.id) {
+          // Edição: atualizar recorrente existente
+          await updateDespesaRecorrente(user.uid, dados.id, dadosForm);
+          console.log('Recorrente editada, aguardando delay');
+        } else {
+          // Nova recorrente
+          const recRef = await addDespesaRecorrente(user.uid, budget.id, dadosForm);
+          // Se marcado, efetivar no mês atual
+          if (dadosForm.efetivarMesAtual) {
+            const now = new Date();
+            const mesAtual = now.getMonth() + 1;
+            const anoAtual = now.getFullYear();
+            // Buscar se já existe transação deste recorrente neste mês
+            const db = window.FirebaseDB;
+            const ref = collection(db, 'transactions');
+            const snap = await getDocs(query(ref, where('userId', '==', user.uid), where('recorrenteId', '==', recRef.id || (recRef._key && recRef._key.path.segments?.slice(-1)[0]))));
+            const jaExiste = snap.docs.some(doc => {
+              const d = doc.data();
+              const data = d.createdAt && d.createdAt.toDate ? d.createdAt.toDate() : (d.createdAt ? new Date(d.createdAt) : null);
+              return data && data.getMonth() + 1 === mesAtual && data.getFullYear() === anoAtual;
+            });
+            if (!jaExiste) {
+              await addDoc(collection(window.FirebaseDB, 'transactions'), {
+                userId: user.uid,
+                budgetId: budget.id,
+                descricao: dadosForm.descricao,
+                valor: dadosForm.valor,
+                categoriaId: dadosForm.categoriaId,
+                tipo: 'despesa',
+                createdAt: now,
+                recorrenteId: recRef.id || (recRef._key && recRef._key.path.segments?.slice(-1)[0])
+              });
+            }
+          }
+        }
         console.log('Recorrente adicionada, aguardando delay');
         await new Promise(res => setTimeout(res, 200));
         console.log('Delay concluído, carregando recorrentes');
         await window.loadRecorrentes();
         modal.remove();
         setTimeout(() => {
-          // Remover alternância de abas automática
+          // Mostrar FAB novamente ao fechar o modal
+          document.querySelector('.fab')?.classList.remove('hidden');
           if (window.location.hash.includes('recorrentes')) {
             window._renderRecorrentes();
           } else if (window.location.hash.includes('dashboard')) {
@@ -44,7 +82,9 @@ window.showAddRecorrenteModal = function (dados = {}) {
           document.dispatchEvent(new CustomEvent('recorrente-adicionada'));
         }, 50);
       } catch (err) {
-        console.error('Erro ao adicionar recorrente:', err);
+        // Mostrar FAB novamente em caso de erro
+        document.querySelector('.fab')?.classList.remove('hidden');
+        console.error('Erro ao adicionar/editar recorrente:', err);
         Snackbar({ message: 'Erro ao salvar recorrente', type: 'error' });
       }
     }
