@@ -4,10 +4,12 @@ import { db } from '../firebase.js';
 export async function renderLogAplicacoes() {
   const user = window.FirebaseAuth?.currentUser;
   const content = document.getElementById('app-content');
-  content.innerHTML = '<h2 class="text-xl font-bold mb-4">Log de Aplicações Automáticas</h2>';
+  content.innerHTML =
+    '<h2 class="text-xl font-bold mb-4">Log de Aplicações Automáticas</h2>';
 
   if (!user) {
-    content.innerHTML += '<p class="text-gray-500">Usuário não autenticado.</p>';
+    content.innerHTML +=
+      '<p class="text-gray-500">Usuário não autenticado.</p>';
     return;
   }
 
@@ -19,7 +21,8 @@ export async function renderLogAplicacoes() {
   const snap = await getDocs(ref);
 
   if (snap.empty) {
-    content.innerHTML += '<p class="text-gray-500">Nenhum log encontrado para este mês.</p>';
+    content.innerHTML +=
+      '<p class="text-gray-500">Nenhum log encontrado para este mês.</p>';
     return;
   }
 
@@ -29,7 +32,8 @@ export async function renderLogAplicacoes() {
   snap.forEach(doc => {
     const item = doc.data();
     const card = document.createElement('div');
-    card.className = 'p-3 rounded-lg shadow bg-white dark:bg-gray-800 flex justify-between items-start';
+    card.className =
+      'p-3 rounded-lg shadow bg-white dark:bg-gray-800 flex justify-between items-start';
     card.innerHTML = `
       <div>
         <p class="font-semibold">${item.descricao}</p>
