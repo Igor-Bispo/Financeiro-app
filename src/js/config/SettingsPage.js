@@ -223,6 +223,26 @@ export async function renderSettings() {
                     </button>
                   ` : ''}
                   ${isOwner ? `
+                    <div class="relative inline-block">
+                      <button onclick="toggleResetDropdown('${budget.id}')" 
+                              class="px-3 py-1 bg-orange-500 text-white text-xs rounded-lg hover:bg-orange-600 transition-colors flex items-center gap-1">
+                        🔄 Reset <span class="text-xs">▼</span>
+                      </button>
+                      <div id="reset-dropdown-${budget.id}" class="hidden absolute right-0 mt-1 w-52 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
+                         <button onclick="confirmResetTransactions('${budget.id}', '${budget.nome || 'Orçamento'}')" 
+                                 class="w-full text-left px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-t-lg">
+                           📊 Apenas Transações
+                         </button>
+                         <button onclick="confirmResetCategories('${budget.id}', '${budget.nome || 'Orçamento'}')" 
+                                 class="w-full text-left px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                           🏷️ Apenas Categorias
+                         </button>
+                         <button onclick="confirmResetBudget('${budget.id}', '${budget.nome || 'Orçamento'}')" 
+                                 class="w-full text-left px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-b-lg">
+                           🔄 Tudo (Transações + Recorrentes)
+                         </button>
+                       </div>
+                    </div>
                     <button onclick="confirmDeleteBudget('${budget.id}', '${budget.nome || 'Orçamento'}')" 
                             class="px-3 py-1 bg-red-600 text-white text-xs rounded-lg hover:bg-red-700 transition-colors">
                       🗑️ Excluir
@@ -1184,6 +1204,71 @@ export async function renderSettings() {
     }
   };
 
+  // Função para controlar dropdown de reset
+  window.toggleResetDropdown = function(budgetId) {
+    const dropdown = document.getElementById(`reset-dropdown-${budgetId}`);
+    const allDropdowns = document.querySelectorAll('[id^="reset-dropdown-"]');
+    
+    // Fechar todos os outros dropdowns
+    allDropdowns.forEach(d => {
+      if (d.id !== `reset-dropdown-${budgetId}`) {
+        d.classList.add('hidden');
+      }
+    });
+    
+    // Toggle do dropdown atual
+    dropdown.classList.toggle('hidden');
+    
+    // Fechar dropdown ao clicar fora
+    if (!dropdown.classList.contains('hidden')) {
+      setTimeout(() => {
+        const closeDropdown = (e) => {
+          if (!dropdown.contains(e.target) && !e.target.closest(`[onclick*="toggleResetDropdown('${budgetId}')"]`)) {
+            dropdown.classList.add('hidden');
+            document.removeEventListener('click', closeDropdown);
+          }
+        };
+        document.addEventListener('click', closeDropdown);
+      }, 100);
+    }
+  };
+
+  // Função para confirmar reset apenas de transações
+  window.confirmResetTransactions = function(budgetId, budgetName) {
+    if (confirm(`Tem certeza que deseja resetar apenas as transações do orçamento "${budgetName}"?\n\n⚠️ Esta ação irá remover APENAS as transações, mantendo categorias e recorrentes.\n\nEsta ação não pode ser desfeita.`)) {
+      window.resetTransactionsOnly(budgetId).then(async () => {
+        // Recarregar a página de configurações
+        await window.renderSettings();
+      }).catch(error => {
+        console.error('Erro ao resetar transações:', error);
+      });
+    }
+  };
+
+  // Função para confirmar reset apenas de categorias
+  window.confirmResetCategories = function(budgetId, budgetName) {
+    if (confirm(`Tem certeza que deseja resetar apenas as categorias do orçamento "${budgetName}"?\n\n⚠️ Esta ação irá remover APENAS as categorias personalizadas, mantendo transações e recorrentes.\n\nATENÇÃO: As categorias padrão serão recriadas automaticamente.\n\nEsta ação não pode ser desfeita.`)) {
+      window.resetCategoriesOnly(budgetId).then(async () => {
+        // Recarregar a página de configurações
+        await window.renderSettings();
+      }).catch(error => {
+        console.error('Erro ao resetar categorias:', error);
+      });
+    }
+  };
+
+  // Função para confirmar reset de orçamento completo
+  window.confirmResetBudget = function(budgetId, budgetName) {
+    if (confirm(`Tem certeza que deseja resetar completamente o orçamento "${budgetName}"?\n\n⚠️ Esta ação irá remover TODAS as transações e recorrentes, mas manterá o orçamento e suas categorias.\n\nEsta ação não pode ser desfeita.`)) {
+      window.resetBudget(budgetId).then(async () => {
+        // Recarregar a página de configurações
+        await window.renderSettings();
+      }).catch(error => {
+        console.error('Erro ao resetar orçamento:', error);
+      });
+    }
+  };
+
   // Função para confirmar exclusão de orçamento
   window.confirmDeleteBudget = function(budgetId, budgetName) {
     if (confirm(`Tem certeza que deseja excluir o orçamento "${budgetName}"?\n\n⚠️ Esta ação não pode ser desfeita e você perderá todos os dados deste orçamento.`)) {
@@ -1196,11 +1281,14 @@ export async function renderSettings() {
     }
   };
 
-  // Configurar o botão de tema após renderizar a página
+  // Configurar o botão de tema após renderizar a página (apenas se estiver na página de configurações)
   setTimeout(() => {
-    console.log('SettingsPage: Configurando botão de tema...');
-    if (window.setupThemeToggle) {
-      window.setupThemeToggle();
+    const currentRoute = window.location.hash.replace('#', '') || '/';
+    if (currentRoute === '/settings') {
+      console.log('SettingsPage: Configurando botão de tema...');
+      if (window.setupThemeToggle) {
+        window.setupThemeToggle();
+      }
     }
   }, 100);
 }

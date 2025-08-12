@@ -46,8 +46,9 @@ class VoiceSystem {
       return false;
     }
     
-    // Configurar eventos globais
+    // Configurar eventos globais (remover existentes primeiro para evitar duplicação)
     try {
+      this.removeGlobalEvents(); // Limpar eventos existentes
       this.setupGlobalEvents();
       console.log('✅ Eventos globais configurados');
     } catch (error) {
@@ -1612,6 +1613,8 @@ class VoiceSystem {
     // Remover event listeners existentes para evitar duplicação
     this.removeGlobalEvents();
     
+    console.log('🔧 Configurando eventos globais do VoiceSystem...');
+    
     // Fechar modal com ESC
     this.escapeHandler = (e) => {
       if (e.key === 'Escape' && this.isModalOpen) {
@@ -1632,6 +1635,8 @@ class VoiceSystem {
     // Botão de fechar modal
     const closeBtn = document.getElementById('close-voice-modal');
     if (closeBtn) {
+      console.log('🔧 Configurando botão de fechar modal...');
+      
       // Remover event listeners existentes do botão
       const newCloseBtn = closeBtn.cloneNode(true);
       closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
@@ -1643,28 +1648,38 @@ class VoiceSystem {
         this.closeModal();
       };
       newCloseBtn.addEventListener('click', this.closeBtnHandler);
+      console.log('✅ Event listener do botão de fechar configurado');
+    } else {
+      console.log('⚠️ Botão de fechar modal não encontrado');
     }
   }
 
   removeGlobalEvents() {
+    console.log('🧹 Removendo event listeners existentes...');
+    
     // Remover event listeners existentes
     if (this.escapeHandler) {
       document.removeEventListener('keydown', this.escapeHandler);
       this.escapeHandler = null;
+      console.log('✅ Event listener ESC removido');
     }
     
     if (this.outsideClickHandler) {
       document.removeEventListener('click', this.outsideClickHandler);
       this.outsideClickHandler = null;
+      console.log('✅ Event listener click fora removido');
     }
     
     if (this.closeBtnHandler) {
       const closeBtn = document.getElementById('close-voice-modal');
       if (closeBtn) {
         closeBtn.removeEventListener('click', this.closeBtnHandler);
+        console.log('✅ Event listener botão fechar removido');
       }
       this.closeBtnHandler = null;
     }
+    
+    console.log('🧹 Limpeza de event listeners concluída');
   }
 
   // ===== FUNÇÕES PÚBLICAS =====

@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Google Auth - Diagnóstico</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        button {
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover { background: #3367d6; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .user-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Diagnóstico Google Authentication</h1>
+        
+        <div id="status" class="status info">
+            Inicializando Firebase...
+        </div>
+
+        <div id="config-info"></div>
+
+        <div style="margin: 20px 0;">
+            <button id="btn-login" onclick="testLogin()">🔑 Testar Login Google</button>
+            <button id="btn-logout" onclick="testLogout()" disabled>🚪 Logout</button>
+            <button onclick="clearStatus()">🧹 Limpar Status</button>
+        </div>
+
+        <div id="user-info" style="display: none;"></div>
+        <div id="error-details" style="display: none;"></div>
+        <div id="debug-info"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { 
+            getAuth, 
+            GoogleAuthProvider, 
+            signInWithPopup,
+            signOut,
+            onAuthStateChanged 
+        } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+
+        const firebaseConfig = {
+      apiKey: 'AIzaSyCbBmmxn4Qj4CU6ymfG4MY5VGqCPSo13HY',
+      authDomain: 'controle-financeiro-b98ec.firebaseapp.com',
+      projectId: 'controle-financeiro-b98ec',
+      storageBucket: 'controle-financeiro-b98ec.firebasestorage.app',
+      messagingSenderId: '418109336597',
+      appId: '1:418109336597:web:871b262a76e57455ebb21c',
+      measurementId: 'G-7RW2F269V6'
+    };
+
+        let app, auth, provider;
+
+        function updateStatus(message, type = 'info') {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = `status ${type}`;
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+
+        function showConfigInfo() {
+            const configEl = document.getElementById('config-info');
+            configEl.innerHTML = `
+                <div class="info status">
+                    <strong>📋 Configuração Atual:</strong><br>
+                    🆔 Projeto: ${firebaseConfig.projectId}<br>
+                    🌐 Auth Domain: ${firebaseConfig.authDomain}<br>
+                    🔗 URL Atual: ${window.location.href}<br>
+                    🌍 Domínio Atual: ${window.location.hostname}
+                </div>
+            `;
+        }
+
+        function showUserInfo(user) {
+            const userInfoEl = document.getElementById('user-info');
+            userInfoEl.style.display = 'block';
+            userInfoEl.innerHTML = `
+                <div class="user-info">
+                    <h3>✅ Login Realizado com Sucesso!</h3>
+                    <p><strong>Nome:</strong> ${user.displayName}</p>
+                    <p><strong>Email:</strong> ${user.email}</p>
+                    <p><strong>UID:</strong> ${user.uid}</p>
+                    <p><strong>Foto:</strong> <img src="${user.photoURL}" width="50" style="border-radius: 25px;"></p>
+                </div>
+            `;
+        }
+
+        function showError(error) {
+            const errorEl = document.getElementById('error-details');
+            errorEl.style.display = 'block';
+            errorEl.innerHTML = `
+                <div class="error status">
+                    <h3>❌ Erro Detectado:</h3>
+                    <p><strong>Código:</strong> ${error.code}</p>
+                    <p><strong>Mensagem:</strong> ${error.message}</p>
+                    <pre>${JSON.stringify(error, null, 2)}</pre>
+                </div>
+            `;
+        }
+
+        function addDebugInfo(info) {
+            const debugEl = document.getElementById('debug-info');
+            const timestamp = new Date().toLocaleTimeString();
+            debugEl.innerHTML += `<div class="info status">[${timestamp}] ${info}</div>`;
+        }
+
+        window.clearStatus = function() {
+            document.getElementById('error-details').style.display = 'none';
+            document.getElementById('debug-info').innerHTML = '';
+        }
+
+        window.testLogin = async function() {
+            try {
+                updateStatus('🔄 Iniciando processo de login...', 'info');
+                addDebugInfo('Tentando login com Google...');
+                
+                const result = await signInWithPopup(auth, provider);
+                const user = result.user;
+                
+                updateStatus('✅ Login realizado com sucesso!', 'success');
+                showUserInfo(user);
+                addDebugInfo(`Login bem-sucedido para: ${user.email}`);
+                
+                document.getElementById('btn-login').disabled = true;
+                document.getElementById('btn-logout').disabled = false;
+                
+            } catch (error) {
+                console.error('Erro no login:', error);
+                
+                if (error.code === 'auth/unauthorized-domain') {
+                    updateStatus('❌ ERRO: Domínio não autorizado!', 'error');
+                    addDebugInfo(`DOMÍNIO NÃO AUTORIZADO: ${window.location.hostname}`);
+                    addDebugInfo('SOLUÇÃO: Adicione este domínio no Firebase Console');
+                } else if (error.code === 'auth/popup-closed-by-user') {
+                    updateStatus('⚠️ Login cancelado pelo usuário', 'warning');
+                    addDebugInfo('Usuário fechou o popup de login');
+                } else {
+                    updateStatus(`❌ Erro no login: ${error.message}`, 'error');
+                    addDebugInfo(`Erro: ${error.code} - ${error.message}`);
+                }
+                
+                showError(error);
+            }
+        }
+
+        window.testLogout = async function() {
+            try {
+                await signOut(auth);
+                updateStatus('✅ Logout realizado com sucesso!', 'success');
+                document.getElementById('user-info').style.display = 'none';
+                document.getElementById('btn-login').disabled = false;
+                document.getElementById('btn-logout').disabled = true;
+                addDebugInfo('Logout realizado com sucesso');
+            } catch (error) {
+                updateStatus(`❌ Erro no logout: ${error.message}`, 'error');
+                showError(error);
+            }
+        }
+
+        // Inicialização
+        try {
+            updateStatus('🔄 Inicializando Firebase...', 'info');
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            provider = new GoogleAuthProvider();
+            
+            showConfigInfo();
+            addDebugInfo('Firebase inicializado com sucesso');
+            
+            // Monitor de estado de autenticação
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    updateStatus('✅ Usuário já logado!', 'success');
+                    showUserInfo(user);
+                    document.getElementById('btn-login').disabled = true;
+                    document.getElementById('btn-logout').disabled = false;
+                    addDebugInfo(`Usuário detectado: ${user.email}`);
+                } else {
+                    updateStatus('ℹ️ Nenhum usuário logado. Clique em "Testar Login Google"', 'info');
+                    document.getElementById('btn-login').disabled = false;
+                    document.getElementById('btn-logout').disabled = true;
+                    addDebugInfo('Nenhum usuário logado');
+                }
+            });
+            
+        } catch (error) {
+            updateStatus(`❌ Erro na inicialização: ${error.message}`, 'error');
+            showError(error);
+        }
+    </script>
+</body>
+</html>

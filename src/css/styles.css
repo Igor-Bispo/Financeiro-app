@@ -368,6 +368,37 @@
   font-size: 1rem !important;
 }
 
+/* === BOTÕES DE ÍCONE PEQUENOS === */
+.btn-icon-small {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-xs);
+  min-height: 32px;
+  min-width: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.btn-icon-small:hover {
+  background: var(--border-light);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-icon-small:active {
+  transform: scale(0.95);
+  box-shadow: none;
+}
+
 @media (max-width: 768px) {
   .mobile-btn {
     min-height: 48px !important;
@@ -2562,4 +2593,195 @@ footer {
 /* Correção específica para tela de login */
 .login-container footer {
   z-index: 1 !important;
+}
+
+/* === MELHORIAS MOBILE AVANÇADAS === */
+
+/* Melhorar gestos de pull-to-refresh */
+@media (max-width: 768px) {
+  body {
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Melhorar área de toque para elementos pequenos */
+  .icon-standard,
+  .nav-icon,
+  .btn-icon {
+    min-width: 44px !important;
+    min-height: 44px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 8px !important;
+  }
+  
+  /* Melhorar feedback visual para toques */
+  .mobile-btn:active,
+  .nav-btn:active,
+  .fab:active {
+    transform: scale(0.95) !important;
+    transition: transform 0.1s ease !important;
+  }
+  
+  /* Melhorar contraste para leitura em dispositivos móveis */
+  .text-gray-600 {
+    color: #4b5563 !important;
+  }
+  
+  .text-gray-500 {
+    color: #374151 !important;
+  }
+  
+  /* Melhorar espaçamento entre elementos tocáveis */
+  .list-item + .list-item {
+    margin-top: 8px !important;
+  }
+  
+  /* Melhorar visibilidade de bordas em telas pequenas */
+  .border,
+  .border-gray-200,
+  .border-gray-300 {
+    border-width: 2px !important;
+    border-color: #d1d5db !important;
+  }
+  
+  /* Melhorar modais para mobile */
+  .modal-content {
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  
+  /* Melhorar inputs para mobile */
+  input[type="number"] {
+    -moz-appearance: textfield !important;
+  }
+  
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none !important;
+    margin: 0 !important;
+  }
+  
+  /* Melhorar seleção de texto */
+  .user-select-none {
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+    user-select: none !important;
+  }
+  
+  /* Melhorar performance de animações */
+  .transition-transform {
+    will-change: transform !important;
+  }
+  
+  .transition-opacity {
+    will-change: opacity !important;
+  }
+  
+  /* Melhorar scroll em listas longas */
+  .overflow-y-auto {
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior: contain !important;
+  }
+  
+  /* Melhorar visibilidade de elementos ativos */
+  .active,
+  .selected,
+  [aria-selected="true"] {
+    background-color: var(--primary-color) !important;
+    color: white !important;
+    font-weight: 600 !important;
+  }
+  
+  /* Melhorar feedback para elementos carregando */
+  .loading {
+    opacity: 0.7 !important;
+    pointer-events: none !important;
+  }
+  
+  /* Melhorar indicadores de estado */
+  .success {
+    background-color: #10b981 !important;
+    color: white !important;
+  }
+  
+  .warning {
+    background-color: #f59e0b !important;
+    color: white !important;
+  }
+  
+  .error {
+    background-color: #ef4444 !important;
+    color: white !important;
+  }
+}
+
+/* === MELHORIAS PARA ORIENTAÇÃO PORTRAIT === */
+@media (max-width: 768px) and (orientation: portrait) {
+  .grid-cols-2 {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+  
+  .flex-row {
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+  }
+  
+  .text-center {
+    text-align: left !important;
+  }
+}
+
+/* === MELHORIAS PARA DISPOSITIVOS COM NOTCH === */
+@supports (padding: max(0px)) {
+  @media (max-width: 768px) {
+    .app-container {
+      padding-top: max(env(safe-area-inset-top), 0px) !important;
+      padding-bottom: max(env(safe-area-inset-bottom), 80px) !important;
+      padding-left: max(env(safe-area-inset-left), 0px) !important;
+      padding-right: max(env(safe-area-inset-right), 0px) !important;
+    }
+    
+    .bottom-nav {
+      padding-bottom: max(env(safe-area-inset-bottom), 0px) !important;
+    }
+    
+    .fab {
+      bottom: max(calc(100px + env(safe-area-inset-bottom)), 100px) !important;
+      right: max(calc(1rem + env(safe-area-inset-right)), 1rem) !important;
+    }
+  }
+}
+
+/* === MELHORIAS PARA DARK MODE NO MOBILE === */
+@media (max-width: 768px) {
+  .dark .border,
+  .dark .border-gray-200,
+  .dark .border-gray-300 {
+    border-color: #4b5563 !important;
+  }
+  
+  .dark .text-gray-600 {
+    color: #d1d5db !important;
+  }
+  
+  .dark .text-gray-500 {
+    color: #e5e7eb !important;
+  }
+  
+  .dark .bg-white {
+    background-color: #1f2937 !important;
+  }
+  
+  .dark .bg-gray-50 {
+    background-color: #111827 !important;
+  }
+  
+  .dark .bg-gray-100 {
+    background-color: #374151 !important;
+  }
 }

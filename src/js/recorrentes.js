@@ -115,13 +115,14 @@ export async function addDespesaRecorrente(userId, budgetId, dados) {
       ...dados,
       userId,
       budgetId,
-      ativa: true,
+      // Preservar valores do backup ou usar padrões apenas se não existirem
+      ativa: dados.ativa !== undefined ? dados.ativa : true,
       createdAt: serverTimestamp(),
       // Inicializar parcelas se for parcelada
       parcelasRestantes: dados.parcelasRestantes || null,
       parcelasTotal: dados.parcelasTotal || null,
-      // Salvar o campo efetivarMesAtual
-      efetivarMesAtual: dados.efetivarMesAtual || false
+      // Preservar valor do backup ou usar padrão
+      efetivarMesAtual: dados.efetivarMesAtual !== undefined ? dados.efetivarMesAtual : false
     };
 
     const docRef = await addDoc(collection(db, 'recorrentes'), recorrenteData);

@@ -1,5 +1,5 @@
 // Versão do Service Worker - atualize sempre que modificar este arquivo
-const VERSION = 'v4.1.1';
+const VERSION = 'v4.2.0';
 const STATIC_CACHE = `financeiro-static-${VERSION}`;
 const DYNAMIC_CACHE = `financeiro-dynamic-${VERSION}`;
 const FALLBACK_CACHE = `financeiro-fallback-${VERSION}`;

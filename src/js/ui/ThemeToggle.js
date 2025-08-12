@@ -35,6 +35,12 @@ export function setupThemeToggle(buttonId = 'theme-toggle-btn') {
       // Forçar atualização de todas as abas para sincronizar o tema
       forceThemeUpdate();
       
+      // Atualizar melhorias mobile para o novo tema
+      if (window.mobileEnhancements && window.mobileEnhancements.adjustForTheme) {
+        window.mobileEnhancements.adjustForTheme(isDarkNow);
+        console.log('📱 Melhorias mobile atualizadas para tema:', isDarkNow ? 'dark' : 'light');
+      }
+      
       console.log('🎨 Tema alterado para:', isDarkNow ? 'dark' : 'light');
     });
     

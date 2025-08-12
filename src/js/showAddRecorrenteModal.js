@@ -94,7 +94,10 @@ window.showAddRecorrenteModal = function (dados = {}) {
                 tipo: 'despesa',
                 createdAt: now,
                 recorrenteId: recorrenteId,
-                recorrenteNome: dadosForm.descricao
+                recorrenteNome: dadosForm.descricao,
+                // Adicionar campos de parcela para recorrentes parceladas
+                parcelaAtual: dadosForm.parcelasTotal ? 1 : null,
+                parcelasTotal: dadosForm.parcelasTotal || null
               };
 
               const transacaoRef = await addDoc(
