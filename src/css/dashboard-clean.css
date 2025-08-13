@@ -152,6 +152,45 @@
   color: #9ca3af;
 }
 
+/* === BOTÕES === */
+.month-btn, .theme-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(107, 114, 128, 0.1);
+  color: #6b7280;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  /* Proteção contra toques acidentais no mobile */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.month-btn:hover, .theme-btn:hover {
+  background: rgba(107, 114, 128, 0.2);
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Desabilitar hover em dispositivos touch */
+@media (hover: none) and (pointer: coarse) {
+  .month-btn:hover, .theme-btn:hover {
+    transform: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+}
+
 /* === CARDS DE RESUMO === */
 .summary-cards {
   display: grid;

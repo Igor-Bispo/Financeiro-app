@@ -1,6 +1,8 @@
 import '../css/styles.css';
 import '../css/recorrentes-clean.css';
 import '../css/notifications-clean.css';
+import '../css/settings-clean.css';
+import '../css/mobile-protection.css';
 
 import './showAddRecorrenteModal.js';
 import './showAddTransactionModal.js';
@@ -53,12 +55,14 @@ import { renderCleanCategories } from './categories-clean.js';
 import { renderCleanTransactions } from './transactions-clean.js';
 import { renderCleanRecorrentes } from './recorrentes-clean.js';
 import { renderCleanNotifications } from './notifications-clean.js';
+import { renderCleanSettings } from './settings-clean.js';
 
 // Tornar funções limpas globais
 window.renderCleanTransactions = renderCleanTransactions;
 window.renderCleanCategories = renderCleanCategories;
 window.renderCleanRecorrentes = renderCleanRecorrentes;
 window.renderCleanNotifications = renderCleanNotifications;
+window.renderCleanSettings = renderCleanSettings;
 
 // Tornar Modal e Snackbar globais para uso em outros módulos
 window.Modal = Modal;
@@ -1494,8 +1498,12 @@ window.setCurrentBudget = async function (budget) {
       }
       break;
     case '/settings':
-      if (window.renderSettings) {
+      if (window.renderCleanSettings) {
+        await window.renderCleanSettings();
+      } else if (window.renderSettings) {
         await window.renderSettings();
+      } else {
+        console.log('⚠️ Nenhuma função de configurações encontrada');
       }
       break;
     default:
@@ -3138,13 +3146,44 @@ async function router(path) {
       break;
     case '/settings':
       console.log('🔄 Renderizando configurações...');
-      if (window.renderSettings) {
-        window.renderSettings();
-      } else {
-        // Fallback se a função não existir
-        console.log('⚠️ Função renderSettings não encontrada, usando fallback');
-        const content = document.getElementById('app-content');
-        if (content) {
+      const content = document.getElementById('app-content');
+      if (content) {
+        if (window.renderCleanSettings) {
+          try {
+            const settingsContainer = await window.renderCleanSettings();
+            content.innerHTML = '';
+            content.appendChild(settingsContainer);
+            console.log('✅ Configurações clean renderizadas');
+          } catch (error) {
+            console.error('❌ Erro ao renderizar configurações clean:', error);
+            // Fallback para configurações antigas
+            if (window.renderSettings) {
+              window.renderSettings();
+            } else {
+              // Fallback final
+              content.innerHTML = `
+                <div class="tab-container">
+                  <div class="tab-header">
+                    <h2 class="tab-title-highlight">Configurações</h2>
+                  </div>
+                  <div class="tab-content">
+                    <div class="content-spacing">
+                      <div class="text-center py-8">
+                        <div class="text-4xl mb-4">⚙️</div>
+                        <div class="text-lg font-semibold text-gray-800 dark:text-white mb-2">Configurações</div>
+                        <div class="text-gray-600 dark:text-gray-400">Funcionalidade em desenvolvimento</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              `;
+            }
+          }
+        } else if (window.renderSettings) {
+          window.renderSettings();
+        } else {
+          // Fallback se a função não existir
+          console.log('⚠️ Função renderSettings não encontrada, usando fallback');
           content.innerHTML = `
             <div class="tab-container">
               <div class="tab-header">

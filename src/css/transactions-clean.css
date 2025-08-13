@@ -1,4 +1,4 @@
-/* ===== TRANSAÇÕES CLEAN CSS - PADRÃO DASHBOARD ===== */
+/* ===== TRANSAÇÕES CLEAN - DESIGN PADRÃO DASHBOARD ===== */
 
 /* === VARIÁVEIS DE TEMA === */
 :root {
@@ -10,16 +10,26 @@
   --primary-dark: #2563EB;
   --secondary-light: #3B82F6;
   --secondary-dark: #1E3A8A;
-  --success-color: #10b981;
-  --warning-color: #f59e0b;
-  --danger-color: #ef4444;
+  --success-color: #10B981;
+  --warning-color: #F59E0B;
+  --danger-color: #EF4444;
   --text-primary: #1e293b;
-  --text-secondary: #64748b;
-  --bg-primary: #ffffff;
+  --text-secondary: #6b7280;
+  --text-muted: #9ca3af;
+  --bg-primary: #FFFFFF;
   --bg-secondary: #f8fafc;
-  --border-color: #e2e8f0;
-  --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --bg-tertiary: #e2e8f0;
+  --border-color: #E5E7EB;
+  --border-hover: #D1D5DB;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
 }
 
 /* Temas de cor personalizados */
@@ -63,19 +73,30 @@
   --secondary-dark: #92400E;
 }
 
+/* === TEMA ESCURO === */
+[data-theme="dark"] {
+  --text-primary: #F9FAFB;
+  --text-secondary: #D1D5DB;
+  --text-muted: #9CA3AF;
+  --bg-primary: #111827;
+  --bg-secondary: #1F2937;
+  --bg-tertiary: #374151;
+  --border-color: #374151;
+  --border-hover: #4B5563;
+}
+
 /* === LAYOUT PRINCIPAL === */
-.transactions-container {
+.transactions-clean {
   max-width: 100%;
   margin: 0 auto;
   padding: 8px;
-  /* MUDANÇA VISÍVEL: Background gradiente igual ao dashboard */
   background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
   min-height: 100vh;
   color: #1e293b;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-.dark .transactions-container {
+.dark .transactions-clean {
   background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
   color: #f1f5f9;
 }
@@ -87,19 +108,26 @@
   align-items: center;
   margin-bottom: 16px;
   padding: 0 4px;
-  /* MUDANÇA VISÍVEL: Header agora é minimalista sem caixa */
+  /* PADRÃO MINIMALISTA: Header sem caixa */
   background: transparent;
   border: none;
   box-shadow: none;
 }
 
 .transactions-title {
-  font-size: 1.5rem;
+  font-size: 20px;
   font-weight: 700;
-  color: var(--text-primary);
+  color: #1e293b;
+  margin: 0;
+  min-width: 120px;
+  text-align: left;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 8px;
+}
+
+.dark .transactions-title {
+  color: #f1f5f9;
 }
 
 .transactions-actions {
@@ -109,190 +137,289 @@
 }
 
 /* === BOTÕES === */
-.btn-transaction {
-  padding: 8px 16px;
-  border-radius: 12px;
-  font-weight: 600;
-  font-size: 14px;
-  transition: all 0.2s ease;
+.btn-transactions {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
   border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.btn-transaction.primary {
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
-  color: white;
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
-}
-
-.btn-transaction.primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
-}
-
-.btn-transaction.secondary {
-  background: rgba(255, 255, 255, 0.8);
-  color: var(--text-primary);
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(10px);
-}
-
-.btn-transaction.secondary:hover {
-  background: rgba(255, 255, 255, 0.9);
-  transform: translateY(-1px);
-}
-
-/* === FILTROS E PESQUISA === */
-.filters-container {
-  margin-bottom: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.search-container {
-  position: relative;
-}
-
-.search-input {
-  width: 100%;
-  padding: 12px 16px 12px 44px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.8);
-  color: var(--text-primary);
-  font-size: 14px;
-  transition: all 0.2s ease;
-  backdrop-filter: blur(10px);
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-  background: rgba(255, 255, 255, 0.95);
-}
-
-.search-icon {
-  position: absolute;
-  left: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--text-secondary);
+  background: rgba(107, 114, 128, 0.1);
+  color: #6b7280;
   font-size: 16px;
-}
-
-.filter-container {
-  position: relative;
-}
-
-.filters-row {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.filter-select {
-  width: 100%;
-  padding: 12px 16px 12px 44px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.8);
-  color: var(--text-primary);
-  font-size: 14px;
-  transition: all 0.2s ease;
-  appearance: none;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(10px);
-}
-
-.filter-select:focus {
-  outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-  background: rgba(255, 255, 255, 0.95);
-}
-
-.filter-select:hover {
-  border-color: var(--primary-color);
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
-}
-
-.filter-icon {
-  position: absolute;
-  left: 0.75rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--text-secondary);
-  font-size: 1rem;
-  pointer-events: none;
-}
-
-.filter-arrow {
-  position: absolute;
-  right: 0.75rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--text-secondary);
-  font-size: 0.75rem;
-  pointer-events: none;
-}
-
-.clear-filters-btn {
-  padding: 0.75rem 1rem;
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  font-size: 0.875rem;
   transition: all 0.2s ease;
-  cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  white-space: nowrap;
-  box-shadow: var(--shadow);
-  min-width: fit-content;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  /* Proteção contra toques acidentais no mobile */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
-.clear-filters-btn:hover {
-  background: var(--border-color);
-  transform: translateY(-1px);
+.btn-transactions:hover {
+  background: rgba(107, 114, 128, 0.2);
+  transform: scale(1.05);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-.search-results {
-  margin-top: 0.5rem;
-  font-size: 0.75rem;
+/* Desabilitar hover em dispositivos touch */
+@media (hover: none) and (pointer: coarse) {
+  .btn-transactions:hover {
+    transform: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.dark .btn-transactions {
+  background: rgba(107, 114, 128, 0.2);
+  color: #9ca3af;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.dark .btn-transactions:hover {
+  background: rgba(107, 114, 128, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* Desabilitar hover em dispositivos touch para tema escuro */
+@media (hover: none) and (pointer: coarse) {
+  .dark .btn-transactions:hover {
+    transform: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+}
+
+.btn-transactions.primary {
+  background: rgba(var(--primary-color-rgb, 59, 130, 246), 0.1);
+  color: var(--primary-color);
+}
+
+.btn-transactions.primary:hover {
+  background: rgba(var(--primary-color-rgb, 59, 130, 246), 0.2);
+}
+
+.dark .btn-transactions.primary {
+  background: rgba(var(--primary-color-rgb, 59, 130, 246), 0.2);
+  color: var(--primary-light);
+}
+
+/* === FILTROS === */
+.filters-container {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.dark .filters-container {
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 200px;
+}
+
+.filter-label {
+  font-size: 12px;
+  font-weight: 600;
   color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.filter-select,
+.filter-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.8);
+  color: var(--text-primary);
+  font-size: 14px;
+  outline: none;
+  transition: all 0.2s ease;
+  min-width: 0;
+}
+
+.filter-select:focus,
+.filter-input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb, 59, 130, 246), 0.1);
+}
+
+.dark .filter-select,
+.dark .filter-input {
+  background: rgba(30, 41, 59, 0.8);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+.clear-filters-btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  background: rgba(107, 114, 128, 0.1);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.clear-filters-btn:hover {
+  background: rgba(107, 114, 128, 0.2);
+  transform: translateY(-1px);
+}
+
+/* === SEÇÕES DE CONTEÚDO === */
+.transactions-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.transactions-section {
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  position: relative;
+  overflow: hidden;
+}
+
+.transactions-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+  opacity: 0.8;
+}
+
+.dark .transactions-section {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin: 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-title::before {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 20px;
+  height: 2px;
+  background: var(--primary-color);
+  border-radius: 1px;
+}
+
+.dark .section-title {
+  color: var(--primary-light);
+}
+
+.dark .section-title::before {
+  background: var(--primary-light);
+}
+
+.section-icon {
+  font-size: 18px;
+  color: var(--primary-color);
+}
+
+.dark .section-icon {
+  color: var(--primary-light);
+}
+
+.add-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(var(--primary-color-rgb, 99, 102, 241), 0.3);
+}
+
+.add-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 8px rgba(var(--primary-color-rgb, 99, 102, 241), 0.4);
+}
+
+.section-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 /* === LISTA DE TRANSAÇÕES === */
 .transactions-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
-/* Item de transação */
+/* === ITENS DE TRANSAÇÃO === */
 .transaction-item {
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
   padding: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transition: all 0.2s ease;
   position: relative;
   overflow: hidden;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  backdrop-filter: blur(10px);
+  cursor: pointer;
 }
 
 .transaction-item::before {
@@ -301,249 +428,284 @@
   left: 0;
   top: 0;
   bottom: 0;
-  width: 4px;
-  background: linear-gradient(180deg, var(--primary-color), var(--primary-light));
-  opacity: 0;
-  transition: opacity 0.3s ease;
+  width: 3px;
+  background: var(--primary-color);
+  opacity: 0.8;
 }
 
 .transaction-item:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-lg);
+  background: rgba(255, 255, 255, 0.9);
+  transform: translateX(4px);
 }
 
 .transaction-item:hover::before {
+  background: var(--secondary-color);
   opacity: 1;
 }
 
-.transaction-item.receita::before {
-  background: linear-gradient(180deg, var(--success-color), #34d399);
+.dark .transaction-item {
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.transaction-item.despesa::before {
-  background: linear-gradient(180deg, var(--danger-color), #f87171);
+.dark .transaction-item::before {
+  background: var(--primary-light);
 }
 
-.transaction-item.scheduled {
-  opacity: 0.8;
-  background: var(--bg-secondary);
+.dark .transaction-item:hover {
+  background: rgba(30, 41, 59, 0.9);
 }
 
-.transaction-item.scheduled::before {
-  background: linear-gradient(180deg, var(--warning-color), #fbbf24);
+/* === ESTRUTURA DO ITEM === */
+.transaction-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-/* Informações da transação */
-.transaction-info {
+.transaction-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  flex-shrink: 0;
+}
+
+.transaction-icon.income {
+  background: linear-gradient(135deg, #10B981, #34D399);
+}
+
+.transaction-icon.expense {
+  background: linear-gradient(135deg, #EF4444, #F87171);
+}
+
+.transaction-icon.recurrent {
+  background: linear-gradient(135deg, #F59E0B, #FBBF24);
+}
+
+.transaction-details {
   flex: 1;
   min-width: 0;
 }
 
 .transaction-title {
-  font-size: 1rem;
+  font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: 0.25rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.transaction-meta {
-  font-size: 0.875rem;
-  color: var(--text-secondary);
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
+  margin-bottom: 4px;
+  line-height: 1.2;
 }
 
 .transaction-category {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.25rem 0.5rem;
-  background: var(--bg-secondary);
-  border-radius: 6px;
-  font-size: 0.75rem;
+  font-size: 12px;
   color: var(--text-secondary);
+  margin-bottom: 2px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .transaction-date {
-  font-size: 0.875rem;
-  color: var(--text-secondary);
-}
-
-.recorrente-badge {
-  font-size: 0.75rem;
-  opacity: 0.7;
-}
-
-.parcela-info {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  font-style: italic;
-}
-
-/* Valor e ações */
-.transaction-actions {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--text-muted);
 }
 
 .transaction-value {
-  font-size: 1.125rem;
+  font-size: 16px;
   font-weight: 700;
+  color: var(--text-primary);
   text-align: right;
-  min-width: 80px;
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .transaction-value.positive {
-  color: var(--success-color);
+  color: #10B981;
 }
 
 .transaction-value.negative {
-  color: var(--danger-color);
+  color: #EF4444;
 }
 
-.action-buttons {
+.transaction-badges {
   display: flex;
-  gap: 0.5rem;
+  gap: 4px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.transaction-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.transaction-badge.recurrent {
+  background: var(--warning-color);
+  color: white;
+}
+
+.transaction-badge.income {
+  background: var(--success-color);
+  color: white;
+}
+
+.transaction-badge.expense {
+  background: var(--danger-color);
+  color: white;
+}
+
+/* === AÇÕES DO ITEM === */
+.transaction-actions {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+  align-items: center;
+  margin-top: 8px;
 }
 
 .action-btn {
-  padding: 0.5rem;
-  border-radius: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
   border: none;
+  background: rgba(107, 114, 128, 0.1);
+  color: #6b7280;
+  font-size: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-size: 0.875rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 36px;
-  min-height: 36px;
 }
 
-.action-btn.edit {
-  background: rgba(59, 130, 246, 0.1);
-  color: var(--primary-color);
-  border: 1px solid rgba(59, 130, 246, 0.2);
+.action-btn:hover {
+  transform: scale(1.1);
 }
 
 .action-btn.edit:hover {
-  background: rgba(59, 130, 246, 0.2);
-}
-
-.action-btn.delete {
-  background: rgba(239, 68, 68, 0.1);
-  color: var(--danger-color);
-  border: 1px solid rgba(239, 68, 68, 0.2);
+  background: rgba(var(--primary-color-rgb, 59, 130, 246), 0.2);
+  color: var(--primary-color);
 }
 
 .action-btn.delete:hover {
   background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
 }
 
-/* Estado vazio */
+.dark .action-btn {
+  background: rgba(107, 114, 128, 0.2);
+  color: #9ca3af;
+}
+
+.dark .action-btn.edit:hover {
+  background: rgba(var(--primary-light-rgb, 96, 165, 250), 0.3);
+  color: var(--primary-light);
+}
+
+/* === ESTADO VAZIO === */
 .empty-state {
   text-align: center;
-  padding: 3rem 1rem;
-  color: var(--text-secondary);
+  padding: 32px 16px;
 }
 
 .empty-icon {
-  font-size: 3rem;
-  margin-bottom: 1rem;
+  font-size: 48px;
+  margin-bottom: 16px;
   opacity: 0.5;
 }
 
-.empty-title {
-  font-size: 1.25rem;
+.empty-text {
+  font-size: 16px;
   font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 0.5rem;
+  color: #6b7280;
+  margin-bottom: 16px;
 }
 
-.empty-description {
-  font-size: 0.875rem;
-  max-width: 400px;
-  margin: 0 auto 1.5rem;
+.dark .empty-text {
+  color: #9ca3af;
 }
 
 .empty-btn {
-  padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
   color: white;
   border: none;
-  border-radius: 8px;
-  font-weight: 500;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(var(--primary-color-rgb, 99, 102, 241), 0.3);
 }
 
 .empty-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4);
+  box-shadow: 0 4px 8px rgba(var(--primary-color-rgb, 99, 102, 241), 0.4);
 }
 
-/* Responsividade */
+/* === LOADING STATE === */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: var(--text-muted);
+}
+
+.loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border-color);
+  border-top: 3px solid var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* === RESPONSIVIDADE === */
 @media (max-width: 768px) {
-  .transactions-container {
-    padding: 0.5rem;
-  }
-  
-  .transactions-header {
+  .filters-container {
     flex-direction: column;
-    gap: 1rem;
     align-items: stretch;
+    gap: 12px;
   }
   
-  .transactions-actions {
-    justify-content: center;
-  }
-  
-  .filters-row {
-    flex-direction: column;
-  }
-  
-  .filter-select {
+  .filter-group {
     min-width: auto;
   }
   
-  .transaction-item {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.75rem;
-  }
-  
-  .transaction-actions {
-    justify-content: space-between;
-    width: 100%;
-  }
-  
-  .action-buttons {
-    gap: 0.25rem;
-  }
-  
-  .action-btn {
-    min-width: 32px;
-    min-height: 32px;
-    font-size: 0.75rem;
+  .clear-filters-btn {
+    align-self: flex-end;
   }
 }
 
 @media (max-width: 480px) {
-  .transactions-container {
-    padding: 2px;
+  .transactions-clean {
+    padding: 4px;
   }
   
   .transactions-header {
-    padding: 8px;
+    margin-bottom: 12px;
     flex-direction: column;
     gap: 8px;
+    align-items: stretch;
   }
   
   .transactions-title {
@@ -553,173 +715,73 @@
   
   .transactions-actions {
     justify-content: center;
-    gap: 4px;
-  }
-  
-  .btn-transaction {
-    padding: 6px 10px;
-    font-size: 12px;
-    min-width: 60px;
   }
   
   .filters-container {
     margin-bottom: 12px;
-    gap: 8px;
-  }
-  
-  .search-input,
-  .filter-select {
-    padding: 8px 12px 8px 36px;
-    font-size: 14px;
-    border-radius: 12px;
-  }
-  
-  .search-icon,
-  .filter-icon {
-    left: 12px;
-    font-size: 14px;
-  }
-  
-  .filter-arrow {
-    right: 12px;
-    font-size: 12px;
-  }
-  
-  .filters-row {
-    flex-direction: column;
-    gap: 8px;
-  }
-  
-  .clear-filters-btn {
-    padding: 8px 12px;
-    font-size: 12px;
-    justify-content: center;
-  }
-  
-  .transactions-list {
-    gap: 8px;
-  }
-  
-  .transaction-item {
     padding: 12px;
-    border-radius: 16px;
+  }
+  
+  .transactions-section {
+    padding: 12px;
+  }
+  
+  .section-header {
     flex-direction: column;
     align-items: stretch;
     gap: 8px;
   }
   
-  .transaction-info {
-    width: 100%;
+  .transaction-item {
+    padding: 12px;
   }
   
-  .transaction-title {
-    font-size: 14px;
-    margin-bottom: 4px;
-  }
-  
-  .transaction-meta {
-    font-size: 12px;
-    gap: 4px;
-    flex-wrap: wrap;
-  }
-  
-  .transaction-category {
-    font-size: 10px;
-    padding: 2px 6px;
-  }
-  
-  .transaction-date {
-    font-size: 12px;
-  }
-  
-  .transaction-actions {
-    justify-content: space-between;
-    width: 100%;
+  .transaction-content {
     gap: 8px;
   }
   
+  .transaction-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+  
+  .transaction-title {
+    font-size: 13px;
+  }
+  
   .transaction-value {
-    font-size: 16px;
-    min-width: 60px;
-    text-align: left;
+    font-size: 14px;
   }
   
-  .action-buttons {
-    gap: 4px;
-  }
-  
-  .action-btn {
-    min-width: 28px;
-    min-height: 28px;
-    font-size: 12px;
-    padding: 4px;
+  .transaction-actions {
+    margin-top: 6px;
   }
 }
 
 @media (max-width: 360px) {
-  .transactions-container {
-    padding: 1px;
-  }
-  
-  .transactions-header {
-    padding: 6px;
-  }
-  
   .transactions-title {
     font-size: 16px;
   }
   
-  .btn-transaction {
-    padding: 4px 8px;
-    font-size: 11px;
-    min-width: 50px;
-  }
-  
-  .search-input,
-  .filter-select {
-    padding: 6px 10px 6px 32px;
-    font-size: 13px;
-  }
-  
-  .search-icon,
-  .filter-icon {
-    left: 10px;
-    font-size: 13px;
-  }
-  
-  .filter-arrow {
-    right: 10px;
-    font-size: 11px;
-  }
-  
-  .transaction-item {
-    padding: 10px;
+  .section-title {
+    font-size: 14px;
   }
   
   .transaction-title {
-    font-size: 13px;
-  }
-  
-  .transaction-meta {
-    font-size: 11px;
+    font-size: 12px;
   }
   
   .transaction-value {
-    font-size: 15px;
-  }
-  
-  .action-btn {
-    min-width: 24px;
-    min-height: 24px;
-    font-size: 10px;
+    font-size: 13px;
   }
 }
 
-/* Animações */
-@keyframes fadeIn {
+/* ===== ANIMAÇÕES ===== */
+@keyframes fadeInUp {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(20px);
   }
   to {
     opacity: 1;
@@ -728,122 +790,60 @@
 }
 
 .transaction-item {
-  animation: fadeIn 0.3s ease;
+  animation: fadeInUp 0.3s ease-out;
 }
 
-/* Estados de carregamento */
-.loading {
-  opacity: 0.6;
-  pointer-events: none;
+/* ===== ACESSIBILIDADE ===== */
+.btn-transactions:focus,
+.action-btn:focus,
+.add-btn:focus,
+.filter-select:focus,
+.filter-input:focus {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
 }
 
-.loading::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 20px;
-  height: 20px;
-  margin: -10px 0 0 -10px;
-  border: 2px solid var(--border-color);
-  border-top: 2px solid var(--primary-color);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
+/* ===== PERFORMANCE ===== */
+.transaction-item {
+  will-change: transform;
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+/* ===== HOVER STATES ===== */
+.transaction-item:hover .transaction-title {
+  color: var(--primary-color);
 }
 
-/* Melhorias para transações recorrentes */
-.transaction-item.recorrente {
-  border-left: 4px solid var(--warning-color);
+/* ===== ACTIVE STATES ===== */
+.btn-transactions:active,
+.action-btn:active,
+.add-btn:active {
+  transform: translateY(0);
 }
 
-.transaction-item.recorrente::before {
-  background: linear-gradient(180deg, var(--warning-color), #fbbf24);
-  opacity: 1;
-}
-
-/* Indicadores de status */
-.status-indicator {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  margin-right: 0.5rem;
-}
-
-.status-indicator.paid {
-  background: var(--success-color);
-}
-
-.status-indicator.pending {
-  background: var(--warning-color);
-}
-
-.status-indicator.overdue {
-  background: var(--danger-color);
-}
-
-/* === TOUCH TARGETS PARA MOBILE === */
-@media (max-width: 768px) {
-  /* Garantir que botões tenham pelo menos 44px para touch */
-  .btn-transaction,
-  .action-btn {
-    min-width: 44px;
-    min-height: 44px;
-  }
-  
-  /* Melhorar espaçamento para touch */
-  .action-buttons {
-    gap: 8px;
-  }
-  
-  /* Aumentar área de toque para itens */
+/* ===== CONTRASTE ===== */
+@media (prefers-contrast: high) {
   .transaction-item {
-    cursor: pointer;
+    border-width: 2px;
   }
   
-  /* Melhorar feedback visual para touch */
-  .transaction-item:active {
-    transform: scale(0.98);
-  }
-  
-  /* Melhorar acessibilidade dos botões */
-  .btn-transaction:focus,
-  .action-btn:focus {
-    outline: 2px solid var(--primary-color);
-    outline-offset: 2px;
+  .btn-transactions,
+  .action-btn,
+  .add-btn {
+    border-width: 2px;
   }
 }
 
-/* === MELHORIAS PARA TELAS PEQUENAS === */
-@media (max-width: 480px) {
-  /* Garantir que elementos importantes sejam visíveis */
-  .transaction-value {
-    font-weight: 700;
+/* ===== REDUÇÃO DE MOVIMENTO ===== */
+@media (prefers-reduced-motion: reduce) {
+  .transaction-item,
+  .btn-transactions,
+  .action-btn,
+  .add-btn {
+    transition: none;
+    animation: none;
   }
   
-  /* Melhorar legibilidade */
-  .transaction-title {
-    font-weight: 600;
-  }
-  
-  /* Otimizar espaçamento */
-  .transactions-list {
-    gap: 10px;
-  }
-  
-  /* Melhorar hierarquia visual */
-  .transaction-meta {
-    font-weight: 500;
-  }
-  
-  /* Melhorar contraste dos badges */
-  .transaction-category {
-    font-weight: 600;
-    background: rgba(0, 0, 0, 0.1);
+  .loading-spinner {
+    animation: none;
   }
 }

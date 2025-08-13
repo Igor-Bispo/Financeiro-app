@@ -25,8 +25,8 @@ export async function renderCleanNotifications() {
         🔔 Notificações
       </div>
       <div class="notifications-actions">
-        <button class="btn-notifications success" onclick="markAllNotificationsAsRead()">
-          ✔️ Marcar todas como lidas
+        <button class="btn-notifications success" onclick="markAllNotificationsAsRead()" title="Marcar todas como lidas">
+          ✔️
         </button>
       </div>
     </div>

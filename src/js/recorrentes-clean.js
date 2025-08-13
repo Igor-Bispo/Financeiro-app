@@ -31,14 +31,14 @@ export async function renderCleanRecorrentes() {
         🔄 Despesas Recorrentes
       </div>
       <div class="recorrentes-actions">
-        <button class="btn-recorrentes secondary" onclick="window.verificarRecorrentes()">
-          🔍 Verificar
+        <button class="btn-recorrentes secondary" onclick="window.verificarRecorrentes()" title="Verificar Recorrentes">
+          🔍
         </button>
-        <button class="btn-recorrentes primary" onclick="window.aplicarRecorrentes()">
-          ✅ Aplicar
+        <button class="btn-recorrentes primary" onclick="window.aplicarRecorrentes()" title="Aplicar Recorrentes">
+          ✅
         </button>
-        <button class="btn-recorrentes primary" onclick="window.showAddRecorrenteModal()">
-          ➕ Nova Recorrente
+        <button class="btn-recorrentes primary" onclick="window.showAddRecorrenteModal()" title="Nova Recorrente">
+          ➕
         </button>
       </div>
     </div>

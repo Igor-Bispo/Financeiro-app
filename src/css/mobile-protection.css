@@ -1,0 +1,116 @@
+/* ===== PROTEÇÕES MOBILE CONTRA TOQUES ACIDENTAIS ===== */
+
+/* Proteção geral para todos os botões clicáveis */
+button, 
+.btn, 
+.action-btn, 
+.add-btn,
+[onclick],
+[role="button"] {
+  /* Proteção contra toques acidentais no mobile */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* Desabilitar hover em dispositivos touch para todos os botões */
+@media (hover: none) and (pointer: coarse) {
+  button:hover,
+  .btn:hover,
+  .action-btn:hover,
+  .add-btn:hover,
+  [onclick]:hover,
+  [role="button"]:hover {
+    transform: none !important;
+    box-shadow: inherit !important;
+  }
+}
+
+/* Proteção específica para cards clicáveis */
+.card,
+.summary-card,
+.settings-card,
+.notification-card,
+.recorrente-card,
+.category-card,
+.transaction-item {
+  /* Proteção contra toques acidentais no mobile */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* Proteção para elementos de navegação */
+.nav-item,
+.tab-item,
+.bottom-nav-item {
+  /* Proteção contra toques acidentais no mobile */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* Proteção para inputs e selects */
+input,
+select,
+textarea {
+  /* Permitir zoom em inputs para melhor usabilidade */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Proteção para links */
+a {
+  /* Proteção contra toques acidentais no mobile */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Melhorar área de toque para elementos pequenos */
+.btn-settings,
+.btn-notifications,
+.btn-recorrentes,
+.btn-categories,
+.btn-transactions,
+.month-btn,
+.theme-btn,
+.add-btn {
+  /* Garantir área mínima de toque */
+  min-width: 44px;
+  min-height: 44px;
+}
+
+/* Proteção para dropdowns */
+.dropdown-item,
+.modal-close,
+.settings-dropdown-content button {
+  /* Proteção contra toques acidentais no mobile */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* Melhorar feedback visual para toques */
+@media (hover: none) and (pointer: coarse) {
+  button:active,
+  .btn:active,
+  .action-btn:active,
+  .add-btn:active,
+  [onclick]:active,
+  [role="button"]:active {
+    transform: scale(0.95);
+    transition: transform 0.1s ease;
+  }
+}
