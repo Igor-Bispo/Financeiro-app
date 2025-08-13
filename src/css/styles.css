@@ -1,3 +1,6 @@
+/* Importar estilos do dashboard limpo */
+@import './dashboard-clean.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

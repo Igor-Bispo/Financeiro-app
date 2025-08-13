@@ -45,6 +45,7 @@ import { Modal } from './ui/Modal.js';
 import { Snackbar } from './ui/Snackbar.js';
 import { Analytics } from './ui/Analytics.js';
 import { renderAnalytics } from './ui/AnalyticsRoute.js';
+import { renderCleanDashboard } from './dashboard-clean.js';
 
 // Tornar Modal e Snackbar globais para uso em outros módulos
 window.Modal = Modal;
@@ -1614,8 +1615,8 @@ async function getTransacoesDoMes(userId, ano, mes) {
   }
 }
 
-// FUNÇÃO RENDERDASHBOARD LIMPA E FUNCIONAL
-async function renderDashboard(selectedYear, selectedMonth) {
+// FUNÇÃO RENDERDASHBOARD ORIGINAL (MANTIDA PARA COMPATIBILIDADE)
+async function renderDashboardOriginal(selectedYear, selectedMonth) {
   // Evitar múltiplas chamadas simultâneas
   if (window.isRenderingDashboard) {
     console.log('🔄 Dashboard já está sendo renderizado, pulando...');
@@ -1793,48 +1794,35 @@ async function renderDashboard(selectedYear, selectedMonth) {
     // Importar CardResumo
     const { CardResumo } = await import('./ui/CardResumo.js');
 
-    // CONSTRUIR TODO O HTML COMO UMA STRING ÚNICA
+    // CONSTRUIR TODO O HTML COMO UMA STRING ÚNICA - VERSÃO SIMPLIFICADA
     const dashboardHTML = `
       <div class="tab-container">
         <div class="tab-header">
-          <h2 class="tab-title-highlight">Dashboard</h2>
+          <h2 class="tab-title-highlight">Dashboard Financeiro</h2>
           <div class="flex gap-2">
-            <button id="export-btn" class="btn-secondary">
-              <span>📤 Exportar</span>
-            </button>
             <button id="theme-toggle-btn" class="btn-secondary">
-              <span>🎨 Tema</span>
+              <span>🎨</span>
             </button>
           </div>
         </div>
-        <div id="mes-selector" class="flex items-center justify-center gap-4 mb-4 w-full">
-          <button id="mes-anterior" class="text-blue-600 bg-blue-100 rounded-full w-10 h-10 md:w-8 md:h-8 flex items-center justify-center text-xl hover:bg-blue-200 active:bg-blue-300 transition-all duration-200 touch-manipulation" style="min-width: 44px; min-height: 44px;">&#8592;</button>
-          <span class="font-bold text-lg">${meses[month - 1]} ${year}</span>
-          <button id="mes-proximo" class="text-blue-600 bg-blue-100 rounded-full w-10 h-10 md:w-8 md:h-8 flex items-center justify-center text-xl hover:bg-blue-200 active:bg-blue-300 transition-all duration-200 touch-manipulation" style="min-width: 44px; min-height: 44px;">&#8594;</button>
+        <div id="mes-selector" class="flex items-center justify-center gap-4 mb-6 w-full">
+          <button id="mes-anterior" class="text-blue-600 bg-blue-100 rounded-full w-12 h-12 flex items-center justify-center text-xl hover:bg-blue-200 active:bg-blue-300 transition-all duration-200 touch-manipulation">‹</button>
+          <span class="font-bold text-xl text-gray-800 dark:text-gray-100">${meses[month - 1]} ${year}</span>
+          <button id="mes-proximo" class="text-blue-600 bg-blue-100 rounded-full w-12 h-12 flex items-center justify-center text-xl hover:bg-blue-200 active:bg-blue-300 transition-all duration-200 touch-manipulation">›</button>
         </div>
         <div class="tab-content">
           <div class="content-spacing" id="dashboard-content">
-            <!-- RESUMO DO MÊS COM RELÓGIO INTEGRADO -->
-            <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl shadow-lg p-4 md:p-6 mb-4 text-white">
-              <!-- Header com Relógio -->
-              <div class="flex flex-col md:flex-row items-center justify-between mb-4 gap-3">
-                <div class="flex flex-col md:flex-row items-center gap-3">
-                  <h2 class="text-lg md:text-xl font-bold">RESUMO DO MÊS</h2>
-                  <span class="text-lg md:text-xl opacity-90">${meses[month - 1]} ${year}</span>
-                </div>
-                <!-- Relógio Digital Integrado -->
-                <div class="flex flex-col items-center bg-white bg-opacity-20 rounded-lg px-3 py-2">
-                  <div id="digital-clock" class="text-lg md:text-xl font-mono font-bold tracking-wider">
-                    --:--:--
-                  </div>
-                  <div id="digital-date" class="text-xs md:text-sm opacity-90">
-                    --/--/----
-                  </div>
+            <!-- RESUMO FINANCEIRO PRINCIPAL -->
+            <div class="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl shadow-xl p-6 mb-6 text-white">
+              <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold">Resumo Financeiro</h2>
+                <div id="digital-clock" class="text-lg font-mono bg-white bg-opacity-20 rounded-lg px-3 py-1">
+                  --:--
                 </div>
               </div>
               
-              <!-- Grid de Informações Financeiras com Cartões Dinâmicos -->
-              <div id="cards-container" class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+              <!-- Cards de Resumo Simplificados -->
+              <div id="cards-container" class="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <!-- Os cartões serão inseridos dinamicamente aqui -->
               </div>
             </div>
@@ -3819,7 +3807,11 @@ window.addCategoryWithConfirmation = async function (categoryData) {
 };
 
 // Exportar funções globais
-window.renderDashboard = renderDashboard;
+// Usar dashboard limpo importado
+window.renderDashboard = renderCleanDashboard;
+console.log('✅ Dashboard Limpo integrado e ativado');
+
+window.renderDashboardOriginal = renderDashboardOriginal;
 window.renderTransactions = renderTransactions;
 window.renderCategories = renderCategories;
 window.router = router;

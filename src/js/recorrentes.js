@@ -79,10 +79,22 @@ export function calcularStatusRecorrente(recorrente, transacoes = [], anoAtual =
   const parcelaAtual = calcularParcelaRecorrente(recorrente, anoAtual, mesAtual);
   
   // Calcular próxima parcela (mês seguinte)
-  const proximaParcela = calcularParcelaRecorrente(recorrente, anoAtual, mesAtual + 1);
+  let proximoMes = mesAtual + 1;
+  let proximoAno = anoAtual;
+  if (proximoMes > 12) {
+    proximoMes = 1;
+    proximoAno++;
+  }
+  const proximaParcela = calcularParcelaRecorrente(recorrente, proximoAno, proximoMes);
   
   // Calcular última parcela (mês anterior)
-  const ultimaParcela = calcularParcelaRecorrente(recorrente, anoAtual, mesAtual - 1);
+  let ultimoMes = mesAtual - 1;
+  let ultimoAno = anoAtual;
+  if (ultimoMes < 1) {
+    ultimoMes = 12;
+    ultimoAno--;
+  }
+  const ultimaParcela = calcularParcelaRecorrente(recorrente, ultimoAno, ultimoMes);
   
   return {
     foiEfetivadaEsteMes,
