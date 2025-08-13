@@ -1,0 +1,5 @@
+[33m26fa71c[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m, [m[1;33mtag: [m[1;33mv1.0.0-stable[m[33m)[m BACKUP: Versão estável antes das novas melhorias - Dashboard limpo funcionando com recorrentes em meses futuros
+[33m75cb63f[m[33m ([m[1;31morigin/master[m[33m, [m[1;31morigin/HEAD[m[33m)[m Fix: Corrigir filtro de mês no dashboard - categorias agora mostram gastos do mês selecionado
+[33m5906fe2[m feat: Implementação completa do relógio digital e otimização do dashboard
+[33mf29ad75[m Fix: garantir funções globais e lint para CI
+[33ma04209c[m Atualizações: correções em recorrentes, visual, navegação, categorias e configurações

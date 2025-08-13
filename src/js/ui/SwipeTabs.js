@@ -389,6 +389,12 @@ export class SwipeNavigation {
     const targetTab = this.tabs[index];
     console.log(`SwipeNavigation: Navegando para ${targetTab}`);
 
+    // Verificar se não estamos no meio de uma operação de filtro
+    if (document.activeElement && document.activeElement.id === 'category-filter') {
+      console.log('🔧 SwipeNavigation: Bloqueando navegação durante filtro de categoria');
+      return;
+    }
+
     // Animar transição
     this.animateTransition(index);
 

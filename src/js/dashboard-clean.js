@@ -410,7 +410,17 @@ export async function renderCleanDashboard(selectedYear, selectedMonth) {
         <!-- Cards de Resumo -->
         <div class="summary-cards">
           <div class="summary-card income">
-            <div class="card-icon">💰</div>
+            <div class="card-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="3" y="6" width="18" height="12" rx="2" stroke="white" stroke-width="2" fill="none"/>
+                <path d="M3 10h18" stroke="white" stroke-width="2"/>
+                <!-- Fundo quadriculado -->
+                <path d="M6 12h2v2h-2z M10 12h2v2h-2z M14 12h2v2h-2z" fill="white" opacity="0.3"/>
+                <path d="M6 14h2v2h-2z M10 14h2v2h-2z M14 14h2v2h-2z" fill="white" opacity="0.3"/>
+                <!-- Gráfico de linha crescente -->
+                <path d="M6 16l2-2 2-1 2-3 2 2" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
             <div class="card-content">
               <div class="card-title">Receitas</div>
               <div class="card-value">R$ ${receitas.toFixed(0)}</div>
@@ -419,7 +429,17 @@ export async function renderCleanDashboard(selectedYear, selectedMonth) {
           </div>
           
           <div class="summary-card expense">
-            <div class="card-icon">🛒</div>
+            <div class="card-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="3" y="6" width="18" height="12" rx="2" stroke="white" stroke-width="2" fill="none"/>
+                <path d="M3 10h18" stroke="white" stroke-width="2"/>
+                <!-- Fundo quadriculado -->
+                <path d="M6 12h2v2h-2z M10 12h2v2h-2z M14 12h2v2h-2z" fill="white" opacity="0.3"/>
+                <path d="M6 14h2v2h-2z M10 14h2v2h-2z M14 14h2v2h-2z" fill="white" opacity="0.3"/>
+                <!-- Gráfico de linha decrescente -->
+                <path d="M6 12l2 2 2-1 2 3 2-2" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
             <div class="card-content">
               <div class="card-title">Despesas</div>
               <div class="card-value">R$ ${despesas.toFixed(0)}</div>

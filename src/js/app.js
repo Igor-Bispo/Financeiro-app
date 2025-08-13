@@ -1,4 +1,6 @@
 import '../css/styles.css';
+import '../css/recorrentes-clean.css';
+import '../css/notifications-clean.css';
 
 import './showAddRecorrenteModal.js';
 import './showAddTransactionModal.js';
@@ -45,7 +47,18 @@ import { Modal } from './ui/Modal.js';
 import { Snackbar } from './ui/Snackbar.js';
 import { Analytics } from './ui/Analytics.js';
 import { renderAnalytics } from './ui/AnalyticsRoute.js';
+import { AnalyticsClean } from './analytics-clean.js';
 import { renderCleanDashboard } from './dashboard-clean.js';
+import { renderCleanCategories } from './categories-clean.js';
+import { renderCleanTransactions } from './transactions-clean.js';
+import { renderCleanRecorrentes } from './recorrentes-clean.js';
+import { renderCleanNotifications } from './notifications-clean.js';
+
+// Tornar funções limpas globais
+window.renderCleanTransactions = renderCleanTransactions;
+window.renderCleanCategories = renderCleanCategories;
+window.renderCleanRecorrentes = renderCleanRecorrentes;
+window.renderCleanNotifications = renderCleanNotifications;
 
 // Tornar Modal e Snackbar globais para uso em outros módulos
 window.Modal = Modal;
@@ -2182,184 +2195,27 @@ function closeModalAlertas() {
 
 // Função para renderizar transações
 function renderTransactions() {
+  console.log('🔄 renderTransactions chamada');
+  console.log('🔄 window.renderCleanTransactions existe?', !!window.renderCleanTransactions);
+  
+  // Sempre usar o novo design limpo das transações
+  if (window.renderCleanTransactions) {
+    console.log('✅ Usando design limpo das transações');
+    window.renderCleanTransactions();
+    return;
+  }
+  
+  // Se não estiver disponível, mostrar mensagem de erro
   const content = document.getElementById('app-content');
   content.innerHTML = `
-    <div class="tab-container">
-      <div class="tab-header">
-        <h2 class="tab-title-highlight">📋 Transações</h2>
-        <div class="flex items-center gap-2">
-                      <button id="add-transaction-btn" class="btn-primary">
-              <span class="icon-standard">➕</span>
-              <span class="hidden sm:inline">Nova Transação</span>
-              <span class="sm:hidden">Nova</span>
-            </button>
-            <button id="voice-btn" class="btn-secondary">
-              <span class="icon-standard">🎤</span>
-              <span class="hidden sm:inline">Voz</span>
-              <span class="sm:hidden">Voz</span>
-            </button>
-        </div>
-      </div>
-      <div class="tab-content">
-        <div class="content-spacing">
-          <!-- Filtros de pesquisa e categoria -->
-          <div class="mb-4 space-y-3">
-            <!-- Campo de pesquisa -->
-            <div class="relative">
-              <input 
-                type="text" 
-                id="transaction-search" 
-                placeholder="🔍 Pesquisar transações..." 
-                class="w-full px-4 py-2 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-              />
-              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <span class="text-gray-400">🔍</span>
-              </div>
-            </div>
-            
-            <!-- Filtro de categoria -->
-            <div class="flex flex-col sm:flex-row gap-2">
-              <div class="relative flex-1">
-                <select 
-                  id="category-filter" 
-                  class="w-full px-4 py-2 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 appearance-none"
-                  onchange="window.handleCategoryFilter()"
-                >
-                  <option value="">🏷️ Todas as categorias</option>
-                  ${window.appState.categories?.map(cat => 
-                    `<option value="${cat.id}">${cat.nome} (${cat.tipo})</option>`
-                  ).join('') || ''}
-                </select>
-                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <span class="text-gray-400">🏷️</span>
-                </div>
-                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                  <span class="text-gray-400">▼</span>
-                </div>
-              </div>
-              
-              <!-- Filtro de tipo -->
-              <div class="relative">
-                <select 
-                  id="type-filter" 
-                  class="w-full sm:w-auto px-4 py-2 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 appearance-none"
-                >
-                  <option value="">💰 Todos os tipos</option>
-                  <option value="receita">💚 Receitas</option>
-                  <option value="despesa">❤️ Despesas</option>
-                </select>
-                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <span class="text-gray-400">💰</span>
-                </div>
-                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                  <span class="text-gray-400">▼</span>
-                </div>
-              </div>
-              
-              <!-- Botão limpar filtros -->
-              <button 
-                id="clear-filters-btn" 
-                class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200 flex items-center gap-2"
-                title="Limpar filtros"
-              >
-                <span>🗑️</span>
-                <span class="hidden sm:inline">Limpar</span>
-              </button>
-            </div>
-            
-            <!-- Resultados da pesquisa -->
-            <div id="transaction-search-results" class="text-sm text-gray-600 dark:text-gray-400 hidden">
-              <span id="transaction-search-count">0</span> transação(ões) encontrada(s)
-              <span id="active-filters" class="ml-2"></span>
-            </div>
-          </div>
-          
-          <div id="transactions-list">
-            ${window.appState.transactions?.length === 0
-            ? `
-            <div class="text-center py-8">
-              <div class="text-4xl mb-4">📋</div>
-              <div class="text-lg font-semibold text-gray-800 dark:text-white mb-2">Nenhuma transação encontrada</div>
-              <div class="text-gray-600 dark:text-gray-400">Adicione sua primeira transação para começar</div>
-            </div>
-          `
-            : window.appState.transactions
-              ?.map(t => {
-                const categoria = window.appState.categories?.find(c => c.id === t.categoriaId);
-                const data = t.createdAt && t.createdAt.toDate ? t.createdAt.toDate().toLocaleDateString('pt-BR') : new Date(t.createdAt).toLocaleDateString('pt-BR');
-                const isReceita = t.tipo === 'receita';
-                
-                return `
-            <div class="list-item ${isReceita ? 'border-l-4 border-l-green-500' : 'border-l-4 border-l-red-500'}">
-              <div class="flex-1 min-w-0">
-                <div class="list-item-title truncate">${t.descricao}</div>
-                <div class="list-item-subtitle text-xs sm:text-sm">
-                  ${categoria?.nome || 'Sem categoria'} • ${data}
-                  ${t.recorrenteId ? ' • Recorrente' : ''}
-                  ${(() => {
-                    if (!t.recorrenteId) return '';
-                    
-                    // Calcular parcela se não estiver salva
-                    let parcelaAtual = t.parcelaAtual;
-                    let parcelasTotal = t.parcelasTotal;
-                    
-                    if (!parcelaAtual || !parcelasTotal) {
-                      const recorrente = window.appState.recorrentes?.find(r => r.id === t.recorrenteId);
-                      if (recorrente) {
-                        parcelasTotal = recorrente.parcelasTotal;
-                        if (window.calcularParcelaRecorrente) {
-                          const now = new Date();
-                          parcelaAtual = window.calcularParcelaRecorrente(recorrente, now.getFullYear(), now.getMonth() + 1);
-                        } else {
-                          parcelaAtual = 1;
-                        }
-                      } else {
-                        parcelaAtual = 1;
-                        parcelasTotal = 1;
-                      }
-                    }
-                    
-                    if (parcelasTotal && parcelasTotal > 1) {
-                      return ` • ${parcelaAtual} de ${parcelasTotal}`;
-                    } else {
-                      return ' • Infinito';
-                    }
-                  })()}
-                </div>
-              </div>
-              <div class="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-                <span class="text-sm sm:text-base font-bold ${isReceita ? 'text-green-600' : 'text-red-600'}">
-                  ${isReceita ? '+' : '-'}R$ ${parseFloat(t.valor).toFixed(2)}
-                </span>
-                <div class="flex gap-1">
-                  <button onclick="editTransaction('${t.id}')" class="btn-secondary mobile-btn">
-                    <span class="icon-standard">✏️</span>
-                  </button>
-                  <button onclick="window.deleteTransactionWithConfirmation && window.deleteTransactionWithConfirmation('${t.id}', '${t.descricao.replace(/'/g, "\\'")}')" class="btn-danger mobile-btn">
-                    <span class="icon-standard">🗑️</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          `;
-              })
-              .join('') || ''}
-          </div>
-        </div>
-      </div>
+    <div class="text-center py-8">
+      <div class="text-4xl mb-4">❌</div>
+      <div class="text-lg font-semibold text-gray-800 dark:text-white mb-2">Erro ao carregar transações</div>
+      <div class="text-gray-600 dark:text-gray-400">O módulo de transações não está disponível</div>
     </div>
   `;
-  // Configurar botões da tela de transações
-  setTimeout(() => {
-    setupTransactionButtons();
-  }, 100);
-  
-  // Configurar filtro de pesquisa
-  setupTransactionSearch();
-  
-  renderFAB();
-  // Remover renderBottomNav daqui - deve ser chamado apenas pelo router
-  // renderBottomNav('/transactions');
+  return;
+
 }
 
 // Função para configurar pesquisa e filtros de transações
@@ -2445,20 +2301,7 @@ function setupTransactionSearch() {
   // Event listeners para todos os filtros
   searchInput.addEventListener('input', applyFilters);
   
-  // Função global para filtro de categoria
-  window.handleCategoryFilter = function() {
-    console.log('🔧 Category filter changed via onchange');
-    console.log('🔧 Current location:', window.location.hash);
-    
-    // Garantir que estamos na aba de transações
-    if (window.location.hash !== '#/transactions') {
-      console.log('🔧 Não está na aba de transações, ignorando');
-      return;
-    }
-    
-    console.log('🔧 Aplicando filtros...');
-    applyFilters();
-  };
+
   
   typeFilter.addEventListener('change', applyFilters);
   
@@ -2637,6 +2480,13 @@ function calcularNumeroParcela(transacao) {
 
 // Função para renderizar categorias
 async function renderCategories() {
+  // Usar o novo design limpo das categorias
+  if (window.renderCleanCategories) {
+    await window.renderCleanCategories();
+    return;
+  }
+  
+  // Fallback para o design antigo
   await loadTransactions();
   await loadRecorrentes();
   const content = document.getElementById('app-content');
@@ -3181,18 +3031,33 @@ async function router(path) {
       console.log('✅ Categorias renderizadas');
       break;
     case '/analytics':
-      console.log('🔄 Renderizando análises...');
-      await renderAnalytics();
-      renderBottomNav('/analytics');
-      console.log('✅ Análises renderizadas');
-      break;
+  console.log('🔄 Renderizando análises melhoradas...');
+  await renderCleanAnalytics();
+  renderBottomNav('/analytics');
+  console.log('✅ Análises melhoradas renderizadas');
+  break;
     case '/recorrentes':
-      console.log('🔄 Renderizando recorrentes...');
-      if (window._renderRecorrentes) {
+      console.log('🔄 Renderizando recorrentes melhoradas...');
+      if (window.renderCleanRecorrentes) {
+        const content = document.getElementById('app-content');
+        if (content) {
+          window.renderCleanRecorrentes().then(container => {
+            content.innerHTML = '';
+            content.appendChild(container);
+          }).catch(error => {
+            console.error('❌ Erro ao renderizar recorrentes:', error);
+            // Fallback para versão antiga
+            if (window._renderRecorrentes) {
+              window._renderRecorrentes();
+            }
+          });
+        }
+      } else if (window._renderRecorrentes) {
+        // Fallback para versão antiga
         window._renderRecorrentes();
       } else {
-        // Fallback se a função não existir
-        console.log('⚠️ Função _renderRecorrentes não encontrada, usando fallback');
+        // Fallback se nenhuma função existir
+        console.log('⚠️ Nenhuma função de recorrentes encontrada, usando fallback');
         const content = document.getElementById('app-content');
         if (content) {
           content.innerHTML = `
@@ -3220,16 +3085,33 @@ async function router(path) {
       }
       renderFAB();
       renderBottomNav('/recorrentes');
-      console.log('✅ Recorrentes renderizadas');
+      console.log('✅ Recorrentes melhoradas renderizadas');
       break;
     case '/notifications':
-      console.log('🔄 Renderizando notificações...');
-      if (window.renderNotifications) {
+      console.log('🔄 Renderizando notificações melhoradas...');
+      if (window.renderCleanNotifications) {
+        const content = document.getElementById('app-content');
+        if (content) {
+          window.renderCleanNotifications().then(container => {
+            content.innerHTML = '';
+            content.appendChild(container);
+          }).catch(error => {
+            console.error('❌ Erro ao renderizar notificações:', error);
+            // Fallback para versão antiga
+            if (window.renderNotifications) {
+              window.loadNotifications().then(() => {
+                window.renderNotifications();
+              });
+            }
+          });
+        }
+      } else if (window.renderNotifications) {
+        // Fallback para versão antiga
         await window.loadNotifications();
         window.renderNotifications();
       } else {
-        // Fallback se a função não existir
-        console.log('⚠️ Função renderNotifications não encontrada, usando fallback');
+        // Fallback se nenhuma função existir
+        console.log('⚠️ Nenhuma função de notificações encontrada, usando fallback');
         const content = document.getElementById('app-content');
         if (content) {
           content.innerHTML = `
@@ -3252,7 +3134,7 @@ async function router(path) {
       }
       renderFAB();
       renderBottomNav('/notifications');
-      console.log('✅ Notificações renderizadas');
+      console.log('✅ Notificações melhoradas renderizadas');
       break;
     case '/settings':
       console.log('🔄 Renderizando configurações...');
@@ -4202,6 +4084,26 @@ async function processVoiceCommand(transcript, type) {
     }
   } else {
     console.warn('⚠️ Sistema de voz não disponível');
+  }
+}
+
+// Função para renderizar análises limpas
+async function renderCleanAnalytics() {
+  console.log('🔄 Renderizando análises limpas...');
+  const content = document.getElementById('app-content');
+  if (!content) {
+    console.error('❌ Elemento app-content não encontrado');
+    return;
+  }
+  
+  try {
+    const analyticsElement = await AnalyticsClean.renderCleanAnalytics();
+    content.innerHTML = '';
+    content.appendChild(analyticsElement);
+    console.log('✅ Análises limpas renderizadas com sucesso');
+  } catch (error) {
+    console.error('❌ Erro ao renderizar análises limpas:', error);
+    content.innerHTML = '<div class="error-message">Erro ao carregar análises</div>';
   }
 }
 
