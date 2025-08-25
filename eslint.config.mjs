@@ -61,7 +61,7 @@ export default [
     rules: {
       'no-undef': 'error',
       'no-unused-vars': 'warn',
-      'no-console': process.env.NODE_ENV === 'production' ? 'error' : 'warn',
+      'no-console': 'off',
       'semi': ['error', 'always'],
       'quotes': ['error', 'single'],
       'indent': ['error', 2],

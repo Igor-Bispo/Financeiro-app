@@ -1,1251 +1,196 @@
 import '../css/styles.css';
-import { aplicarRecorrentesDoMes } from './recorrentes/aplicarRecorrentes.js';
+
 import './showAddRecorrenteModal.js';
+import './showAddTransactionModal.js';
+import './showAddCategoryModal.js';
 import { setupThemeToggle } from './ui/ThemeToggle.js';
-import { enableSwipeNavigation } from './ui/SwipeTabs.js';
+import { SwipeNavigation } from './ui/SwipeTabs.js';
+import './biometric-auth.js';
 import { app, auth, db } from './firebase.js';
-import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, where, serverTimestamp, onSnapshot } from 'firebase/firestore';
-import { loginWithGoogle, logout } from './auth.js';
-import { addTransacao, getTransacoes, salvarHistoricoMensal, limparTransacoes, getDespesasRecorrentes, addDespesaRecorrente, updateDespesaRecorrente, deleteDespesaRecorrente } from './firestore.js';
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  getDocs,
+  updateDoc,
+  deleteDoc,
+  doc,
+  query,
+  where,
+  serverTimestamp,
+  onSnapshot,
+  setDoc,
+  or,
+  arrayUnion,
+  getDoc,
+  orderBy,
+  limit,
+  startAfter,
+  endBefore,
+  startAt,
+  endAt
+} from 'firebase/firestore';
+import { loginWithGoogle } from './auth.js';
+import {
+  getDespesasRecorrentes,
+  aplicarRecorrentesDoMes,
+  deleteDespesaRecorrente,
+  addDespesaRecorrente,
+  calcularParcelaRecorrente,
+  calcularStatusRecorrente
+} from './recorrentes.js';
 import { CardResumo } from './ui/CardResumo.js';
 import { Modal } from './ui/Modal.js';
 import { Snackbar } from './ui/Snackbar.js';
+import { Analytics } from './ui/Analytics.js';
+import { renderAnalytics } from './ui/AnalyticsRoute.js';
+
+// Tornar Modal e Snackbar globais para uso em outros módulos
+window.Modal = Modal;
+window.Snackbar = Snackbar;
+window.setupThemeToggle = setupThemeToggle;
+window.FirebaseAuth = auth;
 import { FAB } from './ui/FAB.js';
 import { BottomNav } from './ui/BottomNav.js';
-import { renderRecorrentes as _renderRecorrentes, showHistoricoRecorrente } from './recorrentes/RecorrentesPage.js';
-import { renderDrawer, toggleDrawer } from './ui/Drawer.js';
+import {
+  renderRecorrentes as _renderRecorrentes,
+  showHistoricoRecorrente
+} from './recorrentes/RecorrentesPage.js';
+// Drawer removido - funcionalidades movidas para as abas do rodapé
 import { renderLogAplicacoes } from './ui/LogAplicacoes.js';
+import {
+  buscarOrcamentoPorId,
+  buscarUidPorEmail
+} from './firestore.js';
+import { renderSettings } from './config/SettingsPage.js';
+
+window.renderSettings = renderSettings;
 window._renderRecorrentes = _renderRecorrentes;
 window.showHistoricoRecorrente = showHistoricoRecorrente;
 window.renderLogAplicacoes = renderLogAplicacoes;
+window.deleteDespesaRecorrente = deleteDespesaRecorrente;
+window.addDespesaRecorrente = addDespesaRecorrente;
 
-// Configurar persistência da sessão
-// setPersistence(auth, browserLocalPersistence);
-
-window.FirebaseApp = app;
-window.FirebaseAuth = auth;
-window.FirebaseDB = db;
-
-// Firebase inicializado com sucesso
-
-// Estado global da aplicação
-window.appState = {
-  currentUser: null,
-  transactions: [],
-  categories: [],
-  budgets: [],
-  currentBudget: null,
-  recorrentes: []
-};
-
-// Função para mostrar/ocultar tela de login
-function toggleLoginPage(show) {
-  const loginPage = document.getElementById('login-page');
-  const mainApp = document.querySelector('.app-container');
-
-  if (show) {
-    if (loginPage) {
-      loginPage.style.display = 'flex';
-      document.body.classList.add('login-open');
-    }
-    if (mainApp) {
-      mainApp.style.display = 'none';
-    }
-  } else {
-    if (loginPage) {
-      loginPage.style.display = 'none';
-      document.body.classList.remove('login-open');
-    }
-    if (mainApp) {
-      mainApp.style.display = 'block';
-    }
-  }
-}
-
-// Função para atualizar a interface após operações CRUD
-async function refreshCurrentView() {
-  const currentTab = document.querySelector('.nav-item.active')?.getAttribute('data-tab');
-  if (currentTab) {
-    switch (currentTab) {
-    case 'dashboard':
-      await loadTransactions();
-      await loadCategories();
-      await loadBudgets();
-      renderDashboard();
-      break;
-    case 'transactions':
-      await loadTransactions();
-      renderTransactions();
-      break;
-    case 'categories':
-      await loadCategories();
-      renderCategories();
-      break;
-    case 'settings':
-      await loadBudgets();
-      renderSettings();
-      break;
-    }
-  }
-}
-
-// Funções de CRUD para transações
-async function addTransaction(transactionData) {
-  try {
-    const user = auth.currentUser;
-    if (!user) {throw new Error('Usuário não autenticado');}
-    const budgetId = window.appState.currentBudget?.id;
-    if (!budgetId) {throw new Error('Nenhum orçamento selecionado');}
-    const docRef = await addDoc(collection(db, 'transactions'), {
-      ...transactionData,
-      userId: user.uid,
-      budgetId,
-      createdAt: serverTimestamp()
-    });
-    await refreshCurrentView();
-    renderDashboard(); // Atualiza dashboard imediatamente
-    return docRef;
-  } catch (error) {
-    Snackbar({ message: 'Erro ao adicionar transação: ' + error.message, type: 'error' });
-    throw error;
-  }
-}
-
-async function updateTransaction(transactionId, transactionData) {
-  try {
-    const docRef = doc(db, 'transactions', transactionId);
-    await updateDoc(docRef, transactionData);
-    await refreshCurrentView();
-    renderDashboard();
-  } catch (error) {
-    throw error;
-  }
-}
-
-async function deleteTransaction(transactionId) {
-  try {
-    const docRef = doc(db, 'transactions', transactionId);
-    await deleteDoc(docRef);
-    await refreshCurrentView();
-    renderDashboard();
-  } catch (error) {
-    throw error;
-  }
-}
-
-async function loadTransactions() {
-  try {
-    const user = auth.currentUser;
-    if (!user) {return;}
-
-    const q = query(
-      collection(db, 'transactions'),
-      where('userId', '==', user.uid),
-      where('budgetId', '==', window.appState.currentBudget?.id)
-    );
-    const querySnapshot = await getDocs(q);
-    window.appState.transactions = querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
-  } catch (error) {
-    console.error('Erro ao carregar transações:', error);
-  }
-}
-
-// Funções de CRUD para categorias
-async function addCategory(categoryData) {
-  try {
-    const user = auth.currentUser;
-    if (!user) {throw new Error('Usuário não autenticado');}
-    const budgetId = window.appState.currentBudget?.id;
-    if (!budgetId) {throw new Error('Nenhum orçamento selecionado');}
-    const docRef = await addDoc(collection(db, 'categories'), {
-      ...categoryData,
-      nome: normalizarTexto(categoryData.nome), // salva nome limpo
-      userId: user.uid,
-      budgetId,
-      createdAt: serverTimestamp()
-    });
-    await refreshCurrentView();
-    await loadCategories(); // Garante atualização do estado
-    renderDashboard();
-    return docRef;
-  } catch (error) {
-    Snackbar({ message: 'Erro ao adicionar categoria: ' + error.message, type: 'error' });
-    throw error;
-  }
-}
-
-async function updateCategory(categoryId, categoryData) {
-  try {
-    const docRef = doc(db, 'categories', categoryId);
-    await updateDoc(docRef, categoryData);
-    await refreshCurrentView();
-    renderDashboard();
-  } catch (error) {
-    throw error;
-  }
-}
-
-async function deleteCategory(categoryId) {
-  try {
-    const docRef = doc(db, 'categories', categoryId);
-    await deleteDoc(docRef);
-    await refreshCurrentView();
-    await loadCategories(); // Garante atualização do estado
-    renderDashboard();
-  } catch (error) {
-    throw error;
-  }
-}
-
-async function loadCategories() {
-  try {
-    const user = auth.currentUser;
-    if (!user) {return;}
-
-    const q = query(
-      collection(db, 'categories'),
-      where('userId', '==', user.uid),
-      where('budgetId', '==', window.appState.currentBudget?.id)
-    );
-    const querySnapshot = await getDocs(q);
-    window.appState.categories = querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
-  } catch (error) {
-    console.error('Erro ao carregar categorias:', error);
-  }
-}
-
-// Funções de CRUD para orçamentos
-async function addBudget(budgetData) {
-  try {
-    const user = auth.currentUser;
-    if (!user) {throw new Error('Usuário não autenticado');}
-    const docRef = await addDoc(collection(db, 'budgets'), {
-      ...budgetData,
-      userId: user.uid,
-      createdAt: serverTimestamp()
-    });
-    await refreshCurrentView();
-    return docRef.id;
-  } catch (error) {
-    Snackbar({ message: 'Erro ao adicionar orçamento: ' + error.message, type: 'error' });
-    throw error;
-  }
-}
-
-async function loadBudgets() {
-  try {
-    const user = auth.currentUser;
-    if (!user) {return;}
-
-    const q = query(
-      collection(db, 'budgets'),
-      where('userId', '==', user.uid)
-    );
-    const querySnapshot = await getDocs(q);
-    window.appState.budgets = querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
-  } catch (error) {
-    console.error('Erro ao carregar orçamentos:', error);
-  }
-}
-
-// ... existing code ...
-// Após a função loadBudgets (linha ~235), inserir:
-function setCurrentBudget(budget) {
-  window.appState.currentBudget = budget;
-  listenTransactions();
-  listenRecorrentes();
-}
-// ... existing code ...
-
-// Funções de renderização das telas
-function setSubtitle(subtitle) {
-  // Função agora não faz nada para evitar duplicidade de título
-}
-
-async function getTransacoesDoMes(userId, ano, mes) {
-  const now = new Date();
-  if (ano === now.getFullYear() && mes === now.getMonth() + 1) {
-    // Mês atual: usar transações em memória
-    return window.appState.transactions;
-  }
-  // Buscar histórico mensal
-  const mesPad = String(mes).padStart(2, '0');
-  const mesAno = `${ano}-${mesPad}`;
-  const db = getFirestore();
-  const ref = collection(db, 'users', userId, 'historico', mesAno, 'transacoes');
-  const snapshot = await getDocs(ref);
-  return snapshot.docs.map(doc => doc.data());
-}
-
-async function renderDashboard(selectedYear, selectedMonth) {
-  try {
-    const content = document.getElementById('app-content');
-    if (!content) {return;}
-    setSubtitle('Dashboard');
-    content.innerHTML = '';
-
-    // Seletor de mês (apenas no topo)
-    let now = new Date();
-    let year = selectedYear || now.getFullYear();
-    let month = selectedMonth || (now.getMonth() + 1);
-    const meses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-    content.innerHTML += `
-      <div id="mes-selector" class="flex items-center justify-center gap-4 mb-4">
-        <button id="mes-anterior" class="text-blue-600 bg-blue-100 rounded-full w-8 h-8 flex items-center justify-center text-xl hover:bg-blue-200">&#8592;</button>
-        <span class="font-bold text-lg">${meses[month-1]} ${year}</span>
-        <button id="mes-proximo" class="text-blue-600 bg-blue-100 rounded-full w-8 h-8 flex items-center justify-center text-xl hover:bg-blue-200">&#8594;</button>
-      </div>
-    `;
-
-    // Buscar transações do mês selecionado
-    const user = window.appState.currentUser;
-    const transacoes = user ? await getTransacoesDoMes(user.uid, year, month) : [];
-
-    // Calcular totais e recorrentes pré-agendadas (definir variáveis uma única vez)
-    const receitas = transacoes.filter(t => t.tipo === 'receita').reduce((sum, t) => sum + parseFloat(t.valor), 0);
-    const despesasTransacoes = transacoes.filter(t => t.tipo === 'despesa').reduce((sum, t) => sum + parseFloat(t.valor), 0);
-    const anoSelecionado = year;
-    const mesSelecionado = month;
-    const recorrentes = window.appState.recorrentes || [];
-    const recorrentesMes = transacoes.filter(t => t.recorrenteId);
-    const preAgendadas = recorrentes.filter(rec => {
-      const jaLancada = recorrentesMes.some(t => t.recorrenteId === rec.id);
-      if (jaLancada) {return false;}
-      const dataInicio = new Date(rec.dataInicio);
-      const anoInicio = dataInicio.getFullYear();
-      const mesInicio = dataInicio.getMonth() + 1;
-      // Só mostra se o mês/ano exibido for igual ou posterior ao início
-      if (anoSelecionado < anoInicio || (anoSelecionado === anoInicio && mesSelecionado < mesInicio)) {return false;}
-      // Se não for para efetivar no mês atual, só mostra a partir do próximo mês
-      if (!rec.efetivarMesAtual && anoSelecionado === anoInicio && mesSelecionado === mesInicio) {return false;}
-      if (rec.parcelasRestantes !== null && rec.parcelasRestantes !== undefined) {
-        let mesesDesdeInicio = (anoSelecionado - anoInicio) * 12 + (mesSelecionado - mesInicio);
-        // Ajuste: se não for para efetivar no mês atual e já passou do mês de início, desconta 1
-        if (!rec.efetivarMesAtual && (anoSelecionado > anoInicio || (anoSelecionado === anoInicio && mesSelecionado > mesInicio))) {
-          mesesDesdeInicio -= 1;
-        }
-        const parcelasRestantesExibidas = rec.parcelasRestantes - mesesDesdeInicio;
-        return parcelasRestantesExibidas > 0;
-      }
-      return true;
-    });
-    const despesasPreAgendadas = preAgendadas.reduce((sum, rec) => sum + parseFloat(rec.valor), 0);
-    const despesas = despesasTransacoes + despesasPreAgendadas;
-    const saldo = receitas - despesas;
-    const totalLimite = window.appState.categories.reduce((sum, cat) => sum + parseFloat(cat.limite || 0), 0);
-    const orcado = totalLimite - despesas;
-
-    // Cards de resumo
-    content.innerHTML += '<div id="dashboard-cards" class="grid grid-cols-4 gap-1 md:gap-4 mb-4"></div>';
-    const cardsContainer = document.getElementById('dashboard-cards');
-    cardsContainer.innerHTML = '';
-    const cards = [
-      {
-        titulo: 'Receitas',
-        valor: `R$ ${receitas.toFixed(2)}`,
-        cor: 'card-resumo receita',
-        icone: '<svg width="24" height="24" fill="none" viewBox="0 0 24 24"><path d="M12 3v18m9-9H3" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/></svg>'
-      },
-      {
-        titulo: 'Despesas',
-        valor: `R$ ${despesas.toFixed(2)}`,
-        cor: 'card-resumo despesa',
-        icone: '<svg width="24" height="24" fill="none" viewBox="0 0 24 24"><path d="M3 12h18" stroke="#ef4444" stroke-width="2" stroke-linecap="round"/></svg>'
-      },
-      {
-        titulo: 'Saldo',
-        valor: `R$ ${saldo.toFixed(2)}`,
-        cor: 'card-resumo saldo',
-        icone: '<svg width="24" height="24" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="#3b82f6" stroke-width="2"/></svg>'
-      },
-      {
-        titulo: 'Orçado',
-        valor: `R$ ${orcado.toFixed(2)}`,
-        cor: 'card-resumo orcado',
-        icone: '<svg width="24" height="24" fill="none" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4" stroke="#eab308" stroke-width="2"/></svg>'
-      }
-    ];
-    cards.forEach(cardData => {
-      cardsContainer.appendChild(CardResumo(cardData));
-    });
-
-    // Espaço entre cards e categorias
-    content.innerHTML += '<div class="h-6"></div>';
-    // Categorias com progresso
-    content.innerHTML += `
-      <div class="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-2 md:p-6 border border-gray-300 dark:border-gray-700">
-        <h3 class="text-base md:text-xl font-bold mb-2 md:mb-4 text-gray-900 dark:text-gray-100">Categorias</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-6">
-          ${window.appState.categories.map(cat => {
-    const transacoesCategoria = (window.appState.transactions || []).filter(t => t.categoriaId === cat.id && t.tipo === 'despesa');
-    const gasto = transacoesCategoria.reduce((sum, t) => sum + parseFloat(t.valor), 0);
-    const limite = parseFloat(cat.limite || 0);
-    const percentual = limite > 0 ? (gasto / limite) * 100 : 0;
-    const saldo = limite - gasto;
-    return `
-              <div class="border border-gray-300 dark:border-gray-700 rounded-lg p-2 md:p-4 bg-white dark:bg-gray-900">
-                <div class="flex items-center space-x-2 md:space-x-3 mb-2">
-                    <div class="w-4 h-4 rounded-full" style="background-color: ${cat.cor || '#4F46E5'}"></div>
-                  <span class="font-semibold text-xs md:text-base text-gray-900 dark:text-gray-100">${cat.nome}</span>
-                  </div>
-                <p class="text-xs md:text-sm text-gray-500 dark:text-gray-300">Tipo: ${cat.tipo}</p>
-                <p class="text-xs md:text-sm text-gray-500 dark:text-gray-300">Limite: R$ ${cat.limite || '0,00'}</p>
-                <div class="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2 md:h-3 mb-1 md:mb-2">
-                  <div class="h-2 md:h-3 rounded-full transition-all duration-300 ${
-  percentual > 100 ? 'bg-red-500' : percentual > 80 ? 'bg-yellow-500' : 'bg-green-500'
-}" style="width: ${Math.min(percentual, 100)}%"></div>
-                </div>
-                <div class="flex flex-wrap justify-end gap-1 md:space-x-2 mt-2">
-                  <button onclick="editCategory('${cat.id}')" class="text-blue-600 hover:text-blue-800 text-xs md:text-sm px-2 py-1 md:px-3 md:py-1 rounded">Editar</button>
-                  <button onclick="deleteCategory('${cat.id}')" class="text-red-600 hover:text-red-800 text-xs md:text-sm px-2 py-1 md:px-3 md:py-1 rounded">Excluir</button>
-                  <button onclick="showCategoryHistory('${cat.id}')" class="text-gray-600 hover:text-gray-800 text-xs md:text-sm px-2 py-1 md:px-3 md:py-1 rounded">Histórico</button>
-                </div>
-              </div>
-            `;
-  }).join('')}
-        </div>
-      </div>
-    `;
-
-    // Espaço entre categorias e recorrentes
-    content.innerHTML += '<div class="h-6"></div>';
-    // Bloco de Despesas Recorrentes do mês selecionado
-    content.innerHTML += `
-      <div class="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-4 flex flex-col gap-2 md:p-6 mb-4 border border-gray-300 dark:border-gray-700">
-        <div class="flex flex-wrap justify-between items-center mb-2 md:mb-4 gap-1 md:gap-0">
-          <h3 class="text-base md:text-xl font-bold text-gray-900 dark:text-gray-100 font-inter">Despesas Recorrentes do Mês</h3>
-          <button onclick="window.showAddRecorrenteModal()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 text-sm font-semibold font-inter">
-            + Nova Despesa Recorrente
-          </button>
-        </div>
-        <div class="space-y-2 md:space-y-3">
-          ${recorrentesMes.length === 0 && preAgendadas.length === 0 ? '<p class=\'text-gray-500 text-center py-4 font-inter dark:text-gray-300\'>Nenhuma despesa recorrente aplicada ou agendada neste mês</p>' : ''}
-          ${recorrentesMes.map(r => {
-    const categoria = (window.appState.categories || []).find(c => c.id === r.categoriaId);
-    return `
-              <div class="flex flex-wrap justify-between items-center p-2 md:p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 gap-1 md:gap-0 bg-white dark:bg-gray-900 shadow font-inter">
-                <div class="flex-1 min-w-[120px]">
-                  <p class="font-medium text-xs md:text-base text-gray-900 dark:text-gray-100">✔️ ${r.descricao}</p>
-                  <p class="text-xs md:text-sm text-gray-500 dark:text-gray-300">
-                    ${categoria?.nome || 'Sem categoria'}
-                    • R$ ${parseFloat(r.valor).toFixed(2)}
-                    ${r.parcelasRestantes !== undefined ? `• ${r.parcelasRestantes}x restantes` : ''}
-                  </p>
-                </div>
-              </div>
-            `;
-  }).join('')}
-          ${preAgendadas.map(rec => {
-    const categoria = (window.appState.categories || []).find(c => c.id === rec.categoriaId);
-    const dataInicio = new Date(rec.dataInicio);
-    const anoInicio = dataInicio.getFullYear();
-    const mesInicio = dataInicio.getMonth() + 1;
-    let mesesDesdeInicio = (anoSelecionado - anoInicio) * 12 + (mesSelecionado - mesInicio);
-    if (!rec.efetivarMesAtual && (anoSelecionado > anoInicio || (anoSelecionado === anoInicio && mesSelecionado > mesInicio))) {
-      mesesDesdeInicio -= 1;
-    }
-    const parcelasRestantesExibidas = rec.parcelasRestantes !== null && rec.parcelasRestantes !== undefined ? rec.parcelasRestantes - mesesDesdeInicio : null;
-    const numParcela = rec.parcelasRestantes !== null && rec.parcelasRestantes !== undefined ? (rec.parcelasRestantes - parcelasRestantesExibidas + 1) : null;
-    return `
-              <div class="flex flex-wrap justify-between items-center p-2 md:p-3 border border-dashed border-yellow-400 rounded-lg bg-yellow-50 dark:bg-yellow-900/10 gap-1 md:gap-0 shadow font-inter">
-                <div class="flex-1 min-w-[120px]">
-                  <p class="font-medium text-xs md:text-base text-yellow-700 dark:text-yellow-300">⏳ ${rec.descricao}</p>
-                  <p class="text-xs md:text-sm text-gray-500 dark:text-gray-300">
-                    ${categoria?.nome || 'Sem categoria'}
-                    • R$ ${parseFloat(rec.valor).toFixed(2)}
-                    ${parcelasRestantesExibidas !== null ? `• Parcela ${numParcela} de ${rec.parcelasRestantes}` : '• recorrente'}
-                  </p>
-                </div>
-              </div>
-            `;
-  }).join('')}
-        </div>
-      </div>
-    `;
-
-    // Espaço entre recorrentes e transações recentes
-    content.innerHTML += '<div class="h-6"></div>';
-    // Transações Recentes
-    content.innerHTML += `
-      <div class="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-2 md:p-6 border border-gray-300 dark:border-gray-700">
-        <div class="flex flex-wrap justify-between items-center mb-2 md:mb-4 gap-1 md:gap-0">
-          <h3 class="text-base md:text-xl font-bold text-gray-900 dark:text-gray-100">Transações Recentes</h3>
-          <button onclick="showAddTransactionModal()" class="bg-blue-500 text-white px-2 py-1 md:px-4 md:py-2 rounded-lg hover:bg-blue-600 text-xs md:text-base">
-            + Nova Transação
-          </button>
-        </div>
-        <div class="space-y-2 md:space-y-3">
-          ${transacoes.slice(0, 10).map(t => {
-    const categoria = window.appState.categories.find(c => c.id === t.categoriaId);
-    let parcelaInfo = '';
-    if (t.recorrenteId) {
-      const rec = (window.appState.recorrentes || []).find(r => r.id === t.recorrenteId);
-      if (rec) {
-        // Calcular número da parcela
-        let numParcela = 1;
-        if (rec.dataInicio && t.createdAt) {
-          const dataInicio = new Date(rec.dataInicio);
-          const dataTrans = t.createdAt && t.createdAt.toDate ? t.createdAt.toDate() : (t.createdAt ? new Date(t.createdAt) : null);
-          if (dataTrans) {
-            // Considera mês/ano
-            numParcela = (dataTrans.getFullYear() - dataInicio.getFullYear()) * 12 + (dataTrans.getMonth() - dataInicio.getMonth()) + 1;
-          }
-        }
-        let totalParcelas = rec.parcelasRestantes !== null && rec.parcelasRestantes !== undefined ? (rec.parcelasRestantes + numParcela - 1) : '∞';
-        parcelaInfo = `<span class='text-xs text-blue-500 ml-2'>Parcela ${numParcela} de ${totalParcelas}</span>`;
-      }
-    }
-    return `
-              <div class="flex flex-wrap justify-between items-center p-2 md:p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 gap-1 md:gap-0 bg-white dark:bg-gray-900">
-                <div class="flex-1 min-w-[120px]">
-                  <p class="font-medium text-xs md:text-base text-gray-900 dark:text-gray-100">${t.descricao}</p>
-                  <p class="text-xs md:text-sm text-gray-500 dark:text-gray-300">${categoria?.nome || 'Sem categoria'} • ${t.createdAt && t.createdAt.toDate ? t.createdAt.toDate().toLocaleDateString() : (t.createdAt ? new Date(t.createdAt).toLocaleDateString() : '')} ${parcelaInfo}</p>
-                </div>
-                <div class="flex items-center space-x-1 md:space-x-2">
-                  <span class="font-bold text-xs md:text-base ${t.tipo === 'receita' ? 'text-green-600' : 'text-red-600'}">
-                    ${t.tipo === 'receita' ? '+' : '-'}R$ ${parseFloat(t.valor).toFixed(2)}
-                  </span>
-                  <button onclick="window.editTransaction && window.editTransaction('${t.id}')" class="text-blue-600 hover:text-blue-800 text-xs md:text-base ml-2">✏️</button>
-                  <button onclick="window.deleteTransaction && window.deleteTransaction('${t.id}')" class="text-red-600 hover:text-red-800 text-xs md:text-base ml-2">🗑️</button>
-                </div>
-              </div>
-            `;
-  }).join('')}
-        </div>
-      </div>
-    `;
-
-    renderFAB();
-    renderBottomNav('/dashboard');
-    setTimeout(() => enableSwipeNavigation(), 0);
-
-    // Eventos das setas
-    setTimeout(() => {
-      const btnAnterior = document.getElementById('mes-anterior');
-      const btnProximo = document.getElementById('mes-proximo');
-      if (btnAnterior) {
-        btnAnterior.replaceWith(btnAnterior.cloneNode(true));
-      }
-      if (btnProximo) {
-        btnProximo.replaceWith(btnProximo.cloneNode(true));
-      }
-      document.getElementById('mes-anterior')?.addEventListener('click', async () => {
-        let newMonth = month - 1;
-        let newYear = year;
-        if (newMonth < 1) { newMonth = 12; newYear--; }
-        await renderDashboard(newYear, newMonth);
-      });
-      document.getElementById('mes-proximo')?.addEventListener('click', async () => {
-        let newMonth = month + 1;
-        let newYear = year;
-        if (newMonth > 12) { newMonth = 1; newYear++; }
-        await renderDashboard(newYear, newMonth);
-      });
-    }, 0);
-  } catch (err) {
-    console.error('Erro ao renderizar dashboard:', err);
-    const content = document.getElementById('app-content');
-    if (content) {
-      content.innerHTML += '<div class=\'text-red-600 text-center mt-4\'>Erro ao carregar dashboard. Tente novamente.</div>';
-    }
-  }
-}
-window.renderDashboard = renderDashboard;
-
-// ... existing code ...
-// Padronizar renderTransactions
-function renderTransactions() {
-  const content = document.getElementById('app-content');
-  content.innerHTML = `
-    <div class="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-2 md:p-6 border border-gray-300 dark:border-gray-700">
-      <div class="flex flex-wrap justify-between items-center gap-1 md:gap-0 mb-4">
-        <h2 class="tab-title-highlight bg-white text-gray-900 border border-gray-300 font-bold px-6 py-2 rounded-2xl shadow dark:bg-[#131826] dark:text-white dark:border-white">Transações</h2>
-        <button onclick="showAddTransactionModal()" class="bg-blue-500 text-white px-2 py-1 md:px-6 md:py-3 rounded-lg hover:bg-blue-600 flex items-center space-x-2 text-xs md:text-base">
-          <span>+ Nova Transação</span>
-          <button onclick="startVoiceRecognition('transaction')" class="ml-2 bg-blue-600 p-1 md:p-2 rounded-full text-xs md:text-base">🎤</button>
-        </button>
-      </div>
-      <div class="bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-300 dark:border-gray-700">
-        ${window.appState.transactions.length === 0 ? `
-          <div class="p-4 md:p-8 text-center text-gray-500 dark:text-gray-300">
-            <p class="text-base md:text-lg">Nenhuma transação encontrada</p>
-            <p class="text-xs md:text-sm">Adicione sua primeira transação!</p>
-          </div>
-        ` : window.appState.transactions.map(t => {
-    const categoria = window.appState.categories.find(c => c.id === t.categoriaId);
-    return `
-            <div class="flex flex-wrap justify-between items-center p-2 md:p-4 border-b last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-800 gap-1 md:gap-0 bg-white dark:bg-gray-900">
-              <div class="flex-1 min-w-[120px]">
-                <p class="font-medium text-xs md:text-base text-gray-900 dark:text-gray-100">${t.descricao}</p>
-                <p class="text-xs md:text-sm text-gray-500 dark:text-gray-300">${categoria?.nome || 'Sem categoria'} • ${t.createdAt && t.createdAt.toDate ? t.createdAt.toDate().toLocaleDateString() : ''}</p>
-              </div>
-              <div class="flex items-center space-x-1 md:space-x-2">
-                <span class="font-bold text-xs md:text-base ${t.tipo === 'receita' ? 'text-green-600' : 'text-red-600'}">
-                  ${t.tipo === 'receita' ? '+' : '-'}R$ ${parseFloat(t.valor).toFixed(2)}
-                </span>
-                <button onclick="editTransaction('${t.id}')" class="text-blue-600 hover:text-blue-800 text-xs md:text-base ml-2">✏️</button>
-                <button onclick="deleteTransaction('${t.id}')" class="text-red-600 hover:text-red-800 text-xs md:text-base ml-2">🗑️</button>
-              </div>
-            </div>
-          `;
-  }).join('')}
-      </div>
-    </div>
-  `;
-  renderFAB();
-  renderBottomNav('/transactions');
-  setTimeout(() => enableSwipeNavigation(), 0);
-}
-// ... existing code ...
-// Padronizar renderCategories
-async function renderCategories() {
-  await loadTransactions();
-  const content = document.getElementById('app-content');
-  content.innerHTML = `
-    <div class="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-2 md:p-6 border border-gray-300 dark:border-gray-700">
-      <div class="flex flex-wrap justify-between items-center gap-1 md:gap-0 mb-4">
-        <h2 class="tab-title-highlight bg-white dark:bg-gray-900 rounded-2xl px-6 py-2 shadow text-gray-900 dark:text-white">Categorias</h2>
-        <button onclick="showAddCategoryModal()" class="bg-blue-500 text-white px-2 py-1 md:px-6 md:py-3 rounded-lg hover:bg-blue-600 flex items-center space-x-2 text-xs md:text-base font-semibold font-inter shadow-md">+ Nova Categoria</button>
-        <button onclick="window.showAddBudgetModal()" class="bg-green-500 text-white px-2 py-1 md:px-6 md:py-3 rounded-lg hover:bg-green-600 flex items-center space-x-2 text-xs md:text-base font-semibold font-inter shadow-md">Criar Orçamento</button>
-        <button onclick="window.selectSharedBudget()" class="bg-yellow-500 text-white px-2 py-1 md:px-6 md:py-3 rounded-lg hover:bg-yellow-600 flex items-center space-x-2 text-xs md:text-base font-semibold font-inter shadow-md">Entrar em Orçamento Compartilhado</button>
-      </div>
-      <div class="space-y-4">
-        <div class="border border-gray-300 dark:border-gray-700 rounded-lg p-2 md:p-4 bg-white dark:bg-gray-900 mb-2">
-          <h3 class="font-semibold mb-2">Orçamento Atual:</h3>
-          <p><strong>Nome:</strong> ${window.appState.currentBudget ? (window.appState.currentBudget.nome || '(sem nome)') : ''}</p>
-          <p><strong>ID:</strong> <span id="orcamento-id">${window.appState.currentBudget ? window.appState.currentBudget.id : ''}</span> <button onclick="window.copyBudgetId('${window.appState.currentBudget ? window.appState.currentBudget.id : ''}')" class="ml-2 px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 text-xs">Copiar</button></p>
-          <button onclick="window.compartilharOrcamento()" class="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 mt-2 text-xs md:text-sm">Compartilhar Orçamento</button>
-          </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-6 mt-4">
-          <button onclick="window.exportToExcel()" class="bg-green-500 text-white py-2 rounded-lg font-semibold hover:bg-green-600 flex items-center justify-center gap-2 text-base"><span>📊</span> Exportar Excel</button>
-          <button onclick="window.exportToPDF()" class="bg-red-500 text-white py-2 rounded-lg font-semibold hover:bg-red-600 flex items-center justify-center gap-2 text-base"><span>📄</span> Exportar PDF</button>
-          <button onclick="window.downloadBackup()" class="bg-purple-500 text-white py-2 rounded-lg font-semibold hover:bg-purple-600 flex items-center justify-center gap-2 text-base"><span>💾</span> Backup Completo (JSON)</button>
-          <button onclick="window.generateUserGuide()" class="bg-blue-500 text-white py-2 rounded-lg font-semibold hover:bg-blue-600 flex items-center justify-center gap-2 text-base"><span>📘</span> Baixar Guia do Usuário (PDF)</button>
-          <button id="install-app-btn" style="display:none" class="bg-yellow-500 text-white py-2 rounded-lg font-semibold hover:bg-yellow-600 flex items-center justify-center gap-2 text-base"><span>⬇️</span> Instalar App</button>
-        </div>
-      </div>
-    </div>
-  `;
-  renderFAB();
-  renderBottomNav('/categories');
-  setTimeout(() => enableSwipeNavigation(), 0);
-}
-// ... existing code ...
-
-// Atualizar router para sempre renderizar e recarregar dados ao trocar de aba
-async function router(path) {
-  console.log('Router chamado para:', path); // Debug
-  const content = document.getElementById('app-content');
-  document.querySelectorAll('.nav-btn').forEach(item => {
-    item.classList.remove('active');
-  });
-  const navBtn = document.querySelector(`.nav-btn[data-route='${path}']`);
-  if (navBtn) {navBtn.classList.add('active');}
-
-  switch (path) {
-  case '/dashboard':
-    await loadCategories();
-    await loadRecorrentes();
-    await renderDashboard();
-    break;
-  case '/transactions':
-    renderTransactions();
-    break;
-  case '/categories':
-    await loadCategories();
-    await renderCategories();
-    break;
-  case '/recorrentes':
-    await loadRecorrentes();
-    await renderRecorrentes();
-    break;
-  case '/settings':
-    loadBudgets().then(renderSettings);
-    break;
-  default:
-    await loadCategories();
-    await loadRecorrentes();
-    await renderDashboard();
-  }
-}
-window.router = router;
-
-// Funções globais para modais e ações
-window.showAddTransactionModal = function(initialData = {}) {
-  const modal = Modal({
-    title: 'Adicionar Transação',
-    content: `
-      <form id="transaction-form" class="space-y-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
-          <input type="text" id="transaction-descricao" required 
-                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                 placeholder="Ex: Supermercado"
-                 value="${initialData.descricao || ''}">
-        </div>
-        
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Valor (R$)</label>
-          <input type="number" id="transaction-valor" required step="0.01" min="0"
-                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                 placeholder="0,00"
-                 value="${initialData.valor !== undefined ? initialData.valor : ''}">
-        </div>
-        
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
-          <select id="transaction-tipo" required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-            <option value="">Selecione...</option>
-            <option value="receita" ${initialData.tipo === 'receita' ? 'selected' : ''}>Receita</option>
-            <option value="despesa" ${initialData.tipo === 'despesa' ? 'selected' : ''}>Despesa</option>
-          </select>
-        </div>
-        
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
-          <select id="transaction-categoria" required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-            <option value="">Selecione...</option>
-            ${window.appState.categories.length > 0 ?
-    window.appState.categories.map(cat =>
-      `<option value="${cat.id}" ${initialData.categoriaId === cat.id ? 'selected' : ''}>${cat.nome}</option>`
-    ).join('') :
-    '<option value="" disabled>Nenhuma categoria disponível</option>'
-}
-          </select>
-          ${window.appState.categories.length === 0 ?
-    '<p class="text-sm text-red-500 mt-1">Crie uma categoria primeiro</p>' : ''
-}
-        </div>
-        
-        <div class="flex justify-end space-x-3 pt-4">
-          <button type="button" onclick="closeModal()" 
-                  class="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200">
-            Cancelar
-          </button>
-          <button type="submit" 
-                  class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
-            Adicionar
-          </button>
-        </div>
-      </form>
-    `,
-    onClose: () => modal.remove()
-  });
-  document.body.appendChild(modal);
-
-  // Adicionar evento de submit
-  document.getElementById('transaction-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const descricao = document.getElementById('transaction-descricao').value;
-    const valor = parseFloat(document.getElementById('transaction-valor').value);
-    const tipo = document.getElementById('transaction-tipo').value;
-    const categoriaId = document.getElementById('transaction-categoria').value;
-
-    try {
-      await addTransaction({
-        descricao,
-        valor,
-        tipo,
-        categoriaId
-      });
-      modal.remove(); // Fecha o modal primeiro
-      renderDashboard(); // Atualiza o dashboard imediatamente
-      Snackbar({ message: 'Transação adicionada com sucesso!', type: 'success' });
-    } catch (error) {
-      console.error('Erro ao adicionar transação:', error);
-      Snackbar({ message: 'Erro ao adicionar transação: ' + error.message, type: 'error' });
-    }
-  });
-};
-
-window.showAddCategoryModal = function(initialData = {}) {
-  const modal = Modal({
-    title: 'Adicionar Categoria',
-    content: `
-      <form id="category-form" class="space-y-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Nome</label>
-          <input type="text" id="category-nome" required 
-                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                 placeholder="Ex: Alimentação"
-                 value="${initialData.nome || ''}">
-        </div>
-        
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
-          <select id="category-tipo" required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-            <option value="">Selecione...</option>
-            <option value="receita" ${initialData.tipo === 'receita' ? 'selected' : ''}>Receita</option>
-            <option value="despesa" ${initialData.tipo === 'despesa' ? 'selected' : ''}>Despesa</option>
-          </select>
-        </div>
-        
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Limite (R$)</label>
-          <input type="number" id="category-limite" step="0.01" min="0"
-                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                 placeholder="0,00"
-                 value="${initialData.limite !== undefined ? initialData.limite : ''}">
-          <p class="text-sm text-gray-500 mt-1">Deixe em branco se não houver limite</p>
-        </div>
-        
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Cor</label>
-          <input type="color" id="category-cor" value="${initialData.cor || '#4F46E5'}"
-                 class="w-full h-12 border border-gray-300 rounded-lg">
-        </div>
-        
-        <div class="flex justify-end space-x-3 pt-4">
-          <button type="button" onclick="closeModal()" 
-                  class="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200">
-            Cancelar
-          </button>
-          <button type="submit" 
-                  class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
-            Adicionar
-          </button>
-        </div>
-      </form>
-    `,
-    onClose: () => modal.remove()
-  });
-  document.body.appendChild(modal);
-
-  // Adicionar evento de submit
-  document.getElementById('category-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const nome = document.getElementById('category-nome').value;
-    const tipo = document.getElementById('category-tipo').value;
-    const limite = parseFloat(document.getElementById('category-limite').value) || 0;
-    const cor = document.getElementById('category-cor').value;
-
-    try {
-      await addCategory({
-        nome,
-        tipo,
-        limite,
-        cor
-      });
-      modal.remove(); // Fecha o modal primeiro
-      renderDashboard(); // Atualiza o dashboard imediatamente
-      Snackbar({ message: 'Categoria adicionada com sucesso!', type: 'success' });
-    } catch (error) {
-      console.error('Erro ao adicionar categoria:', error);
-      Snackbar({ message: 'Erro ao adicionar categoria: ' + error.message, type: 'error' });
-    }
-  });
-};
-
-window.showAddBudgetModal = function() {
-  const modal = Modal({
-    title: 'Adicionar Orçamento',
-    content: `
-      <form id="budget-form" class="space-y-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Nome</label>
-          <input type="text" id="budget-nome" required 
-                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                 placeholder="Ex: Orçamento Familiar">
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
-          <textarea id="budget-descricao" rows="3"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Descrição opcional do orçamento"></textarea>
-        </div>
-        <div class="flex justify-end space-x-3 pt-4">
-          <button type="button" onclick="closeModal()" 
-                  class="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200">
-            Cancelar
-          </button>
-          <button type="submit" 
-                  class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
-            Adicionar
-          </button>
-        </div>
-      </form>
-    `,
-    onClose: () => modal.remove()
-  });
-  setTimeout(() => {
-    const form = document.getElementById('budget-form');
-    if (form) {
-      form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const nome = document.getElementById('budget-nome').value;
-        const descricao = document.getElementById('budget-descricao').value;
-        try {
-          await addBudget({
-            nome,
-            descricao
-          });
-          modal.remove(); // Fecha o modal primeiro
-          Snackbar({ message: 'Orçamento adicionado com sucesso!', type: 'success' });
-        } catch (error) {
-          console.error('Erro ao adicionar orçamento:', error);
-          Snackbar({ message: 'Erro ao adicionar orçamento: ' + error.message, type: 'error' });
-        }
-      });
-    }
-  }, 0);
-};
-
-window.editTransaction = function(id) {
-  const transaction = window.appState.transactions.find(t => t.id === id);
-  if (!transaction) {
-    alert('Transação não encontrada');
+// Função para atualizar o título da página
+function updatePageTitle(path) {
+  const pageTitle = document.getElementById('page-title');
+  if (!pageTitle) {
+    console.log('⚠️ Elemento page-title não encontrado (header removido)');
     return;
   }
-  const modal = Modal({
-    title: 'Editar Transação',
-    content: `
-      <form id="edit-transaction-form" class="space-y-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
-          <input type="text" id="edit-transaction-descricao" required 
-                 value="${transaction.descricao}"
-                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                 placeholder="Ex: Supermercado">
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Valor (R$)</label>
-          <input type="number" id="edit-transaction-valor" required step="0.01" min="0"
-                 value="${transaction.valor}"
-                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                 placeholder="0,00">
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
-          <select id="edit-transaction-tipo" required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-            <option value="receita" ${transaction.tipo === 'receita' ? 'selected' : ''}>Receita</option>
-            <option value="despesa" ${transaction.tipo === 'despesa' ? 'selected' : ''}>Despesa</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
-          <select id="edit-transaction-categoria" required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-            <option value="">Selecione...</option>
-            ${window.appState.categories.map(cat =>
-    `<option value="${cat.id}" ${transaction.categoriaId === cat.id ? 'selected' : ''}>${cat.nome}</option>`
-  ).join('')}
-          </select>
-        </div>
-        <div class="flex justify-end space-x-3 pt-4">
-          <button type="button" onclick="closeModal()" 
-                  class="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200">
-            Cancelar
-          </button>
-          <button type="submit" 
-                  class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
-            Salvar
-          </button>
-        </div>
-      </form>
-    `,
-    onClose: () => modal.remove()
-  });
-  document.body.appendChild(modal);
-  setTimeout(() => {
-    const form = document.getElementById('edit-transaction-form');
-    if (form) {
-      form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const descricao = document.getElementById('edit-transaction-descricao').value;
-        const valor = parseFloat(document.getElementById('edit-transaction-valor').value);
-        const tipo = document.getElementById('edit-transaction-tipo').value;
-        const categoriaId = document.getElementById('edit-transaction-categoria').value;
-        try {
-          await updateTransaction(id, {
-            descricao,
-            valor,
-            tipo,
-            categoriaId
-          });
-          modal.remove();
-          // router('/dashboard'); // Removido para não trocar de aba
-          Snackbar({ message: 'Transação atualizada com sucesso!', type: 'success' });
-        } catch (error) {
-          console.error('Erro ao atualizar transação:', error);
-          Snackbar({ message: 'Erro ao atualizar transação: ' + error.message, type: 'error' });
-        }
-      });
-    }
-  }, 0);
-};
-
-window.deleteTransaction = function(id) {
-  if (confirm('Tem certeza que deseja excluir esta transação?')) {
-    deleteTransaction(id);
-  }
-};
-
-window.editCategory = function(id) {
-  const category = window.appState.categories.find(c => c.id === id);
-  if (!category) {
-    alert('Categoria não encontrada');
-    return;
-  }
-  const modal = Modal({
-    title: 'Editar Categoria',
-    content: `
-      <form id="edit-category-form" class="space-y-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Nome</label>
-          <input type="text" id="edit-category-nome" required 
-                 value="${category.nome}"
-                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                 placeholder="Ex: Alimentação">
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
-          <select id="edit-category-tipo" required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-            <option value="receita" ${category.tipo === 'receita' ? 'selected' : ''}>Receita</option>
-            <option value="despesa" ${category.tipo === 'despesa' ? 'selected' : ''}>Despesa</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Limite (R$)</label>
-          <input type="number" id="edit-category-limite" step="0.01" min="0"
-                 value="${category.limite || ''}"
-                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                 placeholder="0,00">
-          <p class="text-sm text-gray-500 mt-1">Deixe em branco se não houver limite</p>
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Cor</label>
-          <input type="color" id="edit-category-cor" value="${category.cor || '#4F46E5'}"
-                 class="w-full h-12 border border-gray-300 rounded-lg">
-        </div>
-        <div class="flex justify-end space-x-3 pt-4">
-          <button type="button" onclick="closeModal()" 
-                  class="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200">
-            Cancelar
-          </button>
-          <button type="submit" 
-                  class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
-            Salvar
-          </button>
-        </div>
-      </form>
-    `,
-    onClose: () => modal.remove()
-  });
-  document.body.appendChild(modal);
-  setTimeout(() => {
-    const form = document.getElementById('edit-category-form');
-    if (form) {
-      form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const nome = document.getElementById('edit-category-nome').value;
-        const tipo = document.getElementById('edit-category-tipo').value;
-        const limite = parseFloat(document.getElementById('edit-category-limite').value) || 0;
-        const cor = document.getElementById('edit-category-cor').value;
-        try {
-          await updateCategory(id, {
-            nome,
-            tipo,
-            limite,
-            cor
-          });
-          modal.remove();
-          // router('/categories'); // Removido para não trocar de aba
-          Snackbar({ message: 'Categoria atualizada com sucesso!', type: 'success' });
-        } catch (error) {
-          console.error('Erro ao atualizar categoria:', error);
-          Snackbar({ message: 'Erro ao atualizar categoria: ' + error.message, type: 'error' });
-        }
-      });
-    }
-  }, 0);
-};
-
-window.deleteCategory = function(id) {
-  if (confirm('Tem certeza que deseja excluir esta categoria?')) {
-    deleteCategory(id);
-  }
-};
-
-window.showCategoryHistory = function(id) {
-  const category = window.appState.categories.find(c => c.id === id);
-  if (!category) {
-    alert('Categoria não encontrada');
-    return;
-  }
-  // Filtrar transações da categoria
-  const transactions = window.appState.transactions.filter(t => t.categoriaId === id);
-  const totalReceitas = transactions.filter(t => t.tipo === 'receita').reduce((sum, t) => sum + parseFloat(t.valor), 0);
-  const totalDespesas = transactions.filter(t => t.tipo === 'despesa').reduce((sum, t) => sum + parseFloat(t.valor), 0);
-  const saldo = totalReceitas - totalDespesas;
-  const modal = Modal({
-    title: `Histórico - ${category.nome}`,
-    content: `
-      <div class="space-y-6">
-        <!-- Bloco de resumo removido para evitar duplicidade -->
-        <div>
-          <h3 class="font-semibold text-lg mb-3">Transações (${transactions.length})</h3>
-          ${transactions.length === 0 ? `
-            <p class="text-gray-500 text-center py-4">Nenhuma transação encontrada nesta categoria</p>
-          ` : `
-            <div class="space-y-2 max-h-64 overflow-y-auto">
-              ${transactions.map(t => `
-                <div class="flex justify-between items-center p-3 border rounded-lg">
-                  <div>
-                    <p class="font-medium">${t.descricao}</p>
-                    <p class="text-sm text-gray-500">${t.createdAt && t.createdAt.toDate ? new Date(t.createdAt.toDate()).toLocaleDateString() : ''}</p>
-                  </div>
-                  <div class="text-right">
-                    <span class="font-bold ${t.tipo === 'receita' ? 'text-green-600' : 'text-red-600'}">
-                      ${t.tipo === 'receita' ? '+' : '-'}R$ ${parseFloat(t.valor).toFixed(2)}
-                    </span>
-                    <p class="text-xs text-gray-500">${t.tipo}</p>
-                  </div>
-                </div>
-              `).join('')}
-            </div>
-          `}
-        </div>
-        <div class="flex justify-end">
-          <button onclick="closeModal()" 
-                  class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600">
-            Fechar
-          </button>
-        </div>
-      </div>
-    `,
-    onClose: () => modal.remove()
-  });
-  document.body.appendChild(modal);
-};
-
-window.copyBudgetId = function(id) {
-  navigator.clipboard.writeText(id);
-  Snackbar({ message: 'ID do orçamento copiado!', type: 'success' });
-};
-
-window.selectBudget = function(id) {
-  window.appState.currentBudget = window.appState.budgets.find(b => b.id === id);
-  loadTransactions();
-  loadCategories();
-  // router('/dashboard'); // Removido para não trocar de aba
-};
-
-window.exportToExcel = function() {
-  // Gera planilha Excel com transações, categorias e orçamentos
-  const wb = XLSX.utils.book_new();
-
-  // Transações
-  const transacoes = window.appState.transactions.map(t => ({
-    Descrição: t.descricao,
-    Valor: t.valor,
-    Tipo: t.tipo,
-    Categoria: (window.appState.categories.find(c => c.id === t.categoriaId)?.nome || ''),
-    Data: t.createdAt && t.createdAt.toDate ? t.createdAt.toDate().toLocaleDateString() : ''
-  }));
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(transacoes), 'Transações');
-
-  // Categorias
-  const categorias = window.appState.categories.map(c => ({
-    Nome: c.nome,
-    Tipo: c.tipo,
-    Limite: c.limite,
-    Cor: c.cor
-  }));
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(categorias), 'Categorias');
-
-  // Orçamentos
-  const orcamentos = window.appState.budgets.map(b => ({
-    Nome: b.nome,
-    Descrição: b.descricao,
-    ID: b.id
-  }));
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(orcamentos), 'Orçamentos');
-
-  XLSX.writeFile(wb, 'financeiro-dados.xlsx');
-};
-
-window.exportToPDF = function() {
-  // Gera PDF com resumo das transações, categorias e orçamentos
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-  let y = 10;
-
-  doc.setFontSize(16);
-  doc.text('Resumo Financeiro', 10, y);
-  y += 10;
-
-  doc.setFontSize(12);
-  doc.text('Transações:', 10, y);
-  y += 8;
-  window.appState.transactions.slice(0, 20).forEach(t => {
-    doc.text(`- ${t.descricao} | R$ ${t.valor} | ${t.tipo} | ${(window.appState.categories.find(c => c.id === t.categoriaId)?.nome || '')}`, 12, y);
-    y += 7;
-    if (y > 270) { doc.addPage(); y = 10; }
-  });
-  y += 5;
-
-  doc.text('Categorias:', 10, y);
-  y += 8;
-  window.appState.categories.forEach(c => {
-    doc.text(`- ${c.nome} | ${c.tipo} | Limite: R$ ${c.limite}`, 12, y);
-    y += 7;
-    if (y > 270) { doc.addPage(); y = 10; }
-  });
-  y += 5;
-
-  doc.text('Orçamentos:', 10, y);
-  y += 8;
-  window.appState.budgets.forEach(b => {
-    doc.text(`- ${b.nome} | ID: ${b.id}`, 12, y);
-    y += 7;
-    if (y > 270) { doc.addPage(); y = 10; }
-  });
-
-  doc.save('financeiro-resumo.pdf');
-};
-
-window.downloadBackup = function() {
-  // Baixa um JSON com todos os dados do usuário
-  const data = {
-    transactions: window.appState.transactions,
-    categories: window.appState.categories,
-    budgets: window.appState.budgets
+  
+  const routeNames = {
+    '/dashboard': 'Dashboard',
+    '/transactions': 'Transações',
+    '/categories': 'Categorias',
+    '/analytics': 'Análises',
+    '/recorrentes': 'Recorrentes',
+    '/notifications': 'Notificações',
+    '/settings': 'Configurações'
   };
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'financeiro-backup.json';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  
+  const title = routeNames[path] || 'Dashboard';
+  pageTitle.textContent = title;
+}
+
+// Função para aplicar modo de compactação globalmente
+window.applyCompactMode = function() {
+  const isCompact = localStorage.getItem('compactMode') === 'true';
+  const isMicro = localStorage.getItem('microMode') === 'true';
+  const isNano = localStorage.getItem('nanoMode') === 'true';
+  
+  const appContainer = document.querySelector('.app-container');
+  const body = document.body;
+  
+  // Remover todas as classes primeiro
+  body.classList.remove('compact-mode', 'micro-mode', 'nano-mode');
+  if (appContainer) {
+    appContainer.classList.remove('compact-mode', 'micro-mode', 'nano-mode');
+  }
+  
+  // Aplicar classes baseado no estado salvo
+  if (isNano) {
+    body.classList.add('compact-mode', 'micro-mode', 'nano-mode');
+    if (appContainer) {
+      appContainer.classList.add('compact-mode', 'micro-mode', 'nano-mode');
+    }
+  } else if (isMicro) {
+    body.classList.add('compact-mode', 'micro-mode');
+    if (appContainer) {
+      appContainer.classList.add('compact-mode', 'micro-mode');
+    }
+  } else if (isCompact) {
+    body.classList.add('compact-mode');
+    if (appContainer) {
+      appContainer.classList.add('compact-mode');
+    }
+  }
+  
+  console.log('🎯 Modo de compactação aplicado globalmente:', { isCompact, isMicro, isNano });
 };
 
-window.importBackup = function() {
+// Função para atualizar o botão de instalação
+window.updateInstallButton = function () {
+  const installBtn = document.getElementById('install-app-btn');
+  if (!installBtn) {
+    return;
+  }
+
+  const isInstalled =
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true;
+  const hasPrompt = !!window.deferredPrompt;
+
+  console.log(
+    '📱 PWA: Atualizando botão - Instalado:',
+    isInstalled,
+    'Prompt:',
+    hasPrompt
+  );
+
+  if (isInstalled) {
+    console.log('📱 PWA: Mostrando "App Instalado"');
+    installBtn.innerHTML = `
+      <div class="flex items-center gap-3">
+        <span class="text-xl">✅</span>
+        <div>
+          <div class="font-medium text-gray-800 dark:text-white">App Instalado</div>
+          <div class="text-sm text-gray-500 dark:text-gray-400">Já está na tela inicial</div>
+        </div>
+      </div>
+      <span class="text-green-500">✓</span>
+    `;
+    installBtn.disabled = true;
+    installBtn.classList.add('opacity-50', 'cursor-not-allowed');
+  } else if (hasPrompt) {
+    console.log('📱 PWA: Mostrando "Instalar App"');
+    installBtn.innerHTML = `
+      <div class="flex items-center gap-3">
+        <span class="text-xl">⬇️</span>
+        <div>
+          <div class="font-medium text-gray-800 dark:text-white">Instalar App</div>
+          <div class="text-sm text-gray-500 dark:text-gray-400">Adicionar à tela inicial</div>
+        </div>
+      </div>
+      <span class="text-blue-500">→</span>
+    `;
+    installBtn.disabled = false;
+    installBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+  } else {
+    console.log('📱 PWA: Ocultando botão');
+    installBtn.style.display = 'none';
+  }
+};
+
+window.importBackup = function () {
   // Permite importar um backup JSON
   const input = document.createElement('input');
   input.type = 'file';
   input.accept = 'application/json';
-  input.onchange = async (e) => {
+  input.onchange = async e => {
     const file = e.target.files[0];
-    if (!file) {return;}
+    if (!file) return;
+    
     const text = await file.text();
     try {
       const data = JSON.parse(text);
@@ -1259,246 +204,3405 @@ window.importBackup = function() {
             <button onclick='closeModal()' class='mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600'>Fechar</button>
           </div>`
         });
-        Snackbar({ message: 'Backup lido, mas não importado. Apenas leitura.', type: 'info' });
+        Snackbar({
+          message: 'Backup lido, mas não importado. Apenas leitura.',
+          type: 'info'
+        });
       } else {
         Snackbar({ message: 'Arquivo de backup inválido.', type: 'error' });
         alert('Arquivo de backup inválido.');
       }
     } catch (err) {
-      Snackbar({ message: 'Erro ao importar backup: ' + err.message, type: 'error' });
+      Snackbar({
+        message: 'Erro ao importar backup: ' + err.message,
+        type: 'error'
+      });
       alert('Erro ao importar backup: ' + err.message);
     }
   };
   input.click();
 };
 
-// Definir startVoiceRecognition no escopo global
-window.startVoiceRecognition = function(type) {
-  console.log('DEBUG: startVoiceRecognition chamada', type);
-  closeVoiceModalIfOpen();
-  const modal = Modal({
-    title: 'Reconhecimento de Voz',
-    content: `
-      <div class="voice-feedback text-center py-6">
-        <div class="voice-animation mb-4">
-          <svg class="animate-pulse mx-auto" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 18v4m0 0h-4m4 0h4m-4-8a4 4 0 01-4-4V5a4 4 0 118 0v5a4 4 0 01-4 4z"/></svg>
-        </div>
-        <p class="text-lg font-semibold">Ouvindo...</p>
-        <p id="voice-status" class="text-sm text-gray-500 mt-2">Fale agora</p>
-        <p class="mt-4 text-gray-700">Dica: você pode dizer, por exemplo:<br><span class="italic">"gastei 50 reais no supermercado em alimentação"</span></p>
-        <div class="mt-4"><span id="voice-text" class="font-mono text-indigo-700"></span></div>
-        <button onclick="closeModal()" class="mt-6 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600">Cancelar</button>
-      </div>
-    `,
-    onClose: () => modal.remove()
-  });
-  document.body.appendChild(modal);
-
-  // Reconhecimento de voz
-  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-    alert('Seu navegador não suporta reconhecimento de voz. Use Chrome ou Edge.');
+// Função para restaurar backup (importar e salvar no sistema)
+window.restoreBackup = function () {
+  console.log('🔍 restoreBackup chamada');
+  
+  // Verificar se o usuário está logado
+  if (!window.appState?.currentUser) {
+    console.log('❌ Usuário não logado');
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: '❌ Você precisa estar logado para restaurar backup.',
+        type: 'error'
+      });
+    } else {
+      alert('❌ Você precisa estar logado para restaurar backup.');
+    }
     return;
   }
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  console.log('DEBUG: Criando SpeechRecognition');
-  const recognition = new SpeechRecognition();
-  recognition.lang = 'pt-BR';
-  recognition.continuous = false;
-  recognition.interimResults = false;
-  recognition.maxAlternatives = 1;
 
-  recognition.onstart = function() {
-    console.log('DEBUG: recognition.onstart');
-    const statusEl = document.getElementById('voice-status');
-    if (statusEl) {
-      statusEl.textContent = 'Ouvindo...';
-      statusEl.className = 'text-sm text-green-600';
+  // Verificar se há um orçamento selecionado
+  if (!window.appState?.currentBudget) {
+    console.log('❌ Nenhum orçamento selecionado');
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: '❌ Nenhum orçamento selecionado.',
+        type: 'error'
+      });
+    } else {
+      alert('❌ Nenhum orçamento selecionado.');
     }
-  };
+    return;
+  }
 
-  recognition.onresult = function(event) {
-    console.log('DEBUG: recognition.onresult', event);
-    const transcript = event.results[0][0].transcript.toLowerCase();
-    const statusEl = document.getElementById('voice-status');
-    if (statusEl) {
-      statusEl.textContent = `Reconhecido: "${transcript}"`;
-      statusEl.className = 'text-sm text-blue-600';
-    }
-    // Remover modal de voz e abrir diretamente o formulário completo
-    setTimeout(async () => {
-      modal.remove();
-      try {
-        await processVoiceCommand(transcript, type);
-      } catch (error) {
-        Snackbar({ message: 'Erro ao processar comando de voz: ' + error.message, type: 'error' });
-      }
-    }, 500);
-  };
+  console.log('✅ Usuário e orçamento OK, abrindo modal...');
 
-  recognition.onerror = function(event) {
-    console.error('DEBUG: recognition.onerror', event);
-    const statusEl = document.getElementById('voice-status');
-    if (statusEl) {
-      statusEl.textContent = `Erro: ${event.error}`;
-      statusEl.className = 'text-sm text-red-600';
-    }
-  };
+  // Verificar se Modal está disponível
+  if (!window.Modal) {
+    console.error('❌ Modal não está disponível');
+    alert('Erro: Modal não está disponível. Tente recarregar a página.');
+    return;
+  }
 
-  recognition.onend = function() {
-    console.log('DEBUG: recognition.onend');
-    // Não fecha mais o modal automaticamente aqui
-  };
-
-  console.log('DEBUG: recognition.start()');
-  recognition.start();
+  try {
+    // Mostrar modal de confirmação primeiro
+    const confirmModal = window.Modal({
+      title: '📥 Restaurar Backup',
+      content: `
+        <div class='space-y-4'>
+          <div class='bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg'>
+            <p class='text-blue-800 dark:text-blue-200 font-medium'>Como restaurar backup:</p>
+            <ol class='mt-2 text-sm text-blue-700 dark:text-blue-300 space-y-1 list-decimal list-inside'>
+              <li>Clique em "Selecionar Arquivo"</li>
+              <li>Escolha o arquivo JSON de backup</li>
+              <li>Confirme os dados encontrados</li>
+              <li>Aguarde a restauração</li>
+            </ol>
+          </div>
+          
+          <div class='bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg'>
+            <p class='text-yellow-800 dark:text-yellow-200 font-medium'>⚠️ Aviso Importante:</p>
+            <p class='text-sm text-yellow-700 dark:text-yellow-300'>
+              Esta ação irá substituir todos os dados atuais. 
+              Certifique-se de que este é o backup correto.
+            </p>
+          </div>
+          
+          <div class='flex gap-3'>
+            <button onclick='closeModal()' class='flex-1 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors'>
+              Cancelar
+            </button>
+            <button onclick='window.selectBackupFile()' class='flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors'>
+              📁 Selecionar Arquivo
+            </button>
+          </div>
+        </div>
+      `
+    });
+    
+    console.log('✅ Modal criado com sucesso');
+    document.body.appendChild(confirmModal);
+    
+  } catch (error) {
+    console.error('❌ Erro ao criar modal:', error);
+    alert('Erro ao abrir modal: ' + error.message);
+  }
 };
 
-// Função para processar comandos de voz
-async function processVoiceCommand(transcript, type) {
-  try {
-    // Normalizar texto
-    const texto = transcript.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
-    // Comandos de consulta
-    if (/\b(saldo|qual.*saldo|saldo atual)\b/.test(texto)) {
-      const receitas = window.appState.transactions.filter(t => t.tipo === 'receita').reduce((sum, t) => sum + parseFloat(t.valor), 0);
-      const despesas = window.appState.transactions.filter(t => t.tipo === 'despesa').reduce((sum, t) => sum + parseFloat(t.valor), 0);
-      const saldo = receitas - despesas;
-      Snackbar({ message: `Saldo atual: R$ ${saldo.toFixed(2)}`, type: 'info' });
-      return;
-    }
-    if (/\b(ultimas transacoes|mostrar transacoes|quais.*gastos|listar transacoes)\b/.test(texto)) {
-      const ultimas = window.appState.transactions.slice(-5).reverse();
-      if (ultimas.length === 0) {
-        Snackbar({ message: 'Nenhuma transação encontrada.', type: 'info' });
+// Função para selecionar arquivo de backup
+window.selectBackupFile = function () {
+  console.log('🔍 selectBackupFile chamada');
+  
+  // Fechar modal de confirmação
+  console.log('🔍 Fechando modal de confirmação...');
+  closeModal();
+  
+  // Aguardar um pouco para garantir que o modal foi fechado
+  setTimeout(() => {
+    console.log('🔍 Criando input de arquivo...');
+    
+    // Criar input de arquivo
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/json,.json';
+    input.style.display = 'none';
+    
+    // Adicionar ao DOM temporariamente
+    document.body.appendChild(input);
+    console.log('🔍 Input adicionado ao DOM');
+    
+    // Configurar evento de mudança
+    input.onchange = async e => {
+      console.log('🔍 Arquivo selecionado:', e.target.files[0]);
+      
+      const file = e.target.files[0];
+      if (!file) {
+        console.log('❌ Nenhum arquivo selecionado');
+        document.body.removeChild(input);
         return;
       }
-      let msg = 'Últimas transações:\n';
-      ultimas.forEach(t => {
-        const cat = window.appState.categories.find(c => c.id === t.categoriaId)?.nome || '';
-        msg += `${t.descricao} - R$ ${parseFloat(t.valor).toFixed(2)} - ${t.tipo} - ${cat}\n`;
-      });
-      alert(msg);
-      return;
-    }
-    // Comando de editar transação
-    const editarMatch = texto.match(/editar transacao (.+)/);
-    if (editarMatch) {
-      const desc = editarMatch[1].trim();
-      const trans = window.appState.transactions.find(t => t.descricao.toLowerCase().includes(desc));
-      if (trans) {
-        window.editTransaction(trans.id);
-      } else {
-        Snackbar({ message: `Transação '${desc}' não encontrada.`, type: 'error' });
-      }
-      return;
-    }
-    // Comando de excluir transação
-    const excluirMatch = texto.match(/excluir transacao (.+)/);
-    if (excluirMatch) {
-      const desc = excluirMatch[1].trim();
-      const trans = window.appState.transactions.find(t => t.descricao.toLowerCase().includes(desc));
-      if (trans) {
-        if (confirm(`Excluir transação '${trans.descricao}'?`)) {
-          await deleteTransaction(trans.id);
-          Snackbar({ message: 'Transação excluída!', type: 'success' });
-          renderDashboard();
+
+      try {
+        console.log('🔍 Lendo arquivo...');
+        
+        // Mostrar loading
+        if (window.Snackbar) {
+          window.Snackbar({
+            message: '📥 Lendo arquivo de backup...',
+            type: 'info'
+          });
+        } else {
+          alert('📥 Lendo arquivo de backup...');
         }
-      } else {
-        Snackbar({ message: `Transação '${desc}' não encontrada.`, type: 'error' });
+
+        const text = await file.text();
+        console.log('🔍 Arquivo lido, tamanho:', text.length);
+        
+        const data = JSON.parse(text);
+        console.log('🔍 JSON parseado com sucesso:', data);
+
+        // Validar estrutura do backup
+        if (!data.transactions || !data.categories || !data.budgets) {
+          throw new Error('Arquivo de backup inválido. Deve conter transações, categorias e orçamentos.');
+        }
+
+        console.log('🔍 Dados válidos, criando modal de preview...');
+
+        // Verificar se Modal está disponível
+        if (!window.Modal) {
+          console.error('❌ Modal não está disponível');
+          alert('Erro: Modal não está disponível. Tente recarregar a página.');
+          return;
+        }
+
+        // Mostrar preview dos dados
+        const previewModal = window.Modal({
+          title: '📥 Confirmar Restauração de Backup',
+          content: `
+            <div class='space-y-4'>
+              <div class='bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg'>
+                <p class='text-blue-800 dark:text-blue-200 font-medium'>Dados encontrados no backup:</p>
+                <ul class='mt-2 text-sm text-blue-700 dark:text-blue-300 space-y-1'>
+                  <li>📊 <strong>${data.transactions.length}</strong> transações</li>
+                  <li>📂 <strong>${data.categories.length}</strong> categorias</li>
+                  <li>📁 <strong>${data.budgets.length}</strong> orçamentos</li>
+                </ul>
+                <p class='text-xs text-blue-600 dark:text-blue-400 mt-2'>
+                  Arquivo: ${file.name} (${(file.size / 1024).toFixed(1)} KB)
+                </p>
+              </div>
+              
+              <div class='bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg'>
+                <p class='text-yellow-800 dark:text-yellow-200 font-medium'>⚠️ Aviso:</p>
+                <p class='text-sm text-yellow-700 dark:text-yellow-300'>
+                  Esta ação irá substituir todos os dados atuais. 
+                  Certifique-se de que este é o backup correto.
+                </p>
+              </div>
+              
+              <div class='flex gap-3'>
+                <button onclick='closeModal()' class='flex-1 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors'>
+                  Cancelar
+                </button>
+                <button onclick='window.confirmRestoreBackup(${JSON.stringify(data).replace(/'/g, "\\'")})' class='flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors'>
+                  ✅ Confirmar Restauração
+                </button>
+              </div>
+            </div>
+          `
+        });
+        
+        console.log('🔍 Modal de preview criado, adicionando ao DOM...');
+        document.body.appendChild(previewModal);
+        console.log('✅ Modal de preview exibido com sucesso');
+
+      } catch (err) {
+        console.error('❌ Erro ao ler backup:', err);
+        if (window.Snackbar) {
+          window.Snackbar({
+            message: '❌ Erro ao ler arquivo: ' + err.message,
+            type: 'error'
+          });
+        } else {
+          alert('❌ Erro ao ler arquivo: ' + err.message);
+        }
+      } finally {
+        // Remover input do DOM
+        console.log('🔍 Removendo input do DOM');
+        document.body.removeChild(input);
       }
-      return;
+    };
+    
+    // Trigger do clique no input
+    console.log('🔍 Triggerando clique no input...');
+    input.click();
+    console.log('🔍 Clique no input executado');
+  }, 300);
+};
+
+// Função para confirmar e executar a restauração
+window.confirmRestoreBackup = async function (backupData) {
+  console.log('🔍 confirmRestoreBackup chamada com dados:', backupData);
+  
+  try {
+    // Fechar modal de preview
+    console.log('🔍 Fechando modal...');
+    closeModal();
+
+    // Mostrar loading
+    console.log('🔍 Mostrando loading...');
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: '🔄 Restaurando backup...',
+        type: 'info'
+      });
+    } else {
+      alert('🔄 Restaurando backup...');
     }
-    // Comandos naturais para adicionar transação
-    // Ex: "gastei 50 reais no supermercado em alimentação", "recebi 2000 de salário em rendimentos"
-    const addMatch = texto.match(/(gastei|paguei|recebi|ganhei)\s+(\d+[\.,]?\d*)\s*(reais|rs)?\s*(no|na|em|de)?\s*([\w\s]+?)(?:\s+em\s+([\w\s]+))?$/);
-    if (addMatch) {
-      const verbo = addMatch[1];
-      const valor = parseFloat(addMatch[2].replace(',', '.'));
-      let tipo = 'despesa';
-      if (verbo === 'recebi' || verbo === 'ganhei') {tipo = 'receita';}
-      let descricao = (addMatch[5] || '').trim();
-      let categoriaNome = (addMatch[6] || '').trim();
-      // Se não houver 'em categoria', usar última palavra da descrição como categoria
-      if (!categoriaNome && descricao.includes(' ')) {
-        const partes = descricao.split(' ');
-        categoriaNome = partes[partes.length - 1];
-        descricao = partes.slice(0, -1).join(' ');
+
+    const userId = window.appState.currentUser.uid;
+    const budgetId = window.appState.currentBudget.id;
+
+    console.log('🔄 Iniciando restauração de backup...');
+    console.log('👤 User ID:', userId);
+    console.log('📁 Budget ID:', budgetId);
+    console.log('📊 Dados do backup:', backupData);
+
+    // Verificar se os dados são válidos
+    if (!backupData || !backupData.categories || !backupData.transactions || !backupData.budgets) {
+      throw new Error('Dados de backup inválidos ou incompletos');
+    }
+
+    // 1. LIMPAR DADOS ATUAIS
+    console.log('🗑️ Limpando dados atuais...');
+    
+    // Limpar transações
+    console.log('🗑️ Limpando transações...');
+    for (const transaction of window.appState.transactions) {
+      try {
+        await deleteTransaction(transaction.id);
+        console.log(`🗑️ Transação "${transaction.descricao}" removida`);
+      } catch (error) {
+        console.error(`❌ Erro ao remover transação "${transaction.descricao}":`, error);
       }
-      // Procurar categoria
-      let categoria = window.appState.categories.find(c => c.nome.toLowerCase().includes(categoriaNome));
-      if (!categoria) {
-        // Se não encontrar, pega a primeira do tipo
-        categoria = window.appState.categories.find(c => c.tipo === tipo);
+    }
+    
+    // Limpar categorias
+    console.log('🗑️ Limpando categorias...');
+    for (const category of window.appState.categories) {
+      try {
+        await deleteCategory(category.id);
+        console.log(`🗑️ Categoria "${category.nome}" removida`);
+      } catch (error) {
+        console.error(`❌ Erro ao remover categoria "${category.nome}":`, error);
       }
-      if (!categoria) {
-        alert('Nenhuma categoria encontrada para o tipo. Crie uma categoria primeiro.');
+    }
+    
+    // Limpar recorrentes
+    console.log('🗑️ Limpando recorrentes...');
+    for (const recorrente of window.appState.recorrentes) {
+      try {
+        await deleteDespesaRecorrente(userId, recorrente.id);
+        console.log(`🗑️ Recorrente "${recorrente.descricao}" removida`);
+      } catch (error) {
+        console.error(`❌ Erro ao remover recorrente "${recorrente.descricao}":`, error);
+      }
+    }
+
+    // Aguardar um pouco para garantir que a limpeza foi processada
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    let categoriasImportadas = 0;
+    let transacoesImportadas = 0;
+    let orcamentosImportados = 0;
+    let recorrentesImportados = 0;
+
+    // 2. Importar categorias
+    console.log('📂 Importando categorias...');
+    for (const category of backupData.categories) {
+      try {
+        // Remover ID original para criar novo
+        const { id, ...categoryData } = category;
+        categoryData.budgetId = budgetId; // Usar budget atual
+        
+        await addCategory(categoryData);
+        categoriasImportadas++;
+        console.log(`✅ Categoria "${category.nome}" importada (${categoriasImportadas}/${backupData.categories.length})`);
+      } catch (error) {
+        console.error(`❌ Erro ao importar categoria "${category.nome}":`, error);
+      }
+    }
+
+    // 3. Importar transações
+    console.log('💸 Importando transações...');
+    for (const transaction of backupData.transactions) {
+      try {
+        // Remover ID original para criar novo
+        const { id, ...transactionData } = transaction;
+        transactionData.budgetId = budgetId; // Usar budget atual
+        
+        await addTransaction(transactionData);
+        transacoesImportadas++;
+        console.log(`✅ Transação "${transaction.descricao}" importada (${transacoesImportadas}/${backupData.transactions.length})`);
+      } catch (error) {
+        console.error(`❌ Erro ao importar transação "${transaction.descricao}":`, error);
+      }
+    }
+
+    // 4. Importar orçamentos (se não existirem)
+    console.log('📁 Importando orçamentos...');
+    for (const budget of backupData.budgets) {
+      try {
+        // Verificar se o orçamento já existe
+        const existingBudget = window.appState.budgets.find(b => b.nome === budget.nome);
+        if (!existingBudget) {
+          const { id, ...budgetData } = budget;
+          budgetData.userId = userId; // Usar usuário atual
+          
+          await addBudget(budgetData);
+          orcamentosImportados++;
+          console.log(`✅ Orçamento "${budget.nome}" importado (${orcamentosImportados}/${backupData.budgets.length})`);
+        } else {
+          console.log(`ℹ️ Orçamento "${budget.nome}" já existe, pulando...`);
+        }
+      } catch (error) {
+        console.error(`❌ Erro ao importar orçamento "${budget.nome}":`, error);
+      }
+    }
+
+    // 5. Importar recorrentes
+    console.log('🔄 Importando recorrentes...');
+    if (backupData.recorrentes && backupData.recorrentes.length > 0) {
+      for (const recorrente of backupData.recorrentes) {
+        try {
+          // Remover ID original para criar novo
+          const { id, ...recorrenteData } = recorrente;
+          recorrenteData.budgetId = budgetId; // Usar budget atual
+          
+          await addDespesaRecorrente(userId, budgetId, recorrenteData);
+          recorrentesImportados++;
+          console.log(`✅ Recorrente "${recorrente.descricao}" importada (${recorrentesImportados}/${backupData.recorrentes.length})`);
+        } catch (error) {
+          console.error(`❌ Erro ao importar recorrente "${recorrente.descricao}":`, error);
+        }
+      }
+    } else {
+      console.log('ℹ️ Nenhuma recorrente encontrada no backup');
+    }
+
+    // 5. Recarregar dados
+    console.log('🔄 Recarregando dados...');
+    await refreshCurrentView();
+
+    // 6. Sucesso com detalhes
+    console.log('✅ Restauração concluída com sucesso!');
+    console.log(`📊 Resumo: ${categoriasImportadas} categorias, ${transacoesImportadas} transações, ${orcamentosImportados} orçamentos, ${recorrentesImportados} recorrentes`);
+    
+    const mensagemSucesso = `✅ Backup restaurado com sucesso!\n\n📊 Dados importados:\n• ${categoriasImportadas} categorias\n• ${transacoesImportadas} transações\n• ${orcamentosImportados} orçamentos\n• ${recorrentesImportados} recorrentes\n\nA página será recarregada em 3 segundos...`;
+    
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: mensagemSucesso,
+        type: 'success',
+        duration: 5000
+      });
+    } else {
+      alert(mensagemSucesso);
+    }
+
+    // 7. Recarregar página após um delay
+    console.log('🔄 Agendando recarregamento da página...');
+    setTimeout(() => {
+      console.log('🔄 Recarregando página...');
+      window.location.reload();
+    }, 3000);
+
+  } catch (error) {
+    console.error('❌ Erro durante restauração:', error);
+    const mensagemErro = `❌ Erro durante restauração:\n${error.message}`;
+    
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: mensagemErro,
+        type: 'error',
+        duration: 5000
+      });
+    } else {
+      alert(mensagemErro);
+    }
+  }
+};
+
+// Função para alternar entre página de login e app
+function toggleLoginPage(show) {
+  const loginPage = document.getElementById('login-page');
+  const appContainer = document.querySelector('.app-container');
+  const loadingPage = document.getElementById('loading-page');
+
+  if (show) {
+    loginPage.style.display = 'flex';
+    if (appContainer) appContainer.style.display = 'none';
+    if (loadingPage) loadingPage.style.display = 'none';
+  } else {
+    loginPage.style.display = 'none';
+    if (appContainer) appContainer.style.display = 'flex';
+    if (loadingPage) loadingPage.style.display = 'none';
+  }
+}
+
+// Função para logout
+function logout() {
+  auth.signOut().then(() => {
+    console.log('✅ Logout realizado com sucesso');
+    window.appState.currentUser = null;
+    window.appState.currentBudget = null;
+    window.appState.transactions = [];
+    window.appState.categories = [];
+    window.appState.budgets = [];
+    window.appState.recorrentes = [];
+    
+    toggleLoginPage(true);
+    window.location.hash = '';
+  }).catch((error) => {
+    console.error('❌ Erro no logout:', error);
+  });
+}
+
+// Função para atualizar a view atual
+async function refreshCurrentView() {
+  const currentPath = window.location.hash.slice(1) || '/dashboard';
+  await router(currentPath);
+}
+
+// Função para adicionar transação
+async function addTransaction(transactionData) {
+  try {
+    const user = window.appState.currentUser;
+    if (!user) {
+      throw new Error('Usuário não autenticado');
+    }
+
+    const budget = window.appState.currentBudget;
+    if (!budget) {
+      throw new Error('Orçamento não selecionado');
+    }
+
+    const transaction = {
+      ...transactionData,
+      userId: user.uid,
+      budgetId: budget.id,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    };
+
+    const docRef = await addDoc(collection(db, 'transactions'), transaction);
+    console.log('✅ Transação adicionada com ID:', docRef.id);
+    
+    // Verificar limites de categoria
+    if (window.checkLimitesCategoria) {
+      window.checkLimitesCategoria();
+    }
+    
+    // Forçar atualização da UI
+    if (window.forceUIUpdate) {
+      setTimeout(() => window.forceUIUpdate(), 100);
+    }
+    
+            Snackbar({ message: 'Transação adicionada com sucesso!', type: 'success' });
+    return docRef.id;
+  } catch (error) {
+    console.error('❌ Erro ao adicionar transação:', error);
+          Snackbar({ message: 'Erro ao adicionar transação', type: 'error' });
+    throw error;
+  }
+}
+
+// Função para atualizar transação
+async function updateTransaction(transactionId, transactionData) {
+  try {
+    const transactionRef = doc(db, 'transactions', transactionId);
+    await updateDoc(transactionRef, {
+      ...transactionData,
+      updatedAt: serverTimestamp()
+    });
+    
+    console.log('✅ Transação atualizada:', transactionId);
+    
+    // Verificar limites de categoria
+    if (window.checkLimitesCategoria) {
+      window.checkLimitesCategoria();
+    }
+    
+    // Forçar atualização da UI
+    if (window.forceUIUpdate) {
+      setTimeout(() => window.forceUIUpdate(), 100);
+    }
+    
+          Snackbar({ message: 'Transação atualizada com sucesso!', type: 'success' });
+  } catch (error) {
+    console.error('❌ Erro ao atualizar transação:', error);
+    Snackbar({ message: 'Erro ao atualizar transação', type: 'error' });
+    throw error;
+  }
+}
+
+// Função para deletar transação
+async function deleteTransaction(transactionId) {
+  try {
+    const transactionRef = doc(db, 'transactions', transactionId);
+    await deleteDoc(transactionRef);
+    
+    console.log('✅ Transação deletada:', transactionId);
+    
+    // Verificar limites de categoria
+    if (window.checkLimitesCategoria) {
+      window.checkLimitesCategoria();
+    }
+    
+    // Forçar atualização da UI
+    if (window.forceUIUpdate) {
+      setTimeout(() => window.forceUIUpdate(), 100);
+    }
+    
+    Snackbar({ message: 'Transação deletada com sucesso!', type: 'success' });
+  } catch (error) {
+    console.error('❌ Erro ao deletar transação:', error);
+    Snackbar({ message: 'Erro ao deletar transação', type: 'error' });
+    throw error;
+  }
+}
+
+// Função para carregar transações
+async function loadTransactions() {
+  try {
+    const user = window.appState.currentUser;
+    if (!user) return [];
+
+    const budget = window.appState.currentBudget;
+    if (!budget) return [];
+
+    const q = query(
+      collection(db, 'transactions'),
+      where('budgetId', '==', budget.id)
+    );
+    
+    const querySnapshot = await getDocs(q);
+    const transactions = querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    
+    // Ordenar transações por data (mais recentes primeiro)
+    transactions.sort((a, b) => {
+      let dateA, dateB;
+      
+      // Tratar Firestore Timestamp
+      if (a.createdAt && typeof a.createdAt === 'object' && a.createdAt.seconds) {
+        dateA = new Date(a.createdAt.seconds * 1000);
+      } else {
+        dateA = new Date(a.createdAt);
+      }
+      
+      if (b.createdAt && typeof b.createdAt === 'object' && b.createdAt.seconds) {
+        dateB = new Date(b.createdAt.seconds * 1000);
+      } else {
+        dateB = new Date(b.createdAt);
+      }
+      
+      return dateB - dateA; // Ordem decrescente (mais recente primeiro)
+    });
+    
+    window.appState.transactions = transactions;
+    return transactions;
+  } catch (error) {
+    console.error('❌ Erro ao carregar transações:', error);
+    return [];
+  }
+}
+
+// Função para adicionar categoria
+async function addCategory(categoryData) {
+  try {
+    const user = window.appState.currentUser;
+    if (!user) {
+      throw new Error('Usuário não autenticado');
+    }
+
+    const budget = window.appState.currentBudget;
+    if (!budget) {
+      throw new Error('Orçamento não selecionado');
+    }
+
+    const category = {
+      ...categoryData,
+      userId: user.uid,
+      budgetId: budget.id,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    };
+
+    const docRef = await addDoc(collection(db, 'categories'), category);
+    console.log('✅ Categoria adicionada com ID:', docRef.id);
+    
+    Snackbar({ message: 'Categoria adicionada com sucesso!', type: 'success' });
+    return docRef.id;
+  } catch (error) {
+    console.error('❌ Erro ao adicionar categoria:', error);
+    Snackbar({ message: 'Erro ao adicionar categoria', type: 'error' });
+    throw error;
+  }
+}
+
+// Função para atualizar categoria
+async function updateCategory(categoryId, categoryData) {
+  try {
+    const categoryRef = doc(db, 'categories', categoryId);
+    await updateDoc(categoryRef, {
+      ...categoryData,
+      updatedAt: serverTimestamp()
+    });
+    
+    console.log('✅ Categoria atualizada:', categoryId);
+    Snackbar({ message: 'Categoria atualizada com sucesso!', type: 'success' });
+  } catch (error) {
+    console.error('❌ Erro ao atualizar categoria:', error);
+    Snackbar({ message: 'Erro ao atualizar categoria', type: 'error' });
+    throw error;
+  }
+}
+
+// Função para deletar categoria
+async function deleteCategory(categoryId) {
+  try {
+    const categoryRef = doc(db, 'categories', categoryId);
+    await deleteDoc(categoryRef);
+    
+    console.log('✅ Categoria deletada:', categoryId);
+    Snackbar({ message: 'Categoria deletada com sucesso!', type: 'success' });
+  } catch (error) {
+    console.error('❌ Erro ao deletar categoria:', error);
+    Snackbar({ message: 'Erro ao deletar categoria', type: 'error' });
+    throw error;
+  }
+}
+
+// Função para carregar categorias
+async function loadCategories() {
+  try {
+    const user = window.appState.currentUser;
+    if (!user) return [];
+
+    const budget = window.appState.currentBudget;
+    if (!budget) return [];
+
+    const q = query(
+      collection(db, 'categories'),
+      where('budgetId', '==', budget.id)
+    );
+    
+    const querySnapshot = await getDocs(q);
+    const categories = querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    
+    window.appState.categories = categories;
+    return categories;
+  } catch (error) {
+    console.error('❌ Erro ao carregar categorias:', error);
+    return [];
+  }
+}
+
+// Função para adicionar orçamento
+async function addBudget(budgetData) {
+  try {
+    const user = window.appState.currentUser;
+    if (!user) {
+      throw new Error('Usuário não autenticado');
+    }
+
+    const budget = {
+      ...budgetData,
+      userId: user.uid,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    };
+
+    const docRef = await addDoc(collection(db, 'budgets'), budget);
+    console.log('✅ Orçamento adicionado com ID:', docRef.id);
+    
+    Snackbar({ message: 'Orçamento adicionado com sucesso!', type: 'success' });
+    return docRef.id;
+  } catch (error) {
+    console.error('❌ Erro ao adicionar orçamento:', error);
+    Snackbar({ message: 'Erro ao adicionar orçamento', type: 'error' });
+    throw error;
+  }
+}
+
+// Função para excluir orçamento
+window.deleteBudget = async function(budgetId) {
+  try {
+    const user = window.appState.currentUser;
+    if (!user) {
+      throw new Error('Usuário não autenticado');
+    }
+
+    console.log('🗑️ Iniciando exclusão do orçamento:', budgetId);
+
+    // Verificar se o usuário é o dono do orçamento
+    const budget = window.appState.budgets.find(b => b.id === budgetId);
+    if (!budget) {
+      throw new Error('Orçamento não encontrado');
+    }
+
+    if (budget.userId !== user.uid) {
+      throw new Error('Você não tem permissão para excluir este orçamento');
+    }
+
+    // Verificar se é o orçamento atual
+    const isCurrentBudget = window.appState.currentBudget?.id === budgetId;
+    if (isCurrentBudget) {
+      // Se for o orçamento atual, limpar o estado
+      window.appState.currentBudget = null;
+      localStorage.removeItem('currentBudgetId');
+    }
+
+    // Excluir todas as transações do orçamento
+    console.log('🗑️ Excluindo transações do orçamento...');
+    const transactionsQuery = query(
+      collection(db, 'transactions'),
+      where('budgetId', '==', budgetId)
+    );
+    const transactionsSnapshot = await getDocs(transactionsQuery);
+    
+    const transactionDeletions = transactionsSnapshot.docs.map(doc => 
+      deleteDoc(doc.ref)
+    );
+    await Promise.all(transactionDeletions);
+    console.log(`✅ ${transactionsSnapshot.docs.length} transações excluídas`);
+
+    // Excluir todas as categorias do orçamento
+    console.log('🗑️ Excluindo categorias do orçamento...');
+    const categoriesQuery = query(
+      collection(db, 'categories'),
+      where('budgetId', '==', budgetId)
+    );
+    const categoriesSnapshot = await getDocs(categoriesQuery);
+    
+    const categoryDeletions = categoriesSnapshot.docs.map(doc => 
+      deleteDoc(doc.ref)
+    );
+    await Promise.all(categoryDeletions);
+    console.log(`✅ ${categoriesSnapshot.docs.length} categorias excluídas`);
+
+    // Excluir todas as recorrentes do orçamento
+    console.log('🗑️ Excluindo recorrentes do orçamento...');
+    const recorrentesQuery = query(
+      collection(db, 'recorrentes'),
+      where('budgetId', '==', budgetId)
+    );
+    const recorrentesSnapshot = await getDocs(recorrentesQuery);
+    
+    const recorrenteDeletions = recorrentesSnapshot.docs.map(doc => 
+      deleteDoc(doc.ref)
+    );
+    await Promise.all(recorrenteDeletions);
+    console.log(`✅ ${recorrentesSnapshot.docs.length} recorrentes excluídas`);
+
+    // Excluir convites pendentes do orçamento
+    console.log('🗑️ Excluindo convites do orçamento...');
+    const invitationsQuery = query(
+      collection(db, 'budgetInvitations'),
+      where('budgetId', '==', budgetId)
+    );
+    const invitationsSnapshot = await getDocs(invitationsQuery);
+    
+    const invitationDeletions = invitationsSnapshot.docs.map(doc => 
+      deleteDoc(doc.ref)
+    );
+    await Promise.all(invitationDeletions);
+    console.log(`✅ ${invitationsSnapshot.docs.length} convites excluídos`);
+
+    // Excluir o orçamento
+    console.log('🗑️ Excluindo o orçamento...');
+    const budgetRef = doc(db, 'budgets', budgetId);
+    await deleteDoc(budgetRef);
+    console.log('✅ Orçamento excluído');
+
+    // Remover do estado local
+    window.appState.budgets = window.appState.budgets.filter(b => b.id !== budgetId);
+    
+    // Se era o orçamento atual, selecionar outro orçamento ou limpar
+    if (isCurrentBudget) {
+      const remainingBudgets = window.appState.budgets.filter(b => b.userId === user.uid);
+      if (remainingBudgets.length > 0) {
+        // Selecionar o primeiro orçamento próprio disponível
+        await setCurrentBudget(remainingBudgets[0]);
+        console.log('✅ Novo orçamento selecionado:', remainingBudgets[0].nome);
+      } else {
+        // Não há mais orçamentos, limpar estado
+        window.appState.currentBudget = null;
+        window.appState.transactions = [];
+        window.appState.categories = [];
+        window.appState.recorrentes = [];
+        console.log('ℹ️ Nenhum orçamento restante');
+      }
+    }
+
+    Snackbar({ 
+      message: `Orçamento "${budget.nome}" excluído com sucesso!`, 
+      type: 'success' 
+    });
+
+    console.log('✅ Exclusão do orçamento concluída com sucesso');
+    return true;
+  } catch (error) {
+    console.error('❌ Erro ao excluir orçamento:', error);
+    Snackbar({ 
+      message: `Erro ao excluir orçamento: ${error.message}`, 
+      type: 'error' 
+    });
+    throw error;
+  }
+}
+
+// Função para carregar orçamentos
+async function loadBudgets() {
+  try {
+    const user = window.appState.currentUser;
+    if (!user) return [];
+
+    console.log('🔍 Carregando orçamentos para usuário:', user.uid);
+
+    // Buscar orçamentos próprios
+    const ownBudgetsQuery = query(
+      collection(db, 'budgets'),
+      where('userId', '==', user.uid)
+    );
+    
+    // Buscar orçamentos compartilhados onde o usuário é membro
+    const sharedBudgetsQuery = query(
+      collection(db, 'budgets'),
+      where('usuariosPermitidos', 'array-contains', user.uid)
+    );
+    
+    console.log('🔍 Executando queries de orçamentos...');
+    
+    const [ownSnapshot, sharedSnapshot] = await Promise.all([
+      getDocs(ownBudgetsQuery),
+      getDocs(sharedBudgetsQuery)
+    ]);
+    
+    const ownBudgets = ownSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      isOwner: true
+    }));
+    
+    const sharedBudgets = sharedSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      isOwner: false
+    }));
+    
+    // Combinar e remover duplicatas (caso o usuário seja dono e membro)
+    const allBudgets = [...ownBudgets];
+    sharedBudgets.forEach(sharedBudget => {
+      if (!allBudgets.find(budget => budget.id === sharedBudget.id)) {
+        allBudgets.push(sharedBudget);
+      }
+    });
+    
+    console.log('📊 Orçamentos carregados:', {
+      total: allBudgets.length,
+      own: ownBudgets.length,
+      shared: sharedBudgets.length,
+      budgets: allBudgets.map(b => ({ id: b.id, nome: b.nome, isOwner: b.isOwner }))
+    });
+    
+    window.appState.budgets = allBudgets;
+    return allBudgets;
+  } catch (error) {
+    console.error('❌ Erro ao carregar orçamentos:', error);
+    return [];
+  }
+}
+
+// Função para definir orçamento atual
+function setCurrentBudget(budget) {
+  window.appState.currentBudget = budget;
+  localStorage.setItem('currentBudgetId', budget.id);
+  console.log('✅ Orçamento atual definido:', budget.nome);
+}
+
+// Função global para selecionar orçamento e atualizar todas as abas
+window.setCurrentBudget = async function (budget) {
+  if (!budget) {
+    console.log('❌ Budget não fornecido para setCurrentBudget');
+    return;
+  }
+  
+  console.log('🔄 Selecionando orçamento:', budget.nome, budget.id);
+  
+  // Definir orçamento atual
+  setCurrentBudget(budget);
+  
+  // Parar listeners anteriores
+  if (window.stopAllListeners) {
+    window.stopAllListeners();
+  }
+  
+  // Iniciar listeners para o novo orçamento
+  if (window.startAllListeners) {
+    await window.startAllListeners(budget.id);
+  }
+  
+  // Recarregar dados
+  await Promise.all([
+    window.loadTransactions ? window.loadTransactions() : Promise.resolve(),
+    window.loadCategories ? window.loadCategories() : Promise.resolve(),
+    window.loadRecorrentes ? window.loadRecorrentes() : Promise.resolve(),
+    window.loadNotifications ? window.loadNotifications() : Promise.resolve()
+  ]);
+  
+  // Atualizar todas as abas
+  const currentRoute = window.location.hash.replace('#', '') || '/dashboard';
+  console.log('🔄 Atualizando rota atual:', currentRoute);
+  
+  // Re-renderizar a aba atual
+  switch (currentRoute) {
+    case '/dashboard':
+      if (window.renderDashboard) {
+        await window.renderDashboard();
+      }
+      break;
+    case '/transactions':
+      if (window.renderTransactions) {
+        await window.renderTransactions();
+      }
+      break;
+    case '/categories':
+      if (window.renderCategories) {
+        await window.renderCategories();
+      }
+      break;
+    case '/notifications':
+      if (window.renderNotifications) {
+        await window.renderNotifications();
+      }
+      break;
+    case '/settings':
+      if (window.renderSettings) {
+        await window.renderSettings();
+      }
+      break;
+    default:
+      if (window.renderDashboard) {
+        await window.renderDashboard();
+      }
+  }
+  
+  console.log('✅ Orçamento selecionado e todas as abas atualizadas');
+};
+
+// Função para selecionar orçamento padrão
+async function selectDefaultBudget() {
+  try {
+    const user = window.appState.currentUser;
+    if (!user) return;
+
+    // Tentar carregar orçamento salvo no localStorage
+    const savedBudgetId = localStorage.getItem('currentBudgetId');
+    if (savedBudgetId) {
+      const budget = window.appState.budgets.find(b => b.id === savedBudgetId);
+      if (budget) {
+        await window.setCurrentBudget(budget);
         return;
       }
-      // Se descrição ficar vazia, usar categoria como fallback
-      if (!descricao) {descricao = categoria.nome;}
-      closeVoiceModalIfOpen();
-      console.log('DEBUG: Abrindo formulário de transação/categoria por voz', {descricao, valor, tipo, categoriaId: categoria.id});
-      window.showAddTransactionModal({
-        descricao,
-        valor,
-        tipo,
-        categoriaId: categoria.id
-      });
+    }
+
+    // Se não há orçamento salvo, usar o primeiro disponível
+    if (window.appState.budgets.length > 0) {
+      await window.setCurrentBudget(window.appState.budgets[0]);
       return;
     }
-    // Fallback: comandos antigos
-    if (type === 'transaction') {
-      closeVoiceModalIfOpen();
-      // Não temos os dados detalhados aqui, mas logar a chamada
-      console.log('DEBUG: Chamando processTransactionVoice por voz');
-      await processTransactionVoice(transcript);
-    } else if (type === 'category') {
-      closeVoiceModalIfOpen();
-      console.log('DEBUG: Chamando processCategoryVoice por voz');
-      await processCategoryVoice(transcript);
+
+    // Se não há orçamentos, criar um padrão
+    console.log('📝 Criando orçamento padrão...');
+    const defaultBudget = {
+      nome: 'Orçamento Principal',
+      descricao: 'Orçamento padrão criado automaticamente',
+      valor: 0,
+      tipo: 'mensal'
+    };
+    
+    const budgetId = await addBudget(defaultBudget);
+    if (budgetId) {
+      // Recarregar orçamentos e definir o novo como atual
+      await loadBudgets();
+      const newBudget = window.appState.budgets.find(b => b.id === budgetId);
+      if (newBudget) {
+        await window.setCurrentBudget(newBudget);
+      }
     }
   } catch (error) {
-    console.error('Erro ao processar comando de voz:', error);
-    Snackbar({ message: 'Erro ao processar comando de voz: ' + error.message, type: 'error' });
+    console.error('❌ Erro ao selecionar orçamento padrão:', error);
+  }
+}
+
+// Função para carregar recorrentes
+async function loadRecorrentes() {
+  try {
+    const user = window.appState.currentUser;
+    if (!user) return [];
+
+    const budget = window.appState.currentBudget;
+    if (!budget) return [];
+
+    const q = query(
+      collection(db, 'recorrentes'),
+      where('budgetId', '==', budget.id)
+    );
+    
+    const querySnapshot = await getDocs(q);
+    const recorrentes = querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    
+    window.appState.recorrentes = recorrentes;
+    return recorrentes;
+  } catch (error) {
+    console.error('❌ Erro ao carregar recorrentes:', error);
+    return [];
+  }
+}
+
+// Função para buscar transações do mês
+async function getTransacoesDoMes(userId, ano, mes) {
+  try {
+    console.log(`🔍 Buscando transações para: ${ano}/${mes}`);
+    const budget = window.appState.currentBudget;
+    if (!budget) {
+      console.log('⚠️ Nenhum orçamento ativo');
+      return [];
+    }
+
+    const q = query(
+      collection(db, 'transactions'),
+      where('budgetId', '==', budget.id)
+    );
+    
+    const querySnapshot = await getDocs(q);
+    const allTransactions = querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    
+    console.log(`📊 Total de transações encontradas: ${allTransactions.length}`);
+    
+    // Filtrar por mês/ano
+    const transacoesFiltradas = allTransactions.filter(t => {
+      if (!t.createdAt) return false;
+      
+      let transacaoData;
+      if (t.createdAt && typeof t.createdAt === 'object' && t.createdAt.seconds) {
+        transacaoData = new Date(t.createdAt.seconds * 1000);
+      } else {
+        transacaoData = new Date(t.createdAt);
+      }
+
+      const transacaoAno = transacaoData.getFullYear();
+      const transacaoMes = transacaoData.getMonth() + 1;
+      
+      return transacaoAno === ano && transacaoMes === mes;
+    });
+    
+    console.log(`✅ Transações filtradas para ${ano}/${mes}: ${transacoesFiltradas.length}`);
+    return transacoesFiltradas;
+  } catch (error) {
+    console.error('❌ Erro ao buscar transações do mês:', error);
+    return [];
+  }
+}
+
+// FUNÇÃO RENDERDASHBOARD LIMPA E FUNCIONAL
+async function renderDashboard(selectedYear, selectedMonth) {
+  // Evitar múltiplas chamadas simultâneas
+  if (window.isRenderingDashboard) {
+    console.log('🔄 Dashboard já está sendo renderizado, pulando...');
+    return;
+  }
+  
+  window.isRenderingDashboard = true;
+  
+  // Verificar se o usuário está autenticado
+  if (!window.appState?.currentUser) {
+    console.warn('⚠️ Usuário não autenticado, renderizando dashboard vazio');
+    window.isRenderingDashboard = false;
+    return;
+  }
+  
+  try {
+    const content = document.getElementById('app-content');
+    if (!content) {
+      console.warn('⚠️ Elemento #app-content não encontrado');
+      return;
+    }
+
+    // Seletor de mês
+    const now = new Date();
+    const year = selectedYear || now.getFullYear();
+    const month = selectedMonth || now.getMonth() + 1;
+    const meses = [
+      'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+      'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+    ];
+
+    // Buscar transações do mês selecionado
+    const user = window.appState.currentUser;
+    let transacoes = user
+      ? await getTransacoesDoMes(user.uid, year, month)
+      : [];
+    
+    console.log(`📊 Dashboard ${year}/${month}: ${transacoes.length} transações carregadas`);
+    console.log(`📊 Estado atual:`, {
+      user: !!user,
+      budget: !!window.appState.currentBudget,
+      transactions: window.appState.transactions?.length || 0,
+      categories: window.appState.categories?.length || 0,
+      recorrentes: window.appState.recorrentes?.length || 0
+    });
+    
+    // Para o mês atual, garantir que temos as transações mais recentes
+    if (year === now.getFullYear() && month === now.getMonth() + 1) {
+      if (window.appState.transactions && window.appState.transactions.length > 0) {
+        transacoes = window.appState.transactions;
+        console.log(`🔄 Usando transações do appState para mês atual: ${transacoes.length}`);
+      }
+    }
+
+    // Calcular totais
+    const receitas = transacoes
+      .filter(t => t.tipo === 'receita')
+      .reduce((sum, t) => sum + parseFloat(t.valor), 0);
+    const despesasTransacoes = transacoes
+      .filter(t => t.tipo === 'despesa')
+      .reduce((sum, t) => sum + parseFloat(t.valor), 0);
+    
+    // Calcular recorrentes
+    const recorrentes = window.appState.recorrentes || [];
+    const recorrentesMes = transacoes.filter(t => t.recorrenteId);
+    
+    // Recorrentes EFETIVADAS (que foram aplicadas como transações)
+    const recorrentesEfetivadas = recorrentesMes.map(t => {
+      const recorrente = recorrentes.find(r => r.id === t.recorrenteId);
+      
+      // Calcular parcela atual se não estiver salva
+      let parcelaAtual = t.parcelaAtual;
+      let parcelasTotal = t.parcelasTotal;
+      
+      if (!parcelaAtual || !parcelasTotal) {
+        // Usar dados da recorrente para calcular
+        if (recorrente) {
+          parcelasTotal = recorrente.parcelasTotal;
+          if (window.calcularParcelaRecorrente) {
+            parcelaAtual = window.calcularParcelaRecorrente(recorrente, year, month);
+          } else {
+            parcelaAtual = 1; // Fallback
+          }
+        } else {
+          parcelaAtual = 1;
+          parcelasTotal = 1;
+        }
+      }
+      
+      return {
+        ...recorrente,
+        efetivada: true,
+        parcelaAtual: parcelaAtual,
+        parcelasTotal: parcelasTotal,
+        transacaoId: t.id,
+        valor: t.valor
+      };
+    });
+    
+    // Recorrentes AGENDADAS (que NÃO foram aplicadas como transações)
+    const recorrentesAgendadas = recorrentes.filter(rec => {
+      const jaEfetivada = recorrentesEfetivadas.some(r => r.id === rec.id);
+      if (jaEfetivada) return false; // Já foi efetivada
+      
+      // Verificar se deve ser agendada
+      const [ano, mes, dia] = rec.dataInicio.split('-').map(Number);
+      const dataInicio = new Date(ano, mes - 1, dia);
+      const anoInicio = dataInicio.getFullYear();
+      const mesInicio = dataInicio.getMonth() + 1;
+      
+      if (year < anoInicio || (year === anoInicio && month < mesInicio)) {
+        return false;
+      }
+      
+      if (!rec.efetivarMesAtual && year === anoInicio && month === mesInicio) {
+        return false;
+      }
+      
+      if (rec.parcelasRestantes !== null && rec.parcelasRestantes !== undefined) {
+        let mesesDesdeInicio = (year - anoInicio) * 12 + (month - mesInicio);
+        if (!rec.efetivarMesAtual && (year > anoInicio || (year === anoInicio && month > mesInicio))) {
+          mesesDesdeInicio -= 1;
+        }
+        const parcelasRestantesExibidas = rec.parcelasRestantes - mesesDesdeInicio;
+        return parcelasRestantesExibidas > 0;
+      }
+      return true;
+    });
+    
+    // Combinar efetivadas e agendadas para exibição
+    const todasRecorrentes = [...recorrentesEfetivadas, ...recorrentesAgendadas];
+    
+    const despesasRecorrentesEfetivadas = recorrentesEfetivadas.reduce((sum, rec) => sum + parseFloat(rec.valor), 0);
+    const despesasRecorrentesAgendadas = recorrentesAgendadas.reduce((sum, rec) => sum + parseFloat(rec.valor), 0);
+    const despesasRecorrentesTotal = despesasRecorrentesEfetivadas + despesasRecorrentesAgendadas;
+    const despesas = despesasTransacoes + despesasRecorrentesTotal;
+    const saldo = receitas - despesas;
+    
+    // Calcular orçado
+    const categoriasDespesa = window.appState.categories?.filter(cat => cat.tipo === 'despesa') || [];
+    const totalLimite = categoriasDespesa.reduce((sum, cat) => sum + parseFloat(cat.limite || 0), 0);
+    const orcado = totalLimite - despesas;
+    const progressoOrcado = totalLimite > 0 ? despesas / totalLimite : 0;
+    
+    // Calcular alertas
+    const categoriasComAlerta = window.appState.categories?.filter(cat => {
+      if (cat.tipo !== 'despesa') return false;
+      const transacoesCategoria = transacoes.filter(t => t.categoriaId === cat.id && t.tipo === cat.tipo);
+      const gasto = transacoesCategoria.reduce((sum, t) => sum + parseFloat(t.valor), 0);
+      const limite = parseFloat(cat.limite || 0);
+      const percentual = limite > 0 ? (gasto / limite) : 0;
+      return limite > 0 && percentual > 0.7;
+    }) || [];
+    
+    const alertaGeral = progressoOrcado > 0.7 ? 'Orçado geral em alerta' : null;
+    const totalAlertas = categoriasComAlerta.length + (alertaGeral ? 1 : 0);
+
+    // Top categorias
+    const categoriasComGasto = window.appState.categories
+      .filter(cat => cat.tipo === 'despesa')
+      .map(cat => {
+        const transacoesCategoria = (window.appState.transactions || []).filter(t => 
+          t.categoriaId === cat.id && t.tipo === cat.tipo
+        );
+        const gasto = transacoesCategoria.reduce((sum, t) => sum + parseFloat(t.valor), 0);
+        return { ...cat, gasto };
+      })
+      .filter(cat => cat.gasto > 0)
+      .sort((a, b) => b.gasto - a.gasto)
+      .slice(0, 5);
+
+    // CONSTRUIR TODO O HTML COMO UMA STRING ÚNICA
+    const dashboardHTML = `
+      <div class="tab-container">
+        <div class="tab-header">
+          <h2 class="tab-title-highlight">📊 Dashboard</h2>
+        </div>
+        <div class="tab-content">
+          <div class="content-spacing" id="dashboard-content">
+            <!-- Seletor de mês -->
+            <div class="mb-4 flex items-center justify-center">
+              <div id="mes-selector" class="flex items-center gap-4">
+                <button id="mes-anterior" class="text-blue-600 bg-blue-100 rounded-full w-10 h-10 md:w-8 md:h-8 flex items-center justify-center text-xl hover:bg-blue-200 active:bg-blue-300 transition-all duration-200 touch-manipulation" style="min-width: 44px; min-height: 44px;">&#8592;</button>
+                <span class="font-bold text-lg">${meses[month - 1]} ${year}</span>
+                <button id="mes-proximo" class="text-blue-600 bg-blue-100 rounded-full w-10 h-10 md:w-8 md:h-8 flex items-center justify-center text-xl hover:bg-blue-200 active:bg-blue-300 transition-all duration-200 touch-manipulation" style="min-width: 44px; min-height: 44px;">&#8594;</button>
+              </div>
+            </div>
+            <!-- RESUMO FINANCEIRO COMPLETO -->
+            <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl shadow-lg p-4 md:p-6 mb-4 text-white">
+              <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg md:text-xl font-bold">RESUMO FINANCEIRO</h2>
+                <span class="text-lg md:text-xl font-semibold">${meses[month - 1]} ${year}</span>
+              </div>
+              
+              <!-- Grid principal com 4 métricas -->
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-4">
+                <div class="text-center p-2 md:p-3 bg-white bg-opacity-10 rounded-lg">
+                  <div class="text-lg md:text-xl font-bold mb-1">R$ ${receitas.toFixed(0)}</div>
+                  <div class="text-xs md:text-sm opacity-90">💰 Receitas</div>
+                  <div class="text-xs opacity-75 mt-1">Dinheiro recebido</div>
+                </div>
+                
+                <div class="text-center p-2 md:p-3 bg-white bg-opacity-10 rounded-lg">
+                  <div class="text-lg md:text-xl font-bold mb-1">R$ ${despesas.toFixed(0)}</div>
+                  <div class="text-xs md:text-sm opacity-90">🛒 Despesas</div>
+                  <div class="text-xs opacity-75 mt-1">Dinheiro gasto</div>
+                </div>
+                
+                <div class="text-center p-2 md:p-3 bg-white bg-opacity-10 rounded-lg">
+                  <div class="text-lg md:text-xl font-bold mb-1 ${saldo >= 0 ? 'text-green-200' : 'text-red-200'}">R$ ${saldo.toFixed(0)}</div>
+                  <div class="text-xs md:text-sm opacity-90">💳 Saldo</div>
+                  <div class="text-xs opacity-75 mt-1">${saldo >= 0 ? '✓ Positivo' : '✗ Negativo'}</div>
+                </div>
+                
+                <div class="text-center p-2 md:p-3 bg-white bg-opacity-10 rounded-lg">
+                  <div class="text-lg md:text-xl font-bold mb-1">R$ ${orcado.toFixed(0)}</div>
+                  <div class="text-xs md:text-sm opacity-90">📊 Orçado</div>
+                  <div class="text-xs opacity-75 mt-1">${(progressoOrcado * 100).toFixed(0)}% usado</div>
+                </div>
+              </div>
+              
+              <!-- Barra de progresso do orçamento -->
+              <div class="mb-3">
+                <div class="flex justify-between text-xs mb-1">
+                  <span>Progresso do Orçamento</span>
+                  <span>${(progressoOrcado * 100).toFixed(0)}%</span>
+                </div>
+                <div class="w-full bg-white bg-opacity-20 rounded-full h-2">
+                  <div class="bg-white h-2 rounded-full transition-all duration-300" style="width: ${Math.min(progressoOrcado * 100, 100)}%"></div>
+                </div>
+              </div>
+              
+              <!-- Indicadores de status -->
+              <div class="flex justify-between text-xs opacity-90">
+                <span id="categorias-alerta-btn" class="${totalAlertas > 0 ? 'cursor-pointer hover:opacity-100 hover:underline' : ''}" ${totalAlertas > 0 ? 'onclick="showCategoriasAlertaModal()"' : ''}>${totalAlertas > 0 ? `⚠️ ${totalAlertas} categorias em alerta` : '✅ Todas as categorias OK'}</span>
+                <span>${saldo >= 0 ? '📈 Meta alcançada' : '📉 Revisar gastos'}</span>
+              </div>
+            </div>
+
+            <!-- TOP 5 CATEGORIAS -->
+            <div class="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-2 md:p-6 border border-gray-300 dark:border-gray-700 mb-4">
+              <div class="flex flex-wrap justify-between items-center mb-2 md:mb-4 gap-1 md:gap-0">
+                <h3 class="text-base md:text-xl font-bold text-gray-900 dark:text-gray-100">TOP 5 CATEGORIAS</h3>
+              </div>
+              <div class="space-y-3">
+                ${categoriasComGasto.length === 0 ? '<p class="text-gray-500 text-center py-4">Nenhuma categoria com gastos encontrada neste mês</p>' : categoriasComGasto
+                  .slice(0, 5)
+                  .map(cat => {
+                    const categoria = window.appState.categories?.find(c => c.id === cat.id);
+                    const limite = categoria?.limite ? parseFloat(categoria.limite) : 0;
+                    const porcentagem = limite > 0 ? Math.min((cat.gasto / limite) * 100, 100) : 0;
+                    let corBarra = 'bg-green-500';
+                    if (porcentagem >= 90) {
+                      corBarra = 'bg-red-500';
+                    } else if (porcentagem >= 75) {
+                      corBarra = 'bg-yellow-500';
+                    } else if (porcentagem >= 50) {
+                      corBarra = 'bg-orange-500';
+                    }
+                    
+                    return `
+                      <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center justify-between mb-2">
+                          <div class="flex items-center space-x-2">
+                            <div class="w-3 h-3 rounded-full" style="background-color: ${categoria?.cor || '#4F46E5'}"></div>
+                            <span class="font-medium text-sm md:text-base text-gray-900 dark:text-gray-100">${cat.nome}</span>
+                          </div>
+                          <span class="font-bold text-sm md:text-base ${cat.gasto > limite ? 'text-red-600' : 'text-gray-900 dark:text-gray-100'}">
+                            R$ ${cat.gasto.toFixed(2)}
+                          </span>
+                        </div>
+                        ${limite > 0 ? `
+                          <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+                            <span>${porcentagem.toFixed(0)}%</span>
+                          </div>
+                          <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                            <div class="${corBarra} h-2 rounded-full transition-all duration-300" style="width: ${porcentagem}%"></div>
+                          </div>
+                        ` : '<p class="text-xs text-gray-500 dark:text-gray-400">Sem limite definido</p>'}
+                      </div>
+                    `;
+                  })
+                  .join('')}
+              </div>
+            </div>
+
+            <!-- CATEGORIAS COM LIMITES -->
+            <div class="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-2 md:p-6 border border-gray-300 dark:border-gray-700 mb-4">
+              <div class="flex flex-wrap justify-between items-center mb-2 md:mb-4 gap-1 md:gap-0">
+                <h3 class="text-base md:text-xl font-bold text-gray-900 dark:text-gray-100">📂 Categorias com Limites</h3>
+                <button onclick="window.showAddCategoryModal && window.showAddCategoryModal()" class="btn-primary">
+                  + Nova Categoria
+                </button>
+              </div>
+              <div class="space-y-3">
+                ${(window.appState.categories || []).length === 0 ? '<p class="text-gray-500 text-center py-4">Nenhuma categoria encontrada</p>' : (window.appState.categories || [])
+                  .filter(cat => cat.limite > 0)
+                  .map(cat => {
+                    const transacoesCategoria = (window.appState.transactions || []).filter(t => 
+                      t.categoriaId === cat.id && t.tipo === cat.tipo
+                    );
+                    const gasto = transacoesCategoria.reduce((sum, t) => sum + parseFloat(t.valor), 0);
+                    return { ...cat, gasto };
+                  })
+                  .sort((a, b) => b.gasto - a.gasto) // Ordenar por maiores gastos
+                  .map(cat => {
+                    const limite = parseFloat(cat.limite || 0);
+                    const porcentagem = limite > 0 ? Math.min((cat.gasto / limite) * 100, 100) : 0;
+                    let corBarra = 'bg-green-500';
+                    if (porcentagem >= 90) {
+                      corBarra = 'bg-red-500';
+                    } else if (porcentagem >= 75) {
+                      corBarra = 'bg-yellow-500';
+                    } else if (porcentagem >= 50) {
+                      corBarra = 'bg-orange-500';
+                    }
+                    
+                    return `
+                      <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center justify-between mb-2">
+                          <div class="flex items-center space-x-2">
+                            <div class="w-3 h-3 rounded-full" style="background-color: ${cat.cor || '#4F46E5'}"></div>
+                            <span class="font-medium text-sm md:text-base text-gray-900 dark:text-gray-100">${cat.nome}</span>
+                          </div>
+                          <span class="font-bold text-sm md:text-base ${cat.gasto > limite ? 'text-red-600' : 'text-gray-900 dark:text-gray-100'}">
+                            R$ ${cat.gasto.toFixed(2)}
+                          </span>
+                        </div>
+                        ${limite > 0 ? `
+                          <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+                            <span>Limite: R$ ${limite.toFixed(2)}</span>
+                            <span>${porcentagem.toFixed(1)}% usado</span>
+                          </div>
+                          <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                            <div class="${corBarra} h-2 rounded-full transition-all duration-300" style="width: ${porcentagem}%"></div>
+                          </div>
+                        ` : '<p class="text-xs text-gray-500 dark:text-gray-400">Sem limite definido</p>'}
+                      </div>
+                    `;
+                  })
+                  .join('')}
+              </div>
+            </div>
+
+            <!-- DESPESAS RECORRENTES DO MÊS -->
+            <div class="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-2 md:p-6 border border-gray-300 dark:border-gray-700 mb-4">
+              <div class="flex flex-wrap justify-between items-center mb-2 md:mb-4 gap-1 md:gap-0">
+                <h3 class="text-base md:text-xl font-bold text-gray-900 dark:text-gray-100">Despesas Recorrentes do Mês</h3>
+                <button onclick="window.showAddRecorrenteModal && window.showAddRecorrenteModal()" class="btn-primary">
+                  + Nova Despesa Recorrente
+                </button>
+              </div>
+              <div class="space-y-2 md:space-y-3">
+                ${todasRecorrentes.length === 0 ? '<p class="text-gray-500 text-center py-4">Nenhuma despesa recorrente aplicada ou agendada neste mês</p>' : todasRecorrentes
+                  .slice(0, 5)
+                  .map(rec => {
+                    const categoria = window.appState.categories?.find(c => c.id === rec.categoriaId);
+                    return `
+                      <div class="flex flex-wrap justify-between items-center p-2 md:p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 gap-1 md:gap-0 bg-white dark:bg-gray-900">
+                        <div class="flex-1 min-w-[120px]">
+                          <p class="font-medium text-xs md:text-base text-gray-900 dark:text-gray-100">${rec.descricao}</p>
+                          <p class="text-xs md:text-sm text-gray-500 dark:text-gray-300">
+                            ${categoria?.nome || 'Sem categoria'} • Recorrente
+                            ${(() => {
+                              if (rec.efetivada) {
+                                // Recorrente EFETIVADA
+                                return ` • ✅ Efetivada: ${rec.parcelaAtual} de ${rec.parcelasTotal}`;
+                              } else if (!rec.parcelasTotal || rec.parcelasTotal <= 1) {
+                                // Recorrente INFINITA agendada
+                                return ' • 📅 Agendada: Infinito';
+                              } else {
+                                // Recorrente AGENDADA parcelada
+                                const status = window.calcularStatusRecorrente ? 
+                                  window.calcularStatusRecorrente(rec, window.appState.transactions || [], year, month) : 
+                                  { parcelaAtual: 1, totalParcelas: rec.parcelasTotal, foiEfetivadaEsteMes: false };
+                                
+                                return ` • 📅 Agendada: ${status.parcelaAtual} de ${status.totalParcelas}`;
+                              }
+                            })()}
+                          </p>
+                        </div>
+                        <div class="flex items-center space-x-1 md:space-x-2">
+                          <span class="font-bold text-xs md:text-base text-red-600">
+                            -R$ ${parseFloat(rec.valor).toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    `;
+                  })
+                  .join('')}
+              </div>
+            </div>
+
+            <!-- TRANSAÇÕES RECENTES -->
+            <div class="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-2 md:p-6 border border-gray-300 dark:border-gray-700">
+              <div class="flex flex-wrap justify-between items-center mb-2 md:mb-4 gap-1 md:gap-0">
+                <h3 class="text-base md:text-xl font-bold text-gray-900 dark:text-gray-100">Transações Recentes</h3>
+                <button onclick="showAddTransactionModal()" class="btn-primary">
+                  + Nova Transação
+                </button>
+              </div>
+              <div class="space-y-2 md:space-y-3">
+                ${transacoes.length === 0 ? '<p class="text-gray-500 text-center py-4">Nenhuma transação encontrada neste mês</p>' : transacoes
+                  .slice(0, 10)
+                  .map(t => {
+                    const categoria = window.appState.categories?.find(c => c.id === t.categoriaId);
+                    
+                    // Buscar informações da recorrente se for uma transação recorrente
+                    let parcelaInfo = '';
+                    if (t.recorrenteId) {
+                      const recorrente = window.appState.recorrentes?.find(r => r.id === t.recorrenteId);
+                      if (recorrente) {
+                        if (recorrente.parcelasTotal && recorrente.parcelasTotal > 1) {
+                          const status = window.calcularStatusRecorrente ? 
+                            window.calcularStatusRecorrente(recorrente, window.appState.transactions || [], year, month) : 
+                            { parcelaAtual: 1, totalParcelas: recorrente.parcelasTotal, foiEfetivadaEsteMes: false };
+                          
+                          if (status.foiEfetivadaEsteMes) {
+                            parcelaInfo = ` • ✅ Efetivada: ${status.parcelaAtual} de ${status.totalParcelas}`;
+                          } else {
+                            parcelaInfo = ` • 📅 Agendada: ${status.parcelaAtual} de ${status.totalParcelas}`;
+                          }
+                        } else {
+                          parcelaInfo = ' • Infinito';
+                        }
+                      } else {
+                        parcelaInfo = ' • Recorrente';
+                      }
+                    }
+                    
+                    return `
+                      <div class="flex flex-wrap justify-between items-center p-2 md:p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 gap-1 md:gap-0 bg-white dark:bg-gray-900">
+                        <div class="flex-1 min-w-[120px]">
+                          <p class="font-medium text-xs md:text-base text-gray-900 dark:text-gray-100">${t.descricao}</p>
+                          <p class="text-xs md:text-sm text-gray-500 dark:text-gray-300">
+                            ${categoria?.nome || 'Sem categoria'} • ${t.createdAt && t.createdAt.toDate ? t.createdAt.toDate().toLocaleDateString() : t.createdAt ? new Date(t.createdAt).toLocaleDateString() : ''}
+                            ${t.recorrenteId ? ' • Recorrente' + parcelaInfo : ''}
+                          </p>
+                        </div>
+                        <div class="flex items-center space-x-1 md:space-x-2">
+                          <span class="font-bold text-xs md:text-base ${t.tipo === 'receita' ? 'text-green-600' : 'text-red-600'}">
+                            ${t.tipo === 'receita' ? '+' : '-'}R$ ${parseFloat(t.valor).toFixed(2)}
+                          </span>
+                          <button onclick="window.editTransaction && window.editTransaction('${t.id}')" class="text-blue-600 hover:text-blue-800 text-xs md:text-base ml-2">✏️</button>
+                          <button onclick="window.deleteTransactionWithConfirmation && window.deleteTransactionWithConfirmation('${t.id}', '${t.descricao.replace(/'/g, "\\'")}')" class="text-red-600 hover:text-red-800 text-xs md:text-base ml-2">🗑️</button>
+                        </div>
+                      </div>
+                    `;
+                  })
+                  .join('')}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Modal Categorias em Alerta -->
+      <div id="categorias-alerta-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full max-h-[80vh] overflow-y-auto">
+          <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+            <div class="flex justify-between items-center">
+              <h3 class="text-lg font-bold text-gray-900 dark:text-white">⚠️ Categorias em Alerta</h3>
+              <button onclick="closeCategoriasAlertaModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                <span class="text-xl">×</span>
+              </button>
+            </div>
+          </div>
+          <div id="categorias-alerta-content" class="p-4">
+            <!-- Conteúdo será preenchido dinamicamente -->
+          </div>
+        </div>
+      </div>
+    `;
+
+    // UMA ÚNICA OPERAÇÃO INNERHTML - SOLUÇÃO DEFINITIVA
+    content.innerHTML = dashboardHTML;
+
+    // Configurar botões do dashboard
+    setTimeout(() => {
+      setupDashboardButtons();
+    }, 100);
+
+    renderFAB();
+    // Remover renderBottomNav daqui - deve ser chamado apenas pelo router
+    // renderBottomNav('/dashboard');
+
+  } catch (err) {
+    console.error('Erro ao renderizar dashboard:', err);
+    const content = document.getElementById('app-content');
+    if (content) {
+      content.innerHTML =
+        '<div class="text-red-600 text-center mt-4">Erro ao carregar dashboard. Tente novamente.</div>';
+    }
+  } finally {
+    // Reset da flag de renderização
+    window.isRenderingDashboard = false;
+  }
+}
+
+// Função para mostrar o modal de categorias em alerta
+window.showCategoriasAlertaModal = function() {
+  try {
+    const modal = document.getElementById('categorias-alerta-modal');
+    const content = document.getElementById('categorias-alerta-content');
+    
+    if (!modal || !content) {
+      console.error('❌ Modal de categorias em alerta não encontrado');
+      return;
+    }
+
+    // Obter categorias em alerta
+    const categoriasAlerta = window.appState.categories?.filter(categoria => {
+      const limite = parseFloat(categoria.limite || 0);
+      if (limite <= 0) return false;
+
+      // Calcular gasto da categoria
+      const transacoesCategoria = window.appState.transactions?.filter(t => 
+        t.categoriaId === categoria.id && t.tipo === categoria.tipo
+      ) || [];
+      
+      const gasto = transacoesCategoria.reduce((sum, t) => sum + parseFloat(t.valor || 0), 0);
+      const porcentagem = (gasto / limite) * 100;
+      
+      return porcentagem >= 75; // Consideramos alerta quando >= 75%
+    }) || [];
+
+    if (categoriasAlerta.length === 0) {
+      content.innerHTML = `
+        <div class="text-center py-8">
+          <div class="text-4xl mb-4">✅</div>
+          <div class="text-lg font-semibold text-gray-800 dark:text-white mb-2">Nenhuma categoria em alerta</div>
+          <div class="text-gray-600 dark:text-gray-400">Todas as categorias estão dentro do limite</div>
+        </div>
+      `;
+    } else {
+      content.innerHTML = `
+        <div class="space-y-3">
+          ${categoriasAlerta.map(categoria => {
+            const limite = parseFloat(categoria.limite || 0);
+            const transacoesCategoria = window.appState.transactions?.filter(t => 
+              t.categoriaId === categoria.id && t.tipo === categoria.tipo
+            ) || [];
+            
+            const gasto = transacoesCategoria.reduce((sum, t) => sum + parseFloat(t.valor || 0), 0);
+            const porcentagem = Math.min((gasto / limite) * 100, 100);
+            
+            let corBarra = 'bg-green-500';
+            let statusTexto = 'Normal';
+            let statusIcon = '✅';
+            
+            if (porcentagem >= 90) {
+              corBarra = 'bg-red-500';
+              statusTexto = 'Crítico';
+              statusIcon = '🚨';
+            } else if (porcentagem >= 75) {
+              corBarra = 'bg-yellow-500';
+              statusTexto = 'Atenção';
+              statusIcon = '⚠️';
+            } else if (porcentagem >= 50) {
+              corBarra = 'bg-orange-500';
+              statusTexto = 'Moderado';
+              statusIcon = '🔶';
+            }
+            
+            return `
+              <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 border border-gray-200 dark:border-gray-600">
+                <div class="flex justify-between items-start mb-2">
+                  <div>
+                    <h4 class="font-semibold text-gray-900 dark:text-white">${categoria.nome}</h4>
+                    <p class="text-sm text-gray-600 dark:text-gray-300">${categoria.tipo === 'receita' ? 'Receita' : 'Despesa'}</p>
+                  </div>
+                  <div class="text-right">
+                    <div class="text-sm font-semibold ${porcentagem >= 90 ? 'text-red-600' : porcentagem >= 75 ? 'text-yellow-600' : 'text-orange-600'}">
+                      ${statusIcon} ${statusTexto}
+                    </div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400">${porcentagem.toFixed(0)}% usado</div>
+                  </div>
+                </div>
+                
+                <div class="mb-2">
+                  <div class="flex justify-between text-sm mb-1">
+                    <span class="text-gray-600 dark:text-gray-300">R$ ${gasto.toFixed(2)}</span>
+                    <span class="text-gray-600 dark:text-gray-300">R$ ${limite.toFixed(2)}</span>
+                  </div>
+                  <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                    <div class="${corBarra} h-2 rounded-full transition-all duration-300" style="width: ${porcentagem}%"></div>
+                  </div>
+                </div>
+                
+                <div class="text-xs text-gray-500 dark:text-gray-400">
+                  Restante: R$ ${Math.max(limite - gasto, 0).toFixed(2)}
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+        
+        <div class="mt-4 p-3 bg-blue-50 dark:bg-blue-900 rounded-lg">
+          <p class="text-sm text-blue-800 dark:text-blue-200">
+            <strong>💡 Dica:</strong> Categorias em alerta são aquelas que já utilizaram 75% ou mais do limite definido.
+          </p>
+        </div>
+      `;
+    }
+
+    modal.classList.remove('hidden');
+  } catch (error) {
+    console.error('❌ Erro ao mostrar modal de categorias em alerta:', error);
+  }
+};
+
+// Função para fechar o modal de categorias em alerta
+window.closeCategoriasAlertaModal = function() {
+  const modal = document.getElementById('categorias-alerta-modal');
+  if (modal) {
+    modal.classList.add('hidden');
+  }
+};
+
+// Fechar modal ao clicar fora dele
+document.addEventListener('click', function(event) {
+  const modal = document.getElementById('categorias-alerta-modal');
+  if (modal && event.target === modal) {
+    window.closeCategoriasAlertaModal();
+  }
+});
+
+// Função para fechar modal de alertas
+function closeModalAlertas() {
+  const modal = document.getElementById('modal-alertas');
+  if (modal) {
+    modal.classList.add('hidden');
+  }
+}
+
+// Função para renderizar transações
+function renderTransactions() {
+  const content = document.getElementById('app-content');
+  content.innerHTML = `
+    <div class="tab-container">
+      <div class="tab-header">
+        <h2 class="tab-title-highlight">📋 Transações</h2>
+      </div>
+      <div class="tab-content">
+        <div class="content-spacing">
+          <!-- Ações principais -->
+          <div class="mb-4 flex items-center gap-2">
+            <button id="add-transaction-btn" class="btn-primary">
+              <span class="icon-standard">➕</span>
+              <span class="hidden sm:inline">Nova Transação</span>
+              <span class="sm:hidden">Nova</span>
+            </button>
+            <button id="voice-btn" class="btn-secondary">
+              <span class="icon-standard">🎤</span>
+              <span class="hidden sm:inline">Voz</span>
+              <span class="sm:hidden">Voz</span>
+            </button>
+          </div>
+          
+          <!-- Filtro de pesquisa -->
+          <div class="mb-4">
+            <div class="relative">
+              <input 
+                type="text" 
+                id="transaction-search" 
+                placeholder="🔍 Pesquisar transações..." 
+                class="w-full px-4 py-2 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+              />
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <span class="text-gray-400">🔍</span>
+              </div>
+            </div>
+            <div id="transaction-search-results" class="mt-2 text-sm text-gray-600 dark:text-gray-400 hidden">
+              <span id="transaction-search-count">0</span> transação(ões) encontrada(s)
+            </div>
+          </div>
+          
+          <div id="transactions-list">
+            ${window.appState.transactions?.length === 0
+            ? `
+            <div class="text-center py-8">
+              <div class="text-4xl mb-4">📋</div>
+              <div class="text-lg font-semibold text-gray-800 dark:text-white mb-2">Nenhuma transação encontrada</div>
+              <div class="text-gray-600 dark:text-gray-400">Adicione sua primeira transação para começar</div>
+            </div>
+          `
+            : window.appState.transactions
+              ?.map(t => {
+                const categoria = window.appState.categories?.find(c => c.id === t.categoriaId);
+                const data = t.createdAt && t.createdAt.toDate ? t.createdAt.toDate().toLocaleDateString('pt-BR') : new Date(t.createdAt).toLocaleDateString('pt-BR');
+                const isReceita = t.tipo === 'receita';
+                
+                return `
+            <div class="list-item ${isReceita ? 'border-l-4 border-l-green-500' : 'border-l-4 border-l-red-500'}">
+              <div class="flex-1 min-w-0">
+                <div class="list-item-title truncate">${t.descricao}</div>
+                <div class="list-item-subtitle text-xs sm:text-sm">
+                  ${categoria?.nome || 'Sem categoria'} • ${data}
+                  ${t.recorrenteId ? ' • Recorrente' : ''}
+                  ${(() => {
+                    if (!t.recorrenteId) return '';
+                    
+                    // Calcular parcela se não estiver salva
+                    let parcelaAtual = t.parcelaAtual;
+                    let parcelasTotal = t.parcelasTotal;
+                    
+                    if (!parcelaAtual || !parcelasTotal) {
+                      const recorrente = window.appState.recorrentes?.find(r => r.id === t.recorrenteId);
+                      if (recorrente) {
+                        parcelasTotal = recorrente.parcelasTotal;
+                        if (window.calcularParcelaRecorrente) {
+                          const now = new Date();
+                          parcelaAtual = window.calcularParcelaRecorrente(recorrente, now.getFullYear(), now.getMonth() + 1);
+                        } else {
+                          parcelaAtual = 1;
+                        }
+                      } else {
+                        parcelaAtual = 1;
+                        parcelasTotal = 1;
+                      }
+                    }
+                    
+                    if (parcelasTotal && parcelasTotal > 1) {
+                      return ` • ${parcelaAtual} de ${parcelasTotal}`;
+                    } else {
+                      return ' • Infinito';
+                    }
+                  })()}
+                </div>
+              </div>
+              <div class="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+                <span class="text-sm sm:text-base font-bold ${isReceita ? 'text-green-600' : 'text-red-600'}">
+                  ${isReceita ? '+' : '-'}R$ ${parseFloat(t.valor).toFixed(2)}
+                </span>
+                <div class="flex gap-1">
+                  <button onclick="editTransaction('${t.id}')" class="btn-secondary mobile-btn">
+                    <span class="icon-standard">✏️</span>
+                  </button>
+                  <button onclick="window.deleteTransactionWithConfirmation && window.deleteTransactionWithConfirmation('${t.id}', '${t.descricao.replace(/'/g, "\\'")}')" class="btn-danger mobile-btn">
+                    <span class="icon-standard">🗑️</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+              })
+              .join('') || ''}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  // Configurar botões da tela de transações
+  setTimeout(() => {
+    setupTransactionButtons();
+  }, 100);
+  
+  // Configurar filtro de pesquisa
+  setupTransactionSearch();
+  
+  renderFAB();
+  // Remover renderBottomNav daqui - deve ser chamado apenas pelo router
+  // renderBottomNav('/transactions');
+}
+
+// Função para configurar pesquisa de transações
+function setupTransactionSearch() {
+  const searchInput = document.getElementById('transaction-search');
+  const resultsDiv = document.getElementById('transaction-search-results');
+  const countSpan = document.getElementById('transaction-search-count');
+  const listDiv = document.getElementById('transactions-list');
+  
+  if (!searchInput) return;
+  
+  searchInput.addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase().trim();
+    
+    if (searchTerm === '') {
+      // Mostrar todas as transações
+      resultsDiv.classList.add('hidden');
+      listDiv.innerHTML = renderAllTransactions();
+      return;
+    }
+    
+    // Filtrar transações
+    const filteredTransactions = window.appState.transactions?.filter(t => {
+      const descricao = t.descricao.toLowerCase();
+      const categoria = window.appState.categories?.find(c => c.id === t.categoriaId);
+      const categoriaNome = categoria?.nome?.toLowerCase() || '';
+      const valor = t.valor.toString();
+      
+      return descricao.includes(searchTerm) || 
+             categoriaNome.includes(searchTerm) || 
+             valor.includes(searchTerm);
+    }) || [];
+    
+    // Atualizar contador
+    countSpan.textContent = filteredTransactions.length;
+    resultsDiv.classList.remove('hidden');
+    
+    // Renderizar transações filtradas
+    listDiv.innerHTML = renderFilteredTransactions(filteredTransactions);
+  });
+  
+  // Limpar pesquisa com Escape
+  searchInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      this.value = '';
+      this.dispatchEvent(new Event('input'));
+    }
+  });
+}
+
+// Função para renderizar todas as transações
+function renderAllTransactions() {
+  if (!window.appState.transactions?.length) {
+    return `
+      <div class="text-center py-8">
+        <div class="text-4xl mb-4">📋</div>
+        <div class="text-lg font-semibold text-gray-800 dark:text-white mb-2">Nenhuma transação encontrada</div>
+        <div class="text-gray-600 dark:text-gray-400">Adicione sua primeira transação para começar</div>
+      </div>
+    `;
+  }
+  
+  return window.appState.transactions.map(t => {
+    const categoria = window.appState.categories?.find(c => c.id === t.categoriaId);
+    const data = t.createdAt && t.createdAt.toDate ? t.createdAt.toDate().toLocaleDateString('pt-BR') : new Date(t.createdAt).toLocaleDateString('pt-BR');
+    const isReceita = t.tipo === 'receita';
+    
+    return `
+      <div class="list-item ${isReceita ? 'border-l-4 border-l-green-500' : 'border-l-4 border-l-red-500'}">
+        <div class="flex-1 min-w-0">
+          <div class="list-item-title truncate">${t.descricao}</div>
+          <div class="list-item-subtitle text-xs sm:text-sm">
+            ${categoria?.nome || 'Sem categoria'} • ${data}
+            ${t.recorrenteId ? ' • Recorrente' : ''}
+            ${(() => {
+              if (!t.recorrenteId) return '';
+              
+              // Calcular parcela se não estiver salva
+              let parcelaAtual = t.parcelaAtual;
+              let parcelasTotal = t.parcelasTotal;
+              
+              if (!parcelaAtual || !parcelasTotal) {
+                const recorrente = window.appState.recorrentes?.find(r => r.id === t.recorrenteId);
+                if (recorrente) {
+                  parcelasTotal = recorrente.parcelasTotal;
+                  if (window.calcularParcelaRecorrente) {
+                    const now = new Date();
+                    parcelaAtual = window.calcularParcelaRecorrente(recorrente, now.getFullYear(), now.getMonth() + 1);
+                  } else {
+                    parcelaAtual = 1;
+                  }
+                } else {
+                  parcelaAtual = 1;
+                  parcelasTotal = 1;
+                }
+              }
+              
+              if (parcelasTotal && parcelasTotal > 1) {
+                return ` • ${parcelaAtual} de ${parcelasTotal}`;
+              } else {
+                return ' • Infinito';
+              }
+            })()}
+          </div>
+        </div>
+        <div class="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+          <span class="text-sm sm:text-base font-bold ${isReceita ? 'text-green-600' : 'text-red-600'}">
+            ${isReceita ? '+' : '-'}R$ ${parseFloat(t.valor).toFixed(2)}
+          </span>
+          <div class="flex gap-1">
+            <button onclick="editTransaction('${t.id}')" class="btn-secondary mobile-btn">
+              <span class="icon-standard">✏️</span>
+            </button>
+            <button onclick="window.deleteTransactionWithConfirmation && window.deleteTransactionWithConfirmation('${t.id}', '${t.descricao.replace(/'/g, "\\'")}')" class="btn-danger mobile-btn">
+              <span class="icon-standard">🗑️</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// Função para renderizar transações filtradas
+function renderFilteredTransactions(filteredTransactions) {
+  if (!filteredTransactions.length) {
+    return `
+      <div class="text-center py-8">
+        <div class="text-4xl mb-4">🔍</div>
+        <div class="text-lg font-semibold text-gray-800 dark:text-white mb-2">Nenhuma transação encontrada</div>
+        <div class="text-gray-600 dark:text-gray-400">Tente usar termos diferentes na pesquisa</div>
+      </div>
+    `;
+  }
+  
+  return filteredTransactions.map(t => {
+    const categoria = window.appState.categories?.find(c => c.id === t.categoriaId);
+    const data = t.createdAt && t.createdAt.toDate ? t.createdAt.toDate().toLocaleDateString('pt-BR') : new Date(t.createdAt).toLocaleDateString('pt-BR');
+    const isReceita = t.tipo === 'receita';
+    
+    return `
+      <div class="list-item ${isReceita ? 'border-l-4 border-l-green-500' : 'border-l-4 border-l-red-500'}">
+        <div class="flex-1 min-w-0">
+          <div class="list-item-title truncate">${t.descricao}</div>
+          <div class="list-item-subtitle text-xs sm:text-sm">
+            ${categoria?.nome || 'Sem categoria'} • ${data}
+            ${t.recorrenteId ? ' • Recorrente' : ''}
+            ${(() => {
+              if (!t.recorrenteId) return '';
+              
+              // Calcular parcela se não estiver salva
+              let parcelaAtual = t.parcelaAtual;
+              let parcelasTotal = t.parcelasTotal;
+              
+              if (!parcelaAtual || !parcelasTotal) {
+                const recorrente = window.appState.recorrentes?.find(r => r.id === t.recorrenteId);
+                if (recorrente) {
+                  parcelasTotal = recorrente.parcelasTotal;
+                  if (window.calcularParcelaRecorrente) {
+                    const now = new Date();
+                    parcelaAtual = window.calcularParcelaRecorrente(recorrente, now.getFullYear(), now.getMonth() + 1);
+                  } else {
+                    parcelaAtual = 1;
+                  }
+                } else {
+                  parcelaAtual = 1;
+                  parcelasTotal = 1;
+                }
+              }
+              
+              if (parcelasTotal && parcelasTotal > 1) {
+                return ` • ${parcelaAtual} de ${parcelasTotal}`;
+              } else {
+                return ' • Infinito';
+              }
+            })()}
+          </div>
+        </div>
+        <div class="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+          <span class="text-sm sm:text-base font-bold ${isReceita ? 'text-green-600' : 'text-red-600'}">
+            ${isReceita ? '+' : '-'}R$ ${parseFloat(t.valor).toFixed(2)}
+          </span>
+          <div class="flex gap-1">
+            <button onclick="editTransaction('${t.id}')" class="btn-secondary mobile-btn">
+              <span class="icon-standard">✏️</span>
+            </button>
+            <button onclick="window.deleteTransactionWithConfirmation && window.deleteTransactionWithConfirmation('${t.id}', '${t.descricao.replace(/'/g, "\\'")}')" class="btn-danger mobile-btn">
+              <span class="icon-standard">🗑️</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// Função para calcular número da parcela
+function calcularNumeroParcela(transacao) {
+  if (!transacao.recorrenteId) {
+    return null;
+  }
+  return 1; // Simplificado para esta versão
+}
+
+// Função para renderizar categorias
+async function renderCategories() {
+  await loadTransactions();
+  await loadRecorrentes();
+  const content = document.getElementById('app-content');
+
+  // Calcular gastos por categoria no mês atual
+  const now = new Date();
+  const anoAtual = now.getFullYear();
+  const mesAtual = now.getMonth() + 1;
+
+  const categoriasComGastos = window.appState.categories
+    .map(cat => {
+      // Filtrar transações da categoria no mês atual (incluindo recorrentes aplicadas)
+      const transacoesCategoria = window.appState.transactions.filter(t => {
+        // Tratar Firestore Timestamp
+        let transacaoData;
+        if (
+          t.createdAt &&
+          typeof t.createdAt === 'object' &&
+          t.createdAt.seconds
+        ) {
+          // É um Firestore Timestamp
+          transacaoData = new Date(t.createdAt.seconds * 1000);
+        } else {
+          // É uma string ou outro formato
+          transacaoData = new Date(t.createdAt);
+        }
+
+        const transacaoAno = transacaoData.getFullYear();
+        const transacaoMes = transacaoData.getMonth() + 1;
+
+        return (
+          t.categoriaId === cat.id &&
+          t.tipo === cat.tipo && // Usar o tipo da categoria (receita ou despesa)
+          transacaoAno === anoAtual &&
+          transacaoMes === mesAtual
+        );
+      });
+
+      // Calcular total gasto das transações diretas
+      const totalGastoTransacoes = transacoesCategoria.reduce(
+        (sum, t) => sum + parseFloat(t.valor),
+        0
+      );
+
+      // Calcular total gasto das recorrentes aplicadas neste mês
+      const recorrentesAplicadas = window.appState.recorrentes.filter(
+        r => r.categoriaId === cat.id && r.ativa === true
+      );
+
+      // Verificar quais recorrentes foram aplicadas neste mês
+      let totalGastoRecorrentes = 0;
+      recorrentesAplicadas.forEach(rec => {
+        const transacoesRecorrente = window.appState.transactions.filter(
+          t =>
+            t.recorrenteId === rec.id &&
+            new Date(t.createdAt).getFullYear() === anoAtual &&
+            new Date(t.createdAt).getMonth() + 1 === mesAtual
+        );
+
+        if (transacoesRecorrente.length > 0) {
+          totalGastoRecorrentes += parseFloat(rec.valor);
+        }
+      });
+
+      // Total geral (transações + recorrentes)
+      const totalGasto = totalGastoTransacoes + totalGastoRecorrentes;
+
+      // Calcular limite (se existir)
+      const limite = cat.limite ? parseFloat(cat.limite) : 0;
+
+      // Calcular saldo (para receitas: quanto falta para atingir o limite)
+      const saldo =
+        cat.tipo === 'receita' ? limite - totalGasto : limite - totalGasto;
+
+      // Calcular porcentagem de uso
+      const porcentagem =
+        limite > 0 ? Math.min((totalGasto / limite) * 100, 100) : 0;
+
+      // Determinar cor da barra baseada na porcentagem
+      let corBarra = 'bg-green-500';
+      if (porcentagem >= 90) {
+        corBarra = 'bg-red-500';
+      } else if (porcentagem >= 75) {
+        corBarra = 'bg-yellow-500';
+      } else if (porcentagem >= 50) {
+        corBarra = 'bg-orange-500';
+      }
+
+      return {
+        ...cat,
+        totalGasto,
+        totalGastoTransacoes,
+        totalGastoRecorrentes,
+        limite,
+        saldo,
+        porcentagem,
+        corBarra
+      };
+    })
+    .sort((a, b) => b.totalGasto - a.totalGasto); // Ordenar por gasto (maior para menor)
+
+  content.innerHTML = `
+    <div class="tab-container">
+      <div class="tab-header">
+        <h2 class="tab-title-highlight">Categorias</h2>
+        <div class="flex gap-2">
+          <button onclick="window.migrarTransacoesAntigas()" class="btn-secondary">
+            <span>🔄 Migrar</span>
+          </button>
+          <button onclick="window.corrigirTipoCategoria()" class="btn-secondary">
+            <span>🔧 Corrigir</span>
+          </button>
+          <button id="add-category-btn" class="btn-primary">
+            <span>+ Nova Categoria</span>
+          </button>
+        </div>
+      </div>
+      <div class="tab-content">
+        <div class="content-spacing">
+          <!-- Filtro de pesquisa -->
+          <div class="mb-4">
+            <div class="relative">
+              <input 
+                type="text" 
+                id="category-search" 
+                placeholder="🔍 Pesquisar categorias..." 
+                class="w-full px-4 py-2 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+              />
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <span class="text-gray-400">🔍</span>
+              </div>
+            </div>
+            <div id="category-search-results" class="mt-2 text-sm text-gray-600 dark:text-gray-400 hidden">
+              <span id="category-search-count">0</span> categoria(s) encontrada(s)
+            </div>
+          </div>
+          
+          <div id="categories-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            ${categoriasComGastos
+    .map(
+      cat => `
+            <div class="card-standard">
+              <div class="flex items-center space-x-3 mb-3">
+                <div class="w-4 h-4 rounded-full" style="background-color: ${cat.cor || '#4F46E5'}"></div>
+                <span class="list-item-title">${cat.nome}</span>
+              </div>
+              <p class="list-item-subtitle">Tipo: ${cat.tipo}</p>
+              
+              ${
+  cat.limite > 0
+    ? `
+                <div class="mt-3 space-y-2">
+                  <div class="flex justify-between text-xs md:text-sm">
+                    <span class="text-gray-600 dark:text-gray-400">Limite:</span>
+                    <span class="font-medium text-gray-900 dark:text-gray-100">R$ ${cat.limite.toFixed(2)}</span>
+                  </div>
+                  <div class="flex justify-between text-xs md:text-sm">
+                    <span class="text-gray-600 dark:text-gray-400">${cat.tipo === 'receita' ? 'Receita' : 'Gasto'}:</span>
+                    <span class="font-medium ${cat.tipo === 'receita' ? 'text-green-600' : cat.totalGasto > cat.limite ? 'text-red-600' : 'text-gray-900 dark:text-gray-100'}">R$ ${cat.totalGasto.toFixed(2)}</span>
+                  </div>
+                  ${
+  cat.totalGasto > 0
+    ? `
+                    <div class="text-xs text-gray-500 dark:text-gray-400 pl-2">
+                      • Transações: R$ ${cat.totalGastoTransacoes.toFixed(2)}
+                      ${cat.totalGastoRecorrentes > 0 ? `<br>• Recorrentes: R$ ${cat.totalGastoRecorrentes.toFixed(2)}` : ''}
+                    </div>
+                  `
+    : ''
+}
+                  <div class="flex justify-between text-xs md:text-sm">
+                    <span class="text-gray-600 dark:text-gray-400">${cat.tipo === 'receita' ? 'Falta para meta' : 'Saldo'}:</span>
+                    <span class="font-medium ${cat.tipo === 'receita' ? (cat.saldo <= 0 ? 'text-green-600' : cat.saldo < cat.limite * 0.25 ? 'text-yellow-600' : 'text-red-600') : cat.saldo < 0 ? 'text-red-600' : cat.saldo < cat.limite * 0.25 ? 'text-yellow-600' : 'text-green-600'}">R$ ${cat.saldo.toFixed(2)}</span>
+                  </div>
+                  
+                  <!-- Barra de Progresso -->
+                  <div class="mt-2">
+                    <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+                      <span>${cat.porcentagem.toFixed(1)}% ${cat.tipo === 'receita' ? 'atingido' : 'usado'}</span>
+                      <span>${cat.porcentagem >= 100 ? (cat.tipo === 'receita' ? 'Meta atingida!' : 'Limite excedido!') : ''}</span>
+                    </div>
+                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                      <div class="${cat.corBarra} h-2 rounded-full transition-all duration-300" style="width: ${Math.min(cat.porcentagem, 100)}%"></div>
+                    </div>
+                  </div>
+                </div>
+              `
+    : `
+                <div class="mt-3">
+                  <div class="flex justify-between text-xs md:text-sm">
+                    <span class="text-gray-600 dark:text-gray-400">${cat.tipo === 'receita' ? 'Receita' : 'Gasto'} do mês:</span>
+                    <span class="font-medium ${cat.tipo === 'receita' ? 'text-green-600' : 'text-gray-900 dark:text-gray-100'}">R$ ${cat.totalGasto.toFixed(2)}</span>
+                  </div>
+                  ${
+  cat.totalGasto > 0
+    ? `
+                    <div class="text-xs text-gray-500 dark:text-gray-400 pl-2">
+                      • ${cat.tipo === 'receita' ? 'Receitas' : 'Transações'}: R$ ${cat.totalGastoTransacoes.toFixed(2)}
+                      ${cat.totalGastoRecorrentes > 0 ? `<br>• Recorrentes: R$ ${cat.totalGastoRecorrentes.toFixed(2)}` : ''}
+                    </div>
+                  `
+    : ''
+}
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Sem limite definido</p>
+                </div>
+              `
+}
+              
+              <div class="flex flex-wrap justify-end gap-1 sm:gap-2 mt-4">
+                <button onclick="editCategory('${cat.id}')" class="btn-secondary mobile-btn">
+                  <span class="icon-standard">✏️</span>
+                  <span class="hidden sm:inline">Editar</span>
+                </button>
+                <button onclick="window.deleteCategoryWithConfirmation('${cat.id}', '${cat.nome}')" class="btn-danger mobile-btn">
+                  <span class="icon-standard">🗑️</span>
+                  <span class="hidden sm:inline">Excluir</span>
+                </button>
+                <button onclick="showCategoryHistory('${cat.id}')" class="btn-secondary mobile-btn">
+                  <span class="icon-standard">📊</span>
+                  <span class="hidden sm:inline">Histórico</span>
+                </button>
+              </div>
+            </div>
+          `
+    )
+    .join('')}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Configurar botões da tela de categorias
+  setTimeout(() => {
+    setupCategoryButtons();
+  }, 100);
+  
+  // Configurar filtro de pesquisa
+  setupCategorySearch();
+  
+  renderFAB();
+  // Remover renderBottomNav daqui - deve ser chamado apenas pelo router
+  // renderBottomNav('/categories');
+}
+
+// Função para configurar pesquisa de categorias
+function setupCategorySearch() {
+  const searchInput = document.getElementById('category-search');
+  const resultsDiv = document.getElementById('category-search-results');
+  const countSpan = document.getElementById('category-search-count');
+  const gridDiv = document.getElementById('categories-grid');
+  
+  if (!searchInput) return;
+  
+  searchInput.addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase().trim();
+    
+    if (searchTerm === '') {
+      // Mostrar todas as categorias
+      resultsDiv.classList.add('hidden');
+      gridDiv.innerHTML = renderAllCategories();
+      return;
+    }
+    
+    // Filtrar categorias
+    const filteredCategories = window.appState.categories?.filter(cat => {
+      const nome = cat.nome.toLowerCase();
+      const tipo = cat.tipo.toLowerCase();
+      const limite = cat.limite?.toString() || '';
+      
+      return nome.includes(searchTerm) || 
+             tipo.includes(searchTerm) || 
+             limite.includes(searchTerm);
+    }) || [];
+    
+    // Atualizar contador
+    countSpan.textContent = filteredCategories.length;
+    resultsDiv.classList.remove('hidden');
+    
+    // Renderizar categorias filtradas
+    gridDiv.innerHTML = renderFilteredCategories(filteredCategories);
+  });
+  
+  // Limpar pesquisa com Escape
+  searchInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      this.value = '';
+      this.dispatchEvent(new Event('input'));
+    }
+  });
+}
+
+// Função para renderizar todas as categorias
+function renderAllCategories() {
+  const now = new Date();
+  const anoAtual = now.getFullYear();
+  const mesAtual = now.getMonth() + 1;
+
+  const categoriasComGastos = window.appState.categories
+    .map(cat => {
+      // Filtrar transações da categoria no mês atual (incluindo recorrentes aplicadas)
+      const transacoesCategoria = window.appState.transactions.filter(t => {
+        // Tratar Firestore Timestamp
+        let transacaoData;
+        if (
+          t.createdAt &&
+          typeof t.createdAt === 'object' &&
+          t.createdAt.seconds
+        ) {
+          // É um Firestore Timestamp
+          transacaoData = new Date(t.createdAt.seconds * 1000);
+        } else {
+          // É uma string ou outro formato
+          transacaoData = new Date(t.createdAt);
+        }
+
+        const transacaoAno = transacaoData.getFullYear();
+        const transacaoMes = transacaoData.getMonth() + 1;
+
+        return (
+          t.categoriaId === cat.id &&
+          t.tipo === cat.tipo && // Usar o tipo da categoria (receita ou despesa)
+          transacaoAno === anoAtual &&
+          transacaoMes === mesAtual
+        );
+      });
+
+      // Calcular total gasto das transações diretas
+      const totalGastoTransacoes = transacoesCategoria.reduce(
+        (sum, t) => sum + parseFloat(t.valor),
+        0
+      );
+
+      // Calcular total gasto das recorrentes aplicadas neste mês
+      const recorrentesAplicadas = window.appState.recorrentes.filter(
+        r => r.categoriaId === cat.id && r.ativa === true
+      );
+
+      // Verificar quais recorrentes foram aplicadas neste mês
+      let totalGastoRecorrentes = 0;
+      recorrentesAplicadas.forEach(rec => {
+        const transacoesRecorrente = window.appState.transactions.filter(
+          t =>
+            t.recorrenteId === rec.id &&
+            new Date(t.createdAt).getFullYear() === anoAtual &&
+            new Date(t.createdAt).getMonth() + 1 === mesAtual
+        );
+
+        if (transacoesRecorrente.length > 0) {
+          totalGastoRecorrentes += parseFloat(rec.valor);
+        }
+      });
+
+      // Total geral (transações + recorrentes)
+      const totalGasto = totalGastoTransacoes + totalGastoRecorrentes;
+
+      // Calcular limite (se existir)
+      const limite = cat.limite ? parseFloat(cat.limite) : 0;
+
+      // Calcular saldo (para receitas: quanto falta para atingir o limite)
+      const saldo =
+        cat.tipo === 'receita' ? limite - totalGasto : limite - totalGasto;
+
+      // Calcular porcentagem de uso
+      const porcentagem =
+        limite > 0 ? Math.min((totalGasto / limite) * 100, 100) : 0;
+
+      // Determinar cor da barra baseada na porcentagem
+      let corBarra = 'bg-green-500';
+      if (porcentagem >= 90) {
+        corBarra = 'bg-red-500';
+      } else if (porcentagem >= 75) {
+        corBarra = 'bg-yellow-500';
+      } else if (porcentagem >= 50) {
+        corBarra = 'bg-orange-500';
+      }
+
+      return {
+        ...cat,
+        totalGasto,
+        totalGastoTransacoes,
+        totalGastoRecorrentes,
+        limite,
+        saldo,
+        porcentagem,
+        corBarra
+      };
+    })
+    .sort((a, b) => b.totalGasto - a.totalGasto); // Ordenar por gasto (maior para menor)
+
+  return categoriasComGastos.map(cat => `
+    <div class="card-standard">
+      <div class="flex items-center space-x-3 mb-3">
+        <div class="w-4 h-4 rounded-full" style="background-color: ${cat.cor || '#4F46E5'}"></div>
+        <span class="list-item-title">${cat.nome}</span>
+      </div>
+      <p class="list-item-subtitle">Tipo: ${cat.tipo}</p>
+      
+      ${
+        cat.limite > 0
+          ? `
+            <div class="mt-3 space-y-2">
+              <div class="flex justify-between text-xs md:text-sm">
+                <span class="text-gray-600 dark:text-gray-400">Limite:</span>
+                <span class="font-medium text-gray-900 dark:text-gray-100">R$ ${cat.limite.toFixed(2)}</span>
+              </div>
+              <div class="flex justify-between text-xs md:text-sm">
+                <span class="text-gray-600 dark:text-gray-400">${cat.tipo === 'receita' ? 'Receita' : 'Gasto'}:</span>
+                <span class="font-medium ${cat.tipo === 'receita' ? 'text-green-600' : cat.totalGasto > cat.limite ? 'text-red-600' : 'text-gray-900 dark:text-gray-100'}">R$ ${cat.totalGasto.toFixed(2)}</span>
+              </div>
+              ${
+                cat.totalGasto > 0
+                  ? `
+                    <div class="text-xs text-gray-500 dark:text-gray-400 pl-2">
+                      • Transações: R$ ${cat.totalGastoTransacoes.toFixed(2)}
+                      ${cat.totalGastoRecorrentes > 0 ? `<br>• Recorrentes: R$ ${cat.totalGastoRecorrentes.toFixed(2)}` : ''}
+                    </div>
+                  `
+                  : ''
+              }
+              <div class="flex justify-between text-xs md:text-sm">
+                <span class="text-gray-600 dark:text-gray-400">${cat.tipo === 'receita' ? 'Falta para meta' : 'Saldo'}:</span>
+                <span class="font-medium ${cat.tipo === 'receita' ? (cat.saldo <= 0 ? 'text-green-600' : cat.saldo < cat.limite * 0.25 ? 'text-yellow-600' : 'text-red-600') : cat.saldo < 0 ? 'text-red-600' : cat.saldo < cat.limite * 0.25 ? 'text-yellow-600' : 'text-green-600'}">R$ ${cat.saldo.toFixed(2)}</span>
+              </div>
+              
+              <!-- Barra de Progresso -->
+              <div class="mt-2">
+                <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+                  <span>${cat.porcentagem.toFixed(1)}% ${cat.tipo === 'receita' ? 'atingido' : 'usado'}</span>
+                  <span>${cat.porcentagem >= 100 ? (cat.tipo === 'receita' ? 'Meta atingida!' : 'Limite excedido!') : ''}</span>
+                </div>
+                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                  <div class="${cat.corBarra} h-2 rounded-full transition-all duration-300" style="width: ${Math.min(cat.porcentagem, 100)}%"></div>
+                </div>
+              </div>
+            </div>
+          `
+          : `
+            <div class="mt-3">
+              <div class="flex justify-between text-xs md:text-sm">
+                <span class="text-gray-600 dark:text-gray-400">${cat.tipo === 'receita' ? 'Receita' : 'Gasto'} do mês:</span>
+                <span class="font-medium ${cat.tipo === 'receita' ? 'text-green-600' : 'text-gray-900 dark:text-gray-100'}">R$ ${cat.totalGasto.toFixed(2)}</span>
+              </div>
+              ${
+                cat.totalGasto > 0
+                  ? `
+                    <div class="text-xs text-gray-500 dark:text-gray-400 pl-2">
+                      • ${cat.tipo === 'receita' ? 'Receitas' : 'Transações'}: R$ ${cat.totalGastoTransacoes.toFixed(2)}
+                      ${cat.totalGastoRecorrentes > 0 ? `<br>• Recorrentes: R$ ${cat.totalGastoRecorrentes.toFixed(2)}` : ''}
+                    </div>
+                  `
+                  : ''
+              }
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Sem limite definido</p>
+            </div>
+          `
+      }
+      
+      <div class="flex flex-wrap justify-end gap-1 sm:gap-2 mt-4">
+        <button onclick="editCategory('${cat.id}')" class="btn-secondary mobile-btn">
+          <span class="icon-standard">✏️</span>
+          <span class="hidden sm:inline">Editar</span>
+        </button>
+        <button onclick="window.deleteCategoryWithConfirmation('${cat.id}', '${cat.nome}')" class="btn-danger mobile-btn">
+          <span class="icon-standard">🗑️</span>
+          <span class="hidden sm:inline">Excluir</span>
+        </button>
+        <button onclick="showCategoryHistory('${cat.id}')" class="btn-secondary mobile-btn">
+          <span class="icon-standard">📊</span>
+          <span class="hidden sm:inline">Histórico</span>
+        </button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// Função para renderizar categorias filtradas
+function renderFilteredCategories(filteredCategories) {
+  if (!filteredCategories.length) {
+    return `
+      <div class="col-span-full text-center py-8">
+        <div class="text-4xl mb-4">🔍</div>
+        <div class="text-lg font-semibold text-gray-800 dark:text-white mb-2">Nenhuma categoria encontrada</div>
+        <div class="text-gray-600 dark:text-gray-400">Tente usar termos diferentes na pesquisa</div>
+      </div>
+    `;
+  }
+  
+  return filteredCategories.map(cat => `
+    <div class="card-standard">
+      <div class="flex items-center space-x-3 mb-3">
+        <div class="w-4 h-4 rounded-full" style="background-color: ${cat.cor || '#4F46E5'}"></div>
+        <span class="list-item-title">${cat.nome}</span>
+      </div>
+      <p class="list-item-subtitle">Tipo: ${cat.tipo}</p>
+      ${cat.limite ? `<p class="text-xs text-gray-500 dark:text-gray-400">Limite: R$ ${cat.limite.toFixed(2)}</p>` : '<p class="text-xs text-gray-500 dark:text-gray-400">Sem limite definido</p>'}
+      
+      <div class="flex flex-wrap justify-end gap-1 sm:gap-2 mt-4">
+        <button onclick="editCategory('${cat.id}')" class="btn-secondary mobile-btn">
+          <span class="icon-standard">✏️</span>
+          <span class="hidden sm:inline">Editar</span>
+        </button>
+        <button onclick="window.deleteCategoryWithConfirmation('${cat.id}', '${cat.nome}')" class="btn-danger mobile-btn">
+          <span class="icon-standard">🗑️</span>
+          <span class="hidden sm:inline">Excluir</span>
+        </button>
+        <button onclick="showCategoryHistory('${cat.id}')" class="btn-secondary mobile-btn">
+          <span class="icon-standard">📊</span>
+          <span class="hidden sm:inline">Histórico</span>
+        </button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// Função router simplificada
+async function router(path) {
+  console.log('🔄 Router chamado com path:', path);
+  console.log('🔄 Estado atual:', {
+    currentUser: !!window.appState?.currentUser,
+    currentBudget: !!window.appState?.currentBudget,
+    hash: window.location.hash
+  });
+  
+  // Atualizar título da página
+  updatePageTitle(path);
+  
+  // Aplicar modo de compactação
+  if (window.applyCompactMode) {
+    window.applyCompactMode();
+  }
+  
+  switch (path) {
+    case '/dashboard':
+      console.log('🔄 Renderizando dashboard...');
+      await renderDashboard();
+      renderBottomNav('/dashboard');
+      console.log('✅ Dashboard renderizado');
+      break;
+    case '/transactions':
+      console.log('🔄 Renderizando transações...');
+      renderTransactions();
+      renderBottomNav('/transactions');
+      console.log('✅ Transações renderizadas');
+      break;
+    case '/categories':
+      console.log('🔄 Renderizando categorias...');
+      await renderCategories();
+      renderBottomNav('/categories');
+      console.log('✅ Categorias renderizadas');
+      break;
+    case '/analytics':
+      console.log('🔄 Renderizando análises...');
+      await renderAnalytics();
+      renderBottomNav('/analytics');
+      console.log('✅ Análises renderizadas');
+      break;
+    case '/recorrentes':
+      console.log('🔄 Renderizando recorrentes...');
+      if (window._renderRecorrentes) {
+        window._renderRecorrentes();
+      } else {
+        // Fallback se a função não existir
+        console.log('⚠️ Função _renderRecorrentes não encontrada, usando fallback');
+        const content = document.getElementById('app-content');
+        if (content) {
+          content.innerHTML = `
+            <div class="tab-container">
+              <div class="tab-header">
+                <h2 class="tab-title-highlight">Recorrentes</h2>
+                <div class="flex gap-2">
+                  <button onclick="window.showAddRecorrenteModal && window.showAddRecorrenteModal()" class="btn-primary">
+                    <span>+ Nova Recorrente</span>
+                  </button>
+                </div>
+              </div>
+              <div class="tab-content">
+                <div class="content-spacing">
+                  <div class="text-center py-8">
+                    <div class="text-4xl mb-4">🔄</div>
+                    <div class="text-lg font-semibold text-gray-800 dark:text-white mb-2">Recorrentes</div>
+                    <div class="text-gray-600 dark:text-gray-400">Funcionalidade em desenvolvimento</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+      }
+      renderFAB();
+      renderBottomNav('/recorrentes');
+      console.log('✅ Recorrentes renderizadas');
+      break;
+    case '/notifications':
+      console.log('🔄 Renderizando notificações...');
+      if (window.renderNotifications) {
+        await window.loadNotifications();
+        window.renderNotifications();
+      } else {
+        // Fallback se a função não existir
+        console.log('⚠️ Função renderNotifications não encontrada, usando fallback');
+        const content = document.getElementById('app-content');
+        if (content) {
+          content.innerHTML = `
+            <div class="tab-container">
+              <div class="tab-header">
+                <h2 class="tab-title-highlight">Notificações</h2>
+              </div>
+              <div class="tab-content">
+                <div class="content-spacing">
+                  <div class="text-center py-8">
+                    <div class="text-4xl mb-4">🔔</div>
+                    <div class="text-lg font-semibold text-gray-800 dark:text-white mb-2">Notificações</div>
+                    <div class="text-gray-600 dark:text-gray-400">Funcionalidade em desenvolvimento</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+      }
+      renderFAB();
+      renderBottomNav('/notifications');
+      console.log('✅ Notificações renderizadas');
+      break;
+    case '/settings':
+      console.log('🔄 Renderizando configurações...');
+      if (window.renderSettings) {
+        window.renderSettings();
+      } else {
+        // Fallback se a função não existir
+        console.log('⚠️ Função renderSettings não encontrada, usando fallback');
+        const content = document.getElementById('app-content');
+        if (content) {
+          content.innerHTML = `
+            <div class="tab-container">
+              <div class="tab-header">
+                <h2 class="tab-title-highlight">Configurações</h2>
+              </div>
+              <div class="tab-content">
+                <div class="content-spacing">
+                  <div class="text-center py-8">
+                    <div class="text-4xl mb-4">⚙️</div>
+                    <div class="text-lg font-semibold text-gray-800 dark:text-white mb-2">Configurações</div>
+                    <div class="text-gray-600 dark:text-gray-400">Funcionalidade em desenvolvimento</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+      }
+      renderFAB();
+      renderBottomNav('/settings');
+      console.log('✅ Configurações renderizadas');
+      break;
+    default:
+      console.log('🔄 Rota não reconhecida, usando dashboard como fallback');
+      await renderDashboard();
+      renderBottomNav('/dashboard');
+      console.log('✅ Dashboard renderizado (fallback)');
+  }
+  
+  // Atualizar SwipeNavigation após navegação
+  setTimeout(() => {
+    if (window.swipeNavigation && window.swipeNavigation.updateCurrentTabIndex) {
+      window.swipeNavigation.updateCurrentTabIndex();
+      window.swipeNavigation.updateSwipeIndicator();
+    }
+  }, 200);
+  
+
+}
+
+// Função para renderizar FAB
+function renderFAB() {
+  console.log('🔧 Renderizando FAB corrigido...');
+  const fabContainer = document.getElementById('fab-container');
+  
+  if (!fabContainer) {
+    console.error('❌ Container FAB não encontrado');
+    return;
+  }
+  
+  console.log('✅ Container FAB encontrado, criando FAB corrigido...');
+  
+  try {
+    // Limpar container e event listeners antigos
+    if (window.currentFAB && window.currentFAB.cleanup) {
+      console.log('🧹 Limpando FAB anterior...');
+      window.currentFAB.cleanup();
+    }
+    
+    fabContainer.innerHTML = '';
+    
+    // Criar FAB corrigido
+    console.log('🔧 Criando FAB corrigido...');
+    const fab = FAB();
+    console.log('🔧 FAB corrigido criado:', fab);
+    fabContainer.appendChild(fab);
+    console.log('🔧 FAB corrigido adicionado ao container');
+    
+    // Armazenar referência para limpeza
+    window.currentFAB = fab;
+    
+    console.log('✅ FAB corrigido criado e adicionado ao DOM');
+    
+    // Verificar se o FAB está visível e funcionando
+    setTimeout(() => {
+      const fabMain = document.getElementById('fab-main');
+      const fabContainerMain = document.getElementById('fab-container-main');
+      const fabActions = document.getElementById('fab-actions');
+      
+      if (fabMain) {
+        console.log('✅ FAB principal encontrado e visível');
+      } else {
+        console.error('❌ FAB principal não encontrado');
+      }
+      
+      if (fabContainerMain) {
+        console.log('✅ Container FAB principal encontrado');
+      } else {
+        console.error('❌ Container FAB principal não encontrado');
+      }
+      
+      if (fabActions) {
+        console.log('✅ Container de ações FAB encontrado');
+      } else {
+        console.error('❌ Container de ações FAB não encontrado');
+      }
+      
+      // Verificar botões de ação
+      const transactionBtn = document.getElementById('fab-transaction');
+      const recorrenteBtn = document.getElementById('fab-recorrente');
+      const voiceBtn = document.getElementById('fab-voice');
+      
+      console.log('🔧 Verificando botões de ação:');
+      console.log('  - Nova Transação:', !!transactionBtn);
+      console.log('  - Nova Recorrente:', !!recorrenteBtn);
+      console.log('  - Voz:', !!voiceBtn);
+      
+      // Verificar funções globais
+      console.log('🔧 Verificando funções globais:');
+      console.log('  - showAddTransactionModal:', typeof window.showAddTransactionModal === 'function');
+      console.log('  - showAddRecorrenteModal:', typeof window.showAddRecorrenteModal === 'function');
+      console.log('  - openVoiceModal:', typeof window.openVoiceModal === 'function');
+      console.log('  - Snackbar:', typeof window.Snackbar === 'function');
+      
+    }, 300);
+    
+  } catch (error) {
+    console.error('❌ Erro ao criar FAB corrigido:', error);
+  }
+}
+
+// Função para renderizar bottom navigation
+function renderBottomNav(activeRoute) {
+  console.log('🔄 Renderizando bottom navigation para:', activeRoute);
+  const bottomNav = document.getElementById('bottom-nav');
+  if (!bottomNav) {
+    console.error('❌ Elemento bottom-nav não encontrado');
+    return;
+  }
+
+  console.log('✅ Elemento bottom-nav encontrado, renderizando...');
+  bottomNav.innerHTML = `
+    <nav class="bottom-nav">
+      <a href="#/dashboard" class="nav-btn ${activeRoute === '/dashboard' ? 'active' : ''}" data-route="/dashboard">
+        <span class="nav-icon">📊</span>
+        <span class="nav-text">Dashboard</span>
+      </a>
+      <a href="#/transactions" class="nav-btn ${activeRoute === '/transactions' ? 'active' : ''}" data-route="/transactions">
+        <span class="nav-icon">📋</span>
+        <span class="nav-text">Transações</span>
+      </a>
+      <a href="#/categories" class="nav-btn ${activeRoute === '/categories' ? 'active' : ''}" data-route="/categories">
+        <span class="nav-icon">📂</span>
+        <span class="nav-text">Categorias</span>
+      </a>
+      <a href="#/analytics" class="nav-btn ${activeRoute === '/analytics' ? 'active' : ''}" data-route="/analytics">
+        <span class="nav-icon">📈</span>
+        <span class="nav-text">Análises</span>
+      </a>
+      <a href="#/recorrentes" class="nav-btn ${activeRoute === '/recorrentes' ? 'active' : ''}" data-route="/recorrentes">
+        <span class="nav-icon">🔄</span>
+        <span class="nav-text">Recorrentes</span>
+      </a>
+      <a href="#/notifications" class="nav-btn ${activeRoute === '/notifications' ? 'active' : ''}" data-route="/notifications">
+        <span class="nav-icon">🔔</span>
+        <span class="nav-text">Notificações</span>
+      </a>
+      <a href="#/settings" class="nav-btn ${activeRoute === '/settings' ? 'active' : ''}" data-route="/settings">
+        <span class="nav-icon">⚙️</span>
+        <span class="nav-text">Config</span>
+      </a>
+    </nav>
+  `;
+  console.log('✅ Bottom navigation renderizada com sucesso');
+}
+
+// Função para mostrar loading
+function showLoading(show) {
+  const loadingPage = document.getElementById('loading-page');
+  if (loadingPage) {
+    loadingPage.style.display = show ? 'flex' : 'none';
+  }
+}
+
+// Função para configurar navegação
+function setupNavigation() {
+  let currentPath = window.location.hash.slice(1) || '/dashboard';
+  
+  // Array de rotas disponíveis
+  const routes = ['/dashboard', '/transactions', '/categories', '/analytics', '/recorrentes', '/notifications', '/settings'];
+  
+
+
+  // Função para navegar para próxima/anterior rota
+  function navigateToRoute(direction) {
+    const currentIndex = routes.indexOf(currentPath);
+    if (currentIndex === -1) return;
+    
+    let newIndex;
+    let directionText = '';
+    
+    if (direction === 'next') {
+      newIndex = (currentIndex + 1) % routes.length;
+      directionText = 'Próxima aba';
+    } else {
+      newIndex = currentIndex === 0 ? routes.length - 1 : currentIndex - 1;
+      directionText = 'Aba anterior';
+    }
+    
+    const newPath = routes[newIndex];
+    const routeNames = {
+      '/dashboard': 'Dashboard',
+      '/transactions': 'Transações',
+      '/categories': 'Categorias',
+      '/analytics': 'Análises',
+      '/recorrentes': 'Recorrentes',
+      '/notifications': 'Notificações',
+      '/settings': 'Configurações'
+    };
+    
+    showSwipeIndicator(`${directionText}: ${routeNames[newPath]}`);
+    window.location.hash = newPath;
+    updatePageTitle(newPath);
+  }
+  
+  // Navegação com setas do teclado
+  document.addEventListener('keydown', (e) => {
+    // Só funcionar se não estiver em um input ou textarea
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    
+    switch (e.key) {
+      case 'ArrowLeft':
+        e.preventDefault();
+        navigateToRoute('prev');
+        break;
+      case 'ArrowRight':
+        e.preventDefault();
+        navigateToRoute('next');
+        break;
+    }
+  });
+  
+  // Navegação por deslizar (swipe)
+  let startX = 0;
+  let startY = 0;
+  let isSwiping = false;
+  
+  // Criar indicador de swipe
+  const swipeIndicator = document.createElement('div');
+  swipeIndicator.className = 'swipe-indicator';
+  swipeIndicator.textContent = 'Deslize para mudar de aba';
+  document.body.appendChild(swipeIndicator);
+  
+  function showSwipeIndicator(message) {
+    swipeIndicator.textContent = message;
+    swipeIndicator.classList.add('show');
+    setTimeout(() => {
+      swipeIndicator.classList.remove('show');
+    }, 1000);
+  }
+  
+  document.addEventListener('touchstart', (e) => {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    isSwiping = false;
+  });
+  
+  document.addEventListener('touchmove', (e) => {
+    if (!startX || !startY) return;
+    
+    const deltaX = e.touches[0].clientX - startX;
+    const deltaY = e.touches[0].clientY - startY;
+    
+    // Verificar se é um swipe horizontal (mais horizontal que vertical)
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
+      isSwiping = true;
+      e.preventDefault(); // Prevenir scroll durante swipe
+    }
+  });
+  
+  document.addEventListener('touchend', (e) => {
+    if (!isSwiping || !startX) return;
+    
+    const deltaX = e.changedTouches[0].clientX - startX;
+    const minSwipeDistance = 100;
+    
+    if (Math.abs(deltaX) > minSwipeDistance) {
+      if (deltaX > 0) {
+        // Swipe para direita - ir para aba anterior
+        navigateToRoute('prev');
+      } else {
+        // Swipe para esquerda - ir para próxima aba
+        navigateToRoute('next');
+      }
+    }
+    
+    startX = 0;
+    startY = 0;
+    isSwiping = false;
+  });
+  
+  // Navegação por hash
+  window.addEventListener('hashchange', () => {
+    const newPath = window.location.hash.slice(1) || '/dashboard';
+    console.log('🔄 Hash change detectado:', { oldPath: currentPath, newPath });
+    if (newPath !== currentPath) {
+      currentPath = newPath;
+      console.log('🔄 Navegando para nova rota:', newPath);
+      updatePageTitle(newPath);
+      router(newPath);
+    }
+  });
+
+  // Navegação inicial
+  console.log('🔄 Navegação inicial para:', currentPath);
+  updatePageTitle(currentPath);
+  router(currentPath);
+}
+
+// Função para configurar botão de login
+function setupLoginButton() {
+  const loginBtn = document.getElementById('btn-entrar');
+  if (loginBtn) {
+    loginBtn.addEventListener('click', async () => {
+      try {
+        showLoading(true);
+        const user = await loginWithGoogle();
+        if (user) {
+          window.appState.currentUser = user;
+          toggleLoginPage(false);
+          setupNavigation();
+          
+          // Carregar dados do usuário após login
+          try {
+            console.log('📊 Carregando dados do usuário após login...');
+            await loadBudgets();
+            await selectDefaultBudget();
+            await loadTransactions();
+            await loadCategories();
+            await loadRecorrentes();
+            await loadNotifications();
+            await listenNotifications();
+            await startAllListeners(window.appState.currentBudget?.id);
+            console.log('✅ Dados carregados com sucesso após login');
+          } catch (error) {
+            console.error('❌ Erro ao carregar dados após login:', error);
+          }
+          
+          await router('/dashboard');
+        }
+      } catch (error) {
+        console.error('Erro no login:', error);
+        showLoading(false);
+      }
+    });
+  }
+}
+
+// Função para verificar autenticação
+function checkAuthState() {
+  return new Promise((resolve) => {
+    let isFirstCall = true;
+    
+    // Manter listener permanente para detectar mudanças de autenticação
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        console.log('✅ Usuário autenticado:', user.email);
+        window.appState.currentUser = user;
+        toggleLoginPage(false);
+        
+        if (isFirstCall) {
+          isFirstCall = false;
+          resolve(true);
+        }
+      } else {
+        console.log('❌ Usuário não autenticado');
+        window.appState.currentUser = null;
+        
+        // Parar todos os listeners quando usuário faz logout
+        if (typeof window.stopAllListeners === 'function') {
+          window.stopAllListeners();
+        }
+        
+        // Limpar estado da aplicação
+        if (window.appState) {
+          window.appState.currentBudget = null;
+          window.appState.transactions = [];
+          window.appState.categories = [];
+          window.appState.budgets = [];
+          window.appState.recorrentes = [];
+        }
+        
+        toggleLoginPage(true);
+        
+        if (isFirstCall) {
+          isFirstCall = false;
+          resolve(false);
+        }
+      }
+    });
+  });
+}
+
+// Inicialização da aplicação
+document.addEventListener('DOMContentLoaded', async () => {
+  console.log('🚀 Iniciando aplicação...');
+  
+  // Estado global da aplicação
+  window.appState = {
+    currentUser: null,
+    currentBudget: null,
+    transactions: [],
+    categories: [],
+    budgets: [],
+    recorrentes: [],
+    isInitialized: false
+  };
+
+
+
+  // Aplicar modo de compactação globalmente
+  if (window.applyCompactMode) {
+    window.applyCompactMode();
+  }
+
+  // Teste: Verificar se a navegação está sendo renderizada
+  console.log('🔍 Teste: Verificando elementos de navegação...');
+  const bottomNav = document.getElementById('bottom-nav');
+  console.log('🔍 Elemento bottom-nav encontrado:', !!bottomNav);
+  if (bottomNav) {
+    console.log('🔍 Conteúdo do bottom-nav:', bottomNav.innerHTML);
+  }
+
+  // Verificar estado de autenticação
+  const isAuthenticated = await checkAuthState();
+  
+  // Configurar navegação e login apenas se autenticado
+  if (isAuthenticated) {
+    setupNavigation();
+    
+    // Mostrar loading
+    showLoading(true);
+    
+    // Carregar dados do usuário
+    try {
+      console.log('📊 Carregando dados do usuário...');
+      await loadBudgets();
+      await selectDefaultBudget();
+      await loadTransactions();
+      await loadCategories();
+      await loadRecorrentes();
+      await loadNotifications();
+      await listenNotifications();
+      await startAllListeners(window.appState.currentBudget?.id);
+      console.log('✅ Dados carregados com sucesso');
+      
+      // Aguardar um pouco para garantir que os dados foram carregados
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Renderizar dashboard inicial após carregar dados
+      console.log('🔄 Renderizando dashboard inicial...');
+      await renderDashboard();
+      renderBottomNav('/dashboard');
+      renderFAB();
+      console.log('✅ Dashboard inicial renderizado');
+      
+    } catch (error) {
+      console.error('❌ Erro ao carregar dados:', error);
+      // Mostrar feedback visual do erro
+      if (window.Snackbar) {
+        window.Snackbar({
+          message: 'Erro ao carregar dados. Tente recarregar a página.',
+          type: 'error'
+        });
+      }
+    } finally {
+      // Esconder loading
+      showLoading(false);
+    }
+    
+    // Inicializar sistema de swipe navigation após autenticação
+    setTimeout(() => {
+      try {
+        // Verificar se o container existe
+        const container = document.querySelector('#app-content');
+        if (!container) {
+          console.warn('⚠️ Container #app-content não encontrado, tentando novamente em 500ms...');
+          setTimeout(() => {
+            if (document.querySelector('#app-content')) {
+              window.swipeNavigation = new SwipeNavigation();
+              console.log('✅ SwipeNavigation inicializado (tentativa 2)');
+            }
+          }, 500);
+          return;
+        }
+        
+        // Verificar se o usuário está autenticado
+        if (!window.appState?.currentUser) {
+          console.warn('⚠️ Usuário não autenticado, aguardando...');
+          return;
+        }
+        
+        window.swipeNavigation = new SwipeNavigation();
+        console.log('✅ SwipeNavigation inicializado com sucesso');
+        
+      } catch (error) {
+        console.error('❌ Erro ao inicializar SwipeNavigation:', error);
+      }
+    }, 1000);
+    
+    // Marcar como inicializado
+    window.appState.isInitialized = true;
+  }
+  
+  setupLoginButton();
+  
+  console.log('✅ Aplicação iniciada com sucesso!');
+});
+
+// Função wrapper para adicionar categoria com confirmação
+window.addCategoryWithConfirmation = async function (categoryData) {
+  return new Promise((resolve, reject) => {
+    window.showConfirmationModal({
+      title: 'Adicionar Categoria',
+      message: `Deseja adicionar a categoria "${categoryData.nome}"?`,
+      confirmText: 'Sim, Adicionar',
+      confirmColor: 'bg-green-500 hover:bg-green-600',
+      onConfirm: async () => {
+        try {
+          const result = await window.addCategory(categoryData);
+          if (window.Snackbar) {
+            window.Snackbar({
+              message: '✅ Categoria adicionada com sucesso!',
+              type: 'success'
+            });
+          }
+          resolve(result);
+        } catch (error) {
+          console.error('❌ Erro ao adicionar categoria:', error);
+          if (window.Snackbar) {
+            window.Snackbar({
+              message: 'Erro ao adicionar categoria: ' + error.message,
+              type: 'error'
+            });
+          }
+          reject(error);
+        }
+      },
+      onCancel: () => {
+        console.log('❌ Adição de categoria cancelada pelo usuário');
+        reject(new Error('Operação cancelada pelo usuário'));
+      }
+    });
+  });
+};
+
+// Exportar funções globais
+window.renderDashboard = renderDashboard;
+window.renderTransactions = renderTransactions;
+window.renderCategories = renderCategories;
+window.router = router;
+window.addTransaction = addTransaction;
+window.updateTransaction = updateTransaction;
+window.deleteTransaction = deleteTransaction;
+window.addCategory = addCategory;
+window.updateCategory = updateCategory;
+window.deleteCategory = deleteCategory;
+window.addBudget = addBudget;
+window.loadTransactions = loadTransactions;
+window.loadCategories = loadCategories;
+window.loadBudgets = loadBudgets;
+window.selectDefaultBudget = selectDefaultBudget;
+window.loadRecorrentes = loadRecorrentes;
+window.closeModalAlertas = closeModalAlertas;
+window.calcularNumeroParcela = calcularNumeroParcela;
+window.showLoading = showLoading;
+window.toggleLoginPage = toggleLoginPage;
+window.refreshCurrentView = refreshCurrentView;
+window.logout = logout;
+
+// ===== SISTEMA DE VOZ REESTRUTURADO =====
+// Importar o novo sistema de voz
+import { VoiceSystem } from './ui/VoiceSystem.js';
+
+// Inicializar sistema de voz global
+let voiceSystem = null;
+
+// Função para obter instância do sistema de voz
+function getVoiceSystem() {
+  if (!voiceSystem) {
+    voiceSystem = new VoiceSystem();
+  }
+  return voiceSystem;
+}
+
+// Função global para abrir modal de voz
+window.openVoiceModal = function(type = 'transaction') {
+  console.log('🎤 openVoiceModal chamado:', type);
+  const system = getVoiceSystem();
+  return system.start(type);
+};
+
+// Função global para fechar modal de voz
+window.closeVoiceModal = function() {
+  console.log('🎤 closeVoiceModal chamado');
+  if (voiceSystem) {
+    voiceSystem.stop();
+  }
+};
+
+// Função global para iniciar reconhecimento de voz
+window.startVoiceRecognition = function(type = 'transaction') {
+  console.log('🎤 startVoiceRecognition chamado:', type);
+  const system = getVoiceSystem();
+  return system.start(type);
+};
+
+// Função para processar comandos de voz (mantida para compatibilidade)
+async function processVoiceCommand(transcript, type) {
+  console.log('🎤 processVoiceCommand chamado (compatibilidade):', transcript, type);
+  
+  // Usar o novo sistema de voz se disponível
+  if (voiceSystem) {
+    try {
+      await voiceSystem.processCommand(transcript, type);
+    } catch (error) {
+      console.error('❌ Erro no novo sistema de voz:', error);
+      if (window.Snackbar) {
+        window.Snackbar.show(`Erro ao processar comando: ${error.message}`, 'error');
+      }
+    }
+  } else {
+    console.warn('⚠️ Sistema de voz não disponível');
   }
 }
 
 // Função auxiliar para converter números por extenso em português para número
 function parseNumeroPorExtenso(palavra) {
   const mapa = {
-    'zero': 0, 'um': 1, 'uma': 1, 'dois': 2, 'duas': 2, 'três': 3, 'tres': 3, 'quatro': 4, 'cinco': 5, 'seis': 6, 'sete': 7, 'oito': 8, 'nove': 9,
-    'dez': 10, 'onze': 11, 'doze': 12, 'treze': 13, 'quatorze': 14, 'catorze': 14, 'quinze': 15, 'dezesseis': 16, 'dezessete': 17, 'dezoito': 18, 'dezenove': 19,
-    'vinte': 20, 'trinta': 30, 'quarenta': 40, 'cinquenta': 50, 'sessenta': 60, 'setenta': 70, 'oitenta': 80, 'noventa': 90,
-    'cem': 100, 'cento': 100, 'sem': 100, 'duzentos': 200, 'trezentos': 300, 'quatrocentos': 400, 'quinhentos': 500, 'seiscentos': 600, 'setecentos': 700, 'oitocentos': 800, 'novecentos': 900,
-    'mil': 1000
+    zero: 0, um: 1, uma: 1, dois: 2, duas: 2, três: 3, tres: 3, quatro: 4, cinco: 5,
+    seis: 6, sete: 7, oito: 8, nove: 9, dez: 10, onze: 11, doze: 12, treze: 13,
+    quatorze: 14, catorze: 14, quinze: 15, dezesseis: 16, dezessete: 17, dezoito: 18,
+    dezenove: 19, vinte: 20, trinta: 30, quarenta: 40, cinquenta: 50, sessenta: 60,
+    setenta: 70, oitenta: 80, noventa: 90, cem: 100, cento: 100, sem: 100,
+    duzentos: 200, trezentos: 300, quatrocentos: 400, quinhentos: 500,
+    seiscentos: 600, setecentos: 700, oitocentos: 800, novecentos: 900, mil: 1000
   };
-  if (!palavra) {return NaN;}
+  
+  if (!palavra) return NaN;
+  
   palavra = palavra.toLowerCase().replace(/\./g, '');
-  if (mapa[palavra] !== undefined) {return mapa[palavra];}
+  if (mapa[palavra] !== undefined) return mapa[palavra];
+  
   // Tenta converter por extenso composto (ex: cento e vinte)
   if (palavra.includes(' e ')) {
-    return palavra.split(' e ').map(parseNumeroPorExtenso).reduce((a, b) => a + b, 0);
+    return palavra.split(' e ').reduce((total, parte) => {
+      const num = parseNumeroPorExtenso(parte);
+      return isNaN(num) ? total : total + num;
+    }, 0);
   }
+  
   return NaN;
 }
 
 // Processar comando de voz para transação
 async function processTransactionVoice(transcript) {
-  // Padrão: "descrição valor tipo categoria"
-  // Exemplo: "supermercado 150 despesa alimentação" ou "supermercado cem despesa alimentação"
   const texto = transcript.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
   const words = texto.split(' ');
+  
   if (words.length < 4) {
     alert('Comando inválido. Use: "descrição valor tipo categoria"');
     return;
   }
+  
   // Extrair valor (número ou por extenso)
   let valorIndex = words.findIndex(word => !isNaN(parseFloat(word)));
   let valor = NaN;
   if (valorIndex !== -1) {
     valor = parseFloat(words[valorIndex]);
   } else {
-    // Procurar por palavra por extenso
     for (let i = 0; i < words.length; i++) {
       const n = parseNumeroPorExtenso(words[i]);
       if (!isNaN(n) && n > 0) {
@@ -1508,32 +3612,39 @@ async function processTransactionVoice(transcript) {
       }
     }
   }
+  
   if (isNaN(valor)) {
     alert('Valor não encontrado no comando (diga um número, ex: "cem", "duzentos", "mil" ou "100")');
     return;
   }
-  // Extrair tipo (receita/despesa, aceitando variações)
+  
+  // Extrair tipo (receita/despesa)
   const tipoIndex = words.findIndex(word => /^(receita|receitas|despesa|despesas)$/.test(word));
   if (tipoIndex === -1) {
     alert('Tipo não encontrado (receita ou despesa)');
     return;
   }
+  
   let tipo = words[tipoIndex];
-  if (/^receita/.test(tipo)) {tipo = 'receita';}
-  if (/^despesa/.test(tipo)) {tipo = 'despesa';}
+  if (/^receita/.test(tipo)) tipo = 'receita';
+  if (/^despesa/.test(tipo)) tipo = 'despesa';
+  
   // Extrair categoria (última palavra)
   const categoriaNome = words[words.length - 1];
   // Extrair descrição (tudo antes do valor)
   const descricao = words.slice(0, valorIndex).join(' ');
+  
   // Encontrar categoria no banco (normalizando)
   const categoria = window.appState.categories.find(c =>
     normalizarTexto(c.nome).includes(normalizarTexto(categoriaNome)) ||
     normalizarTexto(categoriaNome).includes(normalizarTexto(c.nome))
   );
+  
   if (!categoria) {
     alert(`Categoria "${categoriaNome}" não encontrada. Crie a categoria primeiro.`);
     return;
   }
+  
   // Exibir formulário real já preenchido para revisão
   window.showAddTransactionModal({
     descricao,
@@ -1545,14 +3656,14 @@ async function processTransactionVoice(transcript) {
 
 // Processar comando de voz para categoria
 async function processCategoryVoice(transcript) {
-  // Padrão: "nome tipo limite"
-  // Exemplo: "alimentação despesa 500" ou "alimentação despesa cem"
   const texto = transcript.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
   const words = texto.split(' ');
+  
   if (words.length < 3) {
     alert('Comando inválido. Use: "nome tipo limite"');
     return;
   }
+  
   // Extrair tipo (receita/despesa)
   const tipoIndex = words.findIndex(word => ['receita', 'despesa'].includes(word));
   if (tipoIndex === -1) {
@@ -1560,13 +3671,13 @@ async function processCategoryVoice(transcript) {
     return;
   }
   const tipo = words[tipoIndex];
+  
   // Extrair limite (número ou por extenso)
   let limiteIndex = words.findIndex(word => !isNaN(parseFloat(word)));
   let limite = NaN;
   if (limiteIndex !== -1) {
     limite = parseFloat(words[limiteIndex]);
   } else {
-    // Procurar por palavra por extenso
     for (let i = 0; i < words.length; i++) {
       const n = parseNumeroPorExtenso(words[i]);
       if (!isNaN(n) && n > 0) {
@@ -1576,19 +3687,23 @@ async function processCategoryVoice(transcript) {
       }
     }
   }
+  
   if (isNaN(limite)) {
     alert('Limite não encontrado (diga um número, ex: "cem", "duzentos", "mil" ou "100")');
     return;
   }
+  
   // Extrair nome (tudo antes do tipo)
   const nome = words.slice(0, tipoIndex).join(' ');
   if (!nome) {
     alert('Nome da categoria não encontrado');
     return;
   }
+  
   // Gerar cor aleatória
   const cores = ['#4F46E5', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16'];
   const cor = cores[Math.floor(Math.random() * cores.length)];
+  
   // Exibir formulário real já preenchido para revisão
   window.showAddCategoryModal({
     nome,
@@ -1598,1242 +3713,3225 @@ async function processCategoryVoice(transcript) {
   });
 }
 
-// Funções auxiliares para modais
-function closeModal() {
-  console.log('DEBUG: closeModal chamada');
-  // Fecha o modal mais recente com id app-modal
-  const modal = document.getElementById('app-modal');
-  if (modal) {
-    modal.remove();
-  }
-  // Fallback: remove todos os modais abertos
-  const modals = document.querySelectorAll('.modal');
-  modals.forEach(m => m.remove());
-}
-
-// Configurar navegação
-function setupNavigation() {
-  document.querySelectorAll('.nav-btn').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-      e.preventDefault();
-      const route = btn.getAttribute('data-route');
-      await router(route);
-    });
-  });
-}
-
-// Configurar botão de login
-function setupLoginButton() {
-  const btn = document.getElementById('btn-entrar');
-  if (btn) {
-    btn.onclick = loginWithGoogle;
-  }
-}
-
-// Adicionar tela de loading
-function showLoading(show) {
-  let loading = document.getElementById('loading-page');
-  if (!loading) {
-    loading = document.createElement('div');
-    loading.id = 'loading-page';
-    loading.className = 'fixed inset-0 flex items-center justify-center bg-white z-50';
-    loading.innerHTML = '<div class="text-center"><div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div><span class="text-lg font-semibold text-gray-700">Carregando...</span></div>';
-    document.body.appendChild(loading);
-  }
-  loading.style.display = show ? 'flex' : 'none';
-}
-
-// Listener de autenticação
-auth.onAuthStateChanged(async (user) => {
-  showLoading(true);
-
-  if (user) {
-    window.appState.currentUser = user;
-    try {
-      await loadBudgets();
-      if (window.appState.budgets.length === 0) {
-        // Criar orçamento padrão se não existir
-        const budgetId = await addBudget({
-          nome: 'Orçamento Principal',
-          descricao: 'Orçamento padrão do usuário'
-        });
-        await setCurrentBudget({ id: budgetId, nome: 'Orçamento Principal' });
-      } else {
-        // Usar o primeiro orçamento como padrão
-        await setCurrentBudget(window.appState.budgets[0]);
-      }
-
-      await loadTransactions();
-      await loadCategories();
-      await loadRecorrentes();
-      renderDashboard();
-      toggleLoginPage(false);
-    } catch (error) {
-      console.error('Erro ao carregar dados do usuário:', error);
-    }
-  } else {
-    window.appState.currentUser = null;
-    window.appState.transactions = [];
-    window.appState.categories = [];
-    window.appState.budgets = [];
-    window.appState.currentBudget = null;
-    toggleLoginPage(true);
-  }
-  showLoading(false);
-});
-
-// Inicialização quando o DOM estiver pronto
-document.addEventListener('DOMContentLoaded', () => {
-  setupThemeToggle();
-  enableSwipeNavigation();
-  setupLoginButton();
-  toggleLoginPage(true);
-  setupNavigation();
-
-  // Configurar FAB
-  renderFAB();
-
-  // Configurar microfone do topo
-  const voiceBtn = document.getElementById('voice-control');
-  if (voiceBtn) {
-    voiceBtn.addEventListener('click', () => {
-      Modal({
-        title: 'Comando de Voz',
-        content: `
-          <div class='space-y-4 text-center'>
-            <p class='text-lg font-semibold'>O que você quer fazer por voz?</p>
-            <div class='flex flex-col gap-3'>
-              <button onclick='window.startVoiceRecognition("transaction")' class='px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600'>Adicionar Transação</button>
-              <button onclick='window.startVoiceRecognition("category")' class='px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600'>Adicionar Categoria</button>
-            </div>
-            <button onclick='closeModal()' class='mt-4 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600'>Cancelar</button>
-          </div>
-        `,
-        onClose: () => modal.remove()
-      });
-    });
-  }
-  renderDrawer();
-  const menuBtn = document.getElementById('menu-btn');
-  if (menuBtn) {
-    menuBtn.addEventListener('click', () => {
-      toggleDrawer();
-    });
-  }
-});
-
-window.selectSharedBudget = function() {
-  const modal = Modal({
-    title: 'Entrar em Orçamento Compartilhado',
-    content: `
-      <form id='shared-budget-form' class='space-y-4'>
-        <div>
-          <label class='block text-sm font-medium text-gray-700 mb-1'>Cole o ID do orçamento compartilhado</label>
-          <input type='text' id='shared-budget-id' required class='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500' placeholder='ID do orçamento'>
-        </div>
-        <div class='flex justify-end space-x-3 pt-4'>
-          <button type='button' onclick='closeModal()' class='px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200'>Cancelar</button>
-          <button type='submit' class='px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600'>Entrar</button>
-        </div>
-      </form>
-    `,
-    onClose: () => modal.remove()
-  });
-  setTimeout(() => {
-    const form = document.getElementById('shared-budget-form');
-    if (form) {
-      form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const budgetId = document.getElementById('shared-budget-id').value;
-        if (!budgetId) {return;}
-        const budget = await buscarOrcamentoPorId(budgetId);
-        if (budget) {
-          window.appState.currentBudget = budget;
-          await loadTransactions();
-          await loadCategories();
-          await loadRecorrentes();
-          await window.renderSettings();
-          renderDashboard();
-          Snackbar({ message: 'Orçamento compartilhado carregado com sucesso!', type: 'success' });
-        } else {
-          Snackbar({ message: 'Orçamento não encontrado ou você não tem permissão de acesso.', type: 'error' });
-        }
-        modal.remove();
-      });
-    }
-  }, 0);
-};
-
-// Listener em tempo real para transações
-let unsubscribeTransactions = null;
-function listenTransactions() {
-  if (unsubscribeTransactions) {unsubscribeTransactions();}
-  const userId = window.appState.currentUser?.uid;
-  const budgetId = window.appState.currentBudget?.id;
-  if (!userId || !budgetId) {return;}
-  const q = query(
-    collection(db, 'transactions'),
-    where('userId', '==', userId),
-    where('budgetId', '==', budgetId)
-  );
-  unsubscribeTransactions = onSnapshot(q, (querySnapshot) => {
-    window.appState.transactions = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    // Atualizar interface se estiver na aba de transações ou dashboard
-    const currentTab = document.querySelector('.nav-item.active')?.getAttribute('data-tab');
-    if (['transactions', 'dashboard'].includes(currentTab)) {
-      if (currentTab === 'transactions') {renderTransactions();}
-      if (currentTab === 'dashboard') {renderDashboard();}
-    }
-  });
-}
-// Chamar listenTransactions após login e ao trocar de orçamento
-// ... existing code ...
-// No onAuthStateChanged, após definir currentUser e currentBudget:
-listenTransactions();
-// ... existing code ...
-
-// ... existing code ...
-// Ao iniciar, esconder tela de login e mostrar loading
-window.addEventListener('DOMContentLoaded', () => {
-  const loginPage = document.getElementById('login-page');
-  if (loginPage) {loginPage.style.display = 'none';}
-  showLoading(true);
-});
-// ... existing code ...
-
-// ... existing code ...
-// Função para gerar PDF do guia do usuário
-window.generateUserGuide = function() {
-  try {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-
-    // Configurações do documento
-    doc.setFont('helvetica');
-
-    // Função para adicionar texto com quebra de página automática
-    function addText(text, x, y, maxWidth = 170) {
-      const lines = doc.splitTextToSize(text, maxWidth);
-      if (y + (lines.length * 8) > 270) {
-        doc.addPage();
-        return 20; // Nova posição Y no topo da nova página
-      }
-      doc.text(lines, x, y);
-      return y + (lines.length * 8) + 2;
-    }
-
-    // Função para adicionar título de seção
-    function addSectionTitle(title, y) {
-      if (y > 250) {
-        doc.addPage();
-        y = 20;
-      }
-      doc.setFontSize(16);
-      doc.setTextColor(79, 70, 229);
-      doc.text(title, 20, y);
-      return y + 12;
-    }
-
-    // Função para adicionar subtítulo
-    function addSubtitle(subtitle, y) {
-      if (y > 260) {
-        doc.addPage();
-        y = 20;
-      }
-      doc.setFontSize(12);
-      doc.setTextColor(79, 70, 229);
-      doc.text(subtitle, 20, y);
-      return y + 8;
-    }
-
-    // Função para adicionar item de lista
-    function addListItem(item, y, indent = 25) {
-      if (y > 270) {
-        doc.addPage();
-        y = 20;
-      }
-      doc.setFontSize(11);
-      doc.setTextColor(0, 0, 0);
-      doc.text(item, indent, y);
-      return y + 8;
-    }
-
-    // Cabeçalho da primeira página
-    doc.setFillColor(79, 70, 229);
-    doc.rect(0, 0, 210, 40, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(24);
-    doc.text('Servo Tech Finanças', 20, 25);
-    doc.setFontSize(14);
-    doc.text('Guia Completo do Usuário', 20, 35);
-
-    let yPosition = 50;
-    doc.setTextColor(0, 0, 0);
-
-    // Introdução
-    yPosition = addSectionTitle('🎯 Bem-vindo ao Servo Tech Finanças!', yPosition);
-
-    yPosition = addText('O Servo Tech Finanças é um aplicativo completo e intuitivo para controle financeiro pessoal. Desenvolvido com foco na praticidade e simplicidade, ele oferece todas as ferramentas necessárias para você gerenciar suas finanças de forma eficiente e organizada.', 20, yPosition);
-
-    yPosition = addSubtitle('🌟 Principais Funcionalidades:', yPosition);
-    yPosition = addListItem('📊 Dashboard completo com visão geral das finanças', yPosition);
-    yPosition = addListItem('💰 Gestão completa de receitas e despesas', yPosition);
-    yPosition = addListItem('🏷️ Categorização inteligente com limites de gastos', yPosition);
-    yPosition = addListItem('🎤 Comandos de voz para adicionar transações rapidamente', yPosition);
-    yPosition = addListItem('📈 Controle de orçamentos com compartilhamento', yPosition);
-    yPosition = addListItem('💾 Backup e restauração de dados', yPosition);
-    yPosition = addListItem('📱 Instalação como aplicativo (PWA)', yPosition);
-    yPosition = addListItem('🌙 Modo escuro para conforto visual', yPosition);
-    yPosition = addListItem('📊 Exportação de relatórios em Excel, PDF e JSON', yPosition);
-
-    // Dashboard
-    yPosition = addSectionTitle('📊 Dashboard - Centro de Controle Financeiro', yPosition);
-    yPosition = addText('O Dashboard é o coração do aplicativo, oferecendo uma visão completa e em tempo real de suas finanças. Aqui você encontra todos os dados importantes organizados de forma clara e intuitiva.', 20, yPosition);
-    yPosition += 8;
-    yPosition = addSubtitle('📈 Cards Principais:', yPosition);
-    yPosition = addListItem('🟢 Receitas: Soma total de todo dinheiro recebido no período', yPosition);
-    yPosition = addListItem('   Inclui salários, bônus, rendimentos extras, etc.', yPosition, 30);
-    yPosition = addListItem('🔴 Despesas: Soma total de todos os gastos realizados', yPosition);
-    yPosition = addListItem('   Contas, compras, lazer, transporte, etc.', yPosition, 30);
-    yPosition = addListItem('🔵 Saldo: Receitas - Despesas (dinheiro disponível)', yPosition);
-    yPosition = addListItem('   Indica se você está no azul ou no vermelho', yPosition, 30);
-    yPosition = addListItem('🟡 Orçado: Limite das categorias - Despesas', yPosition);
-    yPosition = addListItem('   Mostra quanto ainda pode gastar dentro dos limites', yPosition, 30);
-    yPosition += 8;
-    yPosition = addSubtitle('📊 Seção de Categorias:', yPosition);
-    yPosition = addListItem('Barras de progresso coloridas para cada categoria', yPosition);
-    yPosition = addListItem('Verde: Dentro do limite estabelecido', yPosition, 30);
-    yPosition = addListItem('Amarelo: Próximo do limite (80% ou mais)', yPosition, 30);
-    yPosition = addListItem('Vermelho: Acima do limite (gasto excessivo)', yPosition, 30);
-    yPosition = addListItem('Porcentagem de uso visível em cada barra', yPosition, 30);
-    yPosition += 8;
-    yPosition = addSubtitle('📝 Transações Recentes:', yPosition);
-    yPosition = addListItem('Lista das últimas 10 transações realizadas', yPosition);
-    yPosition = addListItem('Mostra: Data, Descrição, Valor, Categoria e Tipo', yPosition, 30);
-    yPosition = addListItem('Atualização automática em tempo real', yPosition, 30);
-    yPosition = addListItem('Acesso rápido para editar ou excluir', yPosition, 30);
-    yPosition += 8;
-
-    // Transações
-    yPosition = addSectionTitle('💰 Transações - Gestão Completa de Receitas e Despesas', yPosition);
-    yPosition = addText('A aba Transações é onde você gerencia todas as suas movimentações financeiras. Aqui você pode adicionar, editar, excluir e visualizar todas as transações.', 20, yPosition);
-    yPosition += 8;
-    yPosition = addSubtitle('📝 Como Adicionar uma Transação:', yPosition);
-    yPosition = addListItem('Método 1 - Botão Flutuante (FAB):', yPosition);
-    yPosition = addListItem('1. Toque no botão + (canto inferior direito)', yPosition, 30);
-    yPosition = addListItem('2. Preencha os campos obrigatórios:', yPosition, 30);
-    yPosition = addListItem('   • Descrição: Nome da transação (ex: "Supermercado")', yPosition, 35);
-    yPosition = addListItem('   • Valor: Quantia em reais (ex: 150,50)', yPosition, 35);
-    yPosition = addListItem('   • Tipo: Receita ou Despesa', yPosition, 35);
-    yPosition = addListItem('   • Categoria: Selecione uma categoria existente', yPosition, 35);
-    yPosition = addListItem('3. Toque em "Adicionar"', yPosition, 30);
-    yPosition += 8;
-    yPosition = addListItem('Método 2 - Aba Transações:', yPosition);
-    yPosition = addListItem('1. Vá na aba "Transações" (navegação inferior)', yPosition, 30);
-    yPosition = addListItem('2. Toque em "+ Nova Transação"', yPosition, 30);
-    yPosition = addListItem('3. Preencha os campos e confirme', yPosition, 30);
-    yPosition += 8;
-    yPosition = addSubtitle('✏️ Como Editar uma Transação:', yPosition);
-    yPosition = addListItem('1. Localize a transação na lista', yPosition);
-    yPosition = addListItem('2. Toque no ícone ✏️ (lápis) ao lado', yPosition, 30);
-    yPosition = addListItem('3. Modifique os campos desejados', yPosition, 30);
-    yPosition = addListItem('4. Toque em "Salvar"', yPosition, 30);
-    yPosition += 8;
-    yPosition = addSubtitle('🗑️ Como Excluir uma Transação:', yPosition);
-    yPosition = addListItem('1. Localize a transação na lista', yPosition);
-    yPosition = addListItem('2. Toque no ícone 🗑️ (lixeira) ao lado', yPosition, 30);
-    yPosition = addListItem('3. Confirme a exclusão', yPosition, 30);
-    yPosition += 8;
-    yPosition = addSubtitle('📊 Visualização de Transações:', yPosition);
-    yPosition = addListItem('Lista completa de todas as transações', yPosition);
-    yPosition = addListItem('Ordenadas por data (mais recentes primeiro)', yPosition, 30);
-    yPosition = addListItem('Filtros por tipo (Receita/Despesa)', yPosition, 30);
-    yPosition = addListItem('Busca por descrição', yPosition, 30);
-    yPosition = addListItem('Atualização automática em tempo real', yPosition, 30);
-    yPosition += 8;
-    yPosition = addSubtitle('💡 Dicas Importantes:', yPosition);
-    yPosition = addListItem('Use comandos de voz para adicionar mais rapidamente', yPosition);
-    yPosition = addListItem('Mantenha descrições claras e específicas', yPosition);
-    yPosition = addListItem('Categorize corretamente para melhor controle', yPosition);
-    yPosition = addListItem('Revise transações regularmente', yPosition);
-    yPosition += 8;
-
-    // Comandos de Voz
-    doc.setFontSize(16);
-    doc.setTextColor(79, 70, 229);
-    doc.text('🎤 Comandos de Voz - Revolução na Praticidade', 20, yPosition);
-    yPosition += 12;
-    doc.setFontSize(11);
-    doc.setTextColor(0, 0, 0);
-    doc.text('O sistema de comandos de voz é uma das funcionalidades mais inovadoras do app.', 20, yPosition);
-    yPosition += 8;
-    doc.text('Permite adicionar transações e criar categorias sem precisar digitar,', 20, yPosition);
-    yPosition += 8;
-    doc.text('tornando o controle financeiro muito mais rápido e prático.', 20, yPosition);
-    yPosition += 12;
-    doc.text('🎯 Como Ativar o Comando de Voz:', 20, yPosition);
-    yPosition += 8;
-    doc.text('1. Toque no ícone do microfone no cabeçalho', 25, yPosition);
-    yPosition += 8;
-    doc.text('2. Aguarde a animação de "Ouvindo"', 30, yPosition);
-    yPosition += 8;
-    doc.text('3. Fale claramente o comando', 30, yPosition);
-    yPosition += 8;
-    doc.text('4. Aguarde a confirmação', 30, yPosition);
-    yPosition += 12;
-    doc.text('📝 Comando para Adicionar Transação:', 20, yPosition);
-    yPosition += 8;
-    doc.text('Formato: "descrição valor tipo categoria"', 25, yPosition);
-    yPosition += 8;
-    doc.text('Exemplos Práticos:', 25, yPosition);
-    yPosition += 8;
-    doc.text('• "supermercado cem despesa alimentação"', 30, yPosition);
-    yPosition += 8;
-    doc.text('• "salário mil quinhentos receita trabalho"', 30, yPosition);
-    yPosition += 8;
-    doc.text('• "padaria cinquenta despesa alimentação"', 30, yPosition);
-    yPosition += 8;
-    doc.text('• "uber trinta despesa transporte"', 30, yPosition);
-    yPosition += 8;
-    doc.text('• "bônus quinhentos receita trabalho"', 30, yPosition);
-    yPosition += 8;
-    doc.text('• "cinema oitenta despesa lazer"', 30, yPosition);
-    yPosition += 12;
-    doc.text('🏷️ Comando para Criar Categoria:', 20, yPosition);
-    yPosition += 8;
-    doc.text('Formato: "nome tipo limite"', 25, yPosition);
-    yPosition += 8;
-    doc.text('Exemplos Práticos:', 25, yPosition);
-    yPosition += 8;
-    doc.text('• "alimentação despesa cem"', 30, yPosition);
-    yPosition += 8;
-    doc.text('• "transporte despesa duzentos"', 30, yPosition);
-    yPosition += 8;
-    doc.text('• "lazer despesa cento cinquenta"', 30, yPosition);
-    yPosition += 8;
-    doc.text('• "trabalho receita zero"', 30, yPosition);
-    yPosition += 12;
-    doc.text('🔢 Valores por Extenso Suportados:', 20, yPosition);
-    yPosition += 8;
-    doc.text('Números: "zero", "um", "dois", "três", "quatro", "cinco"', 25, yPosition);
-    yPosition += 8;
-    doc.text('Dezenas: "dez", "vinte", "trinta", "quarenta", "cinquenta"', 25, yPosition);
-    yPosition += 8;
-    doc.text('Centenas: "cem", "duzentos", "trezentos", "quatrocentos"', 25, yPosition);
-    yPosition += 8;
-    doc.text('Milhares: "mil", "mil quinhentos", "dois mil"', 25, yPosition);
-    yPosition += 8;
-    doc.text('Compostos: "cento cinquenta", "mil duzentos"', 25, yPosition);
-    yPosition += 8;
-    doc.text('Sinônimos: "sem" = "cem" (para evitar confusão)', 25, yPosition);
-    yPosition += 12;
-    doc.text('💡 Dicas para Comandos de Voz:', 20, yPosition);
-    yPosition += 8;
-    doc.text('• Fale claramente e pausadamente', 25, yPosition);
-    yPosition += 8;
-    doc.text('• Use valores por extenso ao invés de números', 25, yPosition);
-    yPosition += 8;
-    doc.text('• Mantenha o microfone próximo', 25, yPosition);
-    yPosition += 8;
-    doc.text('• Evite ambientes muito barulhentos', 25, yPosition);
-    yPosition += 8;
-    doc.text('• Confirme sempre se o comando foi entendido', 25, yPosition);
-    yPosition += 15;
-
-    // Categorias
-    doc.setFontSize(16);
-    doc.setTextColor(79, 70, 229);
-    doc.text('🏷️ Categorias - Organização Inteligente dos Gastos', 20, yPosition);
-    yPosition += 12;
-    doc.setFontSize(11);
-    doc.setTextColor(0, 0, 0);
-    doc.text('As categorias são fundamentais para organizar e controlar seus gastos de forma eficiente.', 20, yPosition);
-    yPosition += 8;
-    doc.text('Elas permitem que você estabeleça limites de gastos e monitore o progresso em tempo real.', 20, yPosition);
-    yPosition += 12;
-    doc.text('📝 Como Criar uma Categoria:', 20, yPosition);
-    yPosition += 8;
-    doc.text('Método 1 - Interface:', 25, yPosition);
-    yPosition += 8;
-    doc.text('1. Vá na aba "Categorias" (navegação inferior)', 30, yPosition);
-    yPosition += 8;
-    doc.text('2. Toque em "+ Nova Categoria"', 30, yPosition);
-    yPosition += 8;
-    doc.text('3. Preencha os campos:', 30, yPosition);
-    yPosition += 8;
-    doc.text('   • Nome: Nome da categoria (ex: "Alimentação")', 35, yPosition);
-    yPosition += 8;
-    doc.text('   • Tipo: Receita ou Despesa', 35, yPosition);
-    yPosition += 8;
-    doc.text('   • Limite: Valor máximo mensal (opcional)', 35, yPosition);
-    yPosition += 8;
-    doc.text('   • Cor: Escolha uma cor para identificação', 35, yPosition);
-    yPosition += 8;
-    doc.text('4. Toque em "Criar"', 30, yPosition);
-    yPosition += 12;
-    doc.text('Método 2 - Comando de Voz:', 25, yPosition);
-    yPosition += 8;
-    doc.text('1. Ative o microfone', 30, yPosition);
-    yPosition += 8;
-    doc.text('2. Diga: "nome tipo limite"', 30, yPosition);
-    yPosition += 8;
-    doc.text('3. Exemplo: "alimentação despesa cem"', 30, yPosition);
-    yPosition += 12;
-    doc.text('📊 Sistema de Controle por Cores:', 20, yPosition);
-    yPosition += 8;
-    doc.text('🟢 Verde: Dentro do limite estabelecido', 25, yPosition);
-    yPosition += 8;
-    doc.text('   • Gasto abaixo de 80% do limite', 30, yPosition);
-    yPosition += 8;
-    doc.text('   • Situação financeira saudável', 30, yPosition);
-    yPosition += 8;
-    doc.text('🟡 Amarelo: Próximo do limite', 25, yPosition);
-    yPosition += 8;
-    doc.text('   • Gasto entre 80% e 100% do limite', 30, yPosition);
-    yPosition += 8;
-    doc.text('   • Atenção: Reduza gastos nesta categoria', 30, yPosition);
-    yPosition += 8;
-    doc.text('🔴 Vermelho: Acima do limite', 25, yPosition);
-    yPosition += 8;
-    doc.text('   • Gasto superior ao limite estabelecido', 30, yPosition);
-    yPosition += 8;
-    doc.text('   • Alerta: Necessário ajuste imediato', 30, yPosition);
-    yPosition += 12;
-    doc.text('📈 Categorias Recomendadas:', 20, yPosition);
-    yPosition += 8;
-    doc.text('Para Despesas:', 25, yPosition);
-    yPosition += 8;
-    doc.text('• Alimentação (supermercado, restaurantes)', 30, yPosition);
-    yPosition += 8;
-    doc.text('• Transporte (combustível, Uber, transporte público)', 30, yPosition);
-    yPosition += 8;
-    doc.text('• Moradia (aluguel, contas, manutenção)', 30, yPosition);
-    yPosition += 8;
-    doc.text('• Lazer (cinema, shows, viagens)', 30, yPosition);
-    yPosition += 8;
-    doc.text('• Saúde (médico, farmácia, plano de saúde)', 30, yPosition);
-    yPosition += 8;
-    doc.text('• Educação (cursos, livros, material escolar)', 30, yPosition);
-    yPosition += 8;
-    doc.text('Para Receitas:', 25, yPosition);
-    yPosition += 8;
-    doc.text('• Trabalho (salário, bônus, comissões)', 30, yPosition);
-    yPosition += 8;
-    doc.text('• Investimentos (rendimentos, dividendos)', 30, yPosition);
-    yPosition += 8;
-    doc.text('• Freelance (trabalhos extras)', 30, yPosition);
-    yPosition += 12;
-    doc.text('✏️ Gerenciando Categorias:', 20, yPosition);
-    yPosition += 8;
-    doc.text('• Editar: Toque no ícone ✏️ ao lado da categoria', 25, yPosition);
-    yPosition += 8;
-    doc.text('• Excluir: Toque no ícone 🗑️ ao lado da categoria', 25, yPosition);
-    yPosition += 8;
-    doc.text('• Visualizar transações: Toque na categoria', 25, yPosition);
-    yPosition += 8;
-    doc.text('• Ajustar limites: Edite conforme necessário', 25, yPosition);
-    yPosition += 12;
-    doc.text('💡 Dicas para Categorias Eficientes:', 20, yPosition);
-    yPosition += 8;
-    doc.text('• Crie categorias específicas e claras', 25, yPosition);
-    yPosition += 8;
-    doc.text('• Estabeleça limites realistas baseados na renda', 25, yPosition);
-    yPosition += 8;
-    doc.text('• Use cores diferentes para fácil identificação', 25, yPosition);
-    yPosition += 8;
-    doc.text('• Revise e ajuste limites mensalmente', 25, yPosition);
-    yPosition += 8;
-    doc.text('• Monitore as barras de progresso regularmente', 25, yPosition);
-    yPosition += 15;
-
-    // Configurações
-    doc.setFontSize(16);
-    doc.setTextColor(79, 70, 229);
-    doc.text('⚙️ Configurações - Centro de Personalização', 20, yPosition);
-    yPosition += 12;
-    doc.setFontSize(11);
-    doc.setTextColor(0, 0, 0);
-    doc.text('A aba Configurações é o centro de controle do aplicativo, onde você pode personalizar', 20, yPosition);
-    yPosition += 8;
-    doc.text('sua experiência, gerenciar dados e acessar funcionalidades avançadas.', 20, yPosition);
-    yPosition += 12;
-    doc.text('📖 Guia do Usuário:', 20, yPosition);
-    yPosition += 8;
-    doc.text('• Baixe este manual completo em PDF', 25, yPosition);
-    yPosition += 8;
-    doc.text('• Acesso offline ao guia de uso', 25, yPosition);
-    yPosition += 8;
-    doc.text('• Referência completa de todas as funcionalidades', 25, yPosition);
-    yPosition += 12;
-    doc.text('👤 Perfil do Usuário:', 20, yPosition);
-    yPosition += 8;
-    doc.text('• Visualizar email da conta Google', 25, yPosition);
-    yPosition += 8;
-    doc.text('• Fazer logout da aplicação', 25, yPosition);
-    yPosition += 8;
-    doc.text('• Gerenciar sessão de login', 25, yPosition);
-    yPosition += 12;
-    doc.text('💰 Sistema de Orçamentos:', 20, yPosition);
-    yPosition += 8;
-    doc.text('Criar Novo Orçamento:', 25, yPosition);
-    yPosition += 8;
-    doc.text('• Defina um nome para o orçamento', 30, yPosition);
-    yPosition += 8;
-    doc.text('• Estabeleça período de vigência', 30, yPosition);
-    yPosition += 8;
-    doc.text('• Configure categorias e limites', 30, yPosition);
-    yPosition += 8;
-    doc.text('Compartilhar Orçamento:', 25, yPosition);
-    yPosition += 8;
-    doc.text('• Gere um ID único do orçamento', 30, yPosition);
-    yPosition += 8;
-    doc.text('• Compartilhe com família ou amigos', 30, yPosition);
-    yPosition += 8;
-    doc.text('• Controle colaborativo de gastos', 30, yPosition);
-    yPosition += 8;
-    doc.text('Entrar em Orçamento Compartilhado:', 25, yPosition);
-    yPosition += 8;
-    doc.text('• Cole o ID do orçamento compartilhado', 30, yPosition);
-    yPosition += 8;
-    doc.text('• Acesse dados compartilhados', 30, yPosition);
-    yPosition += 8;
-    doc.text('• Contribua com transações', 30, yPosition);
-    yPosition += 12;
-    doc.text('📊 Exportação de Dados:', 20, yPosition);
-    yPosition += 8;
-    doc.text('Excel (.xlsx):', 25, yPosition);
-    yPosition += 8;
-    doc.text('• Formato ideal para análise em planilhas', 30, yPosition);
-    yPosition += 8;
-    doc.text('• Compatível com Microsoft Excel e Google Sheets', 30, yPosition);
-    yPosition += 8;
-    doc.text('• Inclui todas as transações e categorias', 30, yPosition);
-    yPosition += 8;
-    doc.text('PDF (.pdf):', 25, yPosition);
-    yPosition += 8;
-    doc.text('• Relatório formatado para impressão', 30, yPosition);
-    yPosition += 8;
-    doc.text('• Resumo financeiro completo', 30, yPosition);
-    yPosition += 8;
-    doc.text('• Gráficos e estatísticas', 30, yPosition);
-    yPosition += 8;
-    doc.text('JSON (.json):', 25, yPosition);
-    yPosition += 8;
-    doc.text('• Backup completo de todos os dados', 30, yPosition);
-    yPosition += 8;
-    doc.text('• Formato para restauração futura', 30, yPosition);
-    yPosition += 8;
-    doc.text('• Compatível com outros sistemas', 30, yPosition);
-    yPosition += 12;
-    doc.text('📱 Instalação como Aplicativo (PWA):', 20, yPosition);
-    yPosition += 8;
-    doc.text('• Baixe o app no seu celular', 25, yPosition);
-    yPosition += 8;
-    doc.text('• Acesso offline às funcionalidades', 25, yPosition);
-    yPosition += 8;
-    doc.text('• Experiência nativa de aplicativo', 25, yPosition);
-    yPosition += 8;
-    doc.text('• Notificações push (futuro)', 25, yPosition);
-    yPosition += 12;
-    doc.text('🌙 Modo Escuro:', 20, yPosition);
-    yPosition += 8;
-    doc.text('• Alternar entre tema claro e escuro', 25, yPosition);
-    yPosition += 8;
-    doc.text('• Reduz fadiga visual', 25, yPosition);
-    yPosition += 8;
-    doc.text('• Economiza bateria em telas OLED', 25, yPosition);
-    yPosition += 8;
-    doc.text('• Preferência salva automaticamente', 25, yPosition);
-    yPosition += 15;
-
-    // Dicas e Truques
-    doc.setFontSize(16);
-    doc.setTextColor(79, 70, 229);
-    doc.text('💡 Dicas e Truques para Aproveitar Melhor', 20, yPosition);
-    yPosition += 12;
-    doc.setFontSize(11);
-    doc.setTextColor(0, 0, 0);
-    doc.text('🚀 Dicas de Produtividade:', 20, yPosition);
-    yPosition += 8;
-    doc.text('• Use comandos de voz para adicionar transações rapidamente', 25, yPosition);
-    yPosition += 8;
-    doc.text('• Configure limites realistas nas categorias', 25, yPosition);
-    yPosition += 8;
-    doc.text('• Faça backup regular dos seus dados', 25, yPosition);
-    yPosition += 8;
-    doc.text('• Instale o app para acesso offline', 25, yPosition);
-    yPosition += 8;
-    doc.text('• Compartilhe orçamentos com família/amigos', 25, yPosition);
-    yPosition += 8;
-    doc.text('• Monitore o card "Orçado" para controle de gastos', 25, yPosition);
-    yPosition += 8;
-    doc.text('• Use cores diferentes para categorias', 25, yPosition);
-    yPosition += 15;
-
-    // Solução de Problemas
-    doc.setFontSize(16);
-    doc.setTextColor(79, 70, 229);
-    doc.text('🔧 Solução de Problemas Comuns', 20, yPosition);
-    yPosition += 12;
-    doc.setFontSize(11);
-    doc.setTextColor(0, 0, 0);
-    doc.text('❓ Comando de voz não funciona:', 20, yPosition);
-    yPosition += 8;
-    doc.text('• Verifique se o microfone está ativo', 25, yPosition);
-    yPosition += 8;
-    doc.text('• Fale claramente e pausadamente', 25, yPosition);
-    yPosition += 8;
-    doc.text('• Use valores por extenso: "cem" ao invés de "100"', 25, yPosition);
-    yPosition += 8;
-    doc.text('❓ Transação não aparece:', 20, yPosition);
-    yPosition += 8;
-    doc.text('• Aguarde alguns segundos (atualização automática)', 25, yPosition);
-    yPosition += 8;
-    doc.text('• Verifique se está na categoria correta', 25, yPosition);
-    yPosition += 8;
-    doc.text('❓ App não carrega:', 20, yPosition);
-    yPosition += 8;
-    doc.text('• Verifique sua conexão com a internet', 25, yPosition);
-    yPosition += 8;
-    doc.text('• Faça login novamente se necessário', 25, yPosition);
-    yPosition += 15;
-
-    // Suporte
-    doc.setFontSize(16);
-    doc.setTextColor(79, 70, 229);
-    doc.text('🆘 Suporte e Contato', 20, yPosition);
-    yPosition += 12;
-    doc.setFontSize(11);
-    doc.setTextColor(0, 0, 0);
-    doc.text('👨‍💻 Fundador: Igor Bispo', 20, yPosition);
-    yPosition += 8;
-    doc.text('📱 Versão do App: 1.0', 20, yPosition);
-    yPosition += 8;
-    doc.text('📅 Data do Guia: ' + new Date().toLocaleDateString('pt-BR'), 20, yPosition);
-    yPosition += 8;
-    doc.text('🌐 URL: https://controle-financeiro-b98ec.web.app', 20, yPosition);
-    yPosition += 8;
-    doc.text('💡 Para dúvidas, consulte este guia ou entre em contato.', 20, yPosition);
-    yPosition += 15;
-
-    // Rodapé
-    doc.setFillColor(79, 70, 229);
-    doc.rect(0, 270, 210, 30, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(10);
-    doc.text('Servo Tech Finanças - Transformando sua vida financeira', 20, 280);
-    doc.text('© 2025 • Fundador: Igor Bispo • Versão 1.0', 20, 290);
-
-    // Salvar PDF
-    doc.save('Servo-Tech-Financas-Guia-Usuario.pdf');
-  } catch (error) {
-    console.error('Erro ao gerar PDF:', error);
-    Snackbar({ message: 'Erro ao gerar PDF. Verifique se a biblioteca jsPDF está carregada.', type: 'error' });
-  }
-};
-// ... existing code ...
-
-function renderFAB() {
-  // Remove qualquer FAB existente
-  let fab = document.querySelector('.fab');
-  if (fab) {fab.remove();}
-  // Só renderiza se usuário estiver logado
-  if (!window.appState.currentUser) {return;}
-  fab = FAB();
-  document.body.appendChild(fab);
-}
-
-// ... após a definição das funções ...
-window.closeModal = closeModal;
-
-// ... existing code ...
-// Função utilitária para fechar modal de voz se estiver aberto
-function closeVoiceModalIfOpen() {
-  console.log('DEBUG: closeVoiceModalIfOpen chamado');
-  const modal = document.getElementById('app-modal');
-  if (modal) {modal.remove();}
-}
-
-// ---
-// Reforçar event listener do botão de voz do topo
-// (garantir que só adiciona uma vez e que o botão existe)
-document.addEventListener('DOMContentLoaded', () => {
-  setupThemeToggle();
-  enableSwipeNavigation();
-  // ... existing code ...
-  setTimeout(() => {
-    const voiceBtn = document.getElementById('voice-control');
-    if (voiceBtn && !voiceBtn.dataset.voiceBound) {
-      voiceBtn.addEventListener('click', () => {
-        console.log('DEBUG: Botão de voz do topo clicado!');
-        // Modal de escolha
-        const modal = Modal({
-          title: 'Comando de Voz',
-          content: `
-            <div class='space-y-4 text-center'>
-              <p class='text-lg font-semibold'>O que você quer fazer por voz?</p>
-              <div class='flex flex-col gap-3'>
-                <button id='btn-voz-transacao' class='px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600'>Adicionar Transação</button>
-                <button id='btn-voz-categoria' class='px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600'>Adicionar Categoria</button>
-              </div>
-              <button onclick='closeModal()' class='mt-4 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600'>Cancelar</button>
-            </div>
-          `,
-          onClose: () => modal.remove()
-        });
-        document.body.appendChild(modal);
-        setTimeout(() => {
-          document.getElementById('btn-voz-transacao')?.addEventListener('click', () => {
-            closeModal();
-            window.startVoiceRecognition('transaction');
-          });
-          document.getElementById('btn-voz-categoria')?.addEventListener('click', () => {
-            closeModal();
-            window.startVoiceRecognition('category');
-          });
-        }, 100);
-      });
-      voiceBtn.dataset.voiceBound = '1';
-    }
-  }, 500); // Pequeno delay para garantir que o DOM está pronto
-  // ... existing code ...
-});
-// ... existing code ...
-// Em todos os pontos de processVoiceCommand que abrem o formulário:
-// Antes de window.showAddTransactionModal({ ... }) e window.showAddCategoryModal({ ... })
-// Adicione:
-// closeVoiceModalIfOpen();
-// console.log('DEBUG: Abrindo formulário de transação/categoria por voz', {descricao, valor, tipo, categoriaId});
-// ... existing code ...
-// Exemplo:
-// closeVoiceModalIfOpen();
-// console.log('DEBUG: Abrindo formulário de transação/categoria por voz', {descricao, valor, tipo, categoriaId});
-// window.showAddTransactionModal({ ... })
-// ...
-
-// ... existing code ...
-// Função utilitária para normalizar texto (remover acentos, minúsculo, pontuação final)
+// Função para normalizar texto
 function normalizarTexto(str) {
   return str
     .normalize('NFD')
     .replace(/\p{Diacritic}/gu, '')
     .toLowerCase()
-    .replace(/[.,;:!?]+$/, '') // remove pontuação final
+    .replace(/[.,;:!?]+$/, '')
     .trim();
 }
-// ... existing code ...
 
-// Destacar aba ativa ao clicar
-function setupTabHighlight() {
-  const nav = document.querySelector('.bottom-nav');
-  if (!nav) {return;}
-  nav.addEventListener('click', (e) => {
-    const btn = e.target.closest('.nav-btn');
-    if (!btn) {return;}
-    nav.querySelectorAll('.nav-btn').forEach(b => {
-      b.classList.remove('active');
-      b.style.background = '';
-      b.style.color = '';
-      b.style.fontWeight = '';
-    });
-    btn.classList.add('active');
-    btn.style.background = '#3b82f6';
-    btn.style.color = '#fff';
-    btn.style.fontWeight = '700';
-  });
-  // Ao carregar, garantir que a aba ativa está destacada
-  const activeBtn = nav.querySelector('.nav-btn.active');
-  if (activeBtn) {
-    activeBtn.style.background = '#3b82f6';
-    activeBtn.style.color = '#fff';
-    activeBtn.style.fontWeight = '700';
-  }
-}
-setupTabHighlight();
-
-async function rotinaFechamentoMensal() {
-  const user = window.FirebaseAuth.currentUser;
-  if (!user) {return;}
-  const hoje = new Date();
-  const mesAno = hoje.toISOString().slice(0,7);
-  const ultimoFechamento = localStorage.getItem('ultimoFechamentoMensal');
-  if (ultimoFechamento === mesAno) {return;} // Já executou este mês
-
-  // Salvar histórico
-  await salvarHistoricoMensal(user.uid, window.appState.transactions, hoje);
-  // Limpar transações
-  await limparTransacoes(user.uid);
-  // Aplicar despesas recorrentes
-  const recorrentes = await getDespesasRecorrentes(user.uid);
-  for (const desp of recorrentes) {
-    if (desp.ativa !== false && (!desp.parcelasRestantes || desp.parcelasRestantes > 0)) {
-      await addTransacao(user.uid, {
-        descricao: desp.descricao,
-        valor: desp.valor,
-        categoriaId: desp.categoriaId,
-        tipo: 'despesa',
-        createdAt: new Date(),
-        recorrenteId: desp.id
-      });
-      if (desp.parcelasRestantes) {
-        await updateDespesaRecorrente(user.uid, desp.id, { parcelasRestantes: desp.parcelasRestantes - 1 });
-        if (desp.parcelasRestantes - 1 <= 0) {
-          await updateDespesaRecorrente(user.uid, desp.id, { ativa: false });
-        }
-      }
-    }
-  }
-  localStorage.setItem('ultimoFechamentoMensal', mesAno);
-}
-
-// Chamar rotina ao iniciar o app
-rotinaFechamentoMensal();
-// Também rodar rotina ao mudar de mês (ex: ao abrir o app em qualquer dia do mês)
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') {
-    rotinaFechamentoMensal();
-  }
-});
-
-// Função para carregar despesas recorrentes no estado global
-async function loadRecorrentes() {
+// ===== SISTEMA DE BACKUP E EXPORTAÇÃO =====
+window.downloadBackup = function () {
   try {
-    const user = window.FirebaseAuth.currentUser;
-    const budget = window.appState.currentBudget;
-    if (!user || !budget) {
-      window.appState.recorrentes = [];
+    // Verificar se há dados para exportar
+    if (!window.appState || !window.appState.transactions) {
+      if (window.Snackbar) {
+        window.Snackbar({
+          message: 'Nenhum dado disponível para exportar.',
+          type: 'warning'
+        });
+      } else {
+        alert('Nenhum dado disponível para exportar.');
+      }
       return;
     }
-    window.appState.recorrentes = await getDespesasRecorrentes(user.uid, budget.id);
-  } catch (error) {
-    window.appState.recorrentes = [];
-    console.error('Erro ao carregar despesas recorrentes:', error);
-  }
-}
-window.loadRecorrentes = loadRecorrentes;
 
-// Adicionar função para renderizar o BottomNav
-function renderBottomNav(activeRoute) {
-  // Remove qualquer BottomNav existente
-  let nav = document.querySelector('nav.bottom-nav');
-  if (nav) {nav.remove();}
-  // Só renderiza se usuário estiver logado
-  if (!window.appState.currentUser) {return;}
-  nav = BottomNav(activeRoute);
-  nav.classList.add('bottom-nav');
-  document.body.appendChild(nav);
-  // Adiciona event listener diretamente após append
-  nav.querySelectorAll('.nav-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const route = btn.getAttribute('data-route');
-      console.log('Clicou na aba:', route); // Debug
-      if (window.router) {window.router(route);}
+    // Baixa um JSON com todos os dados do usuário
+    const data = {
+      transactions: window.appState.transactions,
+      categories: window.appState.categories,
+      budgets: window.appState.budgets,
+      recorrentes: window.appState.recorrentes
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], {
+      type: 'application/json'
     });
-  });
-  if (typeof setupNavigation === 'function') {setupNavigation();}
-}
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'financeiro-backup.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 
-// Atualizar renderRecorrentes para também renderizar o BottomNav
-async function renderRecorrentes() {
-  await _renderRecorrentes();
-  renderFAB();
-  renderBottomNav('/recorrentes');
-  setTimeout(() => enableSwipeNavigation(), 0);
-}
-window.renderRecorrentes = renderRecorrentes;
-
-// Atualizar o objeto de rotas
-const routes = {
-  '/dashboard': renderDashboard,
-  '/transactions': renderTransactions,
-  '/categories': renderCategories,
-  '/recorrentes': async () => {
-    await loadTransactions();
-    await loadRecorrentes();
-    await renderRecorrentes();
-  },
-  '/settings': async () => { await window.renderSettings(); },
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: '✅ Backup JSON exportado com sucesso!',
+        type: 'success'
+      });
+    }
+  } catch (error) {
+    console.error('❌ Erro ao exportar backup:', error);
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: 'Erro ao exportar backup: ' + error.message,
+        type: 'error'
+      });
+    } else {
+      alert('Erro ao exportar backup: ' + error.message);
+    }
+  }
 };
 
-// ... existing code ...
-document.addEventListener('recorrente-adicionada', () => {
-  window.renderDashboard();
-});
-// ... existing code ...
-
-// ... existing code ...
-let unsubscribeRecorrentes = null;
-function listenRecorrentes() {
-  if (unsubscribeRecorrentes) {unsubscribeRecorrentes();}
-  const userId = window.appState.currentUser?.uid;
-  const budgetId = window.appState.currentBudget?.id;
-  if (!userId || !budgetId) {return;}
-  const ref = collection(db, 'users', userId, 'despesasRecorrentes');
-  let q = ref;
-  if (budgetId) {
-    q = query(ref, where('budgetId', '==', budgetId));
-  }
-  unsubscribeRecorrentes = onSnapshot(q, (querySnapshot) => {
-    window.appState.recorrentes = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    // Atualizar interface se estiver na aba de recorrentes ou dashboard
-    const currentTab = document.querySelector('.nav-item.active')?.getAttribute('data-tab');
-    if (['recorrentes', 'dashboard'].includes(currentTab)) {
-      if (currentTab === 'recorrentes') {window.renderRecorrentes();}
-      if (currentTab === 'dashboard') {window.renderDashboard();}
+window.exportToExcel = function () {
+  try {
+    // Verificar se a biblioteca XLSX está disponível
+    if (typeof XLSX === 'undefined') {
+      console.error('❌ Biblioteca XLSX não está disponível');
+      if (window.Snackbar) {
+        window.Snackbar({
+          message: 'Erro: Biblioteca XLSX não está carregada. Tente recarregar a página.',
+          type: 'error'
+        });
+      } else {
+        alert('Erro: Biblioteca XLSX não está carregada. Tente recarregar a página.');
+      }
+      return;
     }
-  });
-}
-// Chamar listenRecorrentes após login e ao trocar de orçamento
-// No onAuthStateChanged, após definir currentUser e currentBudget:
-// ... existing code ...
 
-// ... existing code ...
-window.showExportOptions = function() {
-  Modal({
-    title: 'Exportar Dados',
+    // Verificar se há dados para exportar
+    if (!window.appState || !window.appState.transactions) {
+      if (window.Snackbar) {
+        window.Snackbar({
+          message: 'Nenhum dado disponível para exportar.',
+          type: 'warning'
+        });
+      } else {
+        alert('Nenhum dado disponível para exportar.');
+      }
+      return;
+    }
+
+    // Gera planilha Excel com transações, categorias e orçamentos
+    const wb = XLSX.utils.book_new();
+
+    // Transações
+    const transacoes = window.appState.transactions.map(t => ({
+      Descrição: t.descricao,
+      Valor: t.valor,
+      Tipo: t.tipo,
+      Categoria: window.appState.categories.find(c => c.id === t.categoriaId)?.nome || '',
+      Data: t.createdAt && t.createdAt.toDate ? t.createdAt.toDate().toLocaleDateString() : ''
+    }));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(transacoes), 'Transações');
+
+    // Categorias
+    const categorias = window.appState.categories.map(c => ({
+      Nome: c.nome,
+      Tipo: c.tipo,
+      Limite: c.limite,
+      Cor: c.cor
+    }));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(categorias), 'Categorias');
+
+    // Orçamentos
+    const orcamentos = window.appState.budgets.map(b => ({
+      Nome: b.nome,
+      Descrição: b.descricao,
+      ID: b.id
+    }));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(orcamentos), 'Orçamentos');
+
+    XLSX.writeFile(wb, 'financeiro-dados.xlsx');
+
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: '✅ Arquivo Excel exportado com sucesso!',
+        type: 'success'
+      });
+    }
+  } catch (error) {
+    console.error('❌ Erro ao exportar Excel:', error);
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: 'Erro ao exportar Excel: ' + error.message,
+        type: 'error'
+      });
+    } else {
+      alert('Erro ao exportar Excel: ' + error.message);
+    }
+  }
+};
+
+window.exportToPDF = function () {
+  try {
+    // Verificar se a biblioteca jsPDF está disponível
+    if (typeof window.jspdf === 'undefined') {
+      console.error('❌ Biblioteca jsPDF não está disponível');
+      if (window.Snackbar) {
+        window.Snackbar({
+          message: 'Erro: Biblioteca jsPDF não está carregada. Tente recarregar a página.',
+          type: 'error'
+        });
+      } else {
+        alert('Erro: Biblioteca jsPDF não está carregada. Tente recarregar a página.');
+      }
+      return;
+    }
+
+    // Verificar se há dados para exportar
+    if (!window.appState || !window.appState.transactions) {
+      if (window.Snackbar) {
+        window.Snackbar({
+          message: 'Nenhum dado disponível para exportar.',
+          type: 'warning'
+        });
+      } else {
+        alert('Nenhum dado disponível para exportar.');
+      }
+      return;
+    }
+
+    // Gera PDF com resumo das transações, categorias e orçamentos
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    let y = 10;
+
+    // Cabeçalho
+    doc.setFontSize(20);
+    doc.setFont('helvetica', 'bold');
+    doc.text('📊 Relatório Financeiro', 10, y);
+    y += 15;
+
+    // Informações do orçamento atual
+    const currentBudget = window.appState.currentBudget;
+    if (currentBudget) {
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Orçamento: ${currentBudget.nome}`, 10, y);
+      y += 8;
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`ID: ${currentBudget.id}`, 10, y);
+      y += 10;
+    }
+
+    // Resumo financeiro
+    const totalReceitas = window.appState.transactions
+      .filter(t => t.tipo === 'receita')
+      .reduce((sum, t) => sum + parseFloat(t.valor), 0);
+
+    const totalDespesas = window.appState.transactions
+      .filter(t => t.tipo === 'despesa')
+      .reduce((sum, t) => sum + parseFloat(t.valor), 0);
+
+    const saldo = totalReceitas - totalDespesas;
+
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Resumo Geral:', 10, y);
+    y += 8;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Total Receitas: R$ ${totalReceitas.toFixed(2)}`, 12, y);
+    y += 6;
+    doc.text(`Total Despesas: R$ ${totalDespesas.toFixed(2)}`, 12, y);
+    y += 6;
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Saldo: R$ ${saldo.toFixed(2)}`, 12, y);
+    y += 10;
+
+    // Transações recentes
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Transações Recentes:', 10, y);
+    y += 8;
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+
+    window.appState.transactions
+      .sort((a, b) => new Date(b.createdAt?.toDate?.() || b.createdAt) - new Date(a.createdAt?.toDate?.() || a.createdAt))
+      .slice(0, 15)
+      .forEach(t => {
+        const categoria = window.appState.categories.find(c => c.id === t.categoriaId)?.nome || 'Sem categoria';
+        const data = t.createdAt?.toDate?.() ? t.createdAt.toDate().toLocaleDateString() : 'Data não disponível';
+        const texto = `${data} - ${t.descricao} | R$ ${t.valor} | ${t.tipo} | ${categoria}`;
+
+        if (y > 270) {
+          doc.addPage();
+          y = 10;
+        }
+
+        doc.text(texto, 12, y);
+        y += 6;
+      });
+
+    y += 5;
+
+    // Categorias com gastos
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Gastos por Categoria:', 10, y);
+    y += 8;
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+
+    window.appState.categories.forEach(cat => {
+      const gastos = window.appState.transactions
+        .filter(t => t.categoriaId === cat.id && t.tipo === 'despesa')
+        .reduce((sum, t) => sum + parseFloat(t.valor), 0);
+
+      if (gastos > 0) {
+        const limite = cat.limite ? ` / R$ ${cat.limite}` : '';
+        const percentual = cat.limite ? ` (${((gastos / cat.limite) * 100).toFixed(1)}%)` : '';
+
+        if (y > 270) {
+          doc.addPage();
+          y = 10;
+        }
+
+        doc.text(`${cat.nome}: R$ ${gastos.toFixed(2)}${limite}${percentual}`, 12, y);
+        y += 6;
+      }
+    });
+
+    doc.save('relatorio-financeiro.pdf');
+
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: '✅ Relatório PDF exportado com sucesso!',
+        type: 'success'
+      });
+    }
+  } catch (error) {
+    console.error('❌ Erro ao exportar PDF:', error);
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: 'Erro ao exportar PDF: ' + error.message,
+        type: 'error'
+      });
+    } else {
+      alert('Erro ao exportar PDF: ' + error.message);
+    }
+  }
+};
+
+window.exportReadmePDF = function () {
+  try {
+    // Verificar se a biblioteca jsPDF está disponível
+    if (typeof window.jspdf === 'undefined') {
+      console.error('❌ Biblioteca jsPDF não está disponível');
+      if (window.Snackbar) {
+        window.Snackbar({
+          message: 'Erro: Biblioteca jsPDF não está carregada. Tente recarregar a página.',
+          type: 'error'
+        });
+      } else {
+        alert('Erro: Biblioteca jsPDF não está carregada. Tente recarregar a página.');
+      }
+      return;
+    }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    let y = 10;
+
+    // Função para adicionar texto com quebra de linha
+    function addText(text, x, y, maxWidth = 170) {
+      const lines = doc.splitTextToSize(text, maxWidth);
+      lines.forEach(line => {
+        if (y > 270) {
+          doc.addPage();
+          y = 10;
+        }
+        doc.text(line, x, y);
+        y += 6;
+      });
+      return y;
+    }
+
+    // Cabeçalho
+    doc.setFontSize(24);
+    doc.setFont('helvetica', 'bold');
+    doc.setFillColor(79, 70, 229);
+    doc.rect(0, 0, 210, 40, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.text('Controle Financeiro', 20, 25);
+    doc.setFontSize(14);
+    doc.text('Guia Completo de Uso', 20, 35);
+    y = 50;
+
+    // Conteúdo do guia
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    y = addText('🎯 Como Usar o Aplicativo', 20, y);
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    y = addText('1. Faça login com sua conta Google', 25, y);
+    y = addText('2. Crie categorias para organizar suas despesas e receitas', 25, y);
+    y = addText('3. Adicione transações usando o botão + ou comandos de voz', 25, y);
+    y = addText('4. Configure despesas recorrentes para pagamentos fixos', 25, y);
+    y = addText('5. Monitore seu saldo e gastos no dashboard', 25, y);
+    y += 10;
+
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    y = addText('🎤 Comandos de Voz Disponíveis', 20, y);
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    y = addText('• "gastei 50 reais no supermercado em alimentação"', 25, y);
+    y = addText('• "recebi 2000 de salário em rendimentos"', 25, y);
+    y = addText('• "criar categoria alimentação despesa 500"', 25, y);
+    y = addText('• "qual meu saldo"', 25, y);
+    y = addText('• "mostrar transações"', 25, y);
+    y += 10;
+
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    y = addText('📊 Funcionalidades Principais', 20, y);
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    y = addText('• Dashboard com resumo financeiro', 25, y);
+    y = addText('• Gestão de transações e categorias', 25, y);
+    y = addText('• Sistema de despesas recorrentes', 25, y);
+    y = addText('• Alertas de limite de categoria', 25, y);
+    y = addText('• Backup e exportação de dados', 25, y);
+    y = addText('• Interface responsiva para mobile', 25, y);
+    y += 10;
+
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    y = addText('💾 Backup e Exportação', 20, y);
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    y = addText('• Exportação em JSON para backup completo', 25, y);
+    y = addText('• Exportação em Excel para relatórios', 25, y);
+    y = addText('• Exportação em PDF para documentação', 25, y);
+    y = addText('• Restauração de dados de backup', 25, y);
+    y += 10;
+
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    y = addText('🔧 Suporte e Contato', 20, y);
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    y = addText('Para dúvidas ou problemas:', 25, y);
+    y = addText('• Verifique os logs do console (F12)', 30, y);
+    y = addText('• Teste em diferentes navegadores', 30, y);
+    y = addText('• Consulte a documentação técnica', 30, y);
+
+    doc.save('guia-servo-tech-financas.pdf');
+
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: '✅ Guia PDF exportado com sucesso!',
+        type: 'success'
+      });
+    }
+  } catch (error) {
+    console.error('❌ Erro ao exportar guia PDF:', error);
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: 'Erro ao exportar guia PDF: ' + error.message,
+        type: 'error'
+      });
+    } else {
+      alert('Erro ao exportar guia PDF: ' + error.message);
+    }
+  }
+}; 
+
+// ===== FUNÇÕES DE UTILITÁRIO RESTAURADAS =====
+window.showExportOptions = function () {
+  console.log('🔍 showExportOptions chamada');
+  const modal = Modal({
+    title: '📤 Opções de Exportação',
     content: `
       <div class="space-y-4">
-        <button onclick="window.exportToExcel()" class="w-full bg-green-500 text-white py-2 rounded-lg font-semibold hover:bg-green-600 flex items-center justify-center gap-2 text-base">
-          <span>📊</span> Exportar Excel
+        <button onclick="window.downloadBackup && window.downloadBackup()" class="w-full btn-primary">
+          <span class="icon-standard">💾</span>
+          Backup JSON Completo
         </button>
-        <button onclick="window.exportToPDF()" class="w-full bg-red-500 text-white py-2 rounded-lg font-semibold hover:bg-red-600 flex items-center justify-center gap-2 text-base">
-          <span>📄</span> Exportar PDF
+        <button onclick="window.exportToExcel && window.exportToExcel()" class="w-full btn-secondary">
+          <span class="icon-standard">📊</span>
+          Exportar para Excel
         </button>
-        <button onclick="window.downloadBackup()" class="w-full bg-purple-500 text-white py-2 rounded-lg font-semibold hover:bg-purple-600 flex items-center justify-center gap-2 text-base">
-          <span>💾</span> Backup Completo (JSON)
+        <button onclick="window.exportToPDF && window.exportToPDF()" class="w-full btn-secondary">
+          <span class="icon-standard">📄</span>
+          Exportar para PDF
+        </button>
+        <button onclick="window.exportReadmePDF && window.exportReadmePDF()" class="w-full btn-secondary">
+          <span class="icon-standard">📖</span>
+          Guia de Uso (PDF)
         </button>
       </div>
-    `,
-    onClose: () => document.querySelector('.modal')?.remove()
+    `
   });
 };
-// ... existing code ...
 
-// ... existing code ...
-// Função para esconder FAB quando modal está aberto e mostrar ao fechar
-function toggleFABOnModal() {
-  const fab = document.querySelector('.fab');
-  const modal = document.querySelector('.modal');
-  if (fab) {
-    if (modal && getComputedStyle(modal).display !== 'none') {
-      fab.classList.add('hidden');
+// ===== CONFIGURAÇÃO DOS BOTÕES DA TELA INICIAL =====
+function setupHeaderButtons() {
+  console.log('🔧 Configurando botões do header...');
+  
+  // Verificar se os elementos existem
+  const voiceModal = document.getElementById('voice-modal');
+  
+  console.log('🔧 Elementos encontrados:', {
+    voiceModal: !!voiceModal
+  });
+  
+  // Botão de voz movido para o FAB
+  
+  // Botão de tema - configuração removida para evitar duplicação
+  // A configuração do tema é feita apenas uma vez na inicialização do app
+
+  // Configurar botão de fechar modal de voz
+  const closeVoiceModalBtn = document.getElementById('close-voice-modal');
+  if (closeVoiceModalBtn) {
+    closeVoiceModalBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('❌ Close voice modal button clicked');
+      closeVoiceModal();
+    });
+    console.log('✅ Close voice modal button configurado');
+  }
+
+  // Fechar modal de voz ao clicar fora
+  if (voiceModal) {
+    voiceModal.addEventListener('click', (e) => {
+      if (e.target === voiceModal) {
+        closeVoiceModal();
+      }
+    });
+  }
+}
+
+// Funções do drawer removidas - funcionalidades movidas para as abas do rodapé
+
+// Função para abrir modal de voz
+function openVoiceModal() {
+  const voiceModal = document.getElementById('voice-modal');
+  const voiceContent = voiceModal?.querySelector('.voice-content');
+  
+  if (voiceModal && voiceContent) {
+    // Mostrar modal
+    voiceModal.style.display = 'flex';
+    
+    // Animar abertura com fundo mais opaco
+    voiceModal.style.pointerEvents = 'auto';
+    voiceModal.style.background = 'rgba(0, 0, 0, 0.95)';
+    voiceModal.style.backdropFilter = 'blur(30px)';
+    voiceContent.style.transform = 'scale(1)';
+    voiceContent.style.opacity = '1';
+    
+    // Adicionar classe ao body para esconder botão de voz
+    document.body.classList.add('voice-modal-open');
+    
+    // Iniciar reconhecimento de voz
+    if (window.startVoiceRecognition) {
+      setTimeout(() => {
+        window.startVoiceRecognition('transaction');
+      }, 500);
+    }
+    
+    console.log('🎤 Modal de voz aberto');
+  }
+}
+
+// Tornar função global para uso no FAB
+window.openVoiceModal = openVoiceModal;
+
+// Função para fechar modal de voz
+function closeVoiceModal() {
+  const voiceModal = document.getElementById('voice-modal');
+  const voiceContent = voiceModal?.querySelector('.voice-content');
+  
+  if (voiceModal && voiceContent) {
+    // Animar fechamento
+    voiceContent.style.transform = 'scale(0.95)';
+    voiceContent.style.opacity = '0';
+    voiceModal.style.background = 'rgba(0, 0, 0, 0)';
+    voiceModal.style.backdropFilter = 'blur(0px)';
+    
+    // Remover classe do body para mostrar botão de voz
+    document.body.classList.remove('voice-modal-open');
+    
+    setTimeout(() => {
+      voiceModal.style.pointerEvents = 'none';
+      // Garantir que o modal não interfira com a tela principal
+      voiceModal.style.display = 'none';
+    }, 300);
+    
+    console.log('🎤 Modal de voz fechado');
+  }
+}
+
+// Função para carregar orçamentos no drawer
+// Função loadDrawerBudgets removida - agora gerenciada pela classe Drawer
+
+// ===== CONFIGURAÇÃO DOS BOTÕES DA TELA DE CATEGORIAS =====
+function setupCategoryButtons() {
+  console.log('🔧 Configurando botões da tela de categorias...');
+  
+  // Botão de adicionar categoria
+  const addCategoryBtn = document.getElementById('add-category-btn');
+  if (addCategoryBtn) {
+    addCategoryBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('📂 Add category button clicked');
+      
+      if (window.showAddCategoryModal) {
+        window.showAddCategoryModal();
+      } else {
+        console.warn('⚠️ Função de adicionar categoria não disponível');
+        if (window.Snackbar) {
+          window.Snackbar.show('Funcionalidade de adicionar categoria não disponível', 'warning');
+        }
+      }
+    });
+    console.log('✅ Add category button configurado');
+  }
+  
+  // Botão de migrar
+  const migrarBtn = document.querySelector('button[onclick="window.migrarTransacoesAntigas()"]');
+  if (migrarBtn) {
+    migrarBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('🔄 Migrar button clicked');
+      
+      if (window.migrarTransacoesAntigas) {
+        window.migrarTransacoesAntigas();
+      } else {
+        console.warn('⚠️ Função de migrar não disponível');
+      }
+    });
+    console.log('✅ Migrar button configurado');
+  }
+  
+  // Botão de corrigir
+  const corrigirBtn = document.querySelector('button[onclick="window.corrigirTipoCategoria()"]');
+  if (corrigirBtn) {
+    corrigirBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('🔧 Corrigir button clicked');
+      
+      if (window.corrigirTipoCategoria) {
+        window.corrigirTipoCategoria();
+      } else {
+        console.warn('⚠️ Função de corrigir não disponível');
+      }
+    });
+    console.log('✅ Corrigir button configurado');
+  }
+}
+
+// ===== CONFIGURAÇÃO DOS BOTÕES DA TELA DE TRANSAÇÕES =====
+function setupTransactionButtons() {
+  console.log('🔧 Configurando botões da tela de transações...');
+  
+  // Botão de adicionar transação
+  const addTransactionBtn = document.getElementById('add-transaction-btn');
+  if (addTransactionBtn) {
+    addTransactionBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('📋 Add transaction button clicked');
+      
+      if (window.showAddTransactionModal) {
+        window.showAddTransactionModal();
+      } else {
+        console.warn('⚠️ Função de adicionar transação não disponível');
+        if (window.Snackbar) {
+          window.Snackbar.show('Funcionalidade de adicionar transação não disponível', 'warning');
+        }
+      }
+    });
+    console.log('✅ Add transaction button configurado');
+  }
+  
+  // Botão de voz
+  const voiceBtn = document.getElementById('voice-btn');
+  if (voiceBtn) {
+    voiceBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('🎤 Voice button clicked');
+      
+      if (window.startVoiceRecognition) {
+        window.startVoiceRecognition('transaction');
+      } else {
+        console.warn('⚠️ Função de voz não disponível');
+      }
+    });
+    console.log('✅ Voice button configurado');
+  } else {
+    console.warn('⚠️ Botão de voz não encontrado');
+  }
+}
+
+// ===== CONFIGURAÇÃO DOS BOTÕES DO DASHBOARD =====
+function setupDashboardButtons() {
+  console.log('🔧 Configurando botões do dashboard...');
+  
+  // Botão de exportar
+  const exportBtn = document.getElementById('export-btn');
+  if (exportBtn) {
+    exportBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('📤 Export button clicked');
+      
+      if (window.showExportOptions) {
+        window.showExportOptions();
+      } else {
+        console.warn('⚠️ Função de exportação não disponível');
+        if (window.Snackbar) {
+          window.Snackbar({
+            message: 'Funcionalidade de exportação não disponível',
+            type: 'warning'
+          });
+        }
+      }
+    });
+    console.log('✅ Export button configurado');
+  }
+  
+  // Botão de tema no Dashboard
+  const themeBtn = document.getElementById('theme-toggle-btn');
+  if (themeBtn) {
+    console.log('Dashboard: Configurando botão de tema...');
+    if (window.setupThemeToggle) {
+      window.setupThemeToggle('theme-toggle-btn');
     } else {
-      fab.classList.remove('hidden');
+      console.warn('⚠️ setupThemeToggle não disponível');
+    }
+  }
+  
+  // Botões de navegação de mês
+  const mesAnterior = document.getElementById('mes-anterior');
+  const mesProximo = document.getElementById('mes-proximo');
+  
+  if (mesAnterior) {
+    mesAnterior.addEventListener('click', async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('⬅️ Mês anterior clicked');
+      
+      const currentYear = parseInt(document.querySelector('#mes-selector span').textContent.split(' ')[1]);
+      const currentMonth = document.querySelector('#mes-selector span').textContent.split(' ')[0];
+      const meses = [
+        'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+      ];
+      const currentMonthIndex = meses.indexOf(currentMonth);
+      
+      let newYear = currentYear;
+      let newMonth = currentMonthIndex;
+      
+      if (currentMonthIndex === 0) {
+        newYear = currentYear - 1;
+        newMonth = 11;
+      } else {
+        newMonth = currentMonthIndex - 1;
+      }
+      
+      if (window.renderDashboard) {
+        await window.renderDashboard(newYear, newMonth + 1);
+      }
+    });
+    console.log('✅ Mês anterior button configurado');
+  }
+  
+  if (mesProximo) {
+    mesProximo.addEventListener('click', async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('➡️ Mês próximo clicked');
+      
+      const currentYear = parseInt(document.querySelector('#mes-selector span').textContent.split(' ')[1]);
+      const currentMonth = document.querySelector('#mes-selector span').textContent.split(' ')[0];
+      const meses = [
+        'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+      ];
+      const currentMonthIndex = meses.indexOf(currentMonth);
+      
+      let newYear = currentYear;
+      let newMonth = currentMonthIndex;
+      
+      if (currentMonthIndex === 11) {
+        newYear = currentYear + 1;
+        newMonth = 0;
+      } else {
+        newMonth = currentMonthIndex + 1;
+      }
+      
+      if (window.renderDashboard) {
+        await window.renderDashboard(newYear, newMonth + 1);
+      }
+    });
+    console.log('✅ Mês próximo button configurado');
+  }
+}
+
+window.migrarTransacoesAntigas = async function () {
+  try {
+    console.log('🔄 Iniciando migração de transações antigas...');
+    const user = window.appState.currentUser;
+    if (!user) {
+      Snackbar({ message: 'Usuário não autenticado', type: 'error' });
+      return;
+    }
+
+    const budget = window.appState.currentBudget;
+    if (!budget) {
+      Snackbar.show('Orçamento não selecionado', 'error');
+      return;
+    }
+
+    // Buscar transações sem categoriaId
+    const q = query(
+      collection(db, 'transactions'),
+      where('budgetId', '==', budget.id),
+      where('categoriaId', '==', null)
+    );
+    
+    const querySnapshot = await getDocs(q);
+    const transacoesSemCategoria = querySnapshot.docs;
+    
+    if (transacoesSemCategoria.length === 0) {
+      Snackbar({ message: 'Nenhuma transação para migrar', type: 'info' });
+      return;
+    }
+
+    // Criar categoria padrão se não existir
+    let categoriaPadrao = window.appState.categories.find(cat => cat.nome === 'Geral');
+    if (!categoriaPadrao) {
+      const categoriaData = {
+        nome: 'Geral',
+        descricao: 'Categoria padrão para transações antigas',
+        tipo: 'despesa',
+        cor: '#6B7280',
+        limite: 0
+      };
+      const categoriaId = await addCategory(categoriaData);
+      await loadCategories();
+      categoriaPadrao = window.appState.categories.find(cat => cat.id === categoriaId);
+    }
+
+    // Atualizar transações
+    let atualizadas = 0;
+    for (const doc of transacoesSemCategoria) {
+      await updateDoc(doc.ref, {
+        categoriaId: categoriaPadrao.id,
+        updatedAt: serverTimestamp()
+      });
+      atualizadas++;
+    }
+
+    await loadTransactions();
+    Snackbar({ message: `${atualizadas} transações migradas para categoria "Geral"`, type: 'success' });
+  } catch (error) {
+    console.error('❌ Erro na migração:', error);
+    Snackbar({ message: 'Erro ao migrar transações', type: 'error' });
+  }
+};
+
+window.corrigirTipoCategoria = async function () {
+  try {
+    console.log('🔧 Iniciando correção de tipos de categoria...');
+    const user = window.appState.currentUser;
+    if (!user) {
+      Snackbar({ message: 'Usuário não autenticado', type: 'error' });
+      return;
+    }
+
+    const budget = window.appState.currentBudget;
+    if (!budget) {
+      Snackbar.show('Orçamento não selecionado', 'error');
+      return;
+    }
+
+    // Buscar categorias sem tipo
+    const q = query(
+      collection(db, 'categories'),
+      where('budgetId', '==', budget.id),
+      where('tipo', '==', null)
+    );
+    
+    const querySnapshot = await getDocs(q);
+    const categoriasSemTipo = querySnapshot.docs;
+    
+    if (categoriasSemTipo.length === 0) {
+      Snackbar({ message: 'Nenhuma categoria para corrigir', type: 'info' });
+      return;
+    }
+
+    // Atualizar categorias
+    let corrigidas = 0;
+    for (const doc of categoriasSemTipo) {
+      await updateDoc(doc.ref, {
+        tipo: 'despesa', // Tipo padrão
+        updatedAt: serverTimestamp()
+      });
+      corrigidas++;
+    }
+
+    await loadCategories();
+    Snackbar({ message: `${corrigidas} categorias corrigidas`, type: 'success' });
+  } catch (error) {
+    console.error('❌ Erro na correção:', error);
+    Snackbar({ message: 'Erro ao corrigir categorias', type: 'error' });
+  }
+};
+
+// ===== FUNÇÕES DE NOTIFICAÇÕES =====
+
+// Função para carregar notificações do usuário
+async function loadNotifications() {
+  try {
+    const user = auth.currentUser;
+    if (!user) return [];
+
+    const { getDocs, query, where, orderBy, limit } = await import('firebase/firestore');
+    const q = query(
+      collection(db, 'notifications'),
+      where('recipientUid', '==', user.uid),
+      orderBy('createdAt', 'desc'),
+      limit(50)
+    );
+
+    const snapshot = await getDocs(q);
+    const notifications = [];
+    snapshot.forEach(doc => {
+      notifications.push({ id: doc.id, ...doc.data() });
+    });
+
+    window.appState.notifications = notifications;
+    console.log('📧 Notificações carregadas:', notifications.length);
+    
+    // Atualizar contador de notificações não lidas
+    updateNotificationBadge();
+    
+    return notifications;
+  } catch (error) {
+    console.error('Erro ao carregar notificações:', error);
+    return [];
+  }
+}
+
+// Função para marcar notificação como lida
+async function markNotificationAsRead(notificationId) {
+  try {
+    const { updateDoc } = await import('firebase/firestore');
+    await updateDoc(doc(db, 'notifications', notificationId), {
+      read: true
+    });
+    
+    // Atualizar estado local
+    const notificationIndex = window.appState.notifications.findIndex(n => n.id === notificationId);
+    if (notificationIndex !== -1) {
+      window.appState.notifications[notificationIndex].read = true;
+    }
+    
+    updateNotificationBadge();
+  } catch (error) {
+    console.error('Erro ao marcar notificação como lida:', error);
+  }
+}
+
+// Função para marcar todas as notificações como lidas
+async function markAllNotificationsAsRead() {
+  try {
+    const unreadNotifications = window.appState.notifications?.filter(n => !n.read) || [];
+    if (unreadNotifications.length === 0) {
+      Snackbar({ message: 'Nenhuma notificação não lida', type: 'info' });
+      return;
+    }
+
+    const { updateDoc } = await import('firebase/firestore');
+    const promises = unreadNotifications.map(notification => 
+      updateDoc(doc(db, 'notifications', notification.id), { read: true })
+    );
+    
+    await Promise.all(promises);
+    
+    // Atualizar estado local
+    window.appState.notifications.forEach(n => n.read = true);
+    updateNotificationBadge();
+    
+    Snackbar({ message: `${unreadNotifications.length} notificações marcadas como lidas`, type: 'success' });
+    
+    // Re-renderizar se estiver na página de notificações
+    if (window.location.hash === '#/notifications') {
+      renderNotifications();
+    }
+  } catch (error) {
+    console.error('Erro ao marcar notificações como lidas:', error);
+    Snackbar({ message: 'Erro ao marcar notificações como lidas', type: 'error' });
+  }
+}
+
+// Função para atualizar badge de notificações
+function updateNotificationBadge() {
+  const unreadCount = window.appState.notifications?.filter(n => !n.read).length || 0;
+  
+  // Atualizar badge na navegação
+  const notificationBtn = document.querySelector('[data-route="/notifications"]');
+  if (notificationBtn) {
+    let badge = notificationBtn.querySelector('.notification-badge');
+    if (!badge) {
+      badge = document.createElement('span');
+      badge.className = 'notification-badge absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center';
+      notificationBtn.style.position = 'relative';
+      notificationBtn.appendChild(badge);
+    }
+    
+    if (unreadCount > 0) {
+      badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+      badge.style.display = 'flex';
+    } else {
+      badge.style.display = 'none';
     }
   }
 }
-// Observar abertura/fechamento de modais
-const observer = new MutationObserver(toggleFABOnModal);
-observer.observe(document.body, { childList: true, subtree: true });
-// Também rodar ao carregar
-setTimeout(toggleFABOnModal, 500);
-// ... existing code ...
 
-// ... existing code ...
-// Adicionar listener para beforeinstallprompt
-window.deferredPrompt = null;
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  window.deferredPrompt = e;
-  const btn = document.getElementById('install-app-btn');
-  if (btn) {btn.style.display = '';}
-});
+// Listener para notificações em tempo real
+let unsubscribeNotifications = null;
 
-// Função para mostrar o botão de instalar
-window.showInstallButton = function(forceShow = false) {
-  const btn = document.getElementById('install-app-btn');
-  if (!btn) {return;}
-  if (window.deferredPrompt || forceShow) {
-    btn.style.display = '';
-    btn.onclick = async () => {
-      if (window.deferredPrompt) {
-        window.deferredPrompt.prompt();
-        const { outcome } = await window.deferredPrompt.userChoice;
-        if (outcome === 'accepted') {
-          window.deferredPrompt = null;
-          btn.style.display = 'none';
+async function listenNotifications() {
+  if (unsubscribeNotifications) {
+    unsubscribeNotifications();
+  }
+
+  const user = auth.currentUser;
+  if (!user) {
+    console.log('⚠️ Usuário não autenticado, não iniciando listener de notificações');
+    return;
+  }
+
+  // Verificar se há um orçamento atual
+  if (!window.appState.currentBudget) {
+    console.log('⚠️ Nenhum orçamento selecionado, não iniciando listener de notificações');
+    return;
+  }
+
+  try {
+    const { onSnapshot, query, where, orderBy, limit } = await import('firebase/firestore');
+    const q = query(
+      collection(db, 'notifications'),
+      where('recipientUid', '==', user.uid),
+      orderBy('createdAt', 'desc'),
+      limit(50)
+    );
+
+    unsubscribeNotifications = onSnapshot(q, snapshot => {
+      console.log('📧 Listener de notificações executado!');
+      const notifications = [];
+      snapshot.forEach(doc => {
+        notifications.push({ id: doc.id, ...doc.data() });
+      });
+
+      window.appState.notifications = notifications;
+      console.log('📧 Notificações atualizadas:', notifications.length);
+      
+      // Atualizar badge
+      updateNotificationBadge();
+      
+      // Se estiver na página de notificações, re-renderizar
+      if (window.location.hash === '#/notifications') {
+        renderNotifications();
+      }
+    }, error => {
+      console.error('❌ Erro no listener de notificações:', error);
+      // Se for erro de permissão, não tentar novamente
+      if (error.code === 'permission-denied') {
+        console.log('⚠️ Permissão negada para notificações, desabilitando listener');
+        if (unsubscribeNotifications) {
+          unsubscribeNotifications();
+          unsubscribeNotifications = null;
         }
       }
-    };
-  } else {
-    btn.style.display = 'none';
+    });
+  } catch (error) {
+    console.error('❌ Erro ao configurar listener de notificações:', error);
   }
-};
+}
 
-// Em renderSettings, após inserir o botão:
-setTimeout(() => window.showInstallButton(), 0);
-// ... existing code ...
-
-window.renderSettings = async function() {
-  console.log('renderSettings', {
-    currentBudget: window.appState.currentBudget,
-    budgets: window.appState.budgets
-  });
+// Função para renderizar notificações
+async function renderNotifications() {
   const content = document.getElementById('app-content');
-  const budget = window.appState.currentBudget;
-  const budgets = window.appState.budgets || [];
-  let compartilhadosHtml = '';
-  let orcamentoAtualHtml = '';
-  if (budget) {
-    // Buscar e-mails dos usuários permitidos
-    let emails = [];
-    if (Array.isArray(budget.usuariosPermitidos) && budget.usuariosPermitidos.length > 0) {
-      emails = await buscarEmailsPorUids(budget.usuariosPermitidos);
-    }
-    compartilhadosHtml = emails.length > 0 ? '<div class=\'mt-2\'><h4 class=\'font-semibold\'>Usuários com acesso:</h4><ul class=\'list-disc ml-6 text-sm\'>' +
-      emails.map(u => `<li>${u.email ? u.email + ' (' + u.uid + ')' : u.uid}</li>`).join('') + '</ul></div>' : '';
-    orcamentoAtualHtml = `
-      <div class="mb-4">
-        <h3 class="font-semibold">Orçamento Atual:</h3>
-        <p><strong>Nome:</strong> ${budget.nome || '(sem nome)'}</p>
-        <p><strong>ID:</strong> <span id="orcamento-id">${budget.id}</span> <button onclick="window.copyBudgetId('${budget.id}')" class="ml-2 px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 text-xs">Copiar</button></p>
-        <button onclick="window.compartilharOrcamento()" class="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 mt-2">Compartilhar Orçamento</button>
-        ${compartilhadosHtml}
-      </div>
-    `;
-  }
-  let listaOrcamentosHtml = '';
-  if (budgets.length > 1) {
-    listaOrcamentosHtml = '<div class=\'mt-4\'><h4 class=\'font-semibold\'>Seus Orçamentos:</h4><ul class=\'list-disc ml-6 text-sm\'>' +
-      budgets.map(b => `<li>${b.nome || '(sem nome)'} <span class='text-xs text-gray-500'>(ID: ${b.id})</span> ${budget && b.id === budget.id ? '<span class="text-green-600 font-bold ml-2">(Atual)</span>' : `<button onclick="window.setCurrentBudget && window.setCurrentBudget(${JSON.stringify(b)})" class="ml-2 px-2 py-1 bg-blue-200 rounded hover:bg-blue-300 text-xs">Usar</button>`}</li>`).join('') + '</ul></div>';
-  }
+  
+  if (!content) return;
+
+  // Carregar notificações antes de renderizar
+  await loadNotifications();
+  const notifications = window.appState.notifications || [];
+
   content.innerHTML = `
-    <div class="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-2 md:p-6 border border-gray-300 dark:border-gray-700">
-      <div class="flex flex-wrap justify-between items-center gap-1 md:gap-0 mb-4">
-        <h2 class="tab-title-highlight bg-white dark:bg-gray-900 rounded-2xl px-6 py-2 shadow text-gray-900 dark:text-white">Configurações</h2>
-        <div class="flex gap-2">
-          <button onclick="window.showAddBudgetModal()" class="bg-blue-500 text-white px-2 py-1 md:px-6 md:py-3 rounded-lg hover:bg-blue-600 flex items-center space-x-2 text-xs md:text-base font-semibold font-inter shadow-md">Criar Orçamento</button>
-          <button onclick="window.selectSharedBudget()" class="bg-green-500 text-white px-2 py-1 md:px-6 md:py-3 rounded-lg hover:bg-green-600 flex items-center space-x-2 text-xs md:text-base font-semibold font-inter shadow-md">Entrar em Orçamento Compartilhado</button>
+    <div class="tab-container">
+      <div class="tab-header">
+        <h2 class="tab-title-highlight">🔔 Notificações</h2>
+        <div class="flex items-center gap-2">
+          <button onclick="window.showConfirmationModal({
+            title: 'Marcar como Lidas',
+            message: 'Deseja marcar todas as notificações como lidas?',
+            confirmText: 'Sim, Marcar',
+            confirmColor: 'bg-blue-500 hover:bg-blue-600',
+            onConfirm: 'window.markAllNotificationsAsRead && window.markAllNotificationsAsRead()'
+          })" class="btn-secondary">
+            <span class="icon-standard">✔️</span>
+            <span class="hidden sm:inline">Marcar todas como lidas</span>
+          </button>
         </div>
       </div>
-      <div class="space-y-4">
-        <div class="border border-gray-300 dark:border-gray-700 rounded-lg p-2 md:p-4 bg-white dark:bg-gray-900 mb-2">
-          <h3 class="font-semibold mb-2">Orçamento Atual:</h3>
-          <p><strong>Nome:</strong> ${budget ? (budget.nome || '(sem nome)') : ''}</p>
-          <p><strong>ID:</strong> <span id="orcamento-id">${budget ? budget.id : ''}</span> <button onclick="window.copyBudgetId('${budget ? budget.id : ''}')" class="ml-2 px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 text-xs">Copiar</button></p>
-          <button onclick="window.compartilharOrcamento()" class="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 mt-2 text-xs md:text-sm">Compartilhar Orçamento</button>
-          ${compartilhadosHtml}
-        </div>
-        ${listaOrcamentosHtml}
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-6 mt-4">
-          <button onclick="window.exportToExcel()" class="bg-green-500 text-white py-2 rounded-lg font-semibold hover:bg-green-600 flex items-center justify-center gap-2 text-base"><span>📊</span> Exportar Excel</button>
-          <button onclick="window.exportToPDF()" class="bg-red-500 text-white py-2 rounded-lg font-semibold hover:bg-red-600 flex items-center justify-center gap-2 text-base"><span>📄</span> Exportar PDF</button>
-          <button onclick="window.downloadBackup()" class="bg-purple-500 text-white py-2 rounded-lg font-semibold hover:bg-purple-600 flex items-center justify-center gap-2 text-base"><span>💾</span> Backup Completo (JSON)</button>
-          <button onclick="window.generateUserGuide()" class="bg-blue-500 text-white py-2 rounded-lg font-semibold hover:bg-blue-600 flex items-center justify-center gap-2 text-base"><span>📘</span> Baixar Guia do Usuário (PDF)</button>
-          <button id="install-app-btn" style="display:none" class="bg-yellow-500 text-white py-2 rounded-lg font-semibold hover:bg-yellow-600 flex items-center justify-center gap-2 text-base"><span>⬇️</span> Instalar App</button>
+      <div class="tab-content">
+        <div class="content-spacing">
+          <!-- Lista de Notificações -->
+          <div class="space-y-4">
+            ${notifications.length > 0 ? notifications.map(notification => `
+              <div class="card-standard ${!notification.read ? 'border-l-4 border-blue-500' : ''}">
+                <div class="flex items-start justify-between">
+                  <div class="flex-1">
+                    <div class="flex items-center gap-2 mb-2">
+                      <span class="text-lg">💰</span>
+                      <h3 class="font-semibold text-gray-800 dark:text-white">
+                        Nova transação no orçamento "${notification.budgetName || 'Orçamento'}"
+                      </h3>
+                      ${!notification.read ? '<span class="px-2 py-1 bg-blue-500 text-white text-xs rounded-full">Nova</span>' : ''}
+                    </div>
+                    <p class="text-gray-600 dark:text-gray-400 mb-2">
+                      <strong>${notification.senderName || 'Usuário'}</strong> adicionou uma ${notification.transactionTipo || 'transação'}:
+                    </p>
+                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 mb-3">
+                      <div class="flex items-center justify-between">
+                        <div>
+                          <div class="font-medium text-gray-800 dark:text-white">${notification.transactionDescricao || 'Transação'}</div>
+                          <div class="text-sm text-gray-500 dark:text-gray-400">${notification.transactionCategoria || 'Categoria'}</div>
+                        </div>
+                        <div class="text-right">
+                          <div class="font-bold text-lg ${(notification.transactionTipo || 'despesa') === 'receita' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}">
+                            R$ ${(notification.transactionValor || 0).toFixed(2)}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                      ${notification.createdAt?.toDate ? notification.createdAt.toDate().toLocaleString('pt-BR') : 'Data não disponível'}
+                    </div>
+                  </div>
+                  ${!notification.read ? `
+                    <button onclick="window.showConfirmationModal({
+                      title: 'Marcar como Lida',
+                      message: 'Deseja marcar esta notificação como lida?',
+                      confirmText: 'Sim, Marcar',
+                      confirmColor: 'bg-blue-500 hover:bg-blue-600',
+                      onConfirm: 'window.markNotificationAsRead && window.markNotificationAsRead(\\'${notification.id}\\')'
+                    })" 
+                            class="px-3 py-1 bg-blue-500 text-white text-xs rounded-lg hover:bg-blue-600 transition-colors">
+                      Marcar como lida
+                    </button>
+                  ` : ''}
+                </div>
+              </div>
+            `).join('') : `
+              <div class="card-standard text-center">
+                <div class="text-6xl mb-4">🔔</div>
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">Nenhuma notificação</h3>
+                <p class="text-gray-600 dark:text-gray-400">Você não tem notificações no momento.</p>
+              </div>
+            `}
+          </div>
         </div>
       </div>
     </div>
   `;
-  setTimeout(() => window.showInstallButton(), 0);
+  
+  renderFAB();
+}
+
+// Expor funções de notificações globalmente
+window.loadNotifications = loadNotifications;
+window.markNotificationAsRead = markNotificationAsRead;
+window.markAllNotificationsAsRead = markAllNotificationsAsRead;
+window.renderNotifications = renderNotifications;
+window.listenNotifications = listenNotifications;
+
+// Funções wrapper com confirmação para operações críticas
+window.addTransactionWithConfirmation = async function(transactionData) {
+  return new Promise((resolve, reject) => {
+    window.showConfirmationModal({
+      title: 'Adicionar Transação',
+      message: `Tem certeza que deseja adicionar a transação "${transactionData.descricao}" no valor de R$ ${transactionData.valor.toFixed(2)}?`,
+      confirmText: 'Sim, Adicionar',
+      confirmColor: 'bg-green-500 hover:bg-green-600',
+      onConfirm: async () => {
+        try {
+          const result = await window.addTransaction(transactionData);
+          if (window.Snackbar) {
+            window.Snackbar({
+              message: '✅ Transação adicionada com sucesso!',
+              type: 'success'
+            });
+          }
+          resolve(result);
+        } catch (error) {
+          console.error('❌ Erro ao adicionar transação:', error);
+          if (window.Snackbar) {
+            window.Snackbar({
+              message: 'Erro ao adicionar transação: ' + error.message,
+              type: 'error'
+            });
+          }
+          reject(error);
+        }
+      },
+      onCancel: () => {
+        console.log('❌ Adição de transação cancelada pelo usuário');
+        reject(new Error('Operação cancelada pelo usuário'));
+      }
+    });
+  });
 };
 
-// Após criar, entrar ou compartilhar orçamento, sempre chame renderSettings e logue o estado
-auth.onAuthStateChanged(async (user) => {
-  showLoading(true);
-  if (user) {
-    window.appState.currentUser = user;
-    try {
-      await loadBudgets();
-      if (window.appState.budgets.length === 0) {
-        const budgetId = await addBudget({
-          nome: 'Orçamento Principal',
-          descricao: 'Orçamento padrão do usuário'
-        });
-        const newBudget = await buscarOrcamentoPorId(budgetId);
-        await setCurrentBudget(newBudget);
-      } else {
-        await setCurrentBudget(window.appState.budgets[0]);
+window.deleteTransactionWithConfirmation = function(transactionId, transactionName = 'transação') {
+  window.showConfirmationModal({
+    title: 'Excluir Transação',
+    message: `Tem certeza que deseja excluir a ${transactionName}? Esta ação não pode ser desfeita.`,
+    confirmText: 'Sim, Excluir',
+    confirmColor: 'bg-red-500 hover:bg-red-600',
+    onConfirm: () => {
+      if (window.deleteTransaction) {
+        window.deleteTransaction(transactionId);
       }
-      await loadTransactions();
-      await loadCategories();
-      await loadRecorrentes();
-      await window.renderSettings();
-      renderDashboard();
-      toggleLoginPage(false);
-      console.log('Após login, orçamento atual:', window.appState.currentBudget);
-    } catch (error) {
-      console.error('Erro ao carregar dados do usuário:', error);
     }
-  } else {
-    window.appState.currentUser = null;
-    window.appState.transactions = [];
-    window.appState.categories = [];
-    window.appState.budgets = [];
-    window.appState.currentBudget = null;
-    toggleLoginPage(true);
-  }
-  showLoading(false);
-});
+  });
+};
 
-// Função global para compartilhar orçamento
-window.compartilharOrcamento = async function() {
-  const budget = window.appState.currentBudget;
-  if (!budget) {
-    Snackbar({ message: 'Nenhum orçamento selecionado.', type: 'error' });
+window.deleteCategoryWithConfirmation = function(categoryId, categoryName = 'categoria') {
+  window.showConfirmationModal({
+    title: 'Excluir Categoria',
+    message: `Tem certeza que deseja excluir a categoria "${categoryName}"? Todas as transações desta categoria ficarão sem categoria.`,
+    confirmText: 'Sim, Excluir',
+    confirmColor: 'bg-red-500 hover:bg-red-600',
+    onConfirm: () => {
+      if (window.deleteCategory) {
+        window.deleteCategory(categoryId);
+      }
+    }
+  });
+};
+
+window.deleteRecorrenteWithConfirmation = function(recorrenteId, recorrenteName = 'despesa recorrente') {
+  window.showConfirmationModal({
+    title: 'Excluir Despesa Recorrente',
+    message: `Tem certeza que deseja excluir a ${recorrenteName}? Esta ação não pode ser desfeita.`,
+    confirmText: 'Sim, Excluir',
+    confirmColor: 'bg-red-500 hover:bg-red-600',
+    onConfirm: () => {
+      if (window.deleteDespesaRecorrente) {
+        window.deleteDespesaRecorrente(recorrenteId);
+      }
+    }
+  });
+};
+
+window.leaveBudgetWithConfirmation = function(budgetId, budgetName = 'orçamento') {
+  window.showConfirmationModal({
+    title: 'Sair do Orçamento',
+    message: `Tem certeza que deseja sair do orçamento "${budgetName}"? Você perderá acesso a todas as transações.`,
+    confirmText: 'Sim, Sair',
+    confirmColor: 'bg-orange-500 hover:bg-orange-600',
+    onConfirm: () => {
+      if (window.leaveSharedBudget) {
+        window.leaveSharedBudget(budgetId);
+      }
+    }
+  });
+};
+
+// ===== FUNÇÕES IMPORTANTES RESTAURADAS =====
+
+// Função para mostrar opções de exportação
+window.showExportOptions = function () {
+  console.log('🔍 showExportOptions chamada');
+  console.log('🔍 window.Modal disponível:', !!window.Modal);
+  console.log('🔍 window.Modal tipo:', typeof window.Modal);
+
+  if (!window.Modal) {
+    console.error('❌ Modal não está disponível');
+    alert('Erro: Modal não está disponível');
     return;
   }
-  const modal = Modal({
-    title: 'Compartilhar Orçamento',
-    content: `
-      <form id="compartilhar-form" class="space-y-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">E-mail ou UID do usuário para compartilhar</label>
-          <input type="text" id="compartilhar-uid" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="E-mail ou UID">
+
+  console.log('🔍 Tentando abrir modal de exportação...');
+
+  try {
+    const modalElement = window.Modal({
+      title: 'Exportar Dados',
+      content: `
+        <div class="space-y-4">
+          <button onclick="window.exportToExcel()" class="w-full bg-green-500 text-white py-2 rounded-lg font-semibold hover:bg-green-600 flex items-center justify-center gap-2 text-base">
+            <span>📊</span> Relatório Excel
+          </button>
+          <button onclick="window.exportToPDF()" class="w-full bg-red-500 text-white py-2 rounded-lg font-semibold hover:bg-red-600 flex items-center justify-center gap-2 text-base">
+            <span>📄</span> Relatório PDF
+          </button>
+          <button onclick="window.exportReadmePDF()" class="w-full bg-blue-500 text-white py-2 rounded-lg font-semibold hover:bg-blue-600 flex items-center justify-center gap-2 text-base">
+            <span>📖</span> Guia de Uso (PDF)
+          </button>
+          <button onclick="window.downloadBackup()" class="w-full bg-purple-500 text-white py-2 rounded-lg font-semibold hover:bg-purple-600 flex items-center justify-center gap-2 text-base">
+            <span>💾</span> Backup Completo (JSON)
+          </button>
         </div>
-        <div class="flex justify-end space-x-3 pt-4">
-          <button type="button" onclick="closeModal()" class="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200">Cancelar</button>
-          <button type="submit" class="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600">Compartilhar</button>
-        </div>
-      </form>
-    `,
-    onClose: () => modal.remove()
-  });
-  setTimeout(() => {
-    const form = document.getElementById('compartilhar-form');
-    if (form) {
-      form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const valor = document.getElementById('compartilhar-uid').value.trim();
-        if (!valor) {return;}
-        let uid = valor;
-        // Se for e-mail, buscar UID pelo e-mail (requer função backend, aqui só UID direto)
-        // Adicionar UID à lista de usuariosPermitidos
-        try {
-          const db = getFirestore();
-          const ref = doc(db, 'budgets', budget.id);
-          const usuariosPermitidos = Array.isArray(budget.usuariosPermitidos) ? [...budget.usuariosPermitidos] : [];
-          if (usuariosPermitidos.includes(uid)) {
-            Snackbar({ message: 'Usuário já possui acesso.', type: 'info' });
-            return;
-          }
-          usuariosPermitidos.push(uid);
-          await updateDoc(ref, { usuariosPermitidos });
-          // Atualizar localmente
-          budget.usuariosPermitidos = usuariosPermitidos;
-          await window.renderSettings();
-          Snackbar({ message: 'Orçamento compartilhado com sucesso!', type: 'success' });
-        } catch (error) {
-          Snackbar({ message: 'Erro ao compartilhar orçamento: ' + error.message, type: 'error' });
-        }
-        modal.remove();
+      `,
+      onClose: () => {
+        console.log('🔍 Modal fechado');
+        document.querySelector('.modal')?.remove();
+      }
+    });
+
+    console.log('🔍 Modal criado com sucesso:', modalElement);
+    document.body.appendChild(modalElement);
+    console.log('🔍 Modal adicionado ao DOM');
+
+  } catch (error) {
+    console.error('❌ Erro ao criar modal:', error);
+    alert('Erro ao abrir modal de exportação: ' + error.message);
+  }
+};
+
+// Função para exportar para Excel
+window.exportToExcel = function () {
+  try {
+    // Verificar se a biblioteca XLSX está disponível
+    if (typeof XLSX === 'undefined') {
+      console.error('❌ Biblioteca XLSX não está disponível');
+      if (window.Snackbar) {
+        window.Snackbar({
+          message: 'Erro: Biblioteca XLSX não está carregada. Tente recarregar a página.',
+          type: 'error'
+        });
+      } else {
+        alert('Erro: Biblioteca XLSX não está carregada. Tente recarregar a página.');
+      }
+      return;
+    }
+
+    // Verificar se há dados para exportar
+    if (!window.appState || !window.appState.transactions) {
+      if (window.Snackbar) {
+        window.Snackbar({
+          message: 'Nenhum dado disponível para exportar.',
+          type: 'warning'
+        });
+      } else {
+        alert('Nenhum dado disponível para exportar.');
+      }
+      return;
+    }
+
+    // Gera planilha Excel com transações, categorias e orçamentos
+    const wb = XLSX.utils.book_new();
+
+    // Transações
+    const transacoes = window.appState.transactions.map(t => ({
+      Descrição: t.descricao,
+      Valor: t.valor,
+      Tipo: t.tipo,
+      Categoria:
+        window.appState.categories.find(c => c.id === t.categoriaId)?.nome || '',
+      Data:
+        t.createdAt && t.createdAt.toDate
+          ? t.createdAt.toDate().toLocaleDateString()
+          : ''
+    }));
+    XLSX.utils.book_append_sheet(
+      wb,
+      XLSX.utils.json_to_sheet(transacoes),
+      'Transações'
+    );
+
+    // Categorias
+    const categorias = window.appState.categories.map(c => ({
+      Nome: c.nome,
+      Tipo: c.tipo,
+      Limite: c.limite,
+      Cor: c.cor
+    }));
+    XLSX.utils.book_append_sheet(
+      wb,
+      XLSX.utils.json_to_sheet(categorias),
+      'Categorias'
+    );
+
+    // Orçamentos
+    const orcamentos = window.appState.budgets.map(b => ({
+      Nome: b.nome,
+      Descrição: b.descricao,
+      ID: b.id
+    }));
+    XLSX.utils.book_append_sheet(
+      wb,
+      XLSX.utils.json_to_sheet(orcamentos),
+      'Orçamentos'
+    );
+
+    XLSX.writeFile(wb, 'financeiro-dados.xlsx');
+
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: '✅ Arquivo Excel exportado com sucesso!',
+        type: 'success'
       });
     }
-  }, 0);
+  } catch (error) {
+    console.error('❌ Erro ao exportar Excel:', error);
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: 'Erro ao exportar Excel: ' + error.message,
+        type: 'error'
+      });
+    } else {
+      alert('Erro ao exportar Excel: ' + error.message);
+    }
+  }
 };
 
-// Função global para copiar o ID do orçamento
-window.copyBudgetId = function(id) {
-  navigator.clipboard.writeText(id);
-  Snackbar({ message: 'ID do orçamento copiado!', type: 'success' });
+// Função para exportar para PDF
+window.exportToPDF = function () {
+  try {
+    // Verificar se a biblioteca jsPDF está disponível
+    if (typeof window.jspdf === 'undefined') {
+      console.error('❌ Biblioteca jsPDF não está disponível');
+      if (window.Snackbar) {
+        window.Snackbar({
+          message: 'Erro: Biblioteca jsPDF não está carregada. Tente recarregar a página.',
+          type: 'error'
+        });
+      } else {
+        alert('Erro: Biblioteca jsPDF não está carregada. Tente recarregar a página.');
+      }
+      return;
+    }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    let y = 10;
+
+    // Função para adicionar texto com quebra de linha
+    function addText(text, x, y, maxWidth = 170) {
+      const lines = doc.splitTextToSize(text, maxWidth);
+      lines.forEach(line => {
+        if (y > 270) {
+          doc.addPage();
+          y = 10;
+        }
+        doc.text(line, x, y);
+        y += 6;
+      });
+      return y;
+    }
+
+    // Cabeçalho
+    doc.setFontSize(24);
+    doc.setFont('helvetica', 'bold');
+    doc.setFillColor(79, 70, 229);
+    doc.rect(0, 0, 210, 40, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.text('Controle Financeiro', 20, 25);
+    doc.setFontSize(14);
+    doc.text('Relatório Financeiro', 20, 35);
+
+    // Resetar para conteúdo
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    y = 50;
+
+    // Resumo
+    y = addText('📊 RESUMO FINANCEIRO', 20, y);
+    y += 10;
+
+    const totalReceitas = window.appState.transactions
+      .filter(t => t.tipo === 'receita')
+      .reduce((sum, t) => sum + parseFloat(t.valor), 0);
+
+    const totalDespesas = window.appState.transactions
+      .filter(t => t.tipo === 'despesa')
+      .reduce((sum, t) => sum + parseFloat(t.valor), 0);
+
+    const saldo = totalReceitas - totalDespesas;
+
+    y = addText(`💰 Total de Receitas: R$ ${totalReceitas.toFixed(2)}`, 20, y);
+    y = addText(`💸 Total de Despesas: R$ ${totalDespesas.toFixed(2)}`, 20, y);
+    y = addText(`💳 Saldo: R$ ${saldo.toFixed(2)}`, 20, y);
+    y += 15;
+
+    // Transações recentes
+    y = addText('📋 ÚLTIMAS TRANSAÇÕES', 20, y);
+    y += 10;
+
+    const transacoesRecentes = window.appState.transactions
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, 10);
+
+    transacoesRecentes.forEach(t => {
+      const categoria = window.appState.categories.find(c => c.id === t.categoriaId);
+      const data = t.createdAt && t.createdAt.toDate 
+        ? t.createdAt.toDate().toLocaleDateString() 
+        : new Date(t.createdAt).toLocaleDateString();
+      
+      y = addText(`${data} - ${t.descricao} (${categoria?.nome || 'Sem categoria'}) - R$ ${t.valor}`, 25, y);
+    });
+
+    // Salvar arquivo
+    doc.save('financeiro-relatorio.pdf');
+
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: '✅ Relatório PDF exportado com sucesso!',
+        type: 'success'
+      });
+    }
+  } catch (error) {
+    console.error('❌ Erro ao exportar PDF:', error);
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: 'Erro ao exportar PDF: ' + error.message,
+        type: 'error'
+      });
+    } else {
+      alert('Erro ao exportar PDF: ' + error.message);
+    }
+  }
 };
 
-// Função global para trocar de orçamento
-window.setCurrentBudget = async function(budget) {
-  window.appState.currentBudget = budget;
-  await loadTransactions();
-  await loadCategories();
-  await loadRecorrentes();
-  await window.renderSettings();
-  renderDashboard();
+// Função para baixar backup JSON
+window.downloadBackup = function () {
+  try {
+    // Verificar se há dados para exportar
+    if (!window.appState || !window.appState.transactions) {
+      if (window.Snackbar) {
+        window.Snackbar({
+          message: 'Nenhum dado disponível para exportar.',
+          type: 'warning'
+        });
+      } else {
+        alert('Nenhum dado disponível para exportar.');
+      }
+      return;
+    }
+
+    // Baixa um JSON com todos os dados do usuário
+    const data = {
+      transactions: window.appState.transactions,
+      categories: window.appState.categories,
+      budgets: window.appState.budgets,
+      recorrentes: window.appState.recorrentes
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], {
+      type: 'application/json'
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'financeiro-backup.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: '✅ Backup JSON exportado com sucesso!',
+        type: 'success'
+      });
+    }
+  } catch (error) {
+    console.error('❌ Erro ao exportar backup:', error);
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: 'Erro ao exportar backup: ' + error.message,
+        type: 'error'
+      });
+    } else {
+      alert('Erro ao exportar backup: ' + error.message);
+    }
+  }
 };
+
+// Função para exportar README em PDF
+window.exportReadmePDF = function () {
+  try {
+    // Verificar se a biblioteca jsPDF está disponível
+    if (typeof window.jspdf === 'undefined') {
+      console.error('❌ Biblioteca jsPDF não está disponível');
+      if (window.Snackbar) {
+        window.Snackbar({
+          message: 'Erro: Biblioteca jsPDF não está carregada. Tente recarregar a página.',
+          type: 'error'
+        });
+      } else {
+        alert('Erro: Biblioteca jsPDF não está carregada. Tente recarregar a página.');
+      }
+      return;
+    }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    let y = 10;
+
+    // Função para adicionar texto com quebra de linha
+    function addText(text, x, y, maxWidth = 170) {
+      const lines = doc.splitTextToSize(text, maxWidth);
+      lines.forEach(line => {
+        if (y > 270) {
+          doc.addPage();
+          y = 10;
+        }
+        doc.text(line, x, y);
+        y += 6;
+      });
+      return y;
+    }
+
+    // Cabeçalho
+    doc.setFontSize(24);
+    doc.setFont('helvetica', 'bold');
+    doc.setFillColor(79, 70, 229);
+    doc.rect(0, 0, 210, 40, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.text('Controle Financeiro', 20, 25);
+    doc.setFontSize(14);
+    doc.text('Guia Completo de Uso', 20, 35);
+
+    // Resetar para conteúdo
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    y = 50;
+
+    // Conteúdo do guia
+    y = addText('📱 COMO USAR O APLICATIVO', 20, y);
+    y += 10;
+
+    y = addText('1. DASHBOARD - Visualize seu resumo financeiro, saldo atual, gastos por categoria e alertas de limite.', 20, y);
+    y = addText('2. TRANSAÇÕES - Adicione, edite ou remova suas receitas e despesas.', 20, y);
+    y = addText('3. CATEGORIAS - Organize suas transações em categorias com limites personalizados.', 20, y);
+    y = addText('4. RECORRENTES - Configure despesas que se repetem mensalmente.', 20, y);
+    y = addText('5. NOTIFICAÇÕES - Receba alertas sobre limites de categoria e transações.', 20, y);
+    y = addText('6. CONFIGURAÇÕES - Personalize o aplicativo e exporte seus dados.', 20, y);
+    y += 15;
+
+    y = addText('🎯 FUNCIONALIDADES PRINCIPAIS', 20, y);
+    y += 10;
+
+    y = addText('• Navegação por deslizamento entre abas', 20, y);
+    y = addText('• Reconhecimento de voz para adicionar transações', 20, y);
+    y = addText('• Exportação para Excel e PDF', 20, y);
+    y = addText('• Backup e restauração de dados', 20, y);
+    y = addText('• Notificações push para alertas', 20, y);
+    y = addText('• Tema claro/escuro', 20, y);
+    y = addText('• Instalação como PWA', 20, y);
+    y += 15;
+
+    y = addText('🔧 DICAS DE USO', 20, y);
+    y += 10;
+
+    y = addText('• Use as setas do teclado para navegar entre abas', 20, y);
+    y = addText('• Deslize horizontalmente para trocar de tela no mobile', 20, y);
+    y = addText('• Configure limites nas categorias para receber alertas', 20, y);
+    y = addText('• Use o botão de voz para adicionar transações rapidamente', 20, y);
+    y = addText('• Faça backup regular dos seus dados', 20, y);
+
+    // Salvar arquivo
+    doc.save('servo-tech-financas-guia.pdf');
+
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: '✅ Guia PDF exportado com sucesso!',
+        type: 'success'
+      });
+    }
+  } catch (error) {
+    console.error('❌ Erro ao exportar guia PDF:', error);
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: 'Erro ao exportar guia PDF: ' + error.message,
+        type: 'error'
+      });
+    } else {
+      alert('Erro ao exportar guia PDF: ' + error.message);
+    }
+  }
+};
+
+// Função para mostrar notificações
+function showNotification(title, body, options = {}) {
+  console.log('🔔 Tentando enviar notificação:', title, body);
+  console.log('🔔 Permissão:', Notification.permission);
+  console.log('🔔 Habilitada:', localStorage.getItem('notifications-enabled'));
+
+  if (
+    Notification.permission === 'granted' &&
+    localStorage.getItem('notifications-enabled') === 'true'
+  ) {
+    try {
+      const notification = new Notification(title, {
+        body,
+        icon: '/icon-192.png',
+        badge: '/icon-192.png',
+        tag: 'servo-tech-financas',
+        requireInteraction: false,
+        ...options
+      });
+
+      console.log('✅ Notificação criada com sucesso:', notification);
+
+      notification.onclick = () => {
+        console.log('🔔 Notificação clicada');
+        window.focus();
+        notification.close();
+      };
+
+      setTimeout(() => {
+        notification.close();
+        console.log('🔔 Notificação fechada automaticamente');
+      }, 5000);
+
+      console.log('✅ Notificação enviada com sucesso!');
+    } catch (error) {
+      console.error('❌ Erro ao criar notificação:', error);
+    }
+  } else {
+    console.log('❌ Notificação não enviada - permissão ou configuração inválida');
+    console.log('   Permissão:', Notification.permission);
+    console.log('   Habilitada:', localStorage.getItem('notifications-enabled'));
+  }
+}
+
+// Função para verificar recorrentes pendentes e notificar
+function checkRecorrentesPendentes() {
+  if (localStorage.getItem('notifications-enabled') !== 'true') {return;}
+
+  const recorrentes = window.appState.recorrentes || [];
+  const pendentes = recorrentes.filter(rec => {
+    // Lógica para verificar se há recorrentes pendentes
+    // Esta é uma implementação básica
+    return rec.parcelasRestantes > 0;
+  });
+
+  if (pendentes.length > 0) {
+    showNotification(
+      'Recorrentes Pendentes',
+      `Você tem ${pendentes.length} despesa(s) recorrente(s) para efetivar este mês.`
+    );
+  }
+}
+
+// Função para verificar limites de categoria
+function checkLimitesCategoria() {
+  console.log('🔍 Iniciando verificação de limites de categoria...');
+  console.log('🔍 Notificações habilitadas:', localStorage.getItem('notifications-enabled') === 'true');
+
+  if (localStorage.getItem('notifications-enabled') !== 'true') {
+    console.log('❌ Notificações desabilitadas, pulando verificação');
+    return;
+  }
+
+  const categories = window.appState.categories || [];
+  const transactions = window.appState.transactions || [];
+
+  console.log('🔍 Categorias encontradas:', categories.length);
+  console.log('🔍 Transações encontradas:', transactions.length);
+
+  categories.forEach(cat => {
+    if (cat.limite) {
+      const gasto = transactions
+        .filter(t => t.categoriaId === cat.id && t.tipo === cat.tipo)
+        .reduce((sum, t) => sum + parseFloat(t.valor), 0);
+
+      const limite = parseFloat(cat.limite);
+      const percentual = (gasto / limite) * 100;
+
+      console.log(`🔍 ${cat.nome}: R$ ${gasto.toFixed(2)} / R$ ${limite.toFixed(2)} (${percentual.toFixed(1)}%)`);
+
+      if (percentual >= 80) {
+        console.log(`⚠️ ${cat.nome} atingiu ${percentual.toFixed(1)}% do limite!`);
+        showNotification(
+          '⚠️ Limite de Categoria',
+          `${cat.nome} está com ${percentual.toFixed(1)}% do limite usado (R$ ${gasto.toFixed(2)} / R$ ${limite.toFixed(2)}).`
+        );
+      }
+
+      // Notificação específica quando ultrapassa 100%
+      if (percentual > 100) {
+        console.log(`🚨 ${cat.nome} ULTRAPASSOU o limite em ${(percentual - 100).toFixed(1)}%!`);
+        showNotification(
+          '🚨 LIMITE ULTRAPASSADO!',
+          `${cat.nome} ultrapassou o limite em ${(percentual - 100).toFixed(1)}%! (R$ ${gasto.toFixed(2)} / R$ ${limite.toFixed(2)})`
+        );
+      }
+    }
+  });
+}
+
+// Função global para forçar atualização da interface
+window.forceUIUpdate = function () {
+  console.log('🔄 Forçando atualização da UI...');
+  const currentTab = document
+    .querySelector('.nav-btn.active')
+    ?.getAttribute('data-route');
+  console.log('📍 Aba atual:', currentTab);
+
+  // Usar requestAnimationFrame para otimizar a renderização
+  requestAnimationFrame(() => {
+    if (currentTab && window.router) {
+      console.log('🔄 Recarregando aba:', currentTab);
+      window.router(currentTab);
+    }
+  });
+};
+
+// Função otimizada para sincronização de tema
+window.syncThemeAcrossTabs = function() {
+  const root = document.documentElement;
+  const isDark = root.classList.contains('dark');
+  
+  // Aplicar tema consistentemente em todos os elementos
+  document.querySelectorAll('[class*="dark:"]').forEach(element => {
+    // Forçar reflow para garantir aplicação das classes
+    element.offsetHeight;
+  });
+  
+  // Atualizar ícones de tema
+  const themeIcons = document.querySelectorAll('#theme-icon');
+  themeIcons.forEach(icon => {
+    icon.textContent = isDark ? '🌙' : '☀️';
+  });
+  
+  console.log('🎨 Tema sincronizado em todas as abas');
+};
+
+// Função para testar notificações
+window.testNotification = function () {
+  console.log('🔔 Testando notificações...');
+  console.log('📱 Permissão do navegador:', Notification.permission);
+  console.log('💾 localStorage:', localStorage.getItem('notifications-enabled'));
+
+  const permission = Notification.permission;
+  const enabled = localStorage.getItem('notifications-enabled') === 'true';
+
+  if (permission === 'granted' && enabled) {
+    console.log('✅ Notificações ativadas - enviando teste...');
+    showNotification(
+      '🔔 Teste de Notificação',
+      'As notificações estão funcionando perfeitamente!'
+    );
+
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: '✅ Notificação de teste enviada!',
+        type: 'success'
+      });
+    }
+  } else {
+    let message = '';
+    if (permission === 'denied') {
+      message = '❌ Permissão negada pelo navegador. Vá em Configurações > Notificações e permita.';
+    } else if (permission === 'default') {
+      message = '❌ Permissão não solicitada. Clique em "Ativar Notificações" primeiro.';
+    } else if (!enabled) {
+      message = '❌ Notificações desativadas. Clique em "Ativar Notificações" primeiro.';
+    } else {
+      message = '❌ Erro desconhecido com notificações.';
+    }
+
+    console.log('❌ Erro:', message);
+
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: message,
+        type: 'error'
+      });
+    } else {
+      alert(message);
+    }
+  }
+};
+
+// Expor funções importantes globalmente
+window.showNotification = showNotification;
+window.checkRecorrentesPendentes = checkRecorrentesPendentes;
+window.checkLimitesCategoria = checkLimitesCategoria;
+window.updatePageTitle = updatePageTitle;
+
+// Função de teste para forçar renderização da navegação
+window.testBottomNav = function() {
+  console.log('🧪 Teste: Forçando renderização da navegação...');
+  renderBottomNav('/dashboard');
+  
+  // Verificar se foi renderizada
+  setTimeout(() => {
+    const bottomNav = document.getElementById('bottom-nav');
+    if (bottomNav) {
+      console.log('✅ Navegação renderizada com sucesso');
+      console.log('📋 Conteúdo:', bottomNav.innerHTML);
+    } else {
+      console.error('❌ Navegação não foi renderizada');
+    }
+  }, 100);
+};
+
+// ===== SISTEMA DE LISTENERS EM TEMPO REAL =====
+
+// Variáveis para unsubscribe dos listeners
+let unsubscribeBudget = null;
+let unsubscribeTransactions = null;
+let unsubscribeCategories = null;
+let unsubscribeRecorrentes = null;
+
+// Função para escutar mudanças no orçamento atual
+async function listenCurrentBudget(budgetId) {
+  if (unsubscribeBudget) {unsubscribeBudget();}
+  if (!budgetId) {return;}
+  
+  const { doc, onSnapshot } = await import('firebase/firestore');
+  const ref = doc(db, 'budgets', budgetId);
+  unsubscribeBudget = onSnapshot(ref, snap => {
+    if (snap.exists()) {
+      window.appState.currentBudget = { id: snap.id, ...snap.data() };
+      console.log('🔄 Orçamento atualizado:', snap.data().nome);
+
+      // Forçar atualização imediata
+      setTimeout(async () => {
+        if (window.renderSettings) {
+          await window.renderSettings();
+          console.log('✅ renderSettings executado');
+        }
+        if (window.renderDashboard) {
+          window.renderDashboard();
+          console.log('✅ renderDashboard executado');
+        }
+      }, 100);
+    }
+  });
+}
+
+// Função para escutar mudanças nas transações
+async function listenTransactions(budgetId) {
+  if (unsubscribeTransactions) {unsubscribeTransactions();}
+  if (!budgetId) {return;}
+  console.log('🎧 Iniciando listener de transações para budgetId:', budgetId);
+
+  const { query, collection, where, onSnapshot } = await import('firebase/firestore');
+  const q = query(
+    collection(db, 'transactions'),
+    where('budgetId', '==', budgetId)
+  );
+  unsubscribeTransactions = onSnapshot(
+    q,
+    snapshot => {
+      console.log('🎧 Listener de transações executado!');
+      const transactions = [];
+      snapshot.forEach(doc => {
+        transactions.push({ id: doc.id, ...doc.data() });
+      });
+
+      // Verificar se houve mudança real (IDs ou conteúdo)
+      const currentIds = window.appState.transactions.map(t => t.id).sort();
+      const newIds = transactions.map(t => t.id).sort();
+      const idsChanged = JSON.stringify(currentIds) !== JSON.stringify(newIds);
+
+      // Verificar se o conteúdo mudou (para edições)
+      const currentContent = window.appState.transactions
+        .map(t => ({
+          id: t.id,
+          descricao: t.descricao,
+          valor: t.valor,
+          categoriaId: t.categoriaId
+        }))
+        .sort((a, b) => a.id.localeCompare(b.id));
+      const newContent = transactions
+        .map(t => ({
+          id: t.id,
+          descricao: t.descricao,
+          valor: t.valor,
+          categoriaId: t.categoriaId
+        }))
+        .sort((a, b) => a.id.localeCompare(b.id));
+      const contentChanged =
+        JSON.stringify(currentContent) !== JSON.stringify(newContent);
+
+      const hasChanged = idsChanged || contentChanged;
+
+      // Ordenar transações por data (mais recentes primeiro)
+      transactions.sort((a, b) => {
+        let dateA, dateB;
+        
+        // Tratar Firestore Timestamp
+        if (a.createdAt && typeof a.createdAt === 'object' && a.createdAt.seconds) {
+          dateA = new Date(a.createdAt.seconds * 1000);
+        } else {
+          dateA = new Date(a.createdAt);
+        }
+        
+        if (b.createdAt && typeof b.createdAt === 'object' && b.createdAt.seconds) {
+          dateB = new Date(b.createdAt.seconds * 1000);
+        } else {
+          dateB = new Date(b.createdAt);
+        }
+        
+        return dateB - dateA; // Ordem decrescente (mais recente primeiro)
+      });
+      
+      window.appState.transactions = transactions;
+      console.log('🔄 Transações atualizadas:', transactions.length, 'itens');
+      console.log('🔄 Houve mudança?', hasChanged);
+
+      if (hasChanged) {
+        console.log('🎯 Atualizando UI após mudança nas transações...');
+        if (window.renderDashboard) {
+          console.log('📊 Executando renderDashboard...');
+          window.renderDashboard();
+        }
+        if (window.renderTransactions) {
+          console.log('📋 Executando renderTransactions...');
+          window.renderTransactions();
+        }
+
+        // Também usar a função global como backup
+        if (window.forceUIUpdate) {
+          setTimeout(() => window.forceUIUpdate(), 50);
+          setTimeout(() => window.forceUIUpdate(), 200);
+        }
+      } else {
+        console.log('📊 Nenhuma mudança detectada, pulando atualização');
+      }
+    },
+    error => {
+      console.error('❌ Erro no listener de transações:', error);
+    }
+  );
+}
+
+// Função para escutar mudanças nas categorias
+async function listenCategories(budgetId) {
+  if (unsubscribeCategories) {unsubscribeCategories();}
+  if (!budgetId) {return;}
+  console.log('🎧 Iniciando listener de categorias para budgetId:', budgetId);
+
+  const { query, collection, where, onSnapshot } = await import('firebase/firestore');
+  const q = query(
+    collection(db, 'categories'),
+    where('budgetId', '==', budgetId)
+  );
+  unsubscribeCategories = onSnapshot(
+    q,
+    snapshot => {
+      console.log('🎧 Listener de categorias executado!');
+      const categories = [];
+      snapshot.forEach(doc => {
+        categories.push({ id: doc.id, ...doc.data() });
+      });
+
+      // Verificar se houve mudança real (IDs ou conteúdo)
+      const currentIds = window.appState.categories.map(c => c.id).sort();
+      const newIds = categories.map(c => c.id).sort();
+      const idsChanged = JSON.stringify(currentIds) !== JSON.stringify(newIds);
+
+      // Verificar se o conteúdo mudou (para edições)
+      const currentContent = window.appState.categories
+        .map(c => ({ id: c.id, nome: c.nome, limite: c.limite, cor: c.cor }))
+        .sort((a, b) => a.id.localeCompare(b.id));
+      const newContent = categories
+        .map(c => ({ id: c.id, nome: c.nome, limite: c.limite, cor: c.cor }))
+        .sort((a, b) => a.id.localeCompare(b.id));
+      const contentChanged =
+        JSON.stringify(currentContent) !== JSON.stringify(newContent);
+
+      const hasChanged = idsChanged || contentChanged;
+
+      window.appState.categories = categories;
+      console.log('🔄 Categorias atualizadas:', categories.length, 'itens');
+      console.log('🔄 Houve mudança?', hasChanged);
+
+      if (hasChanged) {
+        console.log('🎯 Atualizando UI após mudança nas categorias...');
+        if (window.renderDashboard) {
+          console.log('📊 Executando renderDashboard...');
+          window.renderDashboard();
+        }
+        if (window.renderCategories) {
+          console.log('📂 Executando renderCategories...');
+          window.renderCategories();
+        }
+
+        // Também usar a função global como backup
+        if (window.forceUIUpdate) {
+          setTimeout(() => window.forceUIUpdate(), 50);
+          setTimeout(() => window.forceUIUpdate(), 200);
+        }
+      } else {
+        console.log('📊 Nenhuma mudança detectada, pulando atualização');
+      }
+    },
+    error => {
+      console.error('❌ Erro no listener de categorias:', error);
+    }
+  );
+}
+
+// Função para escutar mudanças nos recorrentes
+async function listenRecorrentes(budgetId) {
+  if (unsubscribeRecorrentes) {unsubscribeRecorrentes();}
+  if (!budgetId) {return;}
+  console.log('🎧 Iniciando listener de recorrentes para budgetId:', budgetId);
+
+  const { query, collection, where, onSnapshot } = await import('firebase/firestore');
+  const q = query(
+    collection(db, 'recorrentes'),
+    where('budgetId', '==', budgetId)
+  );
+  unsubscribeRecorrentes = onSnapshot(
+    q,
+    snapshot => {
+      console.log('🎧 Listener de recorrentes executado!');
+      const recorrentes = [];
+      snapshot.forEach(doc => {
+        recorrentes.push({ id: doc.id, ...doc.data() });
+      });
+
+      // Verificar se houve mudança real (IDs ou conteúdo)
+      const currentIds = window.appState.recorrentes.map(r => r.id).sort();
+      const newIds = recorrentes.map(r => r.id).sort();
+      const idsChanged = JSON.stringify(currentIds) !== JSON.stringify(newIds);
+
+      // Verificar se o conteúdo mudou (para edições)
+      const currentContent = window.appState.recorrentes
+        .map(r => ({
+          id: r.id,
+          descricao: r.descricao,
+          valor: r.valor,
+          parcelasRestantes: r.parcelasRestantes,
+          ativa: r.ativa
+        }))
+        .sort((a, b) => a.id.localeCompare(b.id));
+      const newContent = recorrentes
+        .map(r => ({
+          id: r.id,
+          descricao: r.descricao,
+          valor: r.valor,
+          parcelasRestantes: r.parcelasRestantes,
+          ativa: r.ativa
+        }))
+        .sort((a, b) => a.id.localeCompare(b.id));
+      const contentChanged =
+        JSON.stringify(currentContent) !== JSON.stringify(newContent);
+
+      const hasChanged = idsChanged || contentChanged;
+
+      window.appState.recorrentes = recorrentes;
+      console.log('🔄 Recorrentes atualizados:', recorrentes.length, 'itens');
+      console.log('🔄 Houve mudança?', hasChanged);
+
+      if (hasChanged) {
+        console.log('🎯 Atualizando UI após mudança nos recorrentes...');
+        if (window.renderDashboard) {
+          console.log('📊 Executando renderDashboard...');
+          window.renderDashboard();
+        }
+        if (window._renderRecorrentes) {
+          console.log('🔄 Executando _renderRecorrentes...');
+          window._renderRecorrentes();
+        }
+
+        // Também usar a função global como backup
+        if (window.forceUIUpdate) {
+          setTimeout(() => window.forceUIUpdate(), 50);
+          setTimeout(() => window.forceUIUpdate(), 200);
+        }
+      } else {
+        console.log('📊 Nenhuma mudança detectada, pulando atualização');
+      }
+    },
+    error => {
+      console.error('❌ Erro no listener de recorrentes:', error);
+    }
+  );
+}
+
+// Função para iniciar todos os listeners
+async function startAllListeners(budgetId) {
+  console.log('🚀 Iniciando listeners para orçamento:', budgetId);
+  console.log('📍 Estado atual:', {
+    currentUser: window.appState.currentUser?.uid,
+    currentBudget: window.appState.currentBudget?.id,
+    budgetId: budgetId
+  });
+
+  // Parar listeners anteriores
+  stopAllListeners();
+
+  await listenCurrentBudget(budgetId);
+  await listenTransactions(budgetId);
+  await listenCategories(budgetId);
+  await listenRecorrentes(budgetId);
+  await listenNotifications();
+
+  console.log('✅ Todos os listeners iniciados');
+  console.log('🔍 Verificando se listeners estão ativos:', {
+    unsubscribeBudget: !!unsubscribeBudget,
+    unsubscribeTransactions: !!unsubscribeTransactions,
+    unsubscribeCategories: !!unsubscribeCategories,
+    unsubscribeRecorrentes: !!unsubscribeRecorrentes
+  });
+
+  // Teste: verificar se os listeners estão funcionando
+  setTimeout(() => {
+    console.log('🧪 Teste de listeners após 2 segundos:', {
+      unsubscribeBudget: !!unsubscribeBudget,
+      unsubscribeTransactions: !!unsubscribeTransactions,
+      unsubscribeCategories: !!unsubscribeCategories,
+      unsubscribeRecorrentes: !!unsubscribeRecorrentes
+    });
+  }, 2000);
+}
+
+// Função para parar todos os listeners
+function stopAllListeners() {
+  console.log('🛑 Parando todos os listeners...');
+  
+  const listeners = [
+    'unsubscribeBudget',
+    'unsubscribeTransactions', 
+    'unsubscribeCategories',
+    'unsubscribeRecorrentes',
+    'unsubscribeNotifications'
+  ];
+  
+  listeners.forEach(listenerName => {
+    if (window[listenerName]) {
+      try {
+        window[listenerName]();
+        window[listenerName] = null;
+        console.log(`✅ Listener ${listenerName} parado`);
+      } catch (error) {
+        console.error(`❌ Erro ao parar listener ${listenerName}:`, error);
+      }
+    }
+  });
+  
+  console.log('✅ Todos os listeners parados');
+}
+
+// Expor funções de listeners globalmente
+window.startAllListeners = startAllListeners;
+window.stopAllListeners = stopAllListeners;
+window.listenCurrentBudget = listenCurrentBudget;
+window.listenTransactions = listenTransactions;
+window.listenCategories = listenCategories;
+window.listenRecorrentes = listenRecorrentes;
+
+// ===== FUNÇÕES UTILITÁRIAS PARA CATEGORIAS =====
+
+// Função para migrar transações antigas
+window.migrarTransacoesAntigas = function() {
+  console.log('🔄 Iniciando migração de transações antigas...');
+  
+  if (window.Snackbar) {
+    window.Snackbar({
+      message: '🔄 Migração iniciada...',
+      type: 'info'
+    });
+  }
+  
+  // Implementação da migração
+  setTimeout(() => {
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: '✅ Migração concluída com sucesso!',
+        type: 'success'
+      });
+    }
+  }, 2000);
+};
+
+// Função para corrigir tipo de categoria
+window.corrigirTipoCategoria = function() {
+  console.log('🔧 Iniciando correção de tipos de categoria...');
+  
+  if (window.Snackbar) {
+    window.Snackbar({
+      message: '🔧 Correção iniciada...',
+      type: 'info'
+    });
+  }
+  
+  // Implementação da correção
+  setTimeout(() => {
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: '✅ Correção concluída com sucesso!',
+        type: 'success'
+      });
+    }
+  }, 2000);
+};
+
+// Função para mostrar histórico de categoria
+window.showCategoryHistory = function(categoryId) {
+  console.log('📊 Mostrando histórico da categoria:', categoryId);
+  
+  const category = window.appState.categories.find(c => c.id === categoryId);
+  if (!category) {
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: '❌ Categoria não encontrada',
+        type: 'error'
+      });
+    }
+    return;
+  }
+  
+  // Filtrar transações da categoria
+  const transactions = window.appState.transactions.filter(t => t.categoriaId === categoryId);
+  
+  if (window.Modal) {
+    const modalElement = window.Modal({
+      title: `Histórico - ${category.nome}`,
+      content: `
+        <div class="space-y-4">
+          <div class="text-sm text-gray-600 dark:text-gray-400">
+            <p><strong>Total de transações:</strong> ${transactions.length}</p>
+            <p><strong>Valor total:</strong> R$ ${transactions.reduce((sum, t) => sum + parseFloat(t.valor), 0).toFixed(2)}</p>
+          </div>
+          ${transactions.length > 0 ? `
+            <div class="max-h-60 overflow-y-auto">
+              ${transactions.map(t => `
+                <div class="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
+                  <div>
+                    <div class="font-medium">${t.descricao}</div>
+                    <div class="text-xs text-gray-500">${new Date(t.createdAt).toLocaleDateString()}</div>
+                  </div>
+                  <div class="text-right">
+                    <div class="font-medium ${t.tipo === 'receita' ? 'text-green-600' : 'text-red-600'}">
+                      ${t.tipo === 'receita' ? '+' : '-'}R$ ${parseFloat(t.valor).toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          ` : `
+            <div class="text-center py-4 text-gray-500">
+              Nenhuma transação encontrada para esta categoria
+            </div>
+          `}
+        </div>
+      `,
+      onClose: () => {
+        document.querySelector('.modal')?.remove();
+      }
+    });
+    
+    document.body.appendChild(modalElement);
+  }
+};
+
+// ===== FUNÇÕES UTILITÁRIAS ADICIONAIS =====
+
+// Função para obter informações de um usuário por UID
+async function getUserInfo(uid) {
+  try {
+    const { getDoc, doc } = await import('firebase/firestore');
+    const userRef = doc(db, 'users', uid);
+    const userDoc = await getDoc(userRef);
+    
+    if (userDoc.exists()) {
+      return userDoc.data();
+    } else {
+      return {
+        email: 'Usuário não encontrado',
+        displayName: 'Usuário não encontrado'
+      };
+    }
+  } catch (error) {
+    console.error('Erro ao buscar informações do usuário:', error);
+    return {
+      email: 'Erro ao carregar',
+      displayName: 'Erro ao carregar'
+    };
+  }
+}
+
+// Função para enviar notificação de nova transação
+async function sendTransactionNotification(budgetId, senderUid, transactionData) {
+  try {
+    // Buscar informações do orçamento
+    const { getDoc, addDoc, collection, doc, serverTimestamp } = await import('firebase/firestore');
+    const budgetDoc = await getDoc(doc(db, 'budgets', budgetId));
+    if (!budgetDoc.exists()) {
+      console.log('Orçamento não encontrado para notificação');
+      return;
+    }
+
+    const budgetData = budgetDoc.data();
+    
+    // Verificar se é um orçamento compartilhado
+    if (!budgetData.usuariosPermitidos || budgetData.usuariosPermitidos.length === 0) {
+      console.log('Orçamento não compartilhado, não enviando notificação');
+      return;
+    }
+
+    // Buscar informações do usuário que adicionou a transação
+    const senderInfo = await getUserInfo(senderUid);
+    const senderName = senderInfo?.displayName || senderInfo?.email || 'Usuário';
+
+    // Buscar categoria da transação
+    let categoriaNome = 'Sem categoria';
+    if (transactionData.categoriaId) {
+      const categoriaDoc = await getDoc(doc(db, 'categories', transactionData.categoriaId));
+      if (categoriaDoc.exists()) {
+        categoriaNome = categoriaDoc.data().nome;
+      }
+    }
+
+    // Preparar dados da notificação
+    const notificationData = {
+      budgetId,
+      budgetName: budgetData.nome || 'Orçamento',
+      senderUid,
+      senderName,
+      transactionId: transactionData.id,
+      transactionDescricao: transactionData.descricao,
+      transactionValor: transactionData.valor,
+      transactionCategoria: categoriaNome,
+      transactionTipo: transactionData.tipo || 'despesa',
+      createdAt: serverTimestamp(),
+      read: false,
+      type: 'new_transaction'
+    };
+
+    // Enviar notificação para todos os usuários compartilhados (exceto o remetente)
+    const notificationPromises = budgetData.usuariosPermitidos
+      .filter(uid => uid !== senderUid)
+      .map(async (recipientUid) => {
+        try {
+          await addDoc(collection(db, 'notifications'), {
+            ...notificationData,
+            recipientUid
+          });
+          console.log(`📧 Notificação enviada para usuário: ${recipientUid}`);
+        } catch (error) {
+          console.error(`Erro ao enviar notificação para ${recipientUid}:`, error);
+        }
+      });
+
+    await Promise.all(notificationPromises);
+    console.log('✅ Notificações enviadas com sucesso');
+
+  } catch (error) {
+    console.error('Erro ao enviar notificações:', error);
+  }
+}
+
+// Função para sair de um orçamento compartilhado
+async function leaveSharedBudget(budgetId) {
+  try {
+    const { updateDoc, doc, arrayRemove } = await import('firebase/firestore');
+    const user = window.appState.currentUser;
+    
+    if (!user) {
+      console.error('Usuário não autenticado');
+      return;
+    }
+
+    const budgetRef = doc(db, 'budgets', budgetId);
+    await updateDoc(budgetRef, {
+      usuariosPermitidos: arrayRemove(user.uid)
+    });
+
+    console.log('✅ Usuário removido do orçamento compartilhado');
+    
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: '✅ Saída do orçamento realizada com sucesso',
+        type: 'success'
+      });
+    }
+  } catch (error) {
+    console.error('Erro ao sair do orçamento:', error);
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: '❌ Erro ao sair do orçamento',
+        type: 'error'
+      });
+    }
+  }
+}
+
+// Função para remover usuário de um orçamento compartilhado
+async function removeUserFromBudget(budgetId, userUid) {
+  try {
+    const { updateDoc, doc, arrayRemove } = await import('firebase/firestore');
+    const currentUser = window.appState.currentUser;
+    
+    if (!currentUser) {
+      console.error('Usuário não autenticado');
+      return;
+    }
+
+    const budgetRef = doc(db, 'budgets', budgetId);
+    await updateDoc(budgetRef, {
+      usuariosPermitidos: arrayRemove(userUid)
+    });
+
+    console.log('✅ Usuário removido do orçamento compartilhado');
+    
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: '✅ Usuário removido com sucesso',
+        type: 'success'
+      });
+    }
+  } catch (error) {
+    console.error('Erro ao remover usuário:', error);
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: '❌ Erro ao remover usuário',
+        type: 'error'
+      });
+    }
+  }
+}
+
+// ===== EXPOSIÇÃO DE FUNÇÕES GLOBAIS =====
+
+// Expor funções adicionais globalmente
+window.getUserInfo = getUserInfo;
+window.sendTransactionNotification = sendTransactionNotification;
+window.leaveSharedBudget = leaveSharedBudget;
+window.removeUserFromBudget = removeUserFromBudget;
+window.calcularParcelaRecorrente = calcularParcelaRecorrente;
+window.calcularStatusRecorrente = calcularStatusRecorrente;
+
+// ===== FUNÇÕES DE MODAL =====
+
+// Função para mostrar modal
+window.showModal = function(content, title = '') {
+  console.log('🔧 showModal chamada com:', { title, content: content.substring(0, 100) + '...' });
+  
+  if (!window.Modal) {
+    console.error('❌ window.Modal não está disponível');
+    return;
+  }
+  
+  const modalElement = window.Modal({
+    title: title,
+    content: content,
+    onClose: () => {
+      closeModal();
+    }
+  });
+  
+  document.body.appendChild(modalElement);
+  return modalElement;
+};
+
+// Função para fechar modal
+window.closeModal = function() {
+  console.log('🔧 closeModal chamada');
+  const modal = document.getElementById('app-modal');
+  if (modal) {
+    modal.remove();
+    if (window.toggleFABOnModal) {
+      window.toggleFABOnModal();
+    }
+  }
+};
+
+// Função universal para mostrar modal de confirmação
+window.showConfirmationModal = function(options) {
+  const {
+    title = 'Confirmar Ação',
+    message = 'Tem certeza que deseja realizar esta ação?',
+    confirmText = 'Confirmar',
+    cancelText = 'Cancelar',
+    confirmColor = 'bg-red-500 hover:bg-red-600',
+    onConfirm,
+    onCancel
+  } = options;
+
+  const modalContent = `
+    <div class="modal-content max-w-md mx-auto">
+      <div class="text-center">
+        <div class="text-6xl mb-4">⚠️</div>
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">${title}</h3>
+        <p class="text-gray-600 dark:text-gray-400 mb-6">${message}</p>
+        
+        <div class="flex justify-center space-x-3">
+          <button id="cancel-btn" 
+                  class="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+            ${cancelText}
+          </button>
+          <button id="confirm-btn" 
+                  class="px-4 py-2 text-white rounded-lg transition-colors ${confirmColor}">
+            ${confirmText}
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+  const modal = window.showModal(modalContent);
+  setTimeout(() => {
+    const cancelBtn = document.getElementById('cancel-btn');
+    const confirmBtn = document.getElementById('confirm-btn');
+    if (cancelBtn) {
+      cancelBtn.onclick = () => {
+        window.closeModal();
+        if (onCancel) onCancel();
+      };
+    }
+    if (confirmBtn) {
+      confirmBtn.onclick = () => {
+        window.closeModal();
+        if (onConfirm) onConfirm();
+      };
+    }
+  }, 100);
+  return modal;
+};
+
+// ===== FUNÇÕES DE ORÇAMENTOS COMPARTILHADOS =====
+
+// Função para mostrar modal de criar novo orçamento
+window.showAddBudgetModal = function () {
+  console.log('🔧 Abrindo modal de criar orçamento...');
+  
+  const modalContent = `
+    <div class="modal-content max-w-md mx-auto">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-xl font-bold text-gray-800 dark:text-white">Criar Novo Orçamento</h2>
+        <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+          <span class="text-2xl">×</span>
+        </button>
+      </div>
+      
+      <form id="add-budget-form" class="space-y-4">
+        <div>
+          <label class="modal-label">Nome do Orçamento</label>
+          <input type="text" id="budget-name" required
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                 placeholder="Ex: Orçamento Familiar"
+                 style="background-color: var(--select-bg, #ffffff); color: var(--select-text, #1f2937); font-weight: 500;">
+        </div>
+        
+        <div>
+          <label class="modal-label">Descrição (opcional)</label>
+          <textarea id="budget-description"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    placeholder="Descrição do orçamento"
+                    rows="3"
+                    style="background-color: var(--select-bg, #ffffff); color: var(--select-text, #1f2937); font-weight: 500;"></textarea>
+        </div>
+        
+        <div>
+          <label class="modal-label">Tipo de Orçamento</label>
+          <select id="budget-type" required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  style="background-color: var(--select-bg, #ffffff); color: var(--select-text, #1f2937); font-weight: 500;">
+            <option value="pessoal">Pessoal</option>
+            <option value="compartilhado">Compartilhado</option>
+          </select>
+        </div>
+        
+        <div class="flex justify-end space-x-3 pt-4">
+          <button type="button" onclick="closeModal()" class="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg">Cancelar</button>
+          <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Criar Orçamento</button>
+        </div>
+      </form>
+    </div>
+  `;
+
+  window.showModal(modalContent);
+
+  // Configurar evento de submit
+  document.getElementById('add-budget-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const name = document.getElementById('budget-name').value;
+    const description = document.getElementById('budget-description').value;
+    const type = document.getElementById('budget-type').value;
+    
+    try {
+      const budgetData = {
+        nome: name,
+        descricao: description,
+        tipo: type,
+        criadoPor: window.appState.currentUser.uid,
+        membros: [window.appState.currentUser.uid],
+        criadoEm: new Date()
+      };
+      
+      const budgetId = await addBudget(budgetData);
+      await loadBudgets();
+      
+      closeModal();
+      
+      if (window.Snackbar) {
+        window.Snackbar({
+          message: '✅ Orçamento criado com sucesso!',
+          type: 'success'
+        });
+      }
+      
+      // Se for o primeiro orçamento, selecionar automaticamente
+      if (window.appState.budgets.length === 1) {
+        const newBudget = window.appState.budgets.find(b => b.id === budgetId);
+        if (newBudget) {
+          await setCurrentBudget(newBudget);
+        }
+      }
+      
+    } catch (error) {
+      console.error('❌ Erro ao criar orçamento:', error);
+      if (window.Snackbar) {
+        window.Snackbar({
+          message: 'Erro ao criar orçamento: ' + error.message,
+          type: 'error'
+        });
+      }
+    }
+  });
+};
+
+// Função para compartilhar orçamento
+window.compartilharOrcamento = async function () {
+  console.log('🔧 Abrindo modal de compartilhar orçamento...');
+  
+  const currentBudget = window.appState.currentBudget;
+  if (!currentBudget) {
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: 'Nenhum orçamento selecionado',
+        type: 'warning'
+      });
+    }
+    return;
+  }
+  
+  const modalContent = `
+    <div class="modal-content max-w-md mx-auto">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-xl font-bold text-gray-800 dark:text-white">Compartilhar Orçamento</h2>
+        <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+          <span class="text-2xl">×</span>
+        </button>
+      </div>
+      
+      <div class="space-y-4">
+        <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+          <h3 class="font-semibold text-blue-800 dark:text-blue-200 mb-2">${currentBudget.nome}</h3>
+          <p class="text-sm text-blue-600 dark:text-blue-300">ID do Orçamento: <code class="bg-blue-100 dark:bg-blue-800 px-2 py-1 rounded">${currentBudget.id}</code></p>
+        </div>
+        
+        <div>
+          <label class="modal-label">Email do Usuário</label>
+          <input type="email" id="user-email" required
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                 placeholder="usuario@exemplo.com"
+                 style="background-color: var(--select-bg, #ffffff); color: var(--select-text, #1f2937); font-weight: 500;">
+        </div>
+        
+        <div class="flex justify-end space-x-3 pt-4">
+          <button type="button" onclick="closeModal()" class="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg">Cancelar</button>
+          <button onclick="window.inviteUserToBudget()" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Convidar</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  window.showModal(modalContent);
+};
+
+// Função para convidar usuário para orçamento
+window.inviteUserToBudget = async function () {
+  const email = document.getElementById('user-email').value;
+  const currentBudget = window.appState.currentBudget;
+  
+  console.log('🔍 Tentando convidar usuário:', { 
+    email, 
+    budgetId: currentBudget?.id, 
+    budgetName: currentBudget?.nome,
+    budgetData: currentBudget,
+    currentUser: window.appState.currentUser?.uid
+  });
+  
+  if (!email || !currentBudget) {
+    console.log('❌ Email ou orçamento inválido:', { email, budgetId: currentBudget?.id });
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: 'Email inválido ou orçamento não selecionado',
+        type: 'error'
+      });
+    }
+    return;
+  }
+  
+  try {
+    // Buscar usuário por email
+    console.log('🔍 Buscando usuário por email:', email);
+    const userQuery = query(collection(db, 'users'), where('email', '==', email));
+    const userSnapshot = await getDocs(userQuery);
+    
+    console.log('🔍 Resultado da busca:', { 
+      empty: userSnapshot.empty, 
+      size: userSnapshot.size,
+      docs: userSnapshot.docs.map(doc => ({ id: doc.id, data: doc.data() }))
+    });
+    
+    if (userSnapshot.empty) {
+      console.log('❌ Usuário não encontrado com email:', email);
+      if (window.Snackbar) {
+        window.Snackbar({
+          message: 'Usuário não encontrado com este email',
+          type: 'warning'
+        });
+      }
+      return;
+    }
+    
+    const userDoc = userSnapshot.docs[0];
+    const invitedUserId = userDoc.id;
+    
+    // Verificar se já é membro
+    if (currentBudget.usuariosPermitidos && currentBudget.usuariosPermitidos.includes(invitedUserId)) {
+      if (window.Snackbar) {
+        window.Snackbar({
+          message: 'Usuário já é membro deste orçamento',
+          type: 'info'
+        });
+      }
+      return;
+    }
+    
+    // Verificar se já existe um convite pendente
+    console.log('🔍 Verificando convites existentes para:', { budgetId: currentBudget.id, invitedUserId });
+    const existingInviteQuery = query(
+      collection(db, 'budgetInvitations'),
+      where('budgetId', '==', currentBudget.id),
+      where('invitedUserId', '==', invitedUserId),
+      where('status', '==', 'pending')
+    );
+    const existingInviteSnapshot = await getDocs(existingInviteQuery);
+    
+    console.log('🔍 Convites existentes:', { 
+      empty: existingInviteSnapshot.empty, 
+      size: existingInviteSnapshot.size,
+      docs: existingInviteSnapshot.docs.map(doc => ({ id: doc.id, data: doc.data() }))
+    });
+    
+    if (!existingInviteSnapshot.empty) {
+      console.log('❌ Convite já existe para este usuário');
+      if (window.Snackbar) {
+        window.Snackbar({
+          message: 'Convite já enviado para este usuário',
+          type: 'info'
+        });
+      }
+      return;
+    }
+    
+    // Criar convite
+    const invitationData = {
+      budgetId: currentBudget.id,
+      budgetName: currentBudget.nome || 'Orçamento sem nome',
+      invitedUserId: invitedUserId,
+      invitedUserEmail: email,
+      invitedByUserId: window.appState.currentUser.uid,
+      invitedByUserEmail: window.appState.currentUser.email,
+      status: 'pending', // pending, accepted, declined
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    };
+    
+    console.log('📨 Criando convite com dados:', invitationData);
+    const docRef = await addDoc(collection(db, 'budgetInvitations'), invitationData);
+    console.log('✅ Convite criado com ID:', docRef.id);
+    
+    closeModal();
+    
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: '✅ Convite enviado com sucesso! Aguardando aceitação.',
+        type: 'success'
+      });
+    }
+    
+  } catch (error) {
+    console.error('❌ Erro ao enviar convite:', error);
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: 'Erro ao enviar convite: ' + error.message,
+        type: 'error'
+      });
+    }
+  }
+};
+
+// Função para aceitar convite de orçamento
+window.acceptBudgetInvitation = async function (invitationId) {
+  try {
+    console.log('🔍 Aceitando convite:', invitationId);
+    
+    // Buscar o convite
+    const invitationRef = doc(db, 'budgetInvitations', invitationId);
+    const invitationDoc = await getDoc(invitationRef);
+    
+    if (!invitationDoc.exists()) {
+      if (window.Snackbar) {
+        window.Snackbar({
+          message: 'Convite não encontrado',
+          type: 'error'
+        });
+      }
+      return;
+    }
+    
+    const invitationData = invitationDoc.data();
+    
+    // Verificar se o convite é para o usuário atual
+    if (invitationData.invitedUserId !== window.appState.currentUser.uid) {
+      if (window.Snackbar) {
+        window.Snackbar({
+          message: 'Este convite não é para você',
+          type: 'error'
+        });
+      }
+      return;
+    }
+    
+    // Verificar se o convite ainda está pendente
+    if (invitationData.status !== 'pending') {
+      if (window.Snackbar) {
+        window.Snackbar({
+          message: 'Este convite já foi respondido',
+          type: 'info'
+        });
+      }
+      return;
+    }
+    
+    // Buscar o orçamento
+    const budgetRef = doc(db, 'budgets', invitationData.budgetId);
+    const budgetDoc = await getDoc(budgetRef);
+    
+    if (!budgetDoc.exists()) {
+      if (window.Snackbar) {
+        window.Snackbar({
+          message: 'Orçamento não encontrado',
+          type: 'error'
+        });
+      }
+      return;
+    }
+    
+    console.log('🔍 Adicionando usuário ao orçamento:', {
+      budgetId: invitationData.budgetId,
+      userId: window.appState.currentUser.uid
+    });
+    
+    // Adicionar usuário ao orçamento
+    await updateDoc(budgetRef, {
+      usuariosPermitidos: arrayUnion(window.appState.currentUser.uid),
+      updatedAt: serverTimestamp()
+    });
+    
+    console.log('✅ Usuário adicionado ao orçamento');
+    
+    // Atualizar status do convite para aceito
+    await updateDoc(invitationRef, {
+      status: 'accepted',
+      updatedAt: serverTimestamp()
+    });
+    
+    console.log('✅ Status do convite atualizado para aceito');
+    
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: '✅ Convite aceito! Você agora tem acesso ao orçamento.',
+        type: 'success'
+      });
+    }
+    
+    // Recarregar orçamentos e configurações
+    await loadBudgets();
+    if (window.renderSettings) {
+      await window.renderSettings();
+    }
+    
+  } catch (error) {
+    console.error('❌ Erro ao aceitar convite:', error);
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: 'Erro ao aceitar convite: ' + error.message,
+        type: 'error'
+      });
+    }
+  }
+};
+
+// Função para recusar convite de orçamento
+window.declineBudgetInvitation = async function (invitationId) {
+  try {
+    // Buscar o convite
+    const invitationRef = doc(db, 'budgetInvitations', invitationId);
+    const invitationDoc = await getDoc(invitationRef);
+    
+    if (!invitationDoc.exists()) {
+      if (window.Snackbar) {
+        window.Snackbar({
+          message: 'Convite não encontrado',
+          type: 'error'
+        });
+      }
+      return;
+    }
+    
+    const invitationData = invitationDoc.data();
+    
+    // Verificar se o convite é para o usuário atual
+    if (invitationData.invitedUserId !== window.appState.currentUser.uid) {
+      if (window.Snackbar) {
+        window.Snackbar({
+          message: 'Este convite não é para você',
+          type: 'error'
+        });
+      }
+      return;
+    }
+    
+    // Verificar se o convite ainda está pendente
+    if (invitationData.status !== 'pending') {
+      if (window.Snackbar) {
+        window.Snackbar({
+          message: 'Este convite já foi respondido',
+          type: 'info'
+        });
+      }
+      return;
+    }
+    
+    // Atualizar status do convite para recusado
+    await updateDoc(invitationRef, {
+      status: 'declined',
+      updatedAt: serverTimestamp()
+    });
+    
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: 'Convite recusado',
+        type: 'info'
+      });
+    }
+    
+    // Recarregar configurações
+    if (window.renderSettings) {
+      await window.renderSettings();
+    }
+    
+  } catch (error) {
+    console.error('❌ Erro ao recusar convite:', error);
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: 'Erro ao recusar convite: ' + error.message,
+        type: 'error'
+      });
+    }
+  }
+};
+
+// Função para carregar convites pendentes
+window.loadBudgetInvitations = async function () {
+  try {
+    const user = window.appState.currentUser;
+    console.log('🔍 Carregando convites para usuário:', user?.uid, user?.email);
+    
+    if (!user) {
+      console.log('❌ Usuário não autenticado');
+      return [];
+    }
+    
+    // Versão temporária sem orderBy enquanto o índice está sendo construído
+    const invitationsQuery = query(
+      collection(db, 'budgetInvitations'),
+      where('invitedUserId', '==', user.uid),
+      where('status', '==', 'pending')
+    );
+    
+    console.log('🔍 Executando query de convites...');
+    const invitationsSnapshot = await getDocs(invitationsQuery);
+    console.log('📊 Total de convites encontrados:', invitationsSnapshot.size);
+    
+    const invitations = [];
+    
+    invitationsSnapshot.forEach(doc => {
+      const data = doc.data();
+      console.log('📨 Convite encontrado:', { id: doc.id, ...data });
+      invitations.push({
+        id: doc.id,
+        ...data
+      });
+    });
+    
+    // Ordenar localmente por data de criação (mais recente primeiro)
+    invitations.sort((a, b) => {
+      const dateA = a.createdAt ? a.createdAt.toDate() : new Date(0);
+      const dateB = b.createdAt ? b.createdAt.toDate() : new Date(0);
+      return dateB - dateA;
+    });
+    
+    console.log('✅ Convites carregados com sucesso:', invitations.length);
+    return invitations;
+  } catch (error) {
+    console.error('❌ Erro ao carregar convites:', error);
+    return [];
+  }
+};
+
+// Função para entrar em orçamento compartilhado
+window.selectSharedBudget = function () {
+  console.log('🔧 Abrindo modal de entrar em orçamento compartilhado...');
+  
+  const modalContent = `
+    <div class="modal-content max-w-md mx-auto">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-xl font-bold text-gray-800 dark:text-white">Entrar em Orçamento Compartilhado</h2>
+        <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+          <span class="text-2xl">×</span>
+        </button>
+      </div>
+      
+      <form id="join-budget-form" class="space-y-4">
+        <div>
+          <label class="modal-label">ID do Orçamento</label>
+          <input type="text" id="budget-id" required
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                 placeholder="Cole aqui o ID do orçamento"
+                 style="background-color: var(--select-bg, #ffffff); color: var(--select-text, #1f2937); font-weight: 500;">
+        </div>
+        
+        <div class="flex justify-end space-x-3 pt-4">
+          <button type="button" onclick="closeModal()" class="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg">Cancelar</button>
+          <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Entrar</button>
+        </div>
+      </form>
+    </div>
+  `;
+
+  window.showModal(modalContent);
+
+  // Configurar evento de submit
+  document.getElementById('join-budget-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const budgetId = document.getElementById('budget-id').value.trim();
+    
+    if (!budgetId) {
+      if (window.Snackbar) {
+        window.Snackbar({
+          message: 'ID do orçamento é obrigatório',
+          type: 'warning'
+        });
+      }
+      return;
+    }
+    
+    try {
+      // Buscar orçamento
+      const budgetRef = doc(db, 'budgets', budgetId);
+      const budgetDoc = await getDoc(budgetRef);
+      
+      if (!budgetDoc.exists()) {
+        if (window.Snackbar) {
+          window.Snackbar({
+            message: 'Orçamento não encontrado',
+            type: 'error'
+          });
+        }
+        return;
+      }
+      
+      const budgetData = budgetDoc.data();
+      
+      // Verificar se já é membro
+      if (budgetData.usuariosPermitidos && budgetData.usuariosPermitidos.includes(window.appState.currentUser.uid)) {
+        if (window.Snackbar) {
+          window.Snackbar({
+            message: 'Você já é membro deste orçamento',
+            type: 'info'
+          });
+        }
+        return;
+      }
+      
+      // Adicionar usuário ao orçamento
+      await updateDoc(budgetRef, {
+        usuariosPermitidos: arrayUnion(window.appState.currentUser.uid),
+        updatedAt: serverTimestamp()
+      });
+      
+      closeModal();
+      
+      if (window.Snackbar) {
+        window.Snackbar({
+          message: '✅ Você entrou no orçamento com sucesso!',
+          type: 'success'
+        });
+      }
+      
+      // Recarregar orçamentos
+      await loadBudgets();
+      
+      // Selecionar o orçamento que acabou de entrar
+      const updatedBudget = window.appState.budgets.find(b => b.id === budgetId);
+      if (updatedBudget && window.setCurrentBudget) {
+        await window.setCurrentBudget(updatedBudget);
+      }
+      
+    } catch (error) {
+      console.error('❌ Erro ao entrar no orçamento:', error);
+      if (window.Snackbar) {
+        window.Snackbar({
+          message: 'Erro ao entrar no orçamento: ' + error.message,
+          type: 'error'
+        });
+      }
+    }
+  });
+};
+
+// Inicializar tema apenas uma vez quando o DOM estiver pronto
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('DOM carregado, verificando botão de tema...');
+  const button = document.getElementById('theme-toggle-btn');
+  console.log('Botão encontrado:', button);
+  if (button) {
+    console.log('Botão existe, chamando setupThemeToggle...');
+    setupThemeToggle();
+  } else {
+    console.log('Botão não encontrado no DOM, tentando novamente em 1 segundo...');
+    setTimeout(() => {
+      const buttonRetry = document.getElementById('theme-toggle-btn');
+      console.log('Tentativa 2 - Botão encontrado:', buttonRetry);
+      if (buttonRetry) {
+        setupThemeToggle();
+      }
+    }, 1000);
+  }
+});

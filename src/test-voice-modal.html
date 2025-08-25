@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Modal de Voz</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        .test-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background: #4F46E5;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+        }
+        .test-button:hover {
+            background: #3730A3;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 10px;
+            border-radius: 5px;
+            background: #f8f9fa;
+            border-left: 4px solid #4F46E5;
+        }
+        
+        /* Modal de Voz */
+        .voice-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        
+        .voice-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+        
+        .voice-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #4F46E5, #7C3AED);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            color: white;
+            font-size: 32px;
+        }
+        
+        .voice-status {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin: 20px 0;
+        }
+        
+        .voice-status div {
+            width: 8px;
+            height: 8px;
+            background: #4F46E5;
+            border-radius: 50%;
+            animation: bounce 1.4s ease-in-out infinite both;
+        }
+        
+        .voice-status div:nth-child(1) { animation-delay: -0.32s; }
+        .voice-status div:nth-child(2) { animation-delay: -0.16s; }
+        .voice-status div:nth-child(3) { animation-delay: 0s; }
+        
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+        
+        .close-btn {
+            background: #6B7280;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🎤 Teste do Modal de Voz</h1>
+        
+        <div class="status">
+            <strong>Status:</strong> <span id="status">Aguardando teste...</span>
+        </div>
+        
+        <h3>Testes Disponíveis:</h3>
+        
+        <button class="test-button" onclick="testVoiceModal()">
+            🎤 Testar Modal de Voz
+        </button>
+        
+        <button class="test-button" onclick="testTransactionVoice()">
+            💰 Testar Voz para Transação
+        </button>
+        
+        <button class="test-button" onclick="testCategoryVoice()">
+            📁 Testar Voz para Categoria
+        </button>
+        
+        <button class="test-button" onclick="testPermissions()">
+            🔒 Testar Permissões
+        </button>
+        
+        <div id="results" style="margin-top: 20px;"></div>
+    </div>
+
+    <!-- Modal de Voz -->
+    <div id="voice-modal" class="voice-modal">
+        <div class="voice-content">
+            <div class="voice-icon">🎤</div>
+            <h3>Ouvindo...</h3>
+            <p>Fale sua transação ou categoria</p>
+            <div class="voice-status">
+                <div></div>
+                <div></div>
+                <div></div>
+            </div>
+            <div style="font-size: 14px; color: #666; margin: 20px 0;">
+                <p><strong>Exemplos:</strong></p>
+                <p>"Adicionar despesa de 50 reais com alimentação"</p>
+                <p>"Nova categoria chamada transporte"</p>
+            </div>
+            <button class="close-btn" onclick="closeVoiceModal()">Cancelar</button>
+        </div>
+    </div>
+
+    <script>
+        // Simular funções globais
+        window.addTransaction = function(data) {
+            console.log('✅ addTransaction chamado:', data);
+            updateStatus('Transação adicionada: ' + JSON.stringify(data));
+            return Promise.resolve();
+        };
+        
+        window.addCategory = function(data) {
+            console.log('✅ addCategory chamado:', data);
+            updateStatus('Categoria adicionada: ' + JSON.stringify(data));
+            return Promise.resolve();
+        };
+        
+        // Simular estado da aplicação
+        window.appState = {
+            categories: [
+                { id: '1', nome: 'Alimentação', tipo: 'despesa' },
+                { id: '2', nome: 'Transporte', tipo: 'despesa' },
+                { id: '3', nome: 'Salário', tipo: 'receita' }
+            ]
+        };
+        
+        // Simular Snackbar
+        window.Snackbar = {
+            show: function(message, type) {
+                console.log(`Snackbar [${type}]: ${message}`);
+                updateStatus(`Snackbar [${type}]: ${message}`);
+            },
+            success: function(message) {
+                this.show(message, 'success');
+            },
+            error: function(message) {
+                this.show(message, 'error');
+            }
+        };
+        
+        function updateStatus(message) {
+            document.getElementById('status').textContent = message;
+            console.log('📊 Status:', message);
+        }
+        
+        function testVoiceModal() {
+            updateStatus('Testando modal de voz...');
+            
+            // Verificar se SpeechRecognition está disponível
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                updateStatus('❌ SpeechRecognition não suportado neste navegador');
+                return;
+            }
+            
+            // Mostrar modal
+            const modal = document.getElementById('voice-modal');
+            modal.style.display = 'flex';
+            
+            updateStatus('✅ Modal de voz aberto');
+        }
+        
+        function testTransactionVoice() {
+            updateStatus('Testando comando de transação...');
+            
+            // Simular processamento de comando
+            const comando = "adicionar despesa de cinquenta reais com alimentação";
+            processVoiceCommand(comando, 'transaction');
+        }
+        
+        function testCategoryVoice() {
+            updateStatus('Testando comando de categoria...');
+            
+            // Simular processamento de comando
+            const comando = "nova categoria chamada lazer despesa cem";
+            processVoiceCommand(comando, 'category');
+        }
+        
+        function testPermissions() {
+            updateStatus('Testando permissões do microfone...');
+            
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                updateStatus('❌ getUserMedia não disponível');
+                return;
+            }
+            
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(stream => {
+                    updateStatus('✅ Permissão do microfone concedida');
+                    stream.getTracks().forEach(track => track.stop());
+                })
+                .catch(error => {
+                    updateStatus('❌ Erro de permissão: ' + error.message);
+                });
+        }
+        
+        function closeVoiceModal() {
+            const modal = document.getElementById('voice-modal');
+            modal.style.display = 'none';
+            updateStatus('Modal de voz fechado');
+        }
+        
+        // Simular processamento de comando de voz
+        function processVoiceCommand(transcript, type) {
+            console.log('🎤 Processando comando:', transcript, type);
+            
+            if (type === 'transaction') {
+                // Simular parsing de transação
+                const words = transcript.toLowerCase().split(' ');
+                const valor = words.find(w => !isNaN(parseFloat(w))) || 'cinquenta';
+                const categoria = words[words.length - 1];
+                
+                const transacao = {
+                    descricao: 'Transação via voz',
+                    valor: valor === 'cinquenta' ? 50 : parseFloat(valor) || 0,
+                    tipo: words.includes('receita') ? 'receita' : 'despesa',
+                    categoria: categoria
+                };
+                
+                window.addTransaction(transacao);
+                
+            } else if (type === 'category') {
+                // Simular parsing de categoria
+                const words = transcript.toLowerCase().split(' ');
+                const nome = words.slice(3, -2).join(' ') || 'Nova Categoria';
+                const tipo = words.includes('receita') ? 'receita' : 'despesa';
+                const limite = words[words.length - 1];
+                
+                const categoria = {
+                    nome: nome,
+                    tipo: tipo,
+                    limite: limite === 'cem' ? 100 : parseFloat(limite) || 0,
+                    cor: '#4F46E5'
+                };
+                
+                window.addCategory(categoria);
+            }
+        }
+        
+        // Inicializar
+        updateStatus('Pronto para testes');
+        console.log('🎤 Página de teste carregada');
+    </script>
+</body>
+</html>
