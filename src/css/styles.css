@@ -4,6 +4,9 @@
 
 /* === SISTEMA DE PADRONIZAÇÃO COMPLETA === */
 
+/* Prefer reported color schemes for the UA (improves rendering in high contrast) */
+:root { color-scheme: light dark; }
+
 /* === Variáveis CSS para temas de cores === */
 :root {
   --primary-color: #3B82F6;    /* Azul padrão */
@@ -4694,4 +4697,32 @@ textarea {
 
 .dark .content-section:not(:last-child) {
   border-bottom-color: #374151 !important;
+}
+
+/* === Forced Colors Mode (modern replacement for -ms-high-contrast) === */
+@media (forced-colors: active) {
+  /* Let the UA apply high-contrast palette by default */
+  * { forced-color-adjust: auto; }
+
+  /* Map key surfaces/text to system colors for readability */
+  body, .app-container, .content-area { background: Canvas !important; color: CanvasText !important; }
+  .bg-white, .dark\:bg-gray-800, .dark\:from-gray-900, .dark\:via-gray-800, .dark\:to-gray-900 { background: Canvas !important; }
+  .text-gray-800, .dark\:text-white, .text-white { color: CanvasText !important; }
+
+  /* Borders and separators */
+  .border, .divide-y > *, .divide-x > * { border-color: CanvasText !important; }
+
+  /* Remove decorative shadows that reduce contrast */
+  .shadow, .shadow-sm, .shadow-md, .shadow-lg, .shadow-xl, .shadow-2xl { box-shadow: none !important; }
+
+  /* Buttons and interactive elements */
+  button, .btn, [role="button"] {
+    background: ButtonFace !important;
+    color: ButtonText !important;
+    border: 1px solid ButtonText !important;
+  }
+  a { color: LinkText !important; }
+
+  /* Focus visibility */
+  :focus { outline: 2px solid Highlight !important; outline-offset: 2px; }
 }
