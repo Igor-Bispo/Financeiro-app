@@ -1,0 +1,42 @@
+name: Preview Firebase Hosting
+
+on:
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-preview-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    environment:
+      name: preview
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: Install deps
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Test
+        run: npm run test:run
+      - name: Build
+        run: npm run build
+      - name: Deploy to Firebase Hosting Preview Channel
+        id: deploy
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}'
+          projectId: controle-financeiro-b98ec
+      - name: Expose preview URL
+        if: steps.deploy.outputs.details_url
+        run: |
+          echo "Preview URL: ${{ steps.deploy.outputs.details_url }}"
+          echo "::notice title=Firebase Preview URL::${{ steps.deploy.outputs.details_url }}"

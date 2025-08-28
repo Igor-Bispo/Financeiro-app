@@ -1,12 +1,14 @@
 import '../css/styles.css';
-
-import './showAddRecorrenteModal.js';
-import './showAddTransactionModal.js';
-import './showAddCategoryModal.js';
-import { setupThemeToggle } from './ui/ThemeToggle.js';
+import { Modal } from './ui/Modal.js';
+import { auth, db } from './firebase.js';
+import { calcularParcelaRecorrente, calcularStatusRecorrente } from '@features/recorrentes/service.js';
+import * as budgetsRepo from '@data/repositories/budgetsRepo.js';
+import * as transactionsRepo from '@data/repositories/transactionsRepo.js';
+import * as categoriesRepo from '@data/repositories/categoriesRepo.js';
+import * as invitationsRepo from '@data/repositories/invitationsRepo.js';
+import { FAB } from './ui/FAB.js';
 import { SwipeNavigation } from './ui/SwipeTabs.js';
-import './biometric-auth.js';
-import { app, auth, db } from './firebase.js';
+import { renderAnalytics } from './ui/AnalyticsRoute.js';
 import {
   getFirestore,
   collection,
@@ -31,67 +33,39 @@ import {
   endAt
 } from 'firebase/firestore';
 import { loginWithGoogle } from './auth.js';
-import {
-  getDespesasRecorrentes,
-  aplicarRecorrentesDoMes,
-  deleteDespesaRecorrente,
-  addDespesaRecorrente,
-  calcularParcelaRecorrente,
-  calcularStatusRecorrente
-} from './recorrentes.js';
-import { CardResumo } from './ui/CardResumo.js';
-import { Modal } from './ui/Modal.js';
-import { Snackbar } from './ui/Snackbar.js';
-import { Analytics } from './ui/Analytics.js';
-import { renderAnalytics } from './ui/AnalyticsRoute.js';
+import { notificationsStore } from '@features/notifications/store.js';
 
-// Tornar Modal e Snackbar globais para uso em outros módulos
-window.Modal = Modal;
-window.Snackbar = Snackbar;
-window.setupThemeToggle = setupThemeToggle;
-window.FirebaseAuth = auth;
-import { FAB } from './ui/FAB.js';
-import { BottomNav } from './ui/BottomNav.js';
-import {
-  renderRecorrentes as _renderRecorrentes,
-  showHistoricoRecorrente
-} from './recorrentes/RecorrentesPage.js';
-// Drawer removido - funcionalidades movidas para as abas do rodapé
-import { renderLogAplicacoes } from './ui/LogAplicacoes.js';
-import {
-  buscarOrcamentoPorId,
-  buscarUidPorEmail
-} from './firestore.js';
-import { renderSettings } from './config/SettingsPage.js';
-
-window.renderSettings = renderSettings;
-window._renderRecorrentes = _renderRecorrentes;
-window.showHistoricoRecorrente = showHistoricoRecorrente;
-window.renderLogAplicacoes = renderLogAplicacoes;
-window.deleteDespesaRecorrente = deleteDespesaRecorrente;
-window.addDespesaRecorrente = addDespesaRecorrente;
-
-// Função para atualizar o título da página
-function updatePageTitle(path) {
-  const pageTitle = document.getElementById('page-title');
-  if (!pageTitle) {
-    console.log('⚠️ Elemento page-title não encontrado (header removido)');
-    return;
-  }
-  
-  const routeNames = {
-    '/dashboard': 'Dashboard',
-    '/transactions': 'Transações',
-    '/categories': 'Categorias',
-    '/analytics': 'Análises',
-    '/recorrentes': 'Recorrentes',
-    '/notifications': 'Notificações',
-    '/settings': 'Configurações'
-  };
-  
-  const title = routeNames[path] || 'Dashboard';
-  pageTitle.textContent = title;
+// Tornar Modal disponível globalmente para utilitários que usam window.Modal
+if (typeof window !== 'undefined') {
+  window.Modal = Modal;
 }
+
+// Pequena utilidade para atualizar o título da página conforme a rota atual
+function updatePageTitle(path) {
+  try {
+    const routeNames = {
+      '/dashboard': 'Dashboard',
+      '/transactions': 'Transações',
+      '/categories': 'Categorias',
+      '/analytics': 'Análises',
+      '/recorrentes': 'Recorrentes',
+      '/notifications': 'Notificações',
+      '/settings': 'Configurações'
+    };
+    const title = routeNames[path] || 'Dashboard';
+    // Atualiza possíveis elementos de título no layout
+    document.title = `Financeiro • ${title}`;
+    const el = document.querySelector('.tab-title-highlight');
+    if (el && !el.textContent.includes(title)) {
+      // Mantém emoji se houver e atualiza label após o espaço
+      const emoji = el.textContent.split(' ')[0];
+      el.textContent = `${emoji} ${title}`;
+    }
+  } catch (e) {
+    // noop
+  }
+}
+window.updatePageTitle = updatePageTitle;
 
 // Função para aplicar modo de compactação globalmente
 window.applyCompactMode = function() {
@@ -691,12 +665,21 @@ async function addTransaction(transactionData) {
       ...transactionData,
       userId: user.uid,
       budgetId: budget.id,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
     };
 
-    const docRef = await addDoc(collection(db, 'transactions'), transaction);
-    console.log('✅ Transação adicionada com ID:', docRef.id);
+    const { id: newId } = await transactionsRepo.create(transaction);
+    console.log('✅ Transação adicionada com ID:', newId);
+    
+    // Enviar notificações para membros do orçamento (exceto o autor)
+    try {
+      if (typeof sendTransactionNotification === 'function') {
+        await sendTransactionNotification(budget.id, user.uid, { ...transaction, id: newId });
+      } else if (window.sendTransactionNotification) {
+        await window.sendTransactionNotification(budget.id, user.uid, { ...transaction, id: newId });
+      }
+    } catch (notifyErr) {
+      console.warn('Não foi possível enviar notificações de nova transação:', notifyErr);
+    }
     
     // Verificar limites de categoria
     if (window.checkLimitesCategoria) {
@@ -708,8 +691,8 @@ async function addTransaction(transactionData) {
       setTimeout(() => window.forceUIUpdate(), 100);
     }
     
-            Snackbar({ message: 'Transação adicionada com sucesso!', type: 'success' });
-    return docRef.id;
+      Snackbar({ message: 'Transação adicionada com sucesso!', type: 'success' });
+    return newId;
   } catch (error) {
     console.error('❌ Erro ao adicionar transação:', error);
           Snackbar({ message: 'Erro ao adicionar transação', type: 'error' });
@@ -720,13 +703,24 @@ async function addTransaction(transactionData) {
 // Função para atualizar transação
 async function updateTransaction(transactionId, transactionData) {
   try {
-    const transactionRef = doc(db, 'transactions', transactionId);
-    await updateDoc(transactionRef, {
-      ...transactionData,
-      updatedAt: serverTimestamp()
-    });
+  await transactionsRepo.update(transactionId, { ...transactionData });
     
     console.log('✅ Transação atualizada:', transactionId);
+
+    // Enviar notificações de atualização (exceto o autor)
+    try {
+  const user = window.appState.currentUser;
+  const budgetId = window.appState.currentBudget?.id;
+      if (budgetId && user?.uid) {
+        if (typeof sendTransactionUpdatedNotification === 'function') {
+          await sendTransactionUpdatedNotification(budgetId, user.uid, { id: transactionId, ...transactionData });
+        } else if (window.sendTransactionUpdatedNotification) {
+          await window.sendTransactionUpdatedNotification(budgetId, user.uid, { id: transactionId, ...transactionData });
+        }
+      }
+    } catch (notifyErr) {
+      console.warn('Não foi possível enviar notificações de atualização de transação:', notifyErr);
+    }
     
     // Verificar limites de categoria
     if (window.checkLimitesCategoria) {
@@ -749,10 +743,33 @@ async function updateTransaction(transactionId, transactionData) {
 // Função para deletar transação
 async function deleteTransaction(transactionId) {
   try {
-    const transactionRef = doc(db, 'transactions', transactionId);
-    await deleteDoc(transactionRef);
+    // Ler dados da transação antes de apagar (para compor a notificação de exclusão)
+    let txDataForNotification = null;
+    try {
+      const current = await transactionsRepo.getById(transactionId);
+      if (current) txDataForNotification = current;
+    } catch (readErr) {
+      console.warn('Não foi possível ler a transação antes de excluir:', readErr);
+    }
+
+    await transactionsRepo.remove(transactionId);
     
     console.log('✅ Transação deletada:', transactionId);
+    
+    // Enviar notificações de exclusão para membros do orçamento (exceto o autor)
+    try {
+      const user = window.appState.currentUser;
+      const budgetId = txDataForNotification?.budgetId || window.appState.currentBudget?.id;
+      if (budgetId && user?.uid) {
+        if (typeof sendTransactionDeletedNotification === 'function') {
+          await sendTransactionDeletedNotification(budgetId, user.uid, txDataForNotification || { id: transactionId });
+        } else if (window.sendTransactionDeletedNotification) {
+          await window.sendTransactionDeletedNotification(budgetId, user.uid, txDataForNotification || { id: transactionId });
+        }
+      }
+    } catch (notifyErr) {
+      console.warn('Não foi possível enviar notificações de exclusão de transação:', notifyErr);
+    }
     
     // Verificar limites de categoria
     if (window.checkLimitesCategoria) {
@@ -781,37 +798,7 @@ async function loadTransactions() {
     const budget = window.appState.currentBudget;
     if (!budget) return [];
 
-    const q = query(
-      collection(db, 'transactions'),
-      where('budgetId', '==', budget.id)
-    );
-    
-    const querySnapshot = await getDocs(q);
-    const transactions = querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
-    
-    // Ordenar transações por data (mais recentes primeiro)
-    transactions.sort((a, b) => {
-      let dateA, dateB;
-      
-      // Tratar Firestore Timestamp
-      if (a.createdAt && typeof a.createdAt === 'object' && a.createdAt.seconds) {
-        dateA = new Date(a.createdAt.seconds * 1000);
-      } else {
-        dateA = new Date(a.createdAt);
-      }
-      
-      if (b.createdAt && typeof b.createdAt === 'object' && b.createdAt.seconds) {
-        dateB = new Date(b.createdAt.seconds * 1000);
-      } else {
-        dateB = new Date(b.createdAt);
-      }
-      
-      return dateB - dateA; // Ordem decrescente (mais recente primeiro)
-    });
-    
+    const transactions = await transactionsRepo.list({ budgetId: budget.id });
     window.appState.transactions = transactions;
     return transactions;
   } catch (error) {
@@ -841,11 +828,26 @@ async function addCategory(categoryData) {
       updatedAt: serverTimestamp()
     };
 
-    const docRef = await addDoc(collection(db, 'categories'), category);
-    console.log('✅ Categoria adicionada com ID:', docRef.id);
+    const newId = await categoriesRepo.create(category);
+    console.log('✅ Categoria adicionada com ID:', newId);
+
+    // Notificar membros do orçamento (exceto o autor)
+    try {
+  const user = window.appState.currentUser;
+  const budgetId = window.appState.currentBudget?.id;
+      if (budgetId && user?.uid) {
+        if (typeof sendCategoryChangeNotification === 'function') {
+      await sendCategoryChangeNotification(budgetId, user.uid, { id: newId, ...category }, 'category_added');
+        } else if (window.sendCategoryChangeNotification) {
+      await window.sendCategoryChangeNotification(budgetId, user.uid, { id: newId, ...category }, 'category_added');
+        }
+      }
+    } catch (notifyErr) {
+      console.warn('Não foi possível enviar notificações de categoria (adicionada):', notifyErr);
+    }
     
     Snackbar({ message: 'Categoria adicionada com sucesso!', type: 'success' });
-    return docRef.id;
+    return newId;
   } catch (error) {
     console.error('❌ Erro ao adicionar categoria:', error);
     Snackbar({ message: 'Erro ao adicionar categoria', type: 'error' });
@@ -856,13 +858,34 @@ async function addCategory(categoryData) {
 // Função para atualizar categoria
 async function updateCategory(categoryId, categoryData) {
   try {
-    const categoryRef = doc(db, 'categories', categoryId);
-    await updateDoc(categoryRef, {
+    // Ler dados atuais para preencher notificação
+    let currentData = null;
+    try {
+      currentData = await categoriesRepo.getById(categoryId);
+    } catch (e) { /* noop */ }
+
+    await categoriesRepo.update(categoryId, {
       ...categoryData,
       updatedAt: serverTimestamp()
     });
     
     console.log('✅ Categoria atualizada:', categoryId);
+
+    // Notificar membros do orçamento (exceto o autor)
+    try {
+      const user = window.appState.currentUser;
+      const budgetId = window.appState.currentBudget?.id || currentData?.budgetId;
+      const payload = { id: categoryId, ...(currentData || {}), ...categoryData };
+      if (budgetId && user?.uid) {
+        if (typeof sendCategoryChangeNotification === 'function') {
+          await sendCategoryChangeNotification(budgetId, user.uid, payload, 'category_updated');
+        } else if (window.sendCategoryChangeNotification) {
+          await window.sendCategoryChangeNotification(budgetId, user.uid, payload, 'category_updated');
+        }
+      }
+    } catch (notifyErr) {
+      console.warn('Não foi possível enviar notificações de categoria (atualizada):', notifyErr);
+    }
     Snackbar({ message: 'Categoria atualizada com sucesso!', type: 'success' });
   } catch (error) {
     console.error('❌ Erro ao atualizar categoria:', error);
@@ -874,10 +897,31 @@ async function updateCategory(categoryId, categoryData) {
 // Função para deletar categoria
 async function deleteCategory(categoryId) {
   try {
-    const categoryRef = doc(db, 'categories', categoryId);
-    await deleteDoc(categoryRef);
+    // Ler dados da categoria antes de apagar
+    let catDataForNotification = null;
+    try {
+      const data = await categoriesRepo.getById(categoryId);
+      if (data) catDataForNotification = data;
+    } catch (e) { /* noop */ }
+
+    await categoriesRepo.remove(categoryId);
     
     console.log('✅ Categoria deletada:', categoryId);
+
+    // Notificar membros do orçamento (exceto o autor)
+    try {
+      const user = window.appState.currentUser;
+      const budgetId = catDataForNotification?.budgetId || window.appState.currentBudget?.id;
+      if (budgetId && user?.uid) {
+        if (typeof sendCategoryChangeNotification === 'function') {
+          await sendCategoryChangeNotification(budgetId, user.uid, catDataForNotification || { id: categoryId }, 'category_deleted');
+        } else if (window.sendCategoryChangeNotification) {
+          await window.sendCategoryChangeNotification(budgetId, user.uid, catDataForNotification || { id: categoryId }, 'category_deleted');
+        }
+      }
+    } catch (notifyErr) {
+      console.warn('Não foi possível enviar notificações de categoria (excluída):', notifyErr);
+    }
     Snackbar({ message: 'Categoria deletada com sucesso!', type: 'success' });
   } catch (error) {
     console.error('❌ Erro ao deletar categoria:', error);
@@ -895,16 +939,7 @@ async function loadCategories() {
     const budget = window.appState.currentBudget;
     if (!budget) return [];
 
-    const q = query(
-      collection(db, 'categories'),
-      where('budgetId', '==', budget.id)
-    );
-    
-    const querySnapshot = await getDocs(q);
-    const categories = querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
+  const categories = await categoriesRepo.list({ budgetId: budget.id });
     
     window.appState.categories = categories;
     return categories;
@@ -929,11 +964,11 @@ async function addBudget(budgetData) {
       updatedAt: serverTimestamp()
     };
 
-    const docRef = await addDoc(collection(db, 'budgets'), budget);
-    console.log('✅ Orçamento adicionado com ID:', docRef.id);
+    const newId = await budgetsRepo.create(budget);
+    console.log('✅ Orçamento adicionado com ID:', newId);
     
     Snackbar({ message: 'Orçamento adicionado com sucesso!', type: 'success' });
-    return docRef.id;
+    return newId;
   } catch (error) {
     console.error('❌ Erro ao adicionar orçamento:', error);
     Snackbar({ message: 'Erro ao adicionar orçamento', type: 'error' });
@@ -969,66 +1004,35 @@ window.deleteBudget = async function(budgetId) {
       localStorage.removeItem('currentBudgetId');
     }
 
-    // Excluir todas as transações do orçamento
-    console.log('🗑️ Excluindo transações do orçamento...');
-    const transactionsQuery = query(
-      collection(db, 'transactions'),
-      where('budgetId', '==', budgetId)
-    );
-    const transactionsSnapshot = await getDocs(transactionsQuery);
-    
-    const transactionDeletions = transactionsSnapshot.docs.map(doc => 
-      deleteDoc(doc.ref)
-    );
-    await Promise.all(transactionDeletions);
-    console.log(`✅ ${transactionsSnapshot.docs.length} transações excluídas`);
+  // Excluir todas as transações do orçamento
+  console.log('🗑️ Excluindo transações do orçamento...');
+  const allTx = await transactionsRepo.list({ budgetId });
+  await Promise.all(allTx.map(t => transactionsRepo.remove(t.id)));
+  console.log(`✅ ${allTx.length} transações excluídas`);
 
-    // Excluir todas as categorias do orçamento
-    console.log('🗑️ Excluindo categorias do orçamento...');
-    const categoriesQuery = query(
-      collection(db, 'categories'),
-      where('budgetId', '==', budgetId)
-    );
-    const categoriesSnapshot = await getDocs(categoriesQuery);
-    
-    const categoryDeletions = categoriesSnapshot.docs.map(doc => 
-      deleteDoc(doc.ref)
-    );
-    await Promise.all(categoryDeletions);
-    console.log(`✅ ${categoriesSnapshot.docs.length} categorias excluídas`);
+  // Excluir todas as categorias do orçamento
+  console.log('🗑️ Excluindo categorias do orçamento...');
+  const allCats = await categoriesRepo.list({ budgetId });
+  await Promise.all(allCats.map(c => categoriesRepo.remove(c.id)));
+  console.log(`✅ ${allCats.length} categorias excluídas`);
 
-    // Excluir todas as recorrentes do orçamento
-    console.log('🗑️ Excluindo recorrentes do orçamento...');
-    const recorrentesQuery = query(
-      collection(db, 'recorrentes'),
-      where('budgetId', '==', budgetId)
-    );
-    const recorrentesSnapshot = await getDocs(recorrentesQuery);
-    
-    const recorrenteDeletions = recorrentesSnapshot.docs.map(doc => 
-      deleteDoc(doc.ref)
-    );
-    await Promise.all(recorrenteDeletions);
-    console.log(`✅ ${recorrentesSnapshot.docs.length} recorrentes excluídas`);
+  // Excluir todas as recorrentes do orçamento
+  console.log('🗑️ Excluindo recorrentes do orçamento...');
+  const { getRecorrentesDoOrcamento } = await import('../features/recorrentes/service.js');
+  const allRec = await getRecorrentesDoOrcamento(budgetId);
+  const recurringRepo = await import('@data/repositories/recurringRepo.js');
+  await Promise.all(allRec.map(r => recurringRepo.remove(r.id)));
+  console.log(`✅ ${allRec.length} recorrentes excluídas`);
 
-    // Excluir convites pendentes do orçamento
-    console.log('🗑️ Excluindo convites do orçamento...');
-    const invitationsQuery = query(
-      collection(db, 'budgetInvitations'),
-      where('budgetId', '==', budgetId)
-    );
-    const invitationsSnapshot = await getDocs(invitationsQuery);
-    
-    const invitationDeletions = invitationsSnapshot.docs.map(doc => 
-      deleteDoc(doc.ref)
-    );
-    await Promise.all(invitationDeletions);
-    console.log(`✅ ${invitationsSnapshot.docs.length} convites excluídos`);
+  // Excluir convites pendentes do orçamento
+  console.log('🗑️ Excluindo convites do orçamento...');
+  const allInv = await invitationsRepo.listByBudget(budgetId);
+  await Promise.all(allInv.map(i => invitationsRepo.remove(i.id)));
+  console.log(`✅ ${allInv.length} convites excluídos`);
 
-    // Excluir o orçamento
-    console.log('🗑️ Excluindo o orçamento...');
-    const budgetRef = doc(db, 'budgets', budgetId);
-    await deleteDoc(budgetRef);
+  // Excluir o orçamento
+  console.log('🗑️ Excluindo o orçamento...');
+  await budgetsRepo.remove(budgetId);
     console.log('✅ Orçamento excluído');
 
     // Remover do estado local
@@ -1076,36 +1080,14 @@ async function loadBudgets() {
 
     console.log('🔍 Carregando orçamentos para usuário:', user.uid);
 
-    // Buscar orçamentos próprios
-    const ownBudgetsQuery = query(
-      collection(db, 'budgets'),
-      where('userId', '==', user.uid)
-    );
-    
-    // Buscar orçamentos compartilhados onde o usuário é membro
-    const sharedBudgetsQuery = query(
-      collection(db, 'budgets'),
-      where('usuariosPermitidos', 'array-contains', user.uid)
-    );
-    
-    console.log('🔍 Executando queries de orçamentos...');
-    
-    const [ownSnapshot, sharedSnapshot] = await Promise.all([
-      getDocs(ownBudgetsQuery),
-      getDocs(sharedBudgetsQuery)
+    console.log('🔍 Buscando orçamentos (próprios e compartilhados) via repositório...');
+    const [ownBudgetsRaw, sharedBudgetsRaw] = await Promise.all([
+      budgetsRepo.listOwn(user.uid),
+      budgetsRepo.listShared(user.uid),
     ]);
-    
-    const ownBudgets = ownSnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      isOwner: true
-    }));
-    
-    const sharedBudgets = sharedSnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      isOwner: false
-    }));
+
+    const ownBudgets = ownBudgetsRaw.map(b => ({ ...b, isOwner: true }));
+    const sharedBudgets = sharedBudgetsRaw.map(b => ({ ...b, isOwner: false }));
     
     // Combinar e remover duplicatas (caso o usuário seja dono e membro)
     const allBudgets = [...ownBudgets];
@@ -1302,22 +1284,25 @@ async function getTransacoesDoMes(userId, ano, mes) {
     }));
     
     console.log(`📊 Total de transações encontradas: ${allTransactions.length}`);
-    
-    // Filtrar por mês/ano
-    const transacoesFiltradas = allTransactions.filter(t => {
-      if (!t.createdAt) return false;
-      
-      let transacaoData;
-      if (t.createdAt && typeof t.createdAt === 'object' && t.createdAt.seconds) {
-        transacaoData = new Date(t.createdAt.seconds * 1000);
-      } else {
-        transacaoData = new Date(t.createdAt);
-      }
 
-      const transacaoAno = transacaoData.getFullYear();
-      const transacaoMes = transacaoData.getMonth() + 1;
-      
-      return transacaoAno === ano && transacaoMes === mes;
+    // Filtrar por mês/ano usando a normalização robusta (data, dataLancamento, competencia, mes/ano, ISO, Timestamp, etc.)
+    const alvo = `${ano}-${String(mes).padStart(2, '0')}`;
+    const transacoesFiltradas = allTransactions.filter(t => {
+      try {
+        const ym = typeof getTransactionYearMonth === 'function' ? getTransactionYearMonth(t) : null;
+        if (ym) return ym === alvo;
+        // Fallback: createdAt
+        if (!t.createdAt) return false;
+        let d;
+        if (t.createdAt && typeof t.createdAt === 'object' && t.createdAt.seconds) {
+          d = new Date(t.createdAt.seconds * 1000);
+        } else {
+          d = new Date(t.createdAt);
+        }
+        return d.getFullYear() === ano && (d.getMonth() + 1) === mes;
+      } catch {
+        return false;
+      }
     });
     
     console.log(`✅ Transações filtradas para ${ano}/${mes}: ${transacoesFiltradas.length}`);
@@ -1335,6 +1320,15 @@ async function renderDashboard(selectedYear, selectedMonth) {
     console.log('🔄 Dashboard já está sendo renderizado, pulando...');
     return;
   }
+  // Suprimir rajadas de chamadas em sequência muito próximas
+  try {
+    const now = Date.now();
+    if (window.__lastDashboardRender && (now - window.__lastDashboardRender) < 300) {
+      console.log('⏱️ renderDashboard chamado muito próximo do anterior, pulando...');
+      return;
+    }
+    window.__lastDashboardRender = now;
+  } catch {}
   
   window.isRenderingDashboard = true;
   
@@ -1352,7 +1346,7 @@ async function renderDashboard(selectedYear, selectedMonth) {
       return;
     }
 
-    // Seletor de mês
+  // Seletor de mês
     const now = new Date();
     const year = selectedYear || now.getFullYear();
     const month = selectedMonth || now.getMonth() + 1;
@@ -1360,6 +1354,11 @@ async function renderDashboard(selectedYear, selectedMonth) {
       'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
       'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
     ];
+
+  // Guardar seleção global para outras partes (opcional)
+  window.appState = window.appState || {};
+  window.appState.selectedYear = year;
+  window.appState.selectedMonth = month;
 
     // Buscar transações do mês selecionado
     const user = window.appState.currentUser;
@@ -1379,8 +1378,25 @@ async function renderDashboard(selectedYear, selectedMonth) {
     // Para o mês atual, garantir que temos as transações mais recentes
     if (year === now.getFullYear() && month === now.getMonth() + 1) {
       if (window.appState.transactions && window.appState.transactions.length > 0) {
-        transacoes = window.appState.transactions;
-        console.log(`🔄 Usando transações do appState para mês atual: ${transacoes.length}`);
+        // Mesmo para o mês atual, filtre pelo mês/ano selecionado
+        const alvo = `${year}-${String(month).padStart(2, '0')}`;
+        transacoes = window.appState.transactions.filter(t => {
+          try {
+            const ym = typeof getTransactionYearMonth === 'function' ? getTransactionYearMonth(t) : null;
+            if (ym) return ym === alvo;
+            if (!t.createdAt) return false;
+            let d;
+            if (t.createdAt && typeof t.createdAt === 'object' && t.createdAt.seconds) {
+              d = new Date(t.createdAt.seconds * 1000);
+            } else {
+              d = new Date(t.createdAt);
+            }
+            return d.getFullYear() === year && (d.getMonth() + 1) === month;
+          } catch {
+            return false;
+          }
+        });
+        console.log(`🔄 Usando transações do appState (filtradas) para mês atual: ${transacoes.length}`);
       }
     }
 
@@ -1488,12 +1504,11 @@ async function renderDashboard(selectedYear, selectedMonth) {
     const totalAlertas = categoriasComAlerta.length + (alertaGeral ? 1 : 0);
 
     // Top categorias
+    // Top categorias baseado nas transações do mês selecionado
     const categoriasComGasto = window.appState.categories
       .filter(cat => cat.tipo === 'despesa')
       .map(cat => {
-        const transacoesCategoria = (window.appState.transactions || []).filter(t => 
-          t.categoriaId === cat.id && t.tipo === cat.tipo
-        );
+        const transacoesCategoria = transacoes.filter(t => t.categoriaId === cat.id && t.tipo === cat.tipo);
         const gasto = transacoesCategoria.reduce((sum, t) => sum + parseFloat(t.valor), 0);
         return { ...cat, gasto };
       })
@@ -1506,78 +1521,188 @@ async function renderDashboard(selectedYear, selectedMonth) {
       <div class="tab-container">
         <div class="tab-header">
           <h2 class="tab-title-highlight">📊 Dashboard</h2>
+          <div id="mes-selector" class="flex items-center gap-4 bg-white dark:bg-gray-800 rounded-2xl p-3 shadow-lg border border-gray-200 dark:border-gray-700">
+            <button id="mes-anterior" class="text-blue-600 bg-blue-100 dark:bg-blue-900 dark:text-blue-300 rounded-full w-12 h-12 flex items-center justify-center text-xl hover:bg-blue-200 dark:hover:bg-blue-800 active:bg-blue-300 dark:active:bg-blue-700 transition-all duration-200 touch-manipulation" style="min-width: 48px; min-height: 48px;">&#8592;</button>
+            <div class="text-center px-4">
+              <div class="font-bold text-xl text-gray-900 dark:text-gray-100"><span id="mes-display">${meses[month - 1]} ${year}</span></div>
+              <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Período Selecionado</div>
+            </div>
+            <button id="mes-proximo" class="text-blue-600 bg-blue-100 dark:bg-blue-900 dark:text-blue-300 rounded-full w-12 h-12 flex items-center justify-center text-xl hover:bg-blue-200 dark:hover:bg-blue-800 active:bg-blue-300 dark:active:bg-blue-700 transition-all duration-200 touch-manipulation" style="min-width: 48px; min-height: 48px;">&#8594;</button>
+          </div>
         </div>
         <div class="tab-content">
           <div class="content-spacing" id="dashboard-content">
-            <!-- Seletor de mês -->
-            <div class="mb-4 flex items-center justify-center">
-              <div id="mes-selector" class="flex items-center gap-4">
-                <button id="mes-anterior" class="text-blue-600 bg-blue-100 rounded-full w-10 h-10 md:w-8 md:h-8 flex items-center justify-center text-xl hover:bg-blue-200 active:bg-blue-300 transition-all duration-200 touch-manipulation" style="min-width: 44px; min-height: 44px;">&#8592;</button>
-                <span class="font-bold text-lg">${meses[month - 1]} ${year}</span>
-                <button id="mes-proximo" class="text-blue-600 bg-blue-100 rounded-full w-10 h-10 md:w-8 md:h-8 flex items-center justify-center text-xl hover:bg-blue-200 active:bg-blue-300 transition-all duration-200 touch-manipulation" style="min-width: 44px; min-height: 44px;">&#8594;</button>
-              </div>
-            </div>
-            <!-- RESUMO FINANCEIRO COMPLETO -->
-            <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl shadow-lg p-4 md:p-6 mb-4 text-white">
-              <div class="flex items-center justify-between mb-4">
-                <h2 class="text-lg md:text-xl font-bold">RESUMO FINANCEIRO</h2>
-                <span class="text-lg md:text-xl font-semibold">${meses[month - 1]} ${year}</span>
+            
+            <!-- ========== SEÇÃO 1: RESUMO FINANCEIRO PRINCIPAL ========== -->
+            <div class="mb-8">
+              <div class="flex items-center gap-2 mb-4">
+                <div class="w-1 h-6 bg-gradient-to-b from-blue-500 to-purple-600 rounded-full"></div>
+                <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">💰 Resumo Financeiro</h2>
               </div>
               
-              <!-- Grid principal com 4 métricas -->
-              <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-4">
-                <div class="text-center p-2 md:p-3 bg-white bg-opacity-10 rounded-lg">
-                  <div class="text-lg md:text-xl font-bold mb-1">R$ ${receitas.toFixed(0)}</div>
-                  <div class="text-xs md:text-sm opacity-90">💰 Receitas</div>
-                  <div class="text-xs opacity-75 mt-1">Dinheiro recebido</div>
+              <div class="bg-gradient-to-br from-blue-500 via-purple-600 to-indigo-700 rounded-2xl shadow-xl p-6 md:p-8 text-white">
+                <!-- Header do Card -->
+                <div class="flex items-center justify-between mb-6">
+                  <div>
+                    <h3 class="text-xl md:text-2xl font-bold">Visão Geral</h3>
+                    <p class="text-sm opacity-90">${meses[month - 1]} ${year}</p>
+                  </div>
+                  <div class="text-right">
+                    <div class="text-2xl md:text-3xl font-bold ${saldo >= 0 ? 'text-green-200' : 'text-red-200'}">
+                      R$ ${saldo.toFixed(2)}
+                    </div>
+                    <p class="text-xs opacity-90">${saldo >= 0 ? '✓ Saldo Positivo' : '⚠️ Saldo Negativo'}</p>
+                  </div>
                 </div>
                 
-                <div class="text-center p-2 md:p-3 bg-white bg-opacity-10 rounded-lg">
-                  <div class="text-lg md:text-xl font-bold mb-1">R$ ${despesas.toFixed(0)}</div>
-                  <div class="text-xs md:text-sm opacity-90">🛒 Despesas</div>
-                  <div class="text-xs opacity-75 mt-1">Dinheiro gasto</div>
+                <!-- Grid de Métricas -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <div class="bg-white bg-opacity-15 backdrop-blur-sm rounded-xl p-4 text-center">
+                    <div class="text-2xl mb-2">💚</div>
+                    <div class="text-2xl md:text-3xl font-bold text-green-200">R$ ${receitas.toFixed(2)}</div>
+                    <div class="text-sm opacity-90">Receitas</div>
                 </div>
                 
-                <div class="text-center p-2 md:p-3 bg-white bg-opacity-10 rounded-lg">
-                  <div class="text-lg md:text-xl font-bold mb-1 ${saldo >= 0 ? 'text-green-200' : 'text-red-200'}">R$ ${saldo.toFixed(0)}</div>
-                  <div class="text-xs md:text-sm opacity-90">💳 Saldo</div>
-                  <div class="text-xs opacity-75 mt-1">${saldo >= 0 ? '✓ Positivo' : '✗ Negativo'}</div>
+                  <div class="bg-white bg-opacity-15 backdrop-blur-sm rounded-xl p-4 text-center">
+                    <div class="text-2xl mb-2">💸</div>
+                    <div class="text-2xl md:text-3xl font-bold text-red-200">R$ ${despesas.toFixed(2)}</div>
+                    <div class="text-sm opacity-90">Despesas</div>
                 </div>
                 
-                <div class="text-center p-2 md:p-3 bg-white bg-opacity-10 rounded-lg">
-                  <div class="text-lg md:text-xl font-bold mb-1">R$ ${orcado.toFixed(0)}</div>
-                  <div class="text-xs md:text-sm opacity-90">📊 Orçado</div>
-                  <div class="text-xs opacity-75 mt-1">${(progressoOrcado * 100).toFixed(0)}% usado</div>
-                </div>
-              </div>
-              
-              <!-- Barra de progresso do orçamento -->
-              <div class="mb-3">
-                <div class="flex justify-between text-xs mb-1">
-                  <span>Progresso do Orçamento</span>
-                  <span>${(progressoOrcado * 100).toFixed(0)}%</span>
-                </div>
-                <div class="w-full bg-white bg-opacity-20 rounded-full h-2">
-                  <div class="bg-white h-2 rounded-full transition-all duration-300" style="width: ${Math.min(progressoOrcado * 100, 100)}%"></div>
+                  <div class="bg-white bg-opacity-15 backdrop-blur-sm rounded-xl p-4 text-center">
+                    <div class="text-2xl mb-2">🎯</div>
+                    <div class="text-2xl md:text-3xl font-bold">R$ ${orcado.toFixed(2)}</div>
+                    <div class="text-sm opacity-90">Orçado</div>
                 </div>
               </div>
               
-              <!-- Indicadores de status -->
-              <div class="flex justify-between text-xs opacity-90">
-                <span id="categorias-alerta-btn" class="${totalAlertas > 0 ? 'cursor-pointer hover:opacity-100 hover:underline' : ''}" ${totalAlertas > 0 ? 'onclick="showCategoriasAlertaModal()"' : ''}>${totalAlertas > 0 ? `⚠️ ${totalAlertas} categorias em alerta` : '✅ Todas as categorias OK'}</span>
-                <span>${saldo >= 0 ? '📈 Meta alcançada' : '📉 Revisar gastos'}</span>
+                <!-- Barra de Progresso do Orçamento -->
+                <div class="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-4">
+                  <div class="flex justify-between items-center mb-2">
+                    <span class="text-sm font-medium">Progresso do Orçamento</span>
+                    <span class="text-sm font-bold">${(progressoOrcado * 100).toFixed(1)}%</span>
+                </div>
+                  <div class="w-full bg-white bg-opacity-20 rounded-full h-3">
+                    <div class="bg-white h-3 rounded-full transition-all duration-500 ease-out" style="width: ${Math.min(progressoOrcado * 100, 100)}%"></div>
+                  </div>
+                  <div class="flex justify-between text-xs mt-2 opacity-90">
+                    <span id="categorias-alerta-btn" class="${totalAlertas > 0 ? 'cursor-pointer hover:opacity-100 hover:underline bg-red-500 bg-opacity-20 px-2 py-1 rounded-full' : ''}" ${totalAlertas > 0 ? 'onclick="showCategoriasAlertaModal()"' : ''}>${totalAlertas > 0 ? `⚠️ ${totalAlertas} alerta(s)` : '✅ Tudo OK'}</span>
+                    <span>${saldo >= 0 ? '📈 Meta alcançada' : '📉 Revisar gastos'}</span>
+                  </div>
+                </div>
+                </div>
+              </div>
+              
+            <!-- ========== SEÇÃO 2: ATIVIDADE RECENTE ========== -->
+            <div class="mb-8">
+              <div class="flex items-center gap-2 mb-4">
+                <div class="w-1 h-6 bg-gradient-to-b from-green-500 to-blue-500 rounded-full"></div>
+                <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">💳 Atividade Recente</h2>
+              </div>
+              
+              <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <!-- Header -->
+                <div class="bg-gradient-to-r from-green-50 to-blue-50 dark:from-gray-800 dark:to-gray-800 p-4 border-b border-gray-200 dark:border-gray-700">
+                  <div class="flex flex-wrap justify-between items-center gap-2">
+                    <h3 class="text-lg md:text-xl font-bold text-gray-900 dark:text-gray-100">Últimas Transações</h3>
+                    <button onclick="showAddTransactionModal()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 shadow-md hover:shadow-lg">
+                      + Nova Transação
+                    </button>
               </div>
             </div>
 
-            <!-- TOP 5 CATEGORIAS -->
-            <div class="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-2 md:p-6 border border-gray-300 dark:border-gray-700 mb-4">
-              <div class="flex flex-wrap justify-between items-center mb-2 md:mb-4 gap-1 md:gap-0">
-                <h3 class="text-base md:text-xl font-bold text-gray-900 dark:text-gray-100">TOP 5 CATEGORIAS</h3>
+                <!-- Lista de Transações -->
+                <div class="p-4">
+                  <div class="space-y-3">
+                    ${transacoes.length === 0 ? `
+                      <div class="text-center py-8">
+                        <div class="text-4xl mb-3">💸</div>
+                        <p class="text-gray-500 dark:text-gray-400">Nenhuma transação encontrada neste mês</p>
+                        <button onclick="showAddTransactionModal()" class="mt-3 text-blue-600 hover:text-blue-800 text-sm">+ Adicionar primeira transação</button>
               </div>
+                    ` : transacoes
+                      .slice(0, 5)
+                      .map(t => {
+                        const categoria = window.appState.categories?.find(c => c.id === t.categoriaId);
+                        let parcelaInfo = '';
+                        if (t.recorrenteId) {
+                          const recorrente = window.appState.recorrentes?.find(r => r.id === t.recorrenteId);
+                          if (recorrente) {
+                            if (recorrente.parcelasTotal && recorrente.parcelasTotal > 1) {
+                              const status = window.calcularStatusRecorrente ?
+                                window.calcularStatusRecorrente(recorrente, window.appState.transactions || [], year, month) :
+                                { parcelaAtual: 1, totalParcelas: recorrente.parcelasTotal, foiEfetivadaEsteMes: false };
+                              parcelaInfo = status.foiEfetivadaEsteMes
+                                ? ` • ✅ ${status.parcelaAtual}/${status.totalParcelas}`
+                                : ` • 📅 ${status.parcelaAtual}/${status.totalParcelas}`;
+                            } else {
+                              parcelaInfo = ' • ♾️';
+                            }
+                          } else {
+                            parcelaInfo = ' • 🔄';
+                          }
+                        }
+                        return `
+                          <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 group">
+                            <div class="flex items-center gap-3 flex-1 min-w-0">
+                              <div class="w-3 h-3 rounded-full flex-shrink-0" style="background-color: ${categoria?.cor || '#6B7280'}"></div>
+                              <div class="min-w-0 flex-1">
+                                <p class="font-medium text-gray-900 dark:text-gray-100 truncate">${t.descricao}</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">
+                                  ${categoria?.nome || 'Sem categoria'} • ${typeof formatTransactionDisplayDate === 'function' ? formatTransactionDisplayDate(t, year, month) : (t.createdAt && t.createdAt.toDate ? t.createdAt.toDate().toLocaleDateString() : t.createdAt ? new Date(t.createdAt).toLocaleDateString() : '')}${parcelaInfo}
+                                </p>
+                              </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                              <span class="font-bold text-lg ${t.tipo === 'receita' ? 'text-green-600' : 'text-red-600'}">
+                                ${t.tipo === 'receita' ? '+' : '-'}R$ ${parseFloat(t.valor).toFixed(2)}
+                              </span>
+                              <div class="opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity duration-200">
+                                <button onclick="window.editTransaction && window.editTransaction('${t.id}')" class="text-blue-600 hover:text-blue-800 p-1">✏️</button>
+                                <button onclick="window.deleteTransactionWithConfirmation && window.deleteTransactionWithConfirmation('${t.id}', '${t.descricao.replace(/'/g, "\\'")}')" class="text-red-600 hover:text-red-800 p-1">🗑️</button>
+                              </div>
+                            </div>
+                          </div>
+                        `;
+                      })
+                      .join('')}
+                  </div>
+                  
+                  ${transacoes.length > 5 ? `
+                    <div class="mt-4 text-center">
+                      <button onclick="router('/transactions')" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                        Ver todas as ${transacoes.length} transações →
+                      </button>
+                    </div>
+                  ` : ''}
+                </div>
+              </div>
+            </div>
+
+            <!-- ========== SEÇÃO 3: CATEGORIAS & LIMITES ========== -->
+            <div class="mb-8">
+              <div class="flex items-center gap-2 mb-4">
+                <div class="w-1 h-6 bg-gradient-to-b from-purple-500 to-pink-500 rounded-full"></div>
+                <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">📊 Categorias & Limites</h2>
+              </div>
+              
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Top 5 Categorias -->
+                <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                  <div class="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-gray-800 dark:to-gray-800 p-4 border-b border-gray-200 dark:border-gray-700">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">🏆 Top 5 Categorias</h3>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Categorias com maiores gastos</p>
+                  </div>
+                  <div class="p-4">
               <div class="space-y-3">
-                ${categoriasComGasto.length === 0 ? '<p class="text-gray-500 text-center py-4">Nenhuma categoria com gastos encontrada neste mês</p>' : categoriasComGasto
+                      ${categoriasComGasto.length === 0 ? `
+                        <div class="text-center py-6">
+                          <div class="text-3xl mb-2">📂</div>
+                          <p class="text-gray-500 dark:text-gray-400 text-sm">Nenhuma categoria com gastos neste mês</p>
+                        </div>
+                      ` : categoriasComGasto
                   .slice(0, 5)
-                  .map(cat => {
+                        .map((cat, index) => {
                     const categoria = window.appState.categories?.find(c => c.id === cat.id);
                     const limite = categoria?.limite ? parseFloat(categoria.limite) : 0;
                     const porcentagem = limite > 0 ? Math.min((cat.gasto / limite) * 100, 100) : 0;
@@ -1589,199 +1714,255 @@ async function renderDashboard(selectedYear, selectedMonth) {
                     } else if (porcentagem >= 50) {
                       corBarra = 'bg-orange-500';
                     }
+                          
+                          const medalhas = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
                     
                     return `
-                      <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+                            <div class="bg-gray-50 dark:bg-gray-800 rounded-xl p-3 border border-gray-200 dark:border-gray-700">
                         <div class="flex items-center justify-between mb-2">
-                          <div class="flex items-center space-x-2">
+                                <div class="flex items-center gap-2">
+                                  <span class="text-lg">${medalhas[index]}</span>
                             <div class="w-3 h-3 rounded-full" style="background-color: ${categoria?.cor || '#4F46E5'}"></div>
-                            <span class="font-medium text-sm md:text-base text-gray-900 dark:text-gray-100">${cat.nome}</span>
+                                  <span class="font-medium text-sm text-gray-900 dark:text-gray-100">${cat.nome}</span>
                           </div>
-                          <span class="font-bold text-sm md:text-base ${cat.gasto > limite ? 'text-red-600' : 'text-gray-900 dark:text-gray-100'}">
+                                <span class="font-bold text-sm ${cat.gasto > limite && limite > 0 ? 'text-red-600' : 'text-gray-900 dark:text-gray-100'}">
                             R$ ${cat.gasto.toFixed(2)}
                           </span>
                         </div>
                         ${limite > 0 ? `
                           <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
-                            <span>${porcentagem.toFixed(0)}%</span>
+                                  <span>Limite: R$ ${limite.toFixed(2)}</span>
+                                  <span>${porcentagem.toFixed(1)}%</span>
                           </div>
                           <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                            <div class="${corBarra} h-2 rounded-full transition-all duration-300" style="width: ${porcentagem}%"></div>
+                                  <div class="${corBarra} h-2 rounded-full transition-all duration-300" style="width: ${Math.min(porcentagem, 100)}%"></div>
                           </div>
                         ` : '<p class="text-xs text-gray-500 dark:text-gray-400">Sem limite definido</p>'}
                       </div>
                     `;
                   })
                   .join('')}
+                    </div>
               </div>
             </div>
 
-            <!-- CATEGORIAS COM LIMITES -->
-            <div class="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-2 md:p-6 border border-gray-300 dark:border-gray-700 mb-4">
-              <div class="flex flex-wrap justify-between items-center mb-2 md:mb-4 gap-1 md:gap-0">
-                <h3 class="text-base md:text-xl font-bold text-gray-900 dark:text-gray-100">📂 Categorias com Limites</h3>
-                <button onclick="window.showAddCategoryModal && window.showAddCategoryModal()" class="btn-primary">
-                  + Nova Categoria
+                <!-- Categorias com Limites Excedidos -->
+                <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                  <div class="bg-gradient-to-r from-red-50 to-orange-50 dark:from-gray-800 dark:to-gray-800 p-4 border-b border-gray-200 dark:border-gray-700">
+                    <div class="flex justify-between items-center">
+                      <div>
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">⚠️ Controle de Limites</h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Categorias com limites definidos</p>
+                      </div>
+                      <button onclick="window.showAddCategoryModal && window.showAddCategoryModal()" class="bg-purple-500 hover:bg-purple-600 text-white px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200 shadow-md hover:shadow-lg">
+                        + Nova
                 </button>
               </div>
-              <div class="space-y-3">
-                ${(window.appState.categories || []).length === 0 ? '<p class="text-gray-500 text-center py-4">Nenhuma categoria encontrada</p>' : (window.appState.categories || [])
+                  </div>
+                  <div class="p-4">
+                    <div class="space-y-3 max-h-80 overflow-y-auto">
+                      ${(window.appState.categories || []).filter(cat => cat.limite > 0).length === 0 ? `
+                        <div class="text-center py-6">
+                          <div class="text-3xl mb-2">🎯</div>
+                          <p class="text-gray-500 dark:text-gray-400 text-sm">Nenhuma categoria com limite definido</p>
+                          <button onclick="window.showAddCategoryModal && window.showAddCategoryModal()" class="mt-2 text-purple-600 hover:text-purple-800 text-sm">+ Definir primeiro limite</button>
+                        </div>
+                      ` : (window.appState.categories || [])
                   .filter(cat => cat.limite > 0)
                   .map(cat => {
-                    const transacoesCategoria = (window.appState.transactions || []).filter(t => 
-                      t.categoriaId === cat.id && t.tipo === cat.tipo
-                    );
+                    const transacoesCategoria = transacoes.filter(t => t.categoriaId === cat.id && t.tipo === cat.tipo);
                     const gasto = transacoesCategoria.reduce((sum, t) => sum + parseFloat(t.valor), 0);
                     return { ...cat, gasto };
                   })
-                  .sort((a, b) => b.gasto - a.gasto) // Ordenar por maiores gastos
+                        .sort((a, b) => {
+                          // Priorizar categorias que excederam o limite
+                          const aExcedeu = a.gasto > parseFloat(a.limite);
+                          const bExcedeu = b.gasto > parseFloat(b.limite);
+                          if (aExcedeu && !bExcedeu) return -1;
+                          if (!aExcedeu && bExcedeu) return 1;
+                          // Se ambas excederam ou não excederam, ordenar por maior gasto
+                          return b.gasto - a.gasto;
+                        })
+                        .slice(0, 6) // Mostrar máximo 6 categorias
                   .map(cat => {
                     const limite = parseFloat(cat.limite || 0);
-                    const porcentagem = limite > 0 ? Math.min((cat.gasto / limite) * 100, 100) : 0;
+                          const porcentagem = limite > 0 ? (cat.gasto / limite) * 100 : 0;
                     let corBarra = 'bg-green-500';
-                    if (porcentagem >= 90) {
+                          let iconeStatus = '✅';
+                          if (porcentagem >= 100) {
                       corBarra = 'bg-red-500';
+                            iconeStatus = '🚨';
+                          } else if (porcentagem >= 90) {
+                            corBarra = 'bg-red-400';
+                            iconeStatus = '⚠️';
                     } else if (porcentagem >= 75) {
                       corBarra = 'bg-yellow-500';
+                            iconeStatus = '⚡';
                     } else if (porcentagem >= 50) {
                       corBarra = 'bg-orange-500';
+                            iconeStatus = '📊';
                     }
                     
                     return `
-                      <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+                            <div class="bg-gray-50 dark:bg-gray-800 rounded-xl p-3 border border-gray-200 dark:border-gray-700 ${porcentagem >= 90 ? 'ring-2 ring-red-200 dark:ring-red-800' : ''}">
                         <div class="flex items-center justify-between mb-2">
-                          <div class="flex items-center space-x-2">
+                                <div class="flex items-center gap-2">
+                                  <span class="text-sm">${iconeStatus}</span>
                             <div class="w-3 h-3 rounded-full" style="background-color: ${cat.cor || '#4F46E5'}"></div>
-                            <span class="font-medium text-sm md:text-base text-gray-900 dark:text-gray-100">${cat.nome}</span>
+                                  <span class="font-medium text-sm text-gray-900 dark:text-gray-100">${cat.nome}</span>
                           </div>
-                          <span class="font-bold text-sm md:text-base ${cat.gasto > limite ? 'text-red-600' : 'text-gray-900 dark:text-gray-100'}">
+                                <span class="font-bold text-sm ${cat.gasto > limite ? 'text-red-600' : 'text-gray-900 dark:text-gray-100'}">
                             R$ ${cat.gasto.toFixed(2)}
                           </span>
                         </div>
-                        ${limite > 0 ? `
                           <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
                             <span>Limite: R$ ${limite.toFixed(2)}</span>
-                            <span>${porcentagem.toFixed(1)}% usado</span>
+                                <span class="${porcentagem >= 100 ? 'text-red-600 font-bold' : porcentagem >= 90 ? 'text-orange-600 font-medium' : ''}">${porcentagem.toFixed(1)}%</span>
                           </div>
                           <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                            <div class="${corBarra} h-2 rounded-full transition-all duration-300" style="width: ${porcentagem}%"></div>
+                                <div class="${corBarra} h-2 rounded-full transition-all duration-300" style="width: ${Math.min(porcentagem, 100)}%"></div>
                           </div>
-                        ` : '<p class="text-xs text-gray-500 dark:text-gray-400">Sem limite definido</p>'}
+                              ${porcentagem >= 100 ? `
+                                <div class="mt-2 text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900 dark:bg-opacity-20 px-2 py-1 rounded">
+                                  Excedeu em R$ ${(cat.gasto - limite).toFixed(2)}
+                                </div>
+                              ` : ''}
                       </div>
                     `;
                   })
                   .join('')}
-              </div>
             </div>
 
-            <!-- DESPESAS RECORRENTES DO MÊS -->
-            <div class="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-2 md:p-6 border border-gray-300 dark:border-gray-700 mb-4">
-              <div class="flex flex-wrap justify-between items-center mb-2 md:mb-4 gap-1 md:gap-0">
-                <h3 class="text-base md:text-xl font-bold text-gray-900 dark:text-gray-100">Despesas Recorrentes do Mês</h3>
-                <button onclick="window.showAddRecorrenteModal && window.showAddRecorrenteModal()" class="btn-primary">
-                  + Nova Despesa Recorrente
+                    ${(window.appState.categories || []).filter(cat => cat.limite > 0).length > 6 ? `
+                      <div class="mt-4 text-center">
+                        <button onclick="router('/categories')" class="text-purple-600 hover:text-purple-800 text-sm font-medium">
+                          Ver todas as categorias →
                 </button>
               </div>
-              <div class="space-y-2 md:space-y-3">
-                ${todasRecorrentes.length === 0 ? '<p class="text-gray-500 text-center py-4">Nenhuma despesa recorrente aplicada ou agendada neste mês</p>' : todasRecorrentes
-                  .slice(0, 5)
-                  .map(rec => {
-                    const categoria = window.appState.categories?.find(c => c.id === rec.categoriaId);
-                    return `
-                      <div class="flex flex-wrap justify-between items-center p-2 md:p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 gap-1 md:gap-0 bg-white dark:bg-gray-900">
-                        <div class="flex-1 min-w-[120px]">
-                          <p class="font-medium text-xs md:text-base text-gray-900 dark:text-gray-100">${rec.descricao}</p>
-                          <p class="text-xs md:text-sm text-gray-500 dark:text-gray-300">
-                            ${categoria?.nome || 'Sem categoria'} • Recorrente
-                            ${(() => {
-                              if (rec.efetivada) {
-                                // Recorrente EFETIVADA
-                                return ` • ✅ Efetivada: ${rec.parcelaAtual} de ${rec.parcelasTotal}`;
-                              } else if (!rec.parcelasTotal || rec.parcelasTotal <= 1) {
-                                // Recorrente INFINITA agendada
-                                return ' • 📅 Agendada: Infinito';
-                              } else {
-                                // Recorrente AGENDADA parcelada
-                                const status = window.calcularStatusRecorrente ? 
-                                  window.calcularStatusRecorrente(rec, window.appState.transactions || [], year, month) : 
-                                  { parcelaAtual: 1, totalParcelas: rec.parcelasTotal, foiEfetivadaEsteMes: false };
-                                
-                                return ` • 📅 Agendada: ${status.parcelaAtual} de ${status.totalParcelas}`;
-                              }
-                            })()}
-                          </p>
+                    ` : ''}
                         </div>
-                        <div class="flex items-center space-x-1 md:space-x-2">
-                          <span class="font-bold text-xs md:text-base text-red-600">
-                            -R$ ${parseFloat(rec.valor).toFixed(2)}
-                          </span>
                         </div>
                       </div>
-                    `;
-                  })
-                  .join('')}
               </div>
+
+            <!-- ========== SEÇÃO 4: RECORRENTES DO MÊS ========== -->
+            <div class="mb-8">
+              <div class="flex items-center gap-2 mb-4">
+                <div class="w-1 h-6 bg-gradient-to-b from-orange-500 to-red-500 rounded-full"></div>
+                <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">🔄 Recorrentes do Mês</h2>
             </div>
 
-            <!-- TRANSAÇÕES RECENTES -->
-            <div class="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-2 md:p-6 border border-gray-300 dark:border-gray-700">
-              <div class="flex flex-wrap justify-between items-center mb-2 md:mb-4 gap-1 md:gap-0">
-                <h3 class="text-base md:text-xl font-bold text-gray-900 dark:text-gray-100">Transações Recentes</h3>
-                <button onclick="showAddTransactionModal()" class="btn-primary">
-                  + Nova Transação
+              <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <!-- Header -->
+                <div class="bg-gradient-to-r from-orange-50 to-red-50 dark:from-gray-800 dark:to-gray-800 p-4 border-b border-gray-200 dark:border-gray-700">
+                  <div class="flex flex-wrap justify-between items-center gap-2">
+                    <div>
+                      <h3 class="text-lg md:text-xl font-bold text-gray-900 dark:text-gray-100">Despesas Automáticas</h3>
+                      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        ${todasRecorrentes.filter(r => r.efetivada).length} efetivadas • ${todasRecorrentes.filter(r => !r.efetivada).length} pendentes
+                      </p>
+                    </div>
+                    <button onclick="window.showAddRecorrenteModal && window.showAddRecorrenteModal()" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 shadow-md hover:shadow-lg">
+                      + Nova Recorrente
                 </button>
               </div>
-              <div class="space-y-2 md:space-y-3">
-                ${transacoes.length === 0 ? '<p class="text-gray-500 text-center py-4">Nenhuma transação encontrada neste mês</p>' : transacoes
-                  .slice(0, 10)
-                  .map(t => {
-                    const categoria = window.appState.categories?.find(c => c.id === t.categoriaId);
-                    
-                    // Buscar informações da recorrente se for uma transação recorrente
-                    let parcelaInfo = '';
-                    if (t.recorrenteId) {
-                      const recorrente = window.appState.recorrentes?.find(r => r.id === t.recorrenteId);
-                      if (recorrente) {
-                        if (recorrente.parcelasTotal && recorrente.parcelasTotal > 1) {
-                          const status = window.calcularStatusRecorrente ? 
-                            window.calcularStatusRecorrente(recorrente, window.appState.transactions || [], year, month) : 
-                            { parcelaAtual: 1, totalParcelas: recorrente.parcelasTotal, foiEfetivadaEsteMes: false };
-                          
-                          if (status.foiEfetivadaEsteMes) {
-                            parcelaInfo = ` • ✅ Efetivada: ${status.parcelaAtual} de ${status.totalParcelas}`;
+                </div>
+                
+                <!-- Lista de Recorrentes -->
+                <div class="p-4">
+                  <div class="space-y-3">
+                    ${todasRecorrentes.length === 0 ? `
+                      <div class="text-center py-8">
+                        <div class="text-4xl mb-3">🔄</div>
+                        <p class="text-gray-500 dark:text-gray-400">Nenhuma despesa recorrente neste mês</p>
+                        <button onclick="window.showAddRecorrenteModal && window.showAddRecorrenteModal()" class="mt-3 text-orange-600 hover:text-orange-800 text-sm">+ Criar primeira recorrente</button>
+                      </div>
+                    ` : todasRecorrentes
+                      .slice(0, 8)
+                      .map(rec => {
+                        const categoria = window.appState.categories?.find(c => c.id === rec.categoriaId);
+                        let statusInfo = '';
+                        let statusIcon = '';
+                        let statusColor = '';
+                        
+                        if (rec.efetivada) {
+                          statusIcon = '✅';
+                          statusColor = 'text-green-600';
+                          if (rec.parcelasTotal && rec.parcelasTotal > 1) {
+                            statusInfo = `Efetivada: ${rec.parcelaAtual || 1}/${rec.parcelasTotal}`;
                           } else {
-                            parcelaInfo = ` • 📅 Agendada: ${status.parcelaAtual} de ${status.totalParcelas}`;
+                            statusInfo = 'Efetivada';
                           }
                         } else {
-                          parcelaInfo = ' • Infinito';
-                        }
+                          statusIcon = '📅';
+                          statusColor = 'text-blue-600';
+                          if (!rec.parcelasTotal || rec.parcelasTotal <= 1) {
+                            statusInfo = 'Agendada (Infinito)';
                       } else {
-                        parcelaInfo = ' • Recorrente';
+                            const status = window.calcularStatusRecorrente ? 
+                              window.calcularStatusRecorrente(rec, window.appState.transactions || [], year, month) : 
+                              { parcelaAtual: 1, totalParcelas: rec.parcelasTotal, foiEfetivadaEsteMes: false };
+                            statusInfo = `Agendada: ${status.parcelaAtual}/${status.totalParcelas}`;
                       }
                     }
                     
                     return `
-                      <div class="flex flex-wrap justify-between items-center p-2 md:p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 gap-1 md:gap-0 bg-white dark:bg-gray-900">
-                        <div class="flex-1 min-w-[120px]">
-                          <p class="font-medium text-xs md:text-base text-gray-900 dark:text-gray-100">${t.descricao}</p>
-                          <p class="text-xs md:text-sm text-gray-500 dark:text-gray-300">
-                            ${categoria?.nome || 'Sem categoria'} • ${t.createdAt && t.createdAt.toDate ? t.createdAt.toDate().toLocaleDateString() : t.createdAt ? new Date(t.createdAt).toLocaleDateString() : ''}
-                            ${t.recorrenteId ? ' • Recorrente' + parcelaInfo : ''}
+                          <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 ${rec.efetivada ? 'border-l-4 border-green-500' : 'border-l-4 border-blue-500'}">
+                            <div class="flex items-center gap-3 flex-1 min-w-0">
+                              <div class="flex flex-col items-center">
+                                <span class="text-lg">${statusIcon}</span>
+                                <div class="w-3 h-3 rounded-full mt-1" style="background-color: ${categoria?.cor || '#6B7280'}"></div>
+                              </div>
+                              <div class="min-w-0 flex-1">
+                                <p class="font-medium text-gray-900 dark:text-gray-100 truncate">${rec.descricao}</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">
+                                  ${categoria?.nome || 'Sem categoria'} • <span class="${statusColor}">${statusInfo}</span>
                           </p>
                         </div>
-                        <div class="flex items-center space-x-1 md:space-x-2">
-                          <span class="font-bold text-xs md:text-base ${t.tipo === 'receita' ? 'text-green-600' : 'text-red-600'}">
-                            ${t.tipo === 'receita' ? '+' : '-'}R$ ${parseFloat(t.valor).toFixed(2)}
+                            </div>
+                            <div class="text-right">
+                              <span class="font-bold text-lg text-red-600">
+                                -R$ ${parseFloat(rec.valor).toFixed(2)}
                           </span>
-                          <button onclick="window.editTransaction && window.editTransaction('${t.id}')" class="text-blue-600 hover:text-blue-800 text-xs md:text-base ml-2">✏️</button>
-                          <button onclick="window.deleteTransactionWithConfirmation && window.deleteTransactionWithConfirmation('${t.id}', '${t.descricao.replace(/'/g, "\\'")}')" class="text-red-600 hover:text-red-800 text-xs md:text-base ml-2">🗑️</button>
+                              ${rec.parcelasTotal && rec.parcelasTotal > 1 ? `
+                                <p class="text-xs text-gray-500 dark:text-gray-400">
+                                  Total: R$ ${(parseFloat(rec.valor) * rec.parcelasTotal).toFixed(2)}
+                                </p>
+                              ` : ''}
                         </div>
                       </div>
                     `;
                   })
                   .join('')}
               </div>
+                  
+                  ${todasRecorrentes.length > 8 ? `
+                    <div class="mt-4 text-center">
+                      <button onclick="router('/recorrentes')" class="text-orange-600 hover:text-orange-800 text-sm font-medium">
+                        Ver todas as ${todasRecorrentes.length} recorrentes →
+                      </button>
             </div>
+                  ` : ''}
+                  
+                  <!-- Resumo das Recorrentes -->
+                  ${todasRecorrentes.length > 0 ? `
+                    <div class="mt-6 bg-gradient-to-r from-orange-50 to-red-50 dark:from-gray-800 dark:to-gray-800 rounded-xl p-4 border border-orange-200 dark:border-gray-600">
+                      <div class="flex justify-between items-center">
+                        <div>
+                          <p class="text-sm font-medium text-gray-900 dark:text-gray-100">Total Recorrentes do Mês</p>
+                          <p class="text-xs text-gray-500 dark:text-gray-400">${despesasRecorrentesEfetivadas > 0 ? `R$ ${despesasRecorrentesEfetivadas.toFixed(2)} efetivadas` : 'Nenhuma efetivada'} ${despesasRecorrentesAgendadas > 0 ? ` • R$ ${despesasRecorrentesAgendadas.toFixed(2)} agendadas` : ''}</p>
+                        </div>
+                        <div class="text-right">
+                          <span class="text-xl font-bold text-red-600">R$ ${despesasRecorrentesTotal.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ` : ''}
+                </div>
+              </div>
+            </div>
+
+
           </div>
         </div>
       </div>
@@ -1967,116 +2148,166 @@ function closeModalAlertas() {
 
 // Função para renderizar transações
 function renderTransactions() {
+  // Suprimir rajadas de chamadas muito próximas
+  try {
+    const now = Date.now();
+    if (window.__lastTransactionsRender && (now - window.__lastTransactionsRender) < 300) {
+      console.log('⏱️ renderTransactions chamado muito próximo do anterior, pulando...');
+      return;
+    }
+    window.__lastTransactionsRender = now;
+  } catch {}
   const content = document.getElementById('app-content');
+  
+  // Calcular estatísticas das transações (seguir mês selecionado no Dashboard)
+  const allTransacoes = window.appState.transactions || [];
+  const { year: selYear, month: selMonth } = getSelectedPeriod();
+  const selKey = `${selYear}-${String(selMonth).padStart(2, '0')}`;
+  const transacoes = allTransacoes.filter(t => getTransactionYearMonth(t) === selKey);
+  const receitas = transacoes.filter(t => t.tipo === 'receita').reduce((sum, t) => sum + parseFloat(t.valor), 0);
+  const despesas = transacoes.filter(t => t.tipo === 'despesa').reduce((sum, t) => sum + parseFloat(t.valor), 0);
+  const saldo = receitas - despesas;
+  const totalTransacoes = transacoes.length;
+  
+  // Agrupar transações por mês
+  const transacoesPorMes = {};
+  transacoes.forEach(t => {
+    const data = t.createdAt && t.createdAt.toDate ? t.createdAt.toDate() : new Date(t.createdAt);
+    const chave = `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, '0')}`;
+    if (!transacoesPorMes[chave]) {
+      transacoesPorMes[chave] = [];
+    }
+    transacoesPorMes[chave].push(t);
+  });
+  
+  const mesesOrdenados = Object.keys(transacoesPorMes).sort().reverse();
+  
+  // Opções de seleção de mês/ano
+  const mesesNomes = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const monthOptions = mesesNomes.map((nome, idx) => `
+    <option value="${idx + 1}" ${idx + 1 === selMonth ? 'selected' : ''}>${nome}</option>
+  `).join('');
+  // Anos disponíveis baseados nas transações, com fallback
+  const anosSet = new Set((window.appState.transactions || [])
+    .map(t => getTransactionYearMonth(t))
+    .filter(Boolean)
+    .map(ym => parseInt(ym.split('-')[0], 10)));
+  if (anosSet.size === 0) {
+    const y = new Date().getFullYear();
+    [y - 1, y, y + 1].forEach(a => anosSet.add(a));
+  }
+  const anos = Array.from(anosSet).sort((a,b) => b - a);
+  const yearOptions = anos.map(y => `<option value="${y}" ${y === selYear ? 'selected' : ''}>${y}</option>`).join('');
+
   content.innerHTML = `
     <div class="tab-container">
       <div class="tab-header">
         <h2 class="tab-title-highlight">📋 Transações</h2>
+  <div id="tx-period-indicator"></div>
       </div>
       <div class="tab-content">
         <div class="content-spacing">
-          <!-- Ações principais -->
-          <div class="mb-4 flex items-center gap-2">
-            <button id="add-transaction-btn" class="btn-primary">
-              <span class="icon-standard">➕</span>
-              <span class="hidden sm:inline">Nova Transação</span>
-              <span class="sm:hidden">Nova</span>
+          
+          
+          <!-- ========== SEÇÃO 1: RESUMO ANALÍTICO ========== -->
+      <div class="mb-8">
+            <div class="flex items-center gap-2 mb-4">
+              <div class="w-1 h-6 bg-gradient-to-b from-blue-500 to-green-500 rounded-full"></div>
+  <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">💰 Resumo</h2>
+            </div>
+            
+            <div class="bg-gradient-to-br from-blue-500 via-green-500 to-teal-600 rounded-2xl shadow-xl p-6 md:p-8 text-white mb-6">
+              <!-- Header do Card -->
+              <div class="flex items-center justify-between mb-6">
+                <div>
+                  <h3 class="text-xl md:text-2xl font-bold">Visão Geral</h3>
+                  <p class="text-sm opacity-90">${totalTransacoes} transações registradas</p>
+                </div>
+                <div class="text-right">
+                  <div class="text-2xl md:text-3xl font-bold ${saldo >= 0 ? 'text-green-200' : 'text-red-200'}">
+                    R$ ${saldo.toFixed(2)}
+                  </div>
+                  <p class="text-xs opacity-90">${saldo >= 0 ? '✓ Saldo Positivo' : '⚠️ Saldo Negativo'}</p>
+                </div>
+              </div>
+              
+              <!-- Grid de Métricas -->
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-white bg-opacity-15 backdrop-blur-sm rounded-xl p-4 text-center">
+                  <div class="text-2xl mb-2">💚</div>
+                  <div class="text-2xl md:text-3xl font-bold text-green-200">R$ ${receitas.toFixed(2)}</div>
+                  <div class="text-sm opacity-90">Receitas</div>
+                </div>
+                
+                <div class="bg-white bg-opacity-15 backdrop-blur-sm rounded-xl p-4 text-center">
+                  <div class="text-2xl mb-2">💸</div>
+                  <div class="text-2xl md:text-3xl font-bold text-red-200">R$ ${despesas.toFixed(2)}</div>
+                  <div class="text-sm opacity-90">Despesas</div>
+                </div>
+                
+                <div class="bg-white bg-opacity-15 backdrop-blur-sm rounded-xl p-4 text-center">
+                  <div class="text-2xl mb-2">📊</div>
+                  <div class="text-2xl md:text-3xl font-bold">${totalTransacoes}</div>
+                  <div class="text-sm opacity-90">Transações</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ========== SEÇÃO 2: AÇÕES E FILTROS ========== -->
+          <div class="mb-8">
+            <div class="flex items-center gap-2 mb-4">
+              <div class="w-1 h-6 bg-gradient-to-b from-purple-500 to-blue-500 rounded-full"></div>
+              <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">🔧 Ações & Filtros</h2>
+            </div>
+            
+            <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <!-- Header -->
+              <div class="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-gray-800 dark:to-gray-800 p-4 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex flex-wrap justify-between items-center gap-2">
+                  <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Gerenciar Transações</h3>
+                  <div class="flex gap-2">
+                    <button id="add-transaction-btn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 shadow-md hover:shadow-lg">
+                      ➕ Nova Transação
             </button>
-            <button id="voice-btn" class="btn-secondary">
-              <span class="icon-standard">🎤</span>
-              <span class="hidden sm:inline">Voz</span>
-              <span class="sm:hidden">Voz</span>
+                    <button id="voice-btn" class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 shadow-md hover:shadow-lg">
+                      🎤 Voz
             </button>
+                  </div>
+                </div>
           </div>
           
           <!-- Filtro de pesquisa -->
-          <div class="mb-4">
+              <div class="p-4">
             <div class="relative">
               <input 
                 type="text" 
                 id="transaction-search" 
-                placeholder="🔍 Pesquisar transações..." 
-                class="w-full px-4 py-2 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                    placeholder="🔍 Pesquisar por descrição, categoria ou valor..." 
+                    class="w-full px-4 py-3 pl-12 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
               />
-              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <span class="text-gray-400">🔍</span>
+                  <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <span class="text-gray-400 text-lg">🔍</span>
               </div>
             </div>
             <div id="transaction-search-results" class="mt-2 text-sm text-gray-600 dark:text-gray-400 hidden">
               <span id="transaction-search-count">0</span> transação(ões) encontrada(s)
+                </div>
+              </div>
             </div>
           </div>
           
-          <div id="transactions-list">
-            ${window.appState.transactions?.length === 0
-            ? `
-            <div class="text-center py-8">
-              <div class="text-4xl mb-4">📋</div>
-              <div class="text-lg font-semibold text-gray-800 dark:text-white mb-2">Nenhuma transação encontrada</div>
-              <div class="text-gray-600 dark:text-gray-400">Adicione sua primeira transação para começar</div>
+          <!-- ========== SEÇÃO 3: LISTA DE TRANSAÇÕES ========== -->
+          <div class="mb-8">
+            <div class="flex items-center gap-2 mb-4">
+              <div class="w-1 h-6 bg-gradient-to-b from-green-500 to-teal-500 rounded-full"></div>
+              <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">📋 Histórico</h2>
             </div>
-          `
-            : window.appState.transactions
-              ?.map(t => {
-                const categoria = window.appState.categories?.find(c => c.id === t.categoriaId);
-                const data = t.createdAt && t.createdAt.toDate ? t.createdAt.toDate().toLocaleDateString('pt-BR') : new Date(t.createdAt).toLocaleDateString('pt-BR');
-                const isReceita = t.tipo === 'receita';
-                
-                return `
-            <div class="list-item ${isReceita ? 'border-l-4 border-l-green-500' : 'border-l-4 border-l-red-500'}">
-              <div class="flex-1 min-w-0">
-                <div class="list-item-title truncate">${t.descricao}</div>
-                <div class="list-item-subtitle text-xs sm:text-sm">
-                  ${categoria?.nome || 'Sem categoria'} • ${data}
-                  ${t.recorrenteId ? ' • Recorrente' : ''}
-                  ${(() => {
-                    if (!t.recorrenteId) return '';
-                    
-                    // Calcular parcela se não estiver salva
-                    let parcelaAtual = t.parcelaAtual;
-                    let parcelasTotal = t.parcelasTotal;
-                    
-                    if (!parcelaAtual || !parcelasTotal) {
-                      const recorrente = window.appState.recorrentes?.find(r => r.id === t.recorrenteId);
-                      if (recorrente) {
-                        parcelasTotal = recorrente.parcelasTotal;
-                        if (window.calcularParcelaRecorrente) {
-                          const now = new Date();
-                          parcelaAtual = window.calcularParcelaRecorrente(recorrente, now.getFullYear(), now.getMonth() + 1);
-                        } else {
-                          parcelaAtual = 1;
-                        }
-                      } else {
-                        parcelaAtual = 1;
-                        parcelasTotal = 1;
-                      }
-                    }
-                    
-                    if (parcelasTotal && parcelasTotal > 1) {
-                      return ` • ${parcelaAtual} de ${parcelasTotal}`;
-                    } else {
-                      return ' • Infinito';
-                    }
-                  })()}
-                </div>
-              </div>
-              <div class="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-                <span class="text-sm sm:text-base font-bold ${isReceita ? 'text-green-600' : 'text-red-600'}">
-                  ${isReceita ? '+' : '-'}R$ ${parseFloat(t.valor).toFixed(2)}
-                </span>
-                <div class="flex gap-1">
-                  <button onclick="editTransaction('${t.id}')" class="btn-secondary mobile-btn">
-                    <span class="icon-standard">✏️</span>
-                  </button>
-                  <button onclick="window.deleteTransactionWithConfirmation && window.deleteTransactionWithConfirmation('${t.id}', '${t.descricao.replace(/'/g, "\\'")}')" class="btn-danger mobile-btn">
-                    <span class="icon-standard">🗑️</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          `;
-              })
-              .join('') || ''}
+
+            <!-- Indicador de período padronizado movido para o cabeçalho -->
+            ${renderOlderMonthsControl()}
+            
+            <div id="transactions-list">${renderAllTransactions()}</div>
           </div>
         </div>
       </div>
@@ -2085,15 +2316,100 @@ function renderTransactions() {
   // Configurar botões da tela de transações
   setTimeout(() => {
     setupTransactionButtons();
+    const olderBtn = document.getElementById('load-older-months-btn');
+    if (olderBtn && !olderBtn.dataset.bound) {
+      olderBtn.dataset.bound = '1';
+      olderBtn.addEventListener('click', () => window.loadAllOlderMonths && window.loadAllOlderMonths());
+    }
   }, 100);
   
   // Configurar filtro de pesquisa
   setupTransactionSearch();
   
+  // Injetar indicador de período padrão
+  (async () => {
+    try {
+      const { createPeriodIndicator } = await import('./ui/PeriodIndicator.js');
+      const holder = document.getElementById('tx-period-indicator');
+      if (holder) {
+        holder.innerHTML = '';
+        holder.appendChild(createPeriodIndicator({ onChange: () => renderTransactions() }));
+      }
+    } catch (e) {
+      console.warn('PeriodIndicator indisponível:', e);
+    }
+  })();
+  
   renderFAB();
   // Remover renderBottomNav daqui - deve ser chamado apenas pelo router
   // renderBottomNav('/transactions');
 }
+
+// ===== Helpers globais para período selecionado (mês/ano) =====
+function parseYm(str) {
+  if (!str) return null;
+  const m = String(str).match(/^(\d{4})-(\d{2})$/);
+  if (!m) return null;
+  const y = parseInt(m[1], 10);
+  const mo = parseInt(m[2], 10);
+  if (y > 1900 && mo >= 1 && mo <= 12) return { year: y, month: mo };
+  return null;
+}
+
+function readYmFromHash() {
+  try {
+    const hash = window.location.hash || '';
+    const qIndex = hash.indexOf('?');
+    if (qIndex === -1) return null;
+    const query = new URLSearchParams(hash.slice(qIndex + 1));
+    const ym = query.get('ym');
+    return parseYm(ym);
+  } catch { return null; }
+}
+
+function getSelectedPeriod() {
+  // 1) Hash ?ym=YYYY-MM
+  const fromHash = readYmFromHash();
+  if (fromHash) return fromHash;
+  // 2) appState
+  const y = window.appState?.selectedYear;
+  const m = window.appState?.selectedMonth;
+  if (y && m) return { year: y, month: m };
+  // 3) localStorage
+  try {
+    const saved = localStorage.getItem('selectedYM');
+    const parsed = parseYm(saved);
+    if (parsed) return parsed;
+  } catch {}
+  // 4) Agora
+  const now = new Date();
+  return { year: now.getFullYear(), month: now.getMonth() + 1 };
+}
+
+function updateHashWithYM(path) {
+  try {
+    const { year, month } = getSelectedPeriod();
+    const ym = `${year}-${String(month).padStart(2, '0')}`;
+    const cleanPath = path || (window.location.hash.slice(1).split('?')[0] || '/dashboard');
+    const newHash = `#${cleanPath}?ym=${ym}`;
+    if (window.location.hash !== newHash) {
+      window.location.hash = newHash;
+    }
+  } catch {}
+}
+
+function setSelectedPeriod(year, month, opts = {}) {
+  window.appState = window.appState || {};
+  window.appState.selectedYear = year;
+  window.appState.selectedMonth = month;
+  try { localStorage.setItem('selectedYM', `${year}-${String(month).padStart(2, '0')}`); } catch {}
+  if (opts.updateHash !== false) {
+    updateHashWithYM(opts.path || (window.location.hash.slice(1).split('?')[0] || '/dashboard'));
+  }
+}
+// Expor helpers se necessário
+window.getSelectedPeriod = getSelectedPeriod;
+window.setSelectedPeriod = setSelectedPeriod;
 
 // Função para configurar pesquisa de transações
 function setupTransactionSearch() {
@@ -2104,37 +2420,47 @@ function setupTransactionSearch() {
   
   if (!searchInput) return;
   
+  // Evitar bind duplicado em re-renders
+  if (searchInput.dataset.bound === '1') return;
+  searchInput.dataset.bound = '1';
+
   searchInput.addEventListener('input', function() {
-    const searchTerm = this.value.toLowerCase().trim();
-    
-    if (searchTerm === '') {
-      // Mostrar todas as transações
-      resultsDiv.classList.add('hidden');
-      listDiv.innerHTML = renderAllTransactions();
-      return;
+    // Debounce para evitar filtro a cada tecla
+    if (this._debounceTimer) {
+      clearTimeout(this._debounceTimer);
     }
-    
-    // Filtrar transações
-    const filteredTransactions = window.appState.transactions?.filter(t => {
-      const descricao = t.descricao.toLowerCase();
-      const categoria = window.appState.categories?.find(c => c.id === t.categoriaId);
-      const categoriaNome = categoria?.nome?.toLowerCase() || '';
-      const valor = t.valor.toString();
+    this._debounceTimer = setTimeout(() => {
+      const searchTerm = this.value.toLowerCase().trim();
       
-      return descricao.includes(searchTerm) || 
-             categoriaNome.includes(searchTerm) || 
-             valor.includes(searchTerm);
-    }) || [];
-    
-    // Atualizar contador
-    countSpan.textContent = filteredTransactions.length;
-    resultsDiv.classList.remove('hidden');
-    
-    // Renderizar transações filtradas
-    listDiv.innerHTML = renderFilteredTransactions(filteredTransactions);
+      if (searchTerm === '') {
+        // Mostrar todas as transações
+        resultsDiv.classList.add('hidden');
+        listDiv.innerHTML = renderAllTransactions();
+        return;
+      }
+      
+      // Filtrar transações
+      const filteredTransactions = window.appState.transactions?.filter(t => {
+        const descricao = (t.descricao || '').toLowerCase();
+        const categoria = window.appState.categories?.find(c => c.id === t.categoriaId);
+        const categoriaNome = (categoria?.nome || '').toLowerCase();
+        const valor = String(t.valor ?? '');
+        
+        return descricao.includes(searchTerm) || 
+               categoriaNome.includes(searchTerm) || 
+               valor.includes(searchTerm);
+      }) || [];
+      
+      // Atualizar contador
+      countSpan.textContent = filteredTransactions.length;
+      resultsDiv.classList.remove('hidden');
+      
+      // Renderizar transações filtradas
+      listDiv.innerHTML = renderFilteredTransactions(filteredTransactions);
+    }, 150);
   });
   
-  // Limpar pesquisa com Escape
+  // Limpar pesquisa com Escape (bind único)
   searchInput.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
       this.value = '';
@@ -2144,77 +2470,532 @@ function setupTransactionSearch() {
 }
 
 // Função para renderizar todas as transações
-function renderAllTransactions() {
-  if (!window.appState.transactions?.length) {
-    return `
-      <div class="text-center py-8">
-        <div class="text-4xl mb-4">📋</div>
-        <div class="text-lg font-semibold text-gray-800 dark:text-white mb-2">Nenhuma transação encontrada</div>
-        <div class="text-gray-600 dark:text-gray-400">Adicione sua primeira transação para começar</div>
-      </div>
-    `;
+// Normaliza a data de uma transação, suportando vários campos
+function getTransactionDate(t) {
+  try {
+  let v = t?.dataEfetivacao || t?.dataLancamento || t?.data || t?.date || t?.createdAt;
+    if (!v) return null;
+    if (v && typeof v.toDate === 'function') return v.toDate();
+    // Se vier timestamp numérico (ms) ou string ISO/BR
+    const d = new Date(v);
+    return isNaN(d.getTime()) ? null : d;
+  } catch {
+    return null;
   }
-  
-  return window.appState.transactions.map(t => {
-    const categoria = window.appState.categories?.find(c => c.id === t.categoriaId);
-    const data = t.createdAt && t.createdAt.toDate ? t.createdAt.toDate().toLocaleDateString('pt-BR') : new Date(t.createdAt).toLocaleDateString('pt-BR');
-    const isReceita = t.tipo === 'receita';
-    
+}
+
+// Extrai YYYY-MM de forma robusta a partir da transação (aceita vários formatos)
+function getTransactionYearMonth(t) {
+  try {
+    // Campos explícitos de competência (BR): MM/YYYY, YYYY-MM
+    if (typeof t?.competencia === 'string') {
+      const s = t.competencia.trim();
+      let m;
+      m = s.match(/^(\d{1,2})\/(\d{4})$/);
+      if (m) return `${m[2]}-${String(parseInt(m[1], 10)).padStart(2, '0')}`;
+      m = s.match(/^(\d{4})-(\d{2})$/);
+      if (m) return `${m[1]}-${m[2]}`;
+    }
+
+    // Pares (mes, ano) em diferentes convenções
+    const monthCandidates = [t?.mes, t?.mesReferencia, t?.mesLancamento, t?.mesCompetencia];
+    const yearCandidates = [t?.ano, t?.anoReferencia, t?.anoLancamento, t?.anoCompetencia];
+    const mesIdx = monthCandidates.findIndex(v => v !== undefined && v !== null && v !== '');
+    const anoIdx = yearCandidates.findIndex(v => v !== undefined && v !== null && v !== '');
+    if (mesIdx !== -1 && anoIdx !== -1) {
+      const mon = parseInt(monthCandidates[mesIdx], 10);
+      const y = parseInt(yearCandidates[anoIdx], 10);
+      if (!Number.isNaN(mon) && mon >= 1 && mon <= 12 && !Number.isNaN(y) && y > 1900) {
+        return `${y}-${String(mon).padStart(2, '0')}`;
+      }
+    }
+
+    const v = t?.dataEfetivacao || t?.dataLancamento || t?.data || t?.date || t?.createdAt;
+    if (!v) return null;
+
+    // Firestore Timestamp
+    if (v && typeof v.toDate === 'function') {
+      const d = v.toDate();
+      const y = d.getFullYear();
+      const m = d.getMonth() + 1;
+      return `${y}-${String(m).padStart(2, '0')}`;
+    }
+
+    // Number epoch (ms or seconds)
+    if (typeof v === 'number') {
+      const ms = v < 1e12 ? v * 1000 : v; // tratar epoch em segundos
+      const d = new Date(ms);
+      if (!isNaN(d.getTime())) {
+        const y = d.getFullYear();
+        const m = d.getMonth() + 1;
+        return `${y}-${String(m).padStart(2, '0')}`;
+      }
+      return null;
+    }
+
+    if (typeof v === 'string') {
+      const s = v.trim();
+      // ISO completo: YYYY-MM-DD...
+      let m;
+      m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (m) return `${m[1]}-${m[2]}`;
+
+      // ISO ano-mês: YYYY-MM
+      m = s.match(/^(\d{4})-(\d{2})$/);
+      if (m) return `${m[1]}-${m[2]}`;
+
+      // BR: DD/MM/YYYY
+      m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+      if (m) {
+        const y = parseInt(m[3], 10);
+        const mon = parseInt(m[2], 10);
+        return `${y}-${String(mon).padStart(2, '0')}`;
+      }
+
+      // BR: MM/YYYY
+      m = s.match(/^(\d{1,2})\/(\d{4})$/);
+      if (m) {
+        const y = parseInt(m[2], 10);
+        const mon = parseInt(m[1], 10);
+        return `${y}-${String(mon).padStart(2, '0')}`;
+      }
+
+      // Fallback: tentar Date
+      const d = new Date(s);
+      if (!isNaN(d.getTime())) {
+        const y = d.getFullYear();
+        const mon = d.getMonth() + 1;
+        return `${y}-${String(mon).padStart(2, '0')}`;
+      }
+      return null;
+    }
+
+    // Fallback genérico
+    const d = new Date(v);
+    if (!isNaN(d.getTime())) {
+      const y = d.getFullYear();
+      const mon = d.getMonth() + 1;
+      return `${y}-${String(mon).padStart(2, '0')}`;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+// Formata a data para exibição:
+// - Se houver dia, mostra DD/MM
+// - Se só houver ano/mês, mostra MM/YYYY (ou usa o contexto do cartão)
+function formatTransactionDisplayDate(t, anoCtx, mesCtx) {
+  const d = getTransactionDate(t);
+  if (d) return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+  const ym = getTransactionYearMonth(t);
+  if (ym) {
+    const [y, m] = ym.split('-');
+    return `${m}/${y}`;
+  }
+  if (anoCtx && mesCtx) {
+    return `${String(mesCtx).padStart(2, '0')}/${anoCtx}`;
+  }
+  return '--/--';
+}
+
+function renderAllTransactions() {
+  // Seguir mês selecionado do Dashboard por padrão
+  const { year: selYear, month: selMonth } = getSelectedPeriod();
+  const selKey = `${selYear}-${String(selMonth).padStart(2, '0')}`;
+
+  // Agrupar transações por mês
+  const transacoesPorMes = {};
+  (window.appState.transactions || []).forEach(t => {
+    const chave = getTransactionYearMonth(t);
+    if (!chave) return; // ignora itens sem data válida
+    if (!transacoesPorMes[chave]) transacoesPorMes[chave] = [];
+    transacoesPorMes[chave].push(t);
+  });
+
+  // Montar lista: primeiro o mês selecionado, depois os demais como lazy
+  const allKeys = Object.keys(transacoesPorMes).sort().reverse();
+  const ordered = [selKey, ...allKeys.filter(k => k !== selKey)];
+
+  return ordered.map((mesAno, idx) => {
+    const transacoesMes = transacoesPorMes[mesAno] || [];
+    if (idx === 0) {
+      return renderMonthSectionHTML(mesAno, transacoesMes);
+    }
+    // Demais meses: colapsados para lazy
+    const [ano, mes] = mesAno.split('-');
+    const nomesMeses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    const nomeMes = nomesMeses[parseInt(mes) - 1];
+    const receitasMes = transacoesMes.filter(t => t.tipo === 'receita').reduce((sum, t) => sum + parseFloat(t.valor), 0);
+    const despesasMes = transacoesMes.filter(t => t.tipo === 'despesa').reduce((sum, t) => sum + parseFloat(t.valor), 0);
+    const saldoMes = receitasMes - despesasMes;
     return `
-      <div class="list-item ${isReceita ? 'border-l-4 border-l-green-500' : 'border-l-4 border-l-red-500'}">
-        <div class="flex-1 min-w-0">
-          <div class="list-item-title truncate">${t.descricao}</div>
-          <div class="list-item-subtitle text-xs sm:text-sm">
-            ${categoria?.nome || 'Sem categoria'} • ${data}
-            ${t.recorrenteId ? ' • Recorrente' : ''}
-            ${(() => {
-              if (!t.recorrenteId) return '';
-              
-              // Calcular parcela se não estiver salva
-              let parcelaAtual = t.parcelaAtual;
-              let parcelasTotal = t.parcelasTotal;
-              
-              if (!parcelaAtual || !parcelasTotal) {
-                const recorrente = window.appState.recorrentes?.find(r => r.id === t.recorrenteId);
-                if (recorrente) {
-                  parcelasTotal = recorrente.parcelasTotal;
-                  if (window.calcularParcelaRecorrente) {
-                    const now = new Date();
-                    parcelaAtual = window.calcularParcelaRecorrente(recorrente, now.getFullYear(), now.getMonth() + 1);
-                  } else {
-                    parcelaAtual = 1;
-                  }
-                } else {
-                  parcelaAtual = 1;
-                  parcelasTotal = 1;
-                }
-              }
-              
-              if (parcelasTotal && parcelasTotal > 1) {
-                return ` • ${parcelaAtual} de ${parcelasTotal}`;
-              } else {
-                return ' • Infinito';
-              }
-            })()}
+      <div id="month-${mesAno}" class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden mb-6" data-mes="${mesAno}" data-loaded="0">
+        <div class="bg-gradient-to-r from-green-50 to-teal-50 dark:from-gray-800 dark:to-gray-800 p-4 border-b border-gray-200 dark:border-gray-700">
+          <div class="flex justify-between items-center">
+            <div>
+              <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">${nomeMes} ${ano}</h3>
+              <p class="text-sm text-gray-500 dark:text-gray-400">${transacoesMes.length} transações</p>
+            </div>
+            <div class="text-right">
+              <div class="text-lg font-bold ${saldoMes >= 0 ? 'text-green-600' : 'text-red-600'}">R$ ${saldoMes.toFixed(2)}</div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">+R$ ${receitasMes.toFixed(2)} • -R$ ${despesasMes.toFixed(2)}</div>
+            </div>
           </div>
         </div>
-        <div class="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-          <span class="text-sm sm:text-base font-bold ${isReceita ? 'text-green-600' : 'text-red-600'}">
-            ${isReceita ? '+' : '-'}R$ ${parseFloat(t.valor).toFixed(2)}
-          </span>
-          <div class="flex gap-1">
-            <button onclick="editTransaction('${t.id}')" class="btn-secondary mobile-btn">
-              <span class="icon-standard">✏️</span>
-            </button>
-            <button onclick="window.deleteTransactionWithConfirmation && window.deleteTransactionWithConfirmation('${t.id}', '${t.descricao.replace(/'/g, "\\'")}')" class="btn-danger mobile-btn">
-              <span class="icon-standard">🗑️</span>
-            </button>
-          </div>
+        <div class="p-4">
+          <button class="w-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 px-4 py-3 rounded-xl font-medium transition-all duration-200" onclick="window.loadMonthSection && window.loadMonthSection('${mesAno}')">
+            Carregar transações deste mês
+          </button>
         </div>
       </div>
     `;
   }).join('');
 }
+
+// Control bar to make lazy-loading discoverable
+function renderOlderMonthsControl() {
+  try {
+    const txs = window.appState.transactions || [];
+    if (!txs.length) return '';
+
+    // If there are more than 2 months, show the control
+    const byMonth = new Set();
+    txs.forEach(t => {
+      const d = t.createdAt && t.createdAt.toDate ? t.createdAt.toDate() : new Date(t.createdAt);
+      byMonth.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+    });
+    if (byMonth.size <= 2) return '';
+
+    return `
+      <div class="mb-3 flex justify-end">
+        <button id="load-older-months-btn" class="text-sm px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 transition">
+          Carregar meses anteriores
+        </button>
+      </div>
+    `;
+  } catch {
+    return '';
+  }
+}
+
+// Handler: expand all collapsed months
+window.loadAllOlderMonths = function() {
+  try {
+    const sections = document.querySelectorAll('[id^="month-"][data-loaded="0"]');
+    sections.forEach(sec => {
+      const mesAno = sec.dataset.mes;
+      if (mesAno && window.loadMonthSection) window.loadMonthSection(mesAno);
+    });
+  } catch {}
+};
+
+// Helper: renderiza uma seção mensal completa
+function renderMonthSectionHTML(mesAno, transacoesMes) {
+  const [ano, mes] = mesAno.split('-');
+  const nomesMeses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+  const nomeMes = nomesMeses[parseInt(mes) - 1];
+  const receitasMes = transacoesMes.filter(t => t.tipo === 'receita').reduce((sum, t) => sum + parseFloat(t.valor), 0);
+  const despesasMes = transacoesMes.filter(t => t.tipo === 'despesa').reduce((sum, t) => sum + parseFloat(t.valor), 0);
+  const saldoMes = receitasMes - despesasMes;
+  const agora = new Date();
+  const isMesAtual = (parseInt(ano) === agora.getFullYear() && parseInt(mes) === (agora.getMonth() + 1));
+  const selYear = window.appState?.selectedYear || agora.getFullYear();
+  const selMonth = window.appState?.selectedMonth || (agora.getMonth() + 1);
+  const isMesSelecionado = (parseInt(ano) === parseInt(selYear) && parseInt(mes) === parseInt(selMonth));
+
+  return `
+    <div id="month-${mesAno}" class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden mb-6" data-mes="${mesAno}" data-loaded="1">
+      <div class="bg-gradient-to-r from-green-50 to-teal-50 dark:from-gray-800 dark:to-gray-800 p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700">
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+          <div class="order-2 sm:order-1">
+            <h3 class="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100">${nomeMes} ${ano} ${isMesAtual ? '<span class="ml-2 align-middle inline-flex items-center text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">Mês atual</span>' : ''} ${!isMesAtual && isMesSelecionado ? '<span class="ml-2 align-middle inline-flex items-center text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">Mês selecionado</span>' : ''}</h3>
+            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">${transacoesMes.length} transações</p>
+            <div class="mt-1 flex items-center gap-2 text-[11px] sm:text-xs text-gray-600 dark:text-gray-400">
+              <button class="hover:underline" onclick="window.expandAllDays && window.expandAllDays('${mesAno}')">Expandir todos</button>
+              <span class="text-gray-400">•</span>
+              <button class="hover:underline" onclick="window.collapseAllDays && window.collapseAllDays('${mesAno}')">Colapsar todos</button>
+            </div>
+          </div>
+          <div class="order-1 sm:order-2 sm:text-right">
+            <div class="text-base sm:text-lg font-bold ${saldoMes >= 0 ? 'text-green-600' : 'text-red-600'}">R$ ${saldoMes.toFixed(2)}</div>
+            <div class="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">+R$ ${receitasMes.toFixed(2)} • -R$ ${despesasMes.toFixed(2)}</div>
+          </div>
+        </div>
+      </div>
+      <div class="p-3 sm:p-4">
+        ${transacoesMes.length === 0 ? `
+          <div class="text-center py-8">
+            <div class="text-5xl mb-3">🗓️</div>
+            <div class="font-medium mb-1">Nenhuma transação neste mês</div>
+            <div class="text-sm text-gray-600 dark:text-gray-400 mb-3">Adicione sua primeira transação de ${nomeMes}</div>
+            <button onclick="showAddTransactionModal && showAddTransactionModal()" class="bg-blue-500 hover:bg-blue-600 text-white px-5 py-2.5 rounded-xl font-medium transition-all duration-200 shadow-md">➕ Nova Transação</button>
+          </div>
+        ` : `
+        <div class="space-y-2 sm:space-y-3">
+          ${renderTransactionsGroupedByDay(transacoesMes, parseInt(ano), parseInt(mes))}
+        </div>
+        `}
+      </div>
+    </div>
+  `;
+}
+
+// Helper: agrupa transações por dia e renderiza com cabeçalho por data
+function renderTransactionsGroupedByDay(transacoesMes, ano, mes) {
+  try {
+    // Mapa YYYY-MM-DD -> array de transações
+    const groups = {};
+    const toDate = (t) => {
+      try {
+        // Preferir data explícita
+        const d = getTransactionDate(t);
+        if (d && !isNaN(d.getTime())) return d;
+      } catch {}
+      // Fallback: tentar createdAt
+      try {
+        if (t.createdAt?.toDate) return t.createdAt.toDate();
+        if (t.createdAt) {
+          const d = new Date(t.createdAt);
+          if (!isNaN(d.getTime())) return d;
+        }
+      } catch {}
+      // Fallback final: usar primeiro dia do mês da seção
+      return new Date(ano, mes - 1, 1);
+    };
+
+    transacoesMes.forEach(t => {
+      const d = toDate(t);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const key = `${y}-${m}-${day}`;
+      if (!groups[key]) groups[key] = [];
+      groups[key].push({ t, d });
+    });
+
+    // Ordenar dias desc
+    const keys = Object.keys(groups).sort((a, b) => (a < b ? 1 : -1));
+    const hoje = new Date();
+    const isoHoje = hoje.toISOString().slice(0, 10);
+    const ontem = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() - 1);
+    const isoOntem = ontem.toISOString().slice(0, 10);
+
+    const fmtBR = (d) => d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+
+  return keys
+      .map(key => {
+        const dayEntries = groups[key];
+        // Totais do dia
+        const receitas = dayEntries.reduce((sum, { t }) => sum + (t?.tipo === 'receita' ? parseFloat(t.valor) || 0 : 0), 0);
+        const despesas = dayEntries.reduce((sum, { t }) => sum + (t?.tipo === 'despesa' ? parseFloat(t.valor) || 0 : 0), 0);
+        const saldo = receitas - despesas;
+
+        // Ordenar transações do dia por horário desc
+        const items = dayEntries
+          .sort((a, b) => b.d.getTime() - a.d.getTime())
+          .map(({ t }) => renderTransactionItemHTML(t, ano, mes))
+          .join('');
+
+        // Cabeçalho do dia: Hoje/Ontem/DD/MM
+        const label =
+          key === isoHoje ? 'Hoje' : key === isoOntem ? 'Ontem' : fmtBR(new Date(key));
+
+        // Estado de colapso por dia
+        const collapsed = isDayCollapsed(key);
+        const chevron = collapsed ? '▸' : '▾';
+
+        return `
+          <div class="tx-day-group">
+            <div class="tx-day-header tx-day-header--clickable" data-day-key="${key}" onclick="window.toggleDayGroup && window.toggleDayGroup('${key}')">
+              <span class="tx-day-chevron" data-chev-key="${key}">${chevron}</span>
+              ${label}
+            </div>
+            <div class="tx-day-summary">
+              <span class="text-green-600">+R$ ${receitas.toFixed(2)}</span>
+              <span class="text-gray-400">•</span>
+              <span class="text-red-600">-R$ ${despesas.toFixed(2)}</span>
+              <span class="text-gray-400">•</span>
+              <span class="${saldo >= 0 ? 'text-green-700' : 'text-red-700'}">Saldo ${saldo >= 0 ? '' : '-'}R$ ${Math.abs(saldo).toFixed(2)}</span>
+            </div>
+            <div class="tx-day-items space-y-2 sm:space-y-3" data-day-key="${key}" style="display: ${collapsed ? 'none' : 'block'}">${items}</div>
+          </div>
+        `;
+      })
+      .join('');
+  } catch (e) {
+    console.warn('Falha ao agrupar por dia, render básico:', e);
+    return transacoesMes.map(t => renderTransactionItemHTML(t, ano, mes)).join('');
+  }
+}
+
+// ===== Estado de colapso por dia: helpers e toggle =====
+function getCollapsedDays() {
+  try {
+    const raw = localStorage.getItem('txCollapsedDays');
+    const arr = raw ? JSON.parse(raw) : [];
+    if (Array.isArray(arr)) return new Set(arr);
+  } catch {}
+  return new Set();
+}
+
+function saveCollapsedDays(set) {
+  try {
+    localStorage.setItem('txCollapsedDays', JSON.stringify(Array.from(set)));
+  } catch {}
+}
+
+function isDayCollapsed(key) {
+  if (!window.appState) window.appState = {};
+  if (!window.appState.ui) window.appState.ui = {};
+  if (!window.appState.ui.collapsedDays) {
+    window.appState.ui.collapsedDays = getCollapsedDays();
+  }
+  return window.appState.ui.collapsedDays.has(key);
+}
+
+window.toggleDayGroup = function(key) {
+  if (!key) return;
+  // Inicializar set na memória (e carregar do storage se necessário)
+  if (!window.appState) window.appState = {};
+  if (!window.appState.ui) window.appState.ui = {};
+  if (!window.appState.ui.collapsedDays) {
+    window.appState.ui.collapsedDays = getCollapsedDays();
+  }
+  const set = window.appState.ui.collapsedDays;
+
+  // Toggle no DOM
+  const items = document.querySelector(`.tx-day-items[data-day-key="${key}"]`);
+  const chev = document.querySelector(`.tx-day-chevron[data-chev-key="${key}"]`);
+  if (items) {
+    const nowCollapsed = items.style.display !== 'none' ? true : false;
+    items.style.display = nowCollapsed ? 'none' : 'block';
+    if (chev) chev.textContent = nowCollapsed ? '▸' : '▾';
+    // Persistir estado
+    if (nowCollapsed) set.add(key); else set.delete(key);
+    saveCollapsedDays(set);
+  }
+};
+
+// Expande todos os dias do mês
+window.expandAllDays = function(mesAno) {
+  try {
+    if (!mesAno) return;
+    if (!window.appState) window.appState = {};
+    if (!window.appState.ui) window.appState.ui = {};
+    if (!window.appState.ui.collapsedDays) {
+      window.appState.ui.collapsedDays = getCollapsedDays();
+    }
+    const set = window.appState.ui.collapsedDays;
+    const selector = `#month-${mesAno} .tx-day-items`;
+    document.querySelectorAll(selector).forEach(el => {
+      el.style.display = 'block';
+      const key = el.getAttribute('data-day-key');
+      if (key) set.delete(key);
+    });
+    // Atualizar chevrons
+    document.querySelectorAll(`#month-${mesAno} .tx-day-chevron`).forEach(ch => ch.textContent = '▾');
+    saveCollapsedDays(set);
+  } catch {}
+};
+
+// Colapsa todos os dias do mês
+window.collapseAllDays = function(mesAno) {
+  try {
+    if (!mesAno) return;
+    if (!window.appState) window.appState = {};
+    if (!window.appState.ui) window.appState.ui = {};
+    if (!window.appState.ui.collapsedDays) {
+      window.appState.ui.collapsedDays = getCollapsedDays();
+    }
+    const set = window.appState.ui.collapsedDays;
+    const selector = `#month-${mesAno} .tx-day-items`;
+    document.querySelectorAll(selector).forEach(el => {
+      el.style.display = 'none';
+      const key = el.getAttribute('data-day-key');
+      if (key) set.add(key);
+    });
+    // Atualizar chevrons
+    document.querySelectorAll(`#month-${mesAno} .tx-day-chevron`).forEach(ch => ch.textContent = '▸');
+    saveCollapsedDays(set);
+  } catch {}
+};
+
+// Helper: renderiza um item de transação
+function renderTransactionItemHTML(t, ano, mes) {
+  const categoria = window.appState.categories?.find(c => c.id === t.categoriaId);
+  const dataFormatada = formatTransactionDisplayDate(t, ano, mes);
+  const isReceita = t.tipo === 'receita';
+
+  let parcelaInfo = '';
+  if (t.recorrenteId) {
+    let parcelaAtual = t.parcelaAtual;
+    let parcelasTotal = t.parcelasTotal;
+
+    if (!parcelaAtual || !parcelasTotal) {
+      const recorrente = window.appState.recorrentes?.find(r => r.id === t.recorrenteId);
+      if (recorrente) {
+        parcelasTotal = recorrente.parcelasTotal;
+        if (window.calcularParcelaRecorrente) {
+          parcelaAtual = window.calcularParcelaRecorrente(recorrente, parseInt(ano), parseInt(mes));
+        } else {
+          parcelaAtual = 1;
+        }
+      } else {
+        parcelaAtual = 1;
+        parcelasTotal = 1;
+      }
+    }
+
+    if (parcelasTotal && parcelasTotal > 1) {
+      parcelaInfo = ` • 🔄 ${parcelaAtual}/${parcelasTotal}`;
+    } else {
+      parcelaInfo = ' • 🔄 ♾️';
+    }
+  }
+
+  return `
+    <div class="list-item p-3 sm:p-4 bg-gray-50 dark:bg-gray-800 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 group ${isReceita ? 'border-l-4 border-green-500' : 'border-l-4 border-red-500'}">
+      <div class="flex items-start justify-between gap-3">
+        <div class="flex items-center gap-3 flex-1 min-w-0">
+          <div class="flex flex-col items-center">
+            <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-base sm:text-lg ${isReceita ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}">${isReceita ? '💰' : '💸'}</div>
+            <div class="w-3 h-3 rounded-full mt-1" style="background-color: ${categoria?.cor || '#6B7280'}"></div>
+          </div>
+          <div class="min-w-0 flex-1">
+            <p class="list-item-title font-medium text-gray-900 dark:text-gray-100 truncate">${t.descricao}</p>
+          </div>
+        </div>
+        <div class="text-right mt-0.5 sm:mt-0">
+          <span class="font-bold text-base sm:text-lg ${isReceita ? 'text-green-600' : 'text-red-600'}">${isReceita ? '+' : '-'}R$ ${parseFloat(t.valor).toFixed(2)}</span>
+        </div>
+      </div>
+      <div class="mt-2 flex items-center justify-between gap-3">
+        <p class="list-item-subtitle text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 truncate">${categoria?.nome || 'Sem categoria'} • ${dataFormatada}${parcelaInfo}</p>
+        <div class="opacity-80 sm:opacity-60 group-hover:opacity-100 flex gap-1">
+          <button onclick="window.editTransaction && window.editTransaction('${t.id}')" class="text-blue-600 hover:text-blue-800 p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900 transition-all duration-200" title="Editar transação">✏️</button>
+          <button onclick="window.deleteTransactionWithConfirmation && window.deleteTransactionWithConfirmation('${t.id}', '${(t.descricao || '').replace(/'/g, "\\'")}')" class="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900 transition-all duration-200" title="Excluir transação">🗑️</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// Lazy loader: chamado pelo botão para carregar um mês antigo
+window.loadMonthSection = function(mesAno) {
+  try {
+    const el = document.getElementById(`month-${mesAno}`);
+    if (!el || el.dataset.loaded === '1') return;
+
+    const [ano, mes] = mesAno.split('-');
+  const transacoesMes = (window.appState.transactions || []).filter(t => getTransactionYearMonth(t) === mesAno);
+
+    el.outerHTML = renderMonthSectionHTML(mesAno, transacoesMes);
+  } catch (err) {
+    console.warn('Falha ao carregar mês', mesAno, err);
+  }
+};
 
 // Função para renderizar transações filtradas
 function renderFilteredTransactions(filteredTransactions) {
@@ -2229,8 +3010,8 @@ function renderFilteredTransactions(filteredTransactions) {
   }
   
   return filteredTransactions.map(t => {
-    const categoria = window.appState.categories?.find(c => c.id === t.categoriaId);
-    const data = t.createdAt && t.createdAt.toDate ? t.createdAt.toDate().toLocaleDateString('pt-BR') : new Date(t.createdAt).toLocaleDateString('pt-BR');
+  const categoria = window.appState.categories?.find(c => c.id === t.categoriaId);
+  const data = formatTransactionDisplayDate(t);
     const isReceita = t.tipo === 'receita';
     
     return `
@@ -2276,10 +3057,10 @@ function renderFilteredTransactions(filteredTransactions) {
             ${isReceita ? '+' : '-'}R$ ${parseFloat(t.valor).toFixed(2)}
           </span>
           <div class="flex gap-1">
-            <button onclick="editTransaction('${t.id}')" class="btn-secondary mobile-btn">
+            <button onclick="window.editTransaction('${t.id}')" class="btn-secondary mobile-btn" title="Editar transação">
               <span class="icon-standard">✏️</span>
             </button>
-            <button onclick="window.deleteTransactionWithConfirmation && window.deleteTransactionWithConfirmation('${t.id}', '${t.descricao.replace(/'/g, "\\'")}')" class="btn-danger mobile-btn">
+            <button onclick="window.deleteTransactionWithConfirmation('${t.id}', '${t.descricao.replace(/'/g, "\\'")}')" class="btn-danger mobile-btn" title="Excluir transação">
               <span class="icon-standard">🗑️</span>
             </button>
           </div>
@@ -2299,14 +3080,28 @@ function calcularNumeroParcela(transacao) {
 
 // Função para renderizar categorias
 async function renderCategories() {
+  // Suprimir rajadas de chamadas muito próximas
+  try {
+    const now = Date.now();
+    if (window.__lastCategoriesRender && (now - window.__lastCategoriesRender) < 300) {
+      console.log('⏱️ renderCategories chamado muito próximo do anterior, pulando...');
+      return;
+    }
+    window.__lastCategoriesRender = now;
+  } catch {}
   await loadTransactions();
   await loadRecorrentes();
   const content = document.getElementById('app-content');
 
-  // Calcular gastos por categoria no mês atual
-  const now = new Date();
-  const anoAtual = now.getFullYear();
-  const mesAtual = now.getMonth() + 1;
+  // Calcular estatísticas das categorias
+  const categorias = window.appState.categories || [];
+  const totalCategorias = categorias.length;
+  const categoriasComLimite = categorias.filter(cat => cat.limite > 0).length;
+  const categoriasReceita = categorias.filter(cat => cat.tipo === 'receita').length;
+  const categoriasDespesa = categorias.filter(cat => cat.tipo === 'despesa').length;
+
+  // Calcular gastos por categoria no mês selecionado
+  const { year: anoAtual, month: mesAtual } = getSelectedPeriod();
 
   const categoriasComGastos = window.appState.categories
     .map(cat => {
@@ -2400,131 +3195,293 @@ async function renderCategories() {
     })
     .sort((a, b) => b.totalGasto - a.totalGasto); // Ordenar por gasto (maior para menor)
 
+  // Calcular categorias em alerta (limite excedido)
+  const categoriasEmAlerta = categoriasComGastos.filter(cat => cat.limite > 0 && cat.totalGasto > cat.limite).length;
+
+  // Seletor de mês/ano
+  const selYear = window.appState?.selectedYear || new Date().getFullYear();
+  const selMonth = window.appState?.selectedMonth || (new Date().getMonth() + 1);
+  const mesesNomes = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const monthOptions = mesesNomes.map((nome, idx) => `
+    <option value="${idx + 1}" ${idx + 1 === selMonth ? 'selected' : ''}>${nome}</option>
+  `).join('');
+  const anosSet = new Set((window.appState.transactions || [])
+    .map(t => getTransactionYearMonth(t))
+    .filter(Boolean)
+    .map(ym => parseInt(ym.split('-')[0], 10)));
+  if (anosSet.size === 0) {
+    const y = new Date().getFullYear();
+    [y - 1, y, y + 1].forEach(a => anosSet.add(a));
+  }
+  const anos = Array.from(anosSet).sort((a,b) => b - a);
+  const yearOptions = anos.map(y => `<option value="${y}" ${y === selYear ? 'selected' : ''}>${y}</option>`).join('');
+
   content.innerHTML = `
     <div class="tab-container">
       <div class="tab-header">
-        <h2 class="tab-title-highlight">Categorias</h2>
-        <div class="flex gap-2">
-          <button onclick="window.migrarTransacoesAntigas()" class="btn-secondary">
-            <span>🔄 Migrar</span>
-          </button>
-          <button onclick="window.corrigirTipoCategoria()" class="btn-secondary">
-            <span>🔧 Corrigir</span>
-          </button>
-          <button id="add-category-btn" class="btn-primary">
-            <span>+ Nova Categoria</span>
-          </button>
-        </div>
+        <h2 class="tab-title-highlight">📂 Categorias</h2>
+        <div id="cat-period-indicator"></div>
       </div>
       <div class="tab-content">
         <div class="content-spacing">
+          <!-- Indicador de período padronizado movido para o cabeçalho -->
+          
+          <!-- ========== SEÇÃO 1: RESUMO ANALÍTICO ========== -->
+          <div class="mb-8">
+            <div class="flex items-center gap-2 mb-4">
+              <div class="w-1 h-6 bg-gradient-to-b from-purple-500 to-pink-500 rounded-full"></div>
+              <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">📊 Visão Geral</h2>
+            </div>
+            
+            <div class="bg-gradient-to-br from-purple-500 via-pink-500 to-indigo-600 rounded-2xl shadow-xl p-6 md:p-8 text-white mb-6">
+              <!-- Header do Card -->
+              <div class="flex items-center justify-between mb-6">
+                <div>
+                  <div class="flex items-center gap-2">
+                    <h3 class="text-xl md:text-2xl font-bold">Controle de Categorias</h3>
+                  </div>
+                  <p class="text-sm opacity-90">${totalCategorias} categorias cadastradas</p>
+                </div>
+                <div class="text-right">
+                  <div class="text-2xl md:text-3xl font-bold ${categoriasEmAlerta > 0 ? 'text-red-200' : 'text-green-200'}">
+                    ${categoriasEmAlerta}
+                  </div>
+                  <p class="text-xs opacity-90">${categoriasEmAlerta > 0 ? '⚠️ Alertas' : '✅ Sem Alertas'}</p>
+                </div>
+              </div>
+              
+              <!-- Grid de Métricas -->
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-white bg-opacity-15 backdrop-blur-sm rounded-xl p-4 text-center">
+                  <div class="text-2xl mb-2">📂</div>
+                  <div class="text-2xl md:text-3xl font-bold">${totalCategorias}</div>
+                  <div class="text-sm opacity-90">Total</div>
+                </div>
+                
+                <div class="bg-white bg-opacity-15 backdrop-blur-sm rounded-xl p-4 text-center">
+                  <div class="text-2xl mb-2">🎯</div>
+                  <div class="text-2xl md:text-3xl font-bold text-blue-200">${categoriasComLimite}</div>
+                  <div class="text-sm opacity-90">Com Limite</div>
+                </div>
+                
+                <div class="bg-white bg-opacity-15 backdrop-blur-sm rounded-xl p-4 text-center">
+                  <div class="text-2xl mb-2">💚</div>
+                  <div class="text-2xl md:text-3xl font-bold text-green-200">${categoriasReceita}</div>
+                  <div class="text-sm opacity-90">Receitas</div>
+                </div>
+                
+                <div class="bg-white bg-opacity-15 backdrop-blur-sm rounded-xl p-4 text-center">
+                  <div class="text-2xl mb-2">💸</div>
+                  <div class="text-2xl md:text-3xl font-bold text-red-200">${categoriasDespesa}</div>
+                  <div class="text-sm opacity-90">Despesas</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ========== SEÇÃO 2: AÇÕES E FILTROS ========== -->
+          <div class="mb-8">
+            <div class="flex items-center gap-2 mb-4">
+              <div class="w-1 h-6 bg-gradient-to-b from-blue-500 to-purple-500 rounded-full"></div>
+              <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">🔧 Ações & Filtros</h2>
+            </div>
+            
+            <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <!-- Header -->
+              <div class="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-800 p-4 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex flex-wrap justify-between items-center gap-2">
+                  <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Gerenciar Categorias</h3>
+                  <div class="flex gap-2 flex-wrap">
+                    <button onclick="window.migrarTransacoesAntigas()" class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200 shadow-md hover:shadow-lg">
+                      🔄 Migrar
+          </button>
+                    <button onclick="window.corrigirTipoCategoria()" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200 shadow-md hover:shadow-lg">
+                      🔧 Corrigir
+          </button>
+                    <button id="add-category-btn" class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 shadow-md hover:shadow-lg">
+                      + Nova Categoria
+          </button>
+        </div>
+      </div>
+              </div>
+              
           <!-- Filtro de pesquisa -->
-          <div class="mb-4">
+              <div class="p-4">
             <div class="relative">
               <input 
                 type="text" 
                 id="category-search" 
-                placeholder="🔍 Pesquisar categorias..." 
-                class="w-full px-4 py-2 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                    placeholder="🔍 Pesquisar por nome, tipo ou limite..." 
+                    class="w-full px-4 py-3 pl-12 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
               />
-              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <span class="text-gray-400">🔍</span>
+                  <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <span class="text-gray-400 text-lg">🔍</span>
               </div>
             </div>
             <div id="category-search-results" class="mt-2 text-sm text-gray-600 dark:text-gray-400 hidden">
               <span id="category-search-count">0</span> categoria(s) encontrada(s)
+                </div>
+              </div>
             </div>
           </div>
           
-          <div id="categories-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            ${categoriasComGastos
-    .map(
-      cat => `
-            <div class="card-standard">
-              <div class="flex items-center space-x-3 mb-3">
-                <div class="w-4 h-4 rounded-full" style="background-color: ${cat.cor || '#4F46E5'}"></div>
-                <span class="list-item-title">${cat.nome}</span>
+          <!-- ========== SEÇÃO 3: GRID DE CATEGORIAS ========== -->
+          <div class="mb-8">
+            <div class="flex items-center gap-2 mb-4">
+              <div class="w-1 h-6 bg-gradient-to-b from-green-500 to-teal-500 rounded-full"></div>
+              <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">📋 Todas as Categorias</h2>
               </div>
-              <p class="list-item-subtitle">Tipo: ${cat.tipo}</p>
-              
-              ${
-  cat.limite > 0
-    ? `
-                <div class="mt-3 space-y-2">
-                  <div class="flex justify-between text-xs md:text-sm">
-                    <span class="text-gray-600 dark:text-gray-400">Limite:</span>
-                    <span class="font-medium text-gray-900 dark:text-gray-100">R$ ${cat.limite.toFixed(2)}</span>
+            
+${categorias.length === 0 ? `
+              <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div class="text-center py-12">
+                  <div class="text-6xl mb-4">📂</div>
+                  <div class="text-xl font-semibold text-gray-800 dark:text-white mb-2">Nenhuma categoria encontrada</div>
+                  <div class="text-gray-600 dark:text-gray-400 mb-4">Crie sua primeira categoria para organizar suas finanças</div>
+                  <button onclick="window.showAddCategoryModal()" class="bg-purple-500 hover:bg-purple-600 text-white px-6 py-3 rounded-xl font-medium transition-all duration-200 shadow-lg">
+                    📂 Criar Primeira Categoria
+                  </button>
                   </div>
-                  <div class="flex justify-between text-xs md:text-sm">
-                    <span class="text-gray-600 dark:text-gray-400">${cat.tipo === 'receita' ? 'Receita' : 'Gasto'}:</span>
-                    <span class="font-medium ${cat.tipo === 'receita' ? 'text-green-600' : cat.totalGasto > cat.limite ? 'text-red-600' : 'text-gray-900 dark:text-gray-100'}">R$ ${cat.totalGasto.toFixed(2)}</span>
                   </div>
-                  ${
-  cat.totalGasto > 0
-    ? `
-                    <div class="text-xs text-gray-500 dark:text-gray-400 pl-2">
-                      • Transações: R$ ${cat.totalGastoTransacoes.toFixed(2)}
-                      ${cat.totalGastoRecorrentes > 0 ? `<br>• Recorrentes: R$ ${cat.totalGastoRecorrentes.toFixed(2)}` : ''}
+            ` : `
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                ${categoriasComGastos.map(cat => {
+                  const isReceita = cat.tipo === 'receita';
+                  const temLimite = cat.limite > 0;
+                  const excedeuLimite = temLimite && cat.totalGasto > cat.limite;
+                  
+                  return `
+                    <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-2xl transition-all duration-300 group ${excedeuLimite ? 'ring-2 ring-red-200 dark:ring-red-800' : ''}">
+                      <!-- Header da Categoria -->
+                      <div class="bg-gradient-to-r ${isReceita ? 'from-green-50 to-emerald-50 dark:from-gray-800 dark:to-gray-800' : 'from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-800'} p-4 border-b border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center justify-between">
+                          <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 rounded-full flex items-center justify-center text-2xl" style="background-color: ${cat.cor || '#4F46E5'}20; color: ${cat.cor || '#4F46E5'}">
+                              ${isReceita ? '💰' : '💸'}
                     </div>
-                  `
-    : ''
-}
-                  <div class="flex justify-between text-xs md:text-sm">
-                    <span class="text-gray-600 dark:text-gray-400">${cat.tipo === 'receita' ? 'Falta para meta' : 'Saldo'}:</span>
-                    <span class="font-medium ${cat.tipo === 'receita' ? (cat.saldo <= 0 ? 'text-green-600' : cat.saldo < cat.limite * 0.25 ? 'text-yellow-600' : 'text-red-600') : cat.saldo < 0 ? 'text-red-600' : cat.saldo < cat.limite * 0.25 ? 'text-yellow-600' : 'text-green-600'}">R$ ${cat.saldo.toFixed(2)}</span>
+                            <div>
+                              <h3 class="font-bold text-gray-900 dark:text-gray-100 truncate">${cat.nome}</h3>
+                              <p class="text-sm text-gray-500 dark:text-gray-400">${isReceita ? 'Receita' : 'Despesa'}</p>
+                            </div>
+                          </div>
+                          ${excedeuLimite ? '<div class="text-2xl">🚨</div>' : temLimite && cat.porcentagem >= 90 ? '<div class="text-2xl">⚠️</div>' : ''}
+                        </div>
                   </div>
+                      
+                      <!-- Conteúdo da Categoria -->
+                      <div class="p-4">
+                        ${temLimite ? `
+                          <!-- Com Limite -->
+                          <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                              <span class="text-sm text-gray-600 dark:text-gray-400">Limite Mensal</span>
+                              <span class="font-bold text-gray-900 dark:text-gray-100">R$ ${cat.limite.toFixed(2)}</span>
+                            </div>
+                            
+                            <div class="flex justify-between items-center">
+                              <span class="text-sm text-gray-600 dark:text-gray-400">${isReceita ? 'Recebido' : 'Gasto'}</span>
+                              <span class="font-bold ${isReceita ? 'text-green-600' : excedeuLimite ? 'text-red-600' : 'text-gray-900 dark:text-gray-100'}">
+                                R$ ${cat.totalGasto.toFixed(2)}
+                              </span>
+                            </div>
+                            
+                            <div class="flex justify-between items-center">
+                              <span class="text-sm text-gray-600 dark:text-gray-400">${isReceita ? 'Falta para meta' : 'Saldo'}</span>
+                              <span class="font-bold ${cat.saldo < 0 ? 'text-red-600' : cat.saldo < cat.limite * 0.25 ? 'text-yellow-600' : 'text-green-600'}">
+                                R$ ${cat.saldo.toFixed(2)}
+                              </span>
+                            </div>
+                            
+                            <!-- Breakdown por tipo -->
+                            ${cat.totalGasto > 0 ? `
+                              <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-xs space-y-1">
+                                <div class="flex justify-between">
+                                  <span class="text-gray-600 dark:text-gray-400">Transações diretas:</span>
+                                  <span>R$ ${cat.totalGastoTransacoes.toFixed(2)}</span>
+                                </div>
+                                ${cat.totalGastoRecorrentes > 0 ? `
+                                  <div class="flex justify-between">
+                                    <span class="text-gray-600 dark:text-gray-400">Recorrentes:</span>
+                                    <span>R$ ${cat.totalGastoRecorrentes.toFixed(2)}</span>
+                                  </div>
+                                ` : ''}
+                              </div>
+                            ` : ''}
                   
                   <!-- Barra de Progresso -->
-                  <div class="mt-2">
-                    <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
-                      <span>${cat.porcentagem.toFixed(1)}% ${cat.tipo === 'receita' ? 'atingido' : 'usado'}</span>
-                      <span>${cat.porcentagem >= 100 ? (cat.tipo === 'receita' ? 'Meta atingida!' : 'Limite excedido!') : ''}</span>
+                            <div class="space-y-2">
+                              <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                                <span>${cat.porcentagem.toFixed(1)}% ${isReceita ? 'atingido' : 'usado'}</span>
+                                <span>${cat.porcentagem >= 100 ? (isReceita ? 'Meta atingida!' : 'Limite excedido!') : ''}</span>
                     </div>
-                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                      <div class="${cat.corBarra} h-2 rounded-full transition-all duration-300" style="width: ${Math.min(cat.porcentagem, 100)}%"></div>
+                              <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                                <div class="${cat.corBarra} h-3 rounded-full transition-all duration-500 ease-out" style="width: ${Math.min(cat.porcentagem, 100)}%"></div>
                     </div>
                   </div>
+                            
+                            ${excedeuLimite ? `
+                              <div class="bg-red-50 dark:bg-red-900 dark:bg-opacity-20 border border-red-200 dark:border-red-800 rounded-lg p-3">
+                                <div class="text-sm font-medium text-red-800 dark:text-red-200">
+                                  ⚠️ Limite excedido em R$ ${(cat.totalGasto - cat.limite).toFixed(2)}
                 </div>
-              `
-    : `
-                <div class="mt-3">
-                  <div class="flex justify-between text-xs md:text-sm">
-                    <span class="text-gray-600 dark:text-gray-400">${cat.tipo === 'receita' ? 'Receita' : 'Gasto'} do mês:</span>
-                    <span class="font-medium ${cat.tipo === 'receita' ? 'text-green-600' : 'text-gray-900 dark:text-gray-100'}">R$ ${cat.totalGasto.toFixed(2)}</span>
                   </div>
-                  ${
-  cat.totalGasto > 0
-    ? `
-                    <div class="text-xs text-gray-500 dark:text-gray-400 pl-2">
-                      • ${cat.tipo === 'receita' ? 'Receitas' : 'Transações'}: R$ ${cat.totalGastoTransacoes.toFixed(2)}
-                      ${cat.totalGastoRecorrentes > 0 ? `<br>• Recorrentes: R$ ${cat.totalGastoRecorrentes.toFixed(2)}` : ''}
+                            ` : ''}
                     </div>
-                  `
-    : ''
-}
-                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Sem limite definido</p>
+                        ` : `
+                          <!-- Sem Limite -->
+                          <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                              <span class="text-sm text-gray-600 dark:text-gray-400">${isReceita ? 'Receita' : 'Gasto'} do mês</span>
+                              <span class="font-bold ${isReceita ? 'text-green-600' : 'text-gray-900 dark:text-gray-100'}">
+                                R$ ${cat.totalGasto.toFixed(2)}
+                              </span>
                 </div>
-              `
-}
-              
-              <div class="flex flex-wrap justify-end gap-1 sm:gap-2 mt-4">
-                <button onclick="editCategory('${cat.id}')" class="btn-secondary mobile-btn">
-                  <span class="icon-standard">✏️</span>
-                  <span class="hidden sm:inline">Editar</span>
+                            
+                            ${cat.totalGasto > 0 ? `
+                              <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-xs space-y-1">
+                                <div class="flex justify-between">
+                                  <span class="text-gray-600 dark:text-gray-400">Transações diretas:</span>
+                                  <span>R$ ${cat.totalGastoTransacoes.toFixed(2)}</span>
+                                </div>
+                                ${cat.totalGastoRecorrentes > 0 ? `
+                                  <div class="flex justify-between">
+                                    <span class="text-gray-600 dark:text-gray-400">Recorrentes:</span>
+                                    <span>R$ ${cat.totalGastoRecorrentes.toFixed(2)}</span>
+                                  </div>
+                                ` : ''}
+                              </div>
+                            ` : `
+                              <div class="text-center py-4 text-gray-500 dark:text-gray-400">
+                                <div class="text-2xl mb-2">📊</div>
+                                <p class="text-sm">Nenhuma movimentação este mês</p>
+                              </div>
+                            `}
+                            
+                            <div class="bg-blue-50 dark:bg-blue-900 dark:bg-opacity-20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                              <div class="text-sm text-blue-800 dark:text-blue-200">
+                                💡 Defina um limite para melhor controle
+                              </div>
+                            </div>
+                          </div>
+                        `}
+                      </div>
+                      
+                      <!-- Botões de Ação -->
+                      <div class="bg-gray-50 dark:bg-gray-800 p-4 border-t border-gray-200 dark:border-gray-700">
+                        <div class="flex gap-2">
+                          <button onclick="window.editCategory && window.editCategory('${cat.id}')" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2">
+                            ✏️ Editar
                 </button>
-                <button onclick="window.deleteCategoryWithConfirmation('${cat.id}', '${cat.nome}')" class="btn-danger mobile-btn">
-                  <span class="icon-standard">🗑️</span>
-                  <span class="hidden sm:inline">Excluir</span>
-                </button>
-                <button onclick="showCategoryHistory('${cat.id}')" class="btn-secondary mobile-btn">
-                  <span class="icon-standard">📊</span>
-                  <span class="hidden sm:inline">Histórico</span>
+                          <button onclick="window.showCategoryHistory && window.showCategoryHistory('${cat.id}')" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2">
+                            📊 Histórico
                 </button>
               </div>
             </div>
-          `
-    )
-    .join('')}
+          </div>
+                  `;
+                }).join('')}
+              </div>
+            `}
           </div>
         </div>
       </div>
@@ -2538,6 +3495,20 @@ async function renderCategories() {
   
   // Configurar filtro de pesquisa
   setupCategorySearch();
+  
+  // Injetar indicador de período padrão no cabeçalho
+  (async () => {
+    try {
+      const { createPeriodIndicator } = await import('./ui/PeriodIndicator.js');
+      const holder = document.getElementById('cat-period-indicator');
+      if (holder) {
+        holder.innerHTML = '';
+        holder.appendChild(createPeriodIndicator({ onChange: () => renderCategories() }));
+      }
+    } catch (e) {
+      console.warn('PeriodIndicator (Categorias) indisponível:', e);
+    }
+  })();
   
   renderFAB();
   // Remover renderBottomNav daqui - deve ser chamado apenas pelo router
@@ -2593,9 +3564,7 @@ function setupCategorySearch() {
 
 // Função para renderizar todas as categorias
 function renderAllCategories() {
-  const now = new Date();
-  const anoAtual = now.getFullYear();
-  const mesAtual = now.getMonth() + 1;
+  const { year: anoAtual, month: mesAtual } = getSelectedPeriod();
 
   const categoriasComGastos = window.appState.categories
     .map(cat => {
@@ -2816,7 +3785,9 @@ function renderFilteredCategories(filteredCategories) {
 
 // Função router simplificada
 async function router(path) {
-  console.log('🔄 Router chamado com path:', path);
+  // Normalizar path removendo query string (ex: ?ym=YYYY-MM)
+  const cleanPath = (path || '').split('?')[0] || '/dashboard';
+  console.log('🔄 Router chamado com path:', path, '→ normalizado:', cleanPath);
   console.log('🔄 Estado atual:', {
     currentUser: !!window.appState?.currentUser,
     currentBudget: !!window.appState?.currentBudget,
@@ -2824,14 +3795,14 @@ async function router(path) {
   });
   
   // Atualizar título da página
-  updatePageTitle(path);
+  updatePageTitle(cleanPath);
   
   // Aplicar modo de compactação
   if (window.applyCompactMode) {
     window.applyCompactMode();
   }
   
-  switch (path) {
+  switch (cleanPath) {
     case '/dashboard':
       console.log('🔄 Renderizando dashboard...');
       await renderDashboard();
@@ -2852,40 +3823,64 @@ async function router(path) {
       break;
     case '/analytics':
       console.log('🔄 Renderizando análises...');
-      await renderAnalytics();
+      try {
+        if (typeof renderAnalytics === 'function') {
+          await renderAnalytics();
+        } else {
+          // Fallback: carregar módulo dinamicamente
+          try {
+            const mod = await import('./ui/AnalyticsRoute.js');
+            if (mod?.renderAnalytics) {
+              await mod.renderAnalytics();
+            } else if (window.renderAnalytics) {
+              await window.renderAnalytics();
+            } else {
+              throw new Error('Função renderAnalytics não disponível');
+            }
+          } catch (dynErr) {
+            console.error('❌ Erro ao importar AnalyticsRoute dinamicamente:', dynErr);
+            const content = document.getElementById('app-content');
+            if (content) {
+              content.innerHTML = `
+                <div class="tab-container">
+                  <div class="tab-header">
+                    <h2 class="tab-title-highlight">📊 Análises</h2>
+                  </div>
+                  <div class="tab-content">
+                    <div class="content-spacing">
+                      <div class="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-300 px-4 py-3 rounded mb-4">
+                        Não foi possível carregar o módulo de análises.
+                      </div>
+                    </div>
+                  </div>
+                </div>`;
+            }
+          }
+        }
+      } catch (e) {
+        console.error('❌ Erro ao renderizar análises:', e);
+      }
       renderBottomNav('/analytics');
       console.log('✅ Análises renderizadas');
       break;
     case '/recorrentes':
       console.log('🔄 Renderizando recorrentes...');
-      if (window._renderRecorrentes) {
-        window._renderRecorrentes();
+      if (window._renderRecorrentes || window.renderRecorrentes) {
+        (window._renderRecorrentes || window.renderRecorrentes)();
       } else {
-        // Fallback se a função não existir
-        console.log('⚠️ Função _renderRecorrentes não encontrada, usando fallback');
-        const content = document.getElementById('app-content');
-        if (content) {
-          content.innerHTML = `
-            <div class="tab-container">
-              <div class="tab-header">
-                <h2 class="tab-title-highlight">Recorrentes</h2>
-                <div class="flex gap-2">
-                  <button onclick="window.showAddRecorrenteModal && window.showAddRecorrenteModal()" class="btn-primary">
-                    <span>+ Nova Recorrente</span>
-                  </button>
-                </div>
-              </div>
-              <div class="tab-content">
-                <div class="content-spacing">
-                  <div class="text-center py-8">
-                    <div class="text-4xl mb-4">🔄</div>
-                    <div class="text-lg font-semibold text-gray-800 dark:text-white mb-2">Recorrentes</div>
-                    <div class="text-gray-600 dark:text-gray-400">Funcionalidade em desenvolvimento</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          `;
+        console.warn('⚠️ RecorrentesPage não disponível; tentando carregar módulo diretamente');
+        try {
+          const mod = await import('./recorrentes/RecorrentesPage.js');
+          if (mod?.renderRecorrentes) {
+            mod.renderRecorrentes();
+          } else {
+            const content = document.getElementById('app-content');
+            if (content) content.innerHTML = `<div class="p-4">Não foi possível carregar Recorrentes.</div>`;
+          }
+        } catch (e) {
+          console.error('Erro ao carregar RecorrentesPage.js:', e);
+          const content = document.getElementById('app-content');
+          if (content) content.innerHTML = `<div class="p-4">Erro ao carregar Recorrentes.</div>`;
         }
       }
       renderFAB();
@@ -2929,26 +3924,20 @@ async function router(path) {
       if (window.renderSettings) {
         window.renderSettings();
       } else {
-        // Fallback se a função não existir
-        console.log('⚠️ Função renderSettings não encontrada, usando fallback');
-        const content = document.getElementById('app-content');
-        if (content) {
-          content.innerHTML = `
-            <div class="tab-container">
-              <div class="tab-header">
-                <h2 class="tab-title-highlight">Configurações</h2>
-              </div>
-              <div class="tab-content">
-                <div class="content-spacing">
-                  <div class="text-center py-8">
-                    <div class="text-4xl mb-4">⚙️</div>
-                    <div class="text-lg font-semibold text-gray-800 dark:text-white mb-2">Configurações</div>
-                    <div class="text-gray-600 dark:text-gray-400">Funcionalidade em desenvolvimento</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          `;
+        console.warn('⚠️ SettingsPage não disponível; tentando carregar módulo diretamente');
+        try {
+          const mod = await import('./config/SettingsPage.js');
+          if (mod?.renderSettings) {
+            window.renderSettings = mod.renderSettings;
+            await mod.renderSettings();
+          } else {
+            const content = document.getElementById('app-content');
+            if (content) content.innerHTML = `<div class="p-4">Não foi possível carregar Configurações.</div>`;
+          }
+        } catch (e) {
+          console.error('Erro ao carregar SettingsPage.js:', e);
+          const content = document.getElementById('app-content');
+          if (content) content.innerHTML = `<div class="p-4">Erro ao carregar Configurações.</div>`;
         }
       }
       renderFAB();
@@ -2970,8 +3959,172 @@ async function router(path) {
     }
   }, 200);
   
+  // Sempre voltar ao topo ao trocar de aba/rota
+  resetScrollPosition();
+  // E garantir novamente logo após o tick (caso de renders assíncronos)
+  setTimeout(resetScrollPosition, 50);
+  
 
 }
+
+// Exportar função router para uso global
+window.router = router;
+
+// Função para editar transação
+window.editTransaction = function(transactionId) {
+  console.log('🔧 Editando transação:', transactionId);
+  
+  if (!transactionId) {
+    console.error('❌ ID da transação não fornecido');
+    return;
+  }
+  
+  // Buscar a transação
+  const transaction = window.appState.transactions?.find(t => t.id === transactionId);
+  
+  if (!transaction) {
+    console.error('❌ Transação não encontrada:', transactionId);
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: 'Transação não encontrada',
+        type: 'error'
+      });
+    }
+    return;
+  }
+  
+  console.log('✅ Transação encontrada:', transaction);
+  
+  // Abrir modal de edição com os dados da transação
+  if (window.showAddTransactionModal) {
+    window.showAddTransactionModal(transaction);
+  } else {
+    console.error('❌ Função showAddTransactionModal não disponível');
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: 'Função de edição não disponível',
+        type: 'error'
+      });
+    }
+  }
+};
+
+// Função para editar categoria
+window.editCategory = function(categoryId) {
+  console.log('🔧 Editando categoria:', categoryId);
+  
+  if (!categoryId) {
+    console.error('❌ ID da categoria não fornecido');
+    return;
+  }
+  
+  // Buscar a categoria
+  const category = window.appState.categories?.find(c => c.id === categoryId);
+  
+  if (!category) {
+    console.error('❌ Categoria não encontrada:', categoryId);
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: 'Categoria não encontrada',
+        type: 'error'
+      });
+    }
+    return;
+  }
+  
+  console.log('✅ Categoria encontrada:', category);
+  
+  // Abrir modal de edição com os dados da categoria
+  if (window.showAddCategoryModal) {
+    window.showAddCategoryModal(category);
+  } else {
+    console.error('❌ Função showAddCategoryModal não disponível');
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: 'Função de edição não disponível',
+        type: 'error'
+      });
+    }
+  }
+};
+
+// Função para mostrar histórico da categoria
+window.showCategoryHistory = function(categoryId) {
+  console.log('📊 Mostrando histórico da categoria:', categoryId);
+  
+  if (!categoryId) {
+    console.error('❌ ID da categoria não fornecido');
+    return;
+  }
+  
+  // Buscar a categoria
+  const category = window.appState.categories?.find(c => c.id === categoryId);
+  
+  if (!category) {
+    console.error('❌ Categoria não encontrada:', categoryId);
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: 'Categoria não encontrada',
+        type: 'error'
+      });
+    }
+    return;
+  }
+  
+  // Buscar transações desta categoria
+  const transactions = window.appState.transactions?.filter(t => t.categoriaId === categoryId) || [];
+  
+  // Criar modal com histórico
+  if (window.Modal) {
+    const totalGasto = transactions.reduce((sum, t) => sum + parseFloat(t.valor), 0);
+    
+    window.Modal({
+      title: `📊 Histórico: ${category.nome}`,
+      content: `
+        <div class="space-y-4">
+          <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gray-600 dark:text-gray-400">Total movimentado:</span>
+              <span class="font-bold text-lg ${category.tipo === 'receita' ? 'text-green-600' : 'text-red-600'}">
+                R$ ${totalGasto.toFixed(2)}
+              </span>
+            </div>
+            <div class="flex justify-between items-center mt-2">
+              <span class="text-sm text-gray-600 dark:text-gray-400">Número de transações:</span>
+              <span class="font-medium">${transactions.length}</span>
+            </div>
+          </div>
+          
+          <div class="max-h-96 overflow-y-auto space-y-2">
+            ${transactions.length === 0 ? `
+              <div class="text-center py-8">
+                <div class="text-4xl mb-2">📊</div>
+                <p class="text-gray-500 dark:text-gray-400">Nenhuma transação encontrada para esta categoria</p>
+              </div>
+            ` : transactions.map(t => {
+              const data = t.createdAt && t.createdAt.toDate ? t.createdAt.toDate().toLocaleDateString('pt-BR') : new Date(t.createdAt).toLocaleDateString('pt-BR');
+              return `
+                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-3 flex justify-between items-center">
+                  <div>
+                    <div class="font-medium text-gray-900 dark:text-gray-100">${t.descricao}</div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">${data}</div>
+                  </div>
+                  <div class="font-medium ${t.tipo === 'receita' ? 'text-green-600' : 'text-red-600'}">
+                    ${t.tipo === 'receita' ? '+' : '-'}R$ ${parseFloat(t.valor).toFixed(2)}
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `,
+      confirmText: 'Fechar',
+      onConfirm: () => {}
+    });
+  } else {
+    console.error('❌ Função Modal não disponível');
+  }
+};
 
 // Função para renderizar FAB
 function renderFAB() {
@@ -3063,6 +4216,17 @@ function renderBottomNav(activeRoute) {
     return;
   }
 
+  // Evitar re-render se já está no mesmo estado
+  try {
+    const currentActiveBtn = bottomNav.querySelector('.nav-btn.active');
+    const currentActiveRoute = currentActiveBtn ? currentActiveBtn.getAttribute('data-route') : null;
+    const lastActive = bottomNav.dataset.activeRoute || null;
+    if (lastActive === activeRoute && currentActiveRoute === activeRoute) {
+      console.log('⏭️ Bottom navigation já atualizada; pulando render.');
+      return;
+    }
+  } catch {}
+
   console.log('✅ Elemento bottom-nav encontrado, renderizando...');
   bottomNav.innerHTML = `
     <nav class="bottom-nav">
@@ -3096,6 +4260,7 @@ function renderBottomNav(activeRoute) {
       </a>
     </nav>
   `;
+  try { bottomNav.dataset.activeRoute = activeRoute; } catch {}
   console.log('✅ Bottom navigation renderizada com sucesso');
 }
 
@@ -3109,7 +4274,12 @@ function showLoading(show) {
 
 // Função para configurar navegação
 function setupNavigation() {
-  let currentPath = window.location.hash.slice(1) || '/dashboard';
+  // Desabilitar restauração automática de scroll do navegador
+  try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; } catch {}
+
+  // Função auxiliar para normalizar path removendo query string
+  const normalize = (p) => (p || '').split('?')[0] || '/dashboard';
+  let currentPath = normalize(window.location.hash.slice(1)) || '/dashboard';
   
   // Array de rotas disponíveis
   const routes = ['/dashboard', '/transactions', '/categories', '/analytics', '/recorrentes', '/notifications', '/settings'];
@@ -3226,8 +4396,9 @@ function setupNavigation() {
   
   // Navegação por hash
   window.addEventListener('hashchange', () => {
-    const newPath = window.location.hash.slice(1) || '/dashboard';
-    console.log('🔄 Hash change detectado:', { oldPath: currentPath, newPath });
+    const newPathRaw = window.location.hash.slice(1) || '/dashboard';
+    const newPath = normalize(newPathRaw);
+    console.log('🔄 Hash change detectado:', { oldPath: currentPath, newPathRaw, newPath });
     if (newPath !== currentPath) {
       currentPath = newPath;
       console.log('🔄 Navegando para nova rota:', newPath);
@@ -3240,6 +4411,27 @@ function setupNavigation() {
   console.log('🔄 Navegação inicial para:', currentPath);
   updatePageTitle(currentPath);
   router(currentPath);
+}
+
+// Helper: zera a posição de scroll da página e do container principal
+function resetScrollPosition() {
+  try {
+    // Scroll da janela/documento
+    window.scrollTo({ top: 0, behavior: 'auto' });
+    document.body.scrollTop = 0; // fallback
+    document.documentElement.scrollTop = 0; // fallback
+  } catch {
+    try { window.scrollTo(0, 0); } catch {}
+  }
+  try {
+    // Scroll do container de conteúdo (se tiver overflow próprio)
+    const content = document.getElementById('app-content');
+    if (content && typeof content.scrollTo === 'function') {
+      content.scrollTo({ top: 0, behavior: 'auto' });
+    } else if (content) {
+      content.scrollTop = 0;
+    }
+  } catch {}
 }
 
 // Função para configurar botão de login
@@ -4421,8 +5613,10 @@ function setupDashboardButtons() {
       e.stopPropagation();
       console.log('⬅️ Mês anterior clicked');
       
-      const currentYear = parseInt(document.querySelector('#mes-selector span').textContent.split(' ')[1]);
-      const currentMonth = document.querySelector('#mes-selector span').textContent.split(' ')[0];
+  const label = document.getElementById('mes-display')?.textContent || '';
+  const parts = label.trim().split(/\s+/);
+  const currentMonth = parts[0];
+  const currentYear = parseInt(parts[1], 10);
       const meses = [
         'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
         'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
@@ -4452,8 +5646,10 @@ function setupDashboardButtons() {
       e.stopPropagation();
       console.log('➡️ Mês próximo clicked');
       
-      const currentYear = parseInt(document.querySelector('#mes-selector span').textContent.split(' ')[1]);
-      const currentMonth = document.querySelector('#mes-selector span').textContent.split(' ')[0];
+  const label = document.getElementById('mes-display')?.textContent || '';
+  const parts = label.trim().split(/\s+/);
+  const currentMonth = parts[0];
+  const currentYear = parseInt(parts[1], 10);
       const meses = [
         'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
         'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
@@ -4596,27 +5792,11 @@ async function loadNotifications() {
   try {
     const user = auth.currentUser;
     if (!user) return [];
-
-    const { getDocs, query, where, orderBy, limit } = await import('firebase/firestore');
-    const q = query(
-      collection(db, 'notifications'),
-      where('recipientUid', '==', user.uid),
-      orderBy('createdAt', 'desc'),
-      limit(50)
-    );
-
-    const snapshot = await getDocs(q);
-    const notifications = [];
-    snapshot.forEach(doc => {
-      notifications.push({ id: doc.id, ...doc.data() });
-    });
-
-    window.appState.notifications = notifications;
+  // usa store centralizada
+  const notifications = await notificationsStore.load(user.uid, 50);
+  window.appState.notifications = notifications;
     console.log('📧 Notificações carregadas:', notifications.length);
-    
-    // Atualizar contador de notificações não lidas
     updateNotificationBadge();
-    
     return notifications;
   } catch (error) {
     console.error('Erro ao carregar notificações:', error);
@@ -4627,16 +5807,10 @@ async function loadNotifications() {
 // Função para marcar notificação como lida
 async function markNotificationAsRead(notificationId) {
   try {
-    const { updateDoc } = await import('firebase/firestore');
-    await updateDoc(doc(db, 'notifications', notificationId), {
-      read: true
-    });
+  await notificationsStore.markRead(notificationId);
     
     // Atualizar estado local
-    const notificationIndex = window.appState.notifications.findIndex(n => n.id === notificationId);
-    if (notificationIndex !== -1) {
-      window.appState.notifications[notificationIndex].read = true;
-    }
+    window.appState.notifications = notificationsStore.getState().items;
     
     updateNotificationBadge();
   } catch (error) {
@@ -4653,15 +5827,11 @@ async function markAllNotificationsAsRead() {
       return;
     }
 
-    const { updateDoc } = await import('firebase/firestore');
-    const promises = unreadNotifications.map(notification => 
-      updateDoc(doc(db, 'notifications', notification.id), { read: true })
-    );
-    
-    await Promise.all(promises);
+  const { markManyAsRead } = await import('@data/repositories/notificationsRepo.js');
+  await notificationsStore.markRead(unreadNotifications.map(n => n.id));
     
     // Atualizar estado local
-    window.appState.notifications.forEach(n => n.read = true);
+    window.appState.notifications = notificationsStore.getState().items;
     updateNotificationBadge();
     
     Snackbar({ message: `${unreadNotifications.length} notificações marcadas como lidas`, type: 'success' });
@@ -4677,7 +5847,12 @@ async function markAllNotificationsAsRead() {
 }
 
 // Função para atualizar badge de notificações
+let __badgeUpdateTimer = null;
 function updateNotificationBadge() {
+  if (__badgeUpdateTimer) {
+    clearTimeout(__badgeUpdateTimer);
+  }
+  __badgeUpdateTimer = setTimeout(() => {
   const unreadCount = window.appState.notifications?.filter(n => !n.read).length || 0;
   
   // Atualizar badge na navegação
@@ -4698,6 +5873,8 @@ function updateNotificationBadge() {
       badge.style.display = 'none';
     }
   }
+  __badgeUpdateTimer = null;
+  }, 100);
 }
 
 // Listener para notificações em tempo real
@@ -4721,42 +5898,72 @@ async function listenNotifications() {
   }
 
   try {
-    const { onSnapshot, query, where, orderBy, limit } = await import('firebase/firestore');
-    const q = query(
-      collection(db, 'notifications'),
-      where('recipientUid', '==', user.uid),
-      orderBy('createdAt', 'desc'),
-      limit(50)
-    );
-
-    unsubscribeNotifications = onSnapshot(q, snapshot => {
+    unsubscribeNotifications = notificationsStore.start(user.uid, 50);
+    notificationsStore.subscribe(s => s.items, (notifications, prev) => {
       console.log('📧 Listener de notificações executado!');
-      const notifications = [];
-      snapshot.forEach(doc => {
-        notifications.push({ id: doc.id, ...doc.data() });
-      });
+      const prevArr = Array.isArray(prev) ? prev : (window.appState.notifications || []);
+      const prevIds = new Set(prevArr.map(n => n.id));
 
       window.appState.notifications = notifications;
       console.log('📧 Notificações atualizadas:', notifications.length);
       
       // Atualizar badge
       updateNotificationBadge();
+
+      // Mostrar toast em tempo real para novas notificações (evitar spam no primeiro load)
+      try {
+        const isFirstLoad = !window.__notificationsInitialized;
+        if (!isFirstLoad) {
+          const newOnes = notifications.filter(n => !prevIds.has(n.id));
+          const toastsEnabled = (typeof window.getNotificationsToastsEnabled === 'function') ? window.getNotificationsToastsEnabled() : true;
+          if (toastsEnabled && newOnes.length > 0 && typeof Snackbar === 'function' && window.location.hash !== '#/notifications') {
+            newOnes.forEach(n => {
+              const who = n.senderName || 'Usuário';
+              let message = `🔔 ${who} `;
+              let type = 'info';
+              switch (n.type) {
+                case 'deleted_transaction':
+                  message += `excluiu uma transação${n.transactionDescricao ? `: ${n.transactionDescricao}` : ''}`;
+                  type = 'warning';
+                  break;
+                case 'updated_transaction':
+                  message += `atualizou uma transação${n.transactionDescricao ? `: ${n.transactionDescricao}` : ''}`;
+                  type = 'info';
+                  break;
+                case 'new_transaction':
+                  message += `adicionou uma transação${n.transactionDescricao ? `: ${n.transactionDescricao}` : ''}`;
+                  type = 'info';
+                  break;
+                case 'category_added':
+                  message += `criou a categoria${n.categoryNome ? `: ${n.categoryNome}` : ''}`;
+                  type = 'success';
+                  break;
+                case 'category_updated':
+                  message += `atualizou a categoria${n.categoryNome ? `: ${n.categoryNome}` : ''}`;
+                  type = 'info';
+                  break;
+                case 'category_deleted':
+                  message += `excluiu a categoria${n.categoryNome ? `: ${n.categoryNome}` : ''}`;
+                  type = 'warning';
+                  break;
+                default:
+                  message += 'realizou uma ação';
+                  type = 'info';
+              }
+              Snackbar({ message, type });
+            });
+          }
+        }
+        window.__notificationsInitialized = true;
+      } catch (toastErr) {
+        console.warn('Falha ao exibir toast de notificação:', toastErr);
+      }
       
       // Se estiver na página de notificações, re-renderizar
       if (window.location.hash === '#/notifications') {
         renderNotifications();
       }
-    }, error => {
-      console.error('❌ Erro no listener de notificações:', error);
-      // Se for erro de permissão, não tentar novamente
-      if (error.code === 'permission-denied') {
-        console.log('⚠️ Permissão negada para notificações, desabilitando listener');
-        if (unsubscribeNotifications) {
-          unsubscribeNotifications();
-          unsubscribeNotifications = null;
-        }
-      }
-    });
+  });
   } catch (error) {
     console.error('❌ Erro ao configurar listener de notificações:', error);
   }
@@ -4771,88 +5978,413 @@ async function renderNotifications() {
   // Carregar notificações antes de renderizar
   await loadNotifications();
   const notifications = window.appState.notifications || [];
+  // Aplicar filtros e agrupamento
+  const filters = getNotifFilters();
+  const filtered = applyNotificationFilters(notifications, filters);
+  const grouped = groupNotificationsByDay(filtered);
+  
+  // Calcular estatísticas das notificações
+  const totalNotificacoes = filtered.length;
+  const notificacoesNaoLidas = filtered.filter(n => !n.read).length;
+  const notificacoesLidas = totalNotificacoes - notificacoesNaoLidas;
+  const notificacoesHoje = filtered.filter(n => {
+    const data = n.createdAt?.toDate ? n.createdAt.toDate() : new Date(n.createdAt);
+    const hoje = new Date();
+    return data.toDateString() === hoje.toDateString();
+  }).length;
 
   content.innerHTML = `
     <div class="tab-container">
       <div class="tab-header">
-        <h2 class="tab-title-highlight">🔔 Notificações</h2>
-        <div class="flex items-center gap-2">
-          <button onclick="window.showConfirmationModal({
-            title: 'Marcar como Lidas',
-            message: 'Deseja marcar todas as notificações como lidas?',
-            confirmText: 'Sim, Marcar',
-            confirmColor: 'bg-blue-500 hover:bg-blue-600',
-            onConfirm: 'window.markAllNotificationsAsRead && window.markAllNotificationsAsRead()'
-          })" class="btn-secondary">
-            <span class="icon-standard">✔️</span>
-            <span class="hidden sm:inline">Marcar todas como lidas</span>
-          </button>
-        </div>
+  <h2 class="tab-title-highlight">🔔 Notificações</h2>
+  <div id="notif-period-indicator"></div>
       </div>
       <div class="tab-content">
         <div class="content-spacing">
-          <!-- Lista de Notificações -->
-          <div class="space-y-4">
-            ${notifications.length > 0 ? notifications.map(notification => `
-              <div class="card-standard ${!notification.read ? 'border-l-4 border-blue-500' : ''}">
-                <div class="flex items-start justify-between">
-                  <div class="flex-1">
-                    <div class="flex items-center gap-2 mb-2">
-                      <span class="text-lg">💰</span>
-                      <h3 class="font-semibold text-gray-800 dark:text-white">
-                        Nova transação no orçamento "${notification.budgetName || 'Orçamento'}"
-                      </h3>
-                      ${!notification.read ? '<span class="px-2 py-1 bg-blue-500 text-white text-xs rounded-full">Nova</span>' : ''}
-                    </div>
-                    <p class="text-gray-600 dark:text-gray-400 mb-2">
-                      <strong>${notification.senderName || 'Usuário'}</strong> adicionou uma ${notification.transactionTipo || 'transação'}:
-                    </p>
-                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 mb-3">
-                      <div class="flex items-center justify-between">
-                        <div>
-                          <div class="font-medium text-gray-800 dark:text-white">${notification.transactionDescricao || 'Transação'}</div>
-                          <div class="text-sm text-gray-500 dark:text-gray-400">${notification.transactionCategoria || 'Categoria'}</div>
-                        </div>
-                        <div class="text-right">
-                          <div class="font-bold text-lg ${(notification.transactionTipo || 'despesa') === 'receita' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}">
-                            R$ ${(notification.transactionValor || 0).toFixed(2)}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="text-xs text-gray-500 dark:text-gray-400">
-                      ${notification.createdAt?.toDate ? notification.createdAt.toDate().toLocaleString('pt-BR') : 'Data não disponível'}
-                    </div>
+          
+          
+          <!-- ========== SEÇÃO 1: RESUMO DAS NOTIFICAÇÕES ========== -->
+          <div class="mb-8">
+            <div class="flex items-center gap-2 mb-4">
+              <div class="w-1 h-6 bg-gradient-to-b from-blue-500 to-indigo-500 rounded-full"></div>
+              <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">📊 Visão Geral</h2>
+            </div>
+            
+            <div class="bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 rounded-2xl shadow-xl p-6 md:p-8 text-white">
+              <!-- Header do Card -->
+              <div class="flex items-center justify-between mb-6">
+                <div>
+                  <h3 class="text-xl md:text-2xl font-bold">Centro de Notificações</h3>
+                  <p class="text-sm opacity-90">${totalNotificacoes} notificações no total</p>
+                </div>
+                <div class="text-right">
+                  <div class="text-2xl md:text-3xl font-bold ${notificacoesNaoLidas > 0 ? 'text-yellow-200' : 'text-green-200'}">
+                    ${notificacoesNaoLidas}
                   </div>
-                  ${!notification.read ? `
-                    <button onclick="window.showConfirmationModal({
-                      title: 'Marcar como Lida',
-                      message: 'Deseja marcar esta notificação como lida?',
-                      confirmText: 'Sim, Marcar',
-                      confirmColor: 'bg-blue-500 hover:bg-blue-600',
-                      onConfirm: 'window.markNotificationAsRead && window.markNotificationAsRead(\\'${notification.id}\\')'
-                    })" 
-                            class="px-3 py-1 bg-blue-500 text-white text-xs rounded-lg hover:bg-blue-600 transition-colors">
-                      Marcar como lida
-                    </button>
-                  ` : ''}
+                  <p class="text-xs opacity-90">${notificacoesNaoLidas > 0 ? '📬 Não lidas' : '✅ Todas lidas'}</p>
                 </div>
               </div>
-            `).join('') : `
-              <div class="card-standard text-center">
-                <div class="text-6xl mb-4">🔔</div>
-                <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">Nenhuma notificação</h3>
-                <p class="text-gray-600 dark:text-gray-400">Você não tem notificações no momento.</p>
+              
+              <!-- Grid de Métricas -->
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-white bg-opacity-15 backdrop-blur-sm rounded-xl p-4 text-center">
+                  <div class="text-2xl mb-2">📧</div>
+                  <div class="text-2xl md:text-3xl font-bold">${totalNotificacoes}</div>
+                  <div class="text-sm opacity-90">Total</div>
+                </div>
+                
+                <div class="bg-white bg-opacity-15 backdrop-blur-sm rounded-xl p-4 text-center">
+                  <div class="text-2xl mb-2">📬</div>
+                  <div class="text-2xl md:text-3xl font-bold text-yellow-200">${notificacoesNaoLidas}</div>
+                  <div class="text-sm opacity-90">Não lidas</div>
+                </div>
+                
+                <div class="bg-white bg-opacity-15 backdrop-blur-sm rounded-xl p-4 text-center">
+                  <div class="text-2xl mb-2">✅</div>
+                  <div class="text-2xl md:text-3xl font-bold text-green-200">${notificacoesLidas}</div>
+                  <div class="text-sm opacity-90">Lidas</div>
+                </div>
+                
+                <div class="bg-white bg-opacity-15 backdrop-blur-sm rounded-xl p-4 text-center">
+                  <div class="text-2xl mb-2">📅</div>
+                  <div class="text-2xl md:text-3xl font-bold">${notificacoesHoje}</div>
+                  <div class="text-sm opacity-90">Hoje</div>
+                </div>
               </div>
-            `}
+            </div>
+          </div>
+
+          <!-- ========== SEÇÃO 2: AÇÕES E CONTROLES ========== -->
+          <div class="mb-8">
+            <div class="flex items-center gap-2 mb-4">
+              <div class="w-1 h-6 bg-gradient-to-b from-green-500 to-teal-500 rounded-full"></div>
+              <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">🔧 Ações & Controles</h2>
+            </div>
+            
+            <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <!-- Header -->
+              <div class="bg-gradient-to-r from-green-50 to-teal-50 dark:from-gray-800 dark:to-gray-800 p-4 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex flex-wrap justify-between items-center gap-2">
+                  <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Gerenciar Notificações</h3>
+                  <div class="flex gap-2 flex-wrap">
+                    <button onclick="window.showConfirmationModal({
+                      title: 'Marcar como Lidas',
+                      message: 'Deseja marcar todas as notificações como lidas?',
+                      confirmText: 'Sim, Marcar',
+                      confirmColor: 'bg-blue-500 hover:bg-blue-600',
+                      onConfirm: 'window.markAllNotificationsAsRead && window.markAllNotificationsAsRead()'
+                    })" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 shadow-md hover:shadow-lg">
+                      ✅ Marcar todas como lidas
+                    </button>
+                    <button onclick="window.showConfirmationModal({
+                      title: 'Apagar notificações lidas',
+                      message: 'Deseja apagar todas as notificações lidas? Esta ação não pode ser desfeita.',
+                      confirmText: 'Sim, Apagar',
+                      confirmColor: 'bg-red-500 hover:bg-red-600',
+                      onConfirm: 'window.deleteAllReadNotifications && window.deleteAllReadNotifications()'
+                    })" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 shadow-md hover:shadow-lg">
+                      🗑️ Apagar lidas
+                    </button>
+                    <button onclick="window.renderNotifications()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 shadow-md hover:shadow-lg">
+                      🔄 Atualizar
+                    </button>
+                  </div>
+                </div>
+                <!-- Controles: filtros e preferência de toasts -->
+                <div class="mt-3 flex flex-col gap-3">
+                  <!-- Filtro por tipo -->
+                  <div class="flex flex-wrap gap-2 items-center">
+                    <span class="text-sm text-gray-700 dark:text-gray-300 mr-1">Tipos:</span>
+                    ${['new_transaction','updated_transaction','deleted_transaction','category_added','category_updated','category_deleted']
+                      .map(t => {
+                        const active = filters.types.includes(t);
+                        const labels = { new_transaction:'Nova Tx', updated_transaction:'Tx Atualizada', deleted_transaction:'Tx Excluída', category_added:'Cat Criada', category_updated:'Cat Atualizada', category_deleted:'Cat Excluída' };
+                        return `<button onclick=\"window.toggleNotificationTypeFilter('`+t+`')\" class=\"px-3 py-1 rounded-full text-xs font-medium ${active ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'}\">${labels[t]}</button>`;
+                      }).join('')}
+                  </div>
+                  <!-- Filtro por período -->
+                  <div class="flex flex-wrap gap-2 items-center">
+                    <span class="text-sm text-gray-700 dark:text-gray-300 mr-1">Período:</span>
+                    ${['all','today','7d','30d'].map(p => {
+                      const label = p==='all'?'Tudo':(p==='today'?'Hoje':(p==='7d'?'7 dias':'30 dias'));
+                      const active = filters.period===p;
+                      return `<button onclick=\"window.setNotificationPeriod('`+p+`')\" class=\"px-3 py-1 rounded-full text-xs font-medium ${active ? 'bg-indigo-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'}\">${label}</button>`;
+                    }).join('')}
+                  </div>
+                  <!-- Preferência de toasts -->
+                  <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                    <input type="checkbox" ${getNotificationsToastsEnabled() ? 'checked' : ''} onchange="window.setNotificationsToastsEnabled(this.checked)" />
+                    Mostrar toasts em tempo real
+                  </label>
+                  <!-- Política de retenção -->
+                  <div class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                    <span>Apagar automaticamente após:</span>
+                    <select onchange="window.setNotificationRetentionDays(this.value)" class="bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded px-2 py-1">
+                      ${[0, 15, 30, 60, 90].map(d => `<option value=\"${d}\" ${getNotificationRetentionDays()==d?'selected':''}>${d===0?'Nunca':d+' dias'}</option>`).join('')}
+                    </select>
+                    <button class="ml-2 px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded" onclick="window.runNotificationAutoClean()">Executar limpeza</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ========== SEÇÃO 3: LISTA DE NOTIFICAÇÕES ========== -->
+          <div class="mb-8">
+            <div class="flex items-center gap-2 mb-4">
+              <div class="w-1 h-6 bg-gradient-to-b from-purple-500 to-pink-500 rounded-full"></div>
+              <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">📋 Todas as Notificações</h2>
+            </div>
+            
+            <div class="space-y-6">
+              ${filtered.length > 0 ? grouped.map(group => `
+                <div>
+                  <div class=\"text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2\">${group.label}</div>
+                  <div class=\"space-y-4\">
+                  ${group.items.map(notification => `
+                <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-2xl transition-all duration-300 group ${!notification.read ? 'ring-2 ring-blue-200 dark:ring-blue-800' : ''}">
+                  <!-- Header da Notificação -->
+                  <div class="bg-gradient-to-r ${!notification.read ? 'from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-800' : 'from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-800'} p-4 border-b border-gray-200 dark:border-gray-700">
+                    <div class="flex items-center justify-between">
+                      <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-full ${notification.type === 'deleted_transaction' ? 'bg-red-100 dark:bg-red-900' : notification.type === 'updated_transaction' ? 'bg-yellow-100 dark:bg-yellow-900' : (notification.type && notification.type.startsWith('category_')) ? 'bg-purple-100 dark:bg-purple-900' : 'bg-blue-100 dark:bg-blue-900'} flex items-center justify-center text-xl">
+                          ${notification.type === 'deleted_transaction' ? '🗑️' : notification.type === 'updated_transaction' ? '✏️' : (notification.type && notification.type.startsWith('category_')) ? '📂' : '💰'}
+                        </div>
+                        <div>
+                          <h3 class="font-bold text-gray-900 dark:text-gray-100">${
+                            notification.type === 'deleted_transaction' ? 'Transação Excluída' :
+                            notification.type === 'updated_transaction' ? 'Transação Atualizada' :
+                            notification.type === 'new_transaction' ? 'Nova Transação' :
+                            notification.type === 'category_added' ? 'Categoria Criada' :
+                            notification.type === 'category_updated' ? 'Categoria Atualizada' :
+                            notification.type === 'category_deleted' ? 'Categoria Excluída' : 'Notificação'
+                          }</h3>
+                          <p class="text-sm text-gray-500 dark:text-gray-400">Orçamento: ${notification.budgetName || 'Orçamento'}</p>
+                        </div>
+                      </div>
+                      <div class="text-right">
+                        ${!notification.read ? '<div class="text-2xl">📬</div>' : '<div class="text-2xl">✅</div>'}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Conteúdo da Notificação -->
+                  <div class="p-4">
+                    <div class="space-y-3">
+                      <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-600 dark:text-gray-400">Enviado por:</span>
+                        <span class="font-medium text-gray-900 dark:text-gray-100">${notification.senderName || 'Usuário'}</span>
+                      </div>
+                      
+                      ${notification.type && notification.type.startsWith('category_') ? `
+                        <div class="flex items-center justify-between">
+                          <span class="text-sm text-gray-600 dark:text-gray-400">Categoria:</span>
+                          <span class="font-medium text-gray-900 dark:text-gray-100">${notification.categoryNome || 'Categoria'}</span>
+                        </div>
+                        <div class="bg-gray-50 dark:bg-gray-800 rounded-xl p-4">
+                          <div class="flex items-center justify-between mb-2">
+                            <div class="font-medium text-gray-900 dark:text-gray-100">${notification.categoryTipo ? (notification.categoryTipo === 'receita' ? 'Receita' : 'Despesa') : 'Categoria'}</div>
+                            ${typeof notification.categoryLimite !== 'undefined' ? `<div class=\"text-sm text-gray-600 dark:text-gray-400\">Limite: R$ ${Number(notification.categoryLimite || 0).toFixed(2)}</div>` : ''}
+                          </div>
+                        </div>
+                      ` : `
+                        <div class="flex items-center justify-between">
+                          <span class="text-sm text-gray-600 dark:text-gray-400">Tipo:</span>
+                          ${notification.type === 'deleted_transaction'
+                            ? '<span class="font-medium text-red-600">excluída</span>'
+                            : `<span class=\"font-medium ${(notification.transactionTipo || 'despesa') === 'receita' ? 'text-green-600' : 'text-red-600'}\">${notification.transactionTipo || 'Transação'}</span>`}
+                        </div>
+                        
+                        <!-- Detalhes da Transação -->
+                        <div class="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 ${notification.type === 'deleted_transaction' ? 'opacity-75' : ''}">
+                          <div class="flex items-center justify-between mb-2">
+                            <div class="font-medium text-gray-900 dark:text-gray-100 ${notification.type === 'deleted_transaction' ? 'line-through' : ''}">${notification.transactionDescricao || 'Transação'}</div>
+                            <div class="font-bold text-lg ${(notification.transactionTipo || 'despesa') === 'receita' ? 'text-green-600' : 'text-red-600'} ${notification.type === 'deleted_transaction' ? 'line-through' : ''}">
+                              R$ ${Number(notification.transactionValor || 0).toFixed(2)}
+                            </div>
+                          </div>
+                          <div class="text-sm text-gray-500 dark:text-gray-400">
+                            Categoria: ${notification.transactionCategoria || 'Sem categoria'}
+                          </div>
+                        </div>
+                      `}
+                      
+                      <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-600 dark:text-gray-400">Data:</span>
+                        <span class="text-sm text-gray-500 dark:text-gray-400">
+                          ${notification.createdAt?.toDate ? notification.createdAt.toDate().toLocaleString('pt-BR') : 'Data não disponível'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Botões de Ação -->
+                  ${!notification.read ? `
+                    <div class="bg-gray-50 dark:bg-gray-800 p-4 border-t border-gray-200 dark:border-gray-700">
+                      <div class="flex gap-2">
+                        <button onclick="window.showConfirmationModal({
+                          title: 'Marcar como Lida',
+                          message: 'Deseja marcar esta notificação como lida?',
+                          confirmText: 'Sim, Marcar',
+                          confirmColor: 'bg-blue-500 hover:bg-blue-600',
+                          onConfirm: 'window.markNotificationAsRead && window.markNotificationAsRead(\\'${notification.id}\\')'
+                        })" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2">
+                          ✅ Marcar como lida
+                        </button>
+                        <button onclick="window.openNotificationTarget('${notification.id}','${notification.type || ''}')" class="flex-1 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-100 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2">
+                          🔗 Ver no app
+                        </button>
+                      </div>
+                    </div>
+                  ` : ''}
+                </div>
+                  `).join('')}
+                  </div>
+                </div>
+              `).join('') : `
+                <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                  <div class="text-center py-12">
+                    <div class="text-6xl mb-4">🔔</div>
+                    <div class="text-xl font-semibold text-gray-800 dark:text-white mb-2">Nenhuma notificação</div>
+                    <div class="text-gray-600 dark:text-gray-400 mb-4">Você não tem notificações no momento</div>
+                    <button onclick="window.renderNotifications()" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-xl font-medium transition-all duration-200 shadow-lg">
+                      🔄 Atualizar
+                    </button>
+                  </div>
+                </div>
+              `}
+            </div>
           </div>
         </div>
       </div>
     </div>
   `;
+
+  // Injetar indicador de período padrão (não altera filtragem das notificações, apenas padroniza o cabeçalho)
+  (async () => {
+    try {
+      const { createPeriodIndicator } = await import('./ui/PeriodIndicator.js');
+      const holder = document.getElementById('notif-period-indicator');
+      if (holder) {
+        holder.innerHTML = '';
+        holder.appendChild(createPeriodIndicator({ onChange: () => renderNotifications() }));
+      }
+    } catch (e) {
+      console.warn('PeriodIndicator (Notificações) indisponível:', e);
+    }
+  })();
   
   renderFAB();
 }
+
+// ===== Filtros, agrupamento e deep-link de notificações =====
+function getNotifFilters() {
+  if (!window.__notifFilters) {
+    try {
+      const saved = localStorage.getItem('notifFilters');
+      if (saved) window.__notifFilters = JSON.parse(saved);
+    } catch {}
+    if (!window.__notifFilters) {
+      window.__notifFilters = {
+        types: ['new_transaction','updated_transaction','deleted_transaction','category_added','category_updated','category_deleted'],
+        period: 'all'
+      };
+    }
+  }
+  return window.__notifFilters;
+}
+window.getNotifFilters = getNotifFilters;
+
+function saveNotifFilters() {
+  try { localStorage.setItem('notifFilters', JSON.stringify(window.__notifFilters)); } catch {}
+}
+
+function toggleNotificationTypeFilter(type) {
+  const f = getNotifFilters();
+  if (f.types.includes(type)) {
+    f.types = f.types.filter(t => t !== type);
+    if (f.types.length === 0) f.types = [type];
+  } else {
+    f.types.push(type);
+  }
+  window.__notifFilters = f;
+  saveNotifFilters();
+  renderNotifications();
+}
+window.toggleNotificationTypeFilter = toggleNotificationTypeFilter;
+
+function setNotificationPeriod(period) {
+  const f = getNotifFilters();
+  f.period = period;
+  window.__notifFilters = f;
+  saveNotifFilters();
+  renderNotifications();
+}
+window.setNotificationPeriod = setNotificationPeriod;
+
+function applyNotificationFilters(list, filters) {
+  const now = new Date();
+  const dayMs = 24*60*60*1000;
+  return list.filter(n => {
+    if (n.type && !filters.types.includes(n.type)) return false;
+    if (filters.period && filters.period !== 'all') {
+      const dt = n.createdAt?.toDate ? n.createdAt.toDate() : new Date(n.createdAt);
+      const diffMs = now - dt;
+      if (filters.period === 'today') {
+        if (dt.toDateString() !== now.toDateString()) return false;
+      } else if (filters.period === '7d') {
+        if (diffMs > 7*dayMs) return false;
+      } else if (filters.period === '30d') {
+        if (diffMs > 30*dayMs) return false;
+      }
+    }
+    return true;
+  });
+}
+window.applyNotificationFilters = applyNotificationFilters;
+
+function groupNotificationsByDay(list) {
+  const toTime = n => n.createdAt?.seconds ? n.createdAt.seconds*1000 : (new Date(n.createdAt)).getTime();
+  const sorted = [...list].sort((a,b) => toTime(b) - toTime(a));
+  const map = new Map();
+  for (const n of sorted) {
+    const d = n.createdAt?.toDate ? n.createdAt.toDate() : new Date(n.createdAt);
+    const key = d.toDateString();
+    if (!map.has(key)) map.set(key, []);
+    map.get(key).push(n);
+  }
+  const todayStr = new Date().toDateString();
+  const y = new Date(); y.setDate(y.getDate()-1);
+  const yStr = y.toDateString();
+  const sections = [];
+  for (const [key, items] of map.entries()) {
+    let label;
+    if (key === todayStr) label = 'Hoje';
+    else if (key === yStr) label = 'Ontem';
+    else label = new Date(key).toLocaleDateString('pt-BR');
+    sections.push({ label, items });
+  }
+  return sections;
+}
+window.groupNotificationsByDay = groupNotificationsByDay;
+
+function openNotificationTarget(id, type) {
+  try {
+    const n = (window.appState.notifications || []).find(x => x.id === id);
+    if (!n) return;
+    if (type && type.startsWith('category_')) {
+      window.location.hash = '#/categories';
+    } else {
+      window.location.hash = '#/transactions';
+    }
+    if (!n.read && typeof window.markNotificationAsRead === 'function') {
+      window.markNotificationAsRead(id);
+    }
+  } catch (e) {
+    console.warn('Falha ao abrir alvo da notificação:', e);
+  }
+}
+window.openNotificationTarget = openNotificationTarget;
 
 // Expor funções de notificações globalmente
 window.loadNotifications = loadNotifications;
@@ -4860,6 +6392,77 @@ window.markNotificationAsRead = markNotificationAsRead;
 window.markAllNotificationsAsRead = markAllNotificationsAsRead;
 window.renderNotifications = renderNotifications;
 window.listenNotifications = listenNotifications;
+
+// Preferência: exibir toasts em tempo real
+window.getNotificationsToastsEnabled = function() {
+  try {
+    const v = localStorage.getItem('notificationsToastsEnabled');
+    return v === null ? true : v === 'true';
+  } catch { return true; }
+};
+window.setNotificationsToastsEnabled = function(enabled) {
+  try { localStorage.setItem('notificationsToastsEnabled', enabled ? 'true' : 'false'); } catch {}
+  if (typeof Snackbar === 'function') {
+    Snackbar({ message: enabled ? 'Toasts ativados' : 'Toasts desativados', type: 'info' });
+  }
+};
+
+// Ação em massa: apagar todas as notificações lidas
+window.deleteAllReadNotifications = async function() {
+  try {
+    const list = (window.appState.notifications || []).filter(n => n.read);
+    if (list.length === 0) {
+      return Snackbar && Snackbar({ message: 'Sem notificações lidas para apagar', type: 'info' });
+    }
+  const { deleteMany } = await import('@data/repositories/notificationsRepo.js');
+  await notificationsStore.removeMany(list.map(n => n.id));
+    // Atualiza estado local
+    window.appState.notifications = notificationsStore.getState().items;
+    updateNotificationBadge();
+    renderNotifications();
+    Snackbar && Snackbar({ message: 'Notificações lidas apagadas', type: 'success' });
+  } catch (e) {
+    console.error('Erro ao apagar notificações lidas:', e);
+    Snackbar && Snackbar({ message: 'Erro ao apagar notificações lidas', type: 'error' });
+  }
+};
+
+// Retenção de notificações
+window.getNotificationRetentionDays = function() {
+  try {
+    const v = parseInt(localStorage.getItem('notificationRetentionDays') || '0', 10);
+    return isNaN(v) ? 0 : v;
+  } catch { return 0; }
+};
+window.setNotificationRetentionDays = function(days) {
+  try { localStorage.setItem('notificationRetentionDays', String(days)); } catch {}
+  if (typeof Snackbar === 'function') Snackbar({ message: days===0?'Retenção desativada':`Retenção: ${days} dias`, type: 'info' });
+};
+window.runNotificationAutoClean = async function() {
+  try {
+    const days = window.getNotificationRetentionDays();
+    if (!days || days <= 0) {
+      return Snackbar && Snackbar({ message: 'Retenção desativada', type: 'info' });
+    }
+    const cutoff = Date.now() - days*24*60*60*1000;
+    const toDelete = (window.appState.notifications || []).filter(n => {
+      const t = n.createdAt?.seconds ? n.createdAt.seconds*1000 : (new Date(n.createdAt)).getTime();
+      return t < cutoff;
+    });
+    if (toDelete.length === 0) {
+      return Snackbar && Snackbar({ message: 'Nada para limpar', type: 'info' });
+    }
+  const { deleteMany } = await import('@data/repositories/notificationsRepo.js');
+  await notificationsStore.removeMany(toDelete.map(n => n.id));
+    window.appState.notifications = notificationsStore.getState().items;
+    updateNotificationBadge();
+    renderNotifications();
+    Snackbar && Snackbar({ message: `Limpeza concluída (${toDelete.length})`, type: 'success' });
+  } catch (e) {
+    console.error('Erro na limpeza de notificações:', e);
+    Snackbar && Snackbar({ message: 'Erro na limpeza de notificações', type: 'error' });
+  }
+};
 
 // Funções wrapper com confirmação para operações críticas
 window.addTransactionWithConfirmation = async function(transactionData) {
@@ -6072,15 +7675,13 @@ async function getUserInfo(uid) {
 // Função para enviar notificação de nova transação
 async function sendTransactionNotification(budgetId, senderUid, transactionData) {
   try {
-    // Buscar informações do orçamento
-    const { getDoc, addDoc, collection, doc, serverTimestamp } = await import('firebase/firestore');
-    const budgetDoc = await getDoc(doc(db, 'budgets', budgetId));
-    if (!budgetDoc.exists()) {
+    // Buscar informações do orçamento via repo
+    const { serverTimestamp } = await import('firebase/firestore');
+    const budgetData = await budgetsRepo.getById(budgetId);
+    if (!budgetData) {
       console.log('Orçamento não encontrado para notificação');
       return;
     }
-
-    const budgetData = budgetDoc.data();
     
     // Verificar se é um orçamento compartilhado
     if (!budgetData.usuariosPermitidos || budgetData.usuariosPermitidos.length === 0) {
@@ -6095,10 +7696,8 @@ async function sendTransactionNotification(budgetId, senderUid, transactionData)
     // Buscar categoria da transação
     let categoriaNome = 'Sem categoria';
     if (transactionData.categoriaId) {
-      const categoriaDoc = await getDoc(doc(db, 'categories', transactionData.categoriaId));
-      if (categoriaDoc.exists()) {
-        categoriaNome = categoriaDoc.data().nome;
-      }
+      const categoria = await categoriesRepo.getById(transactionData.categoriaId);
+      if (categoria) categoriaNome = categoria.nome;
     }
 
     // Preparar dados da notificação
@@ -6117,26 +7716,188 @@ async function sendTransactionNotification(budgetId, senderUid, transactionData)
       type: 'new_transaction'
     };
 
-    // Enviar notificação para todos os usuários compartilhados (exceto o remetente)
-    const notificationPromises = budgetData.usuariosPermitidos
-      .filter(uid => uid !== senderUid)
-      .map(async (recipientUid) => {
-        try {
-          await addDoc(collection(db, 'notifications'), {
-            ...notificationData,
-            recipientUid
-          });
-          console.log(`📧 Notificação enviada para usuário: ${recipientUid}`);
-        } catch (error) {
-          console.error(`Erro ao enviar notificação para ${recipientUid}:`, error);
-        }
-      });
+    // Enviar notificação para todos os usuários do orçamento (membros + dono), exceto o remetente
+    const rawRecipients = [...(budgetData.usuariosPermitidos || [])];
+    if (budgetData.criadoPor && !rawRecipients.includes(budgetData.criadoPor)) {
+      rawRecipients.push(budgetData.criadoPor);
+    }
+    const recipients = rawRecipients.filter((uid, idx) => !!uid && rawRecipients.indexOf(uid) === idx && uid !== senderUid);
+    const { create: createNotification } = await import('@data/repositories/notificationsRepo.js');
+    const notificationPromises = recipients.map(async (recipientUid) => {
+      try {
+        await createNotification({ ...notificationData, recipientUid });
+        console.log(`📧 Notificação enviada para usuário: ${recipientUid}`);
+      } catch (error) {
+        console.error(`Erro ao enviar notificação para ${recipientUid}:`, error);
+      }
+    });
 
     await Promise.all(notificationPromises);
     console.log('✅ Notificações enviadas com sucesso');
 
   } catch (error) {
     console.error('Erro ao enviar notificações:', error);
+  }
+}
+
+// Função para enviar notificação de exclusão de transação
+async function sendTransactionDeletedNotification(budgetId, senderUid, transactionData) {
+  try {
+    // Buscar informações do orçamento
+  const { serverTimestamp } = await import('firebase/firestore');
+  const budgetData = await budgetsRepo.getById(budgetId);
+  if (!budgetData) {
+      console.log('Orçamento não encontrado para notificação de exclusão');
+      return;
+    }
+
+    // Verificar se é um orçamento compartilhado
+    if (!budgetData.usuariosPermitidos || budgetData.usuariosPermitidos.length === 0) {
+      console.log('Orçamento não compartilhado, não enviando notificação de exclusão');
+      return;
+    }
+
+    // Buscar informações do usuário que excluiu a transação
+    const senderInfo = await getUserInfo(senderUid);
+    const senderName = senderInfo?.displayName || senderInfo?.email || 'Usuário';
+
+    // Buscar categoria da transação (se ainda disponível nos dados lidos)
+    let categoriaNome = 'Sem categoria';
+    if (transactionData?.categoriaId) {
+      const categoria = await categoriesRepo.getById(transactionData.categoriaId);
+      if (categoria) categoriaNome = categoria.nome;
+    }
+
+    // Preparar dados da notificação
+    const notificationData = {
+      budgetId,
+      budgetName: budgetData.nome || 'Orçamento',
+      senderUid,
+      senderName,
+      transactionId: transactionData?.id,
+      transactionDescricao: transactionData?.descricao,
+      transactionValor: transactionData?.valor,
+      transactionCategoria: categoriaNome,
+      transactionTipo: transactionData?.tipo || 'despesa',
+      createdAt: serverTimestamp(),
+      read: false,
+      type: 'deleted_transaction'
+    };
+
+    // Enviar notificação para todos os usuários do orçamento (membros + dono), exceto o remetente
+    const rawRecipients = [...(budgetData.usuariosPermitidos || [])];
+    if (budgetData.criadoPor && !rawRecipients.includes(budgetData.criadoPor)) {
+      rawRecipients.push(budgetData.criadoPor);
+    }
+    const recipients = rawRecipients.filter((uid, idx) => !!uid && rawRecipients.indexOf(uid) === idx && uid !== senderUid);
+    const { create: createNotification } = await import('@data/repositories/notificationsRepo.js');
+    const notificationPromises = recipients.map(async (recipientUid) => {
+      try {
+        await createNotification({ ...notificationData, recipientUid });
+        console.log(`📧 Notificação de exclusão enviada para usuário: ${recipientUid}`);
+      } catch (error) {
+        console.error(`Erro ao enviar notificação de exclusão para ${recipientUid}:`, error);
+      }
+    });
+
+    await Promise.all(notificationPromises);
+    console.log('✅ Notificações de exclusão enviadas com sucesso');
+
+  } catch (error) {
+    console.error('Erro ao enviar notificações de exclusão:', error);
+  }
+}
+
+// Função para enviar notificação de atualização de transação
+async function sendTransactionUpdatedNotification(budgetId, senderUid, transactionData) {
+  try {
+    const { serverTimestamp } = await import('firebase/firestore');
+    const budgetData = await budgetsRepo.getById(budgetId);
+    if (!budgetData) return;
+    if (!budgetData.usuariosPermitidos || budgetData.usuariosPermitidos.length === 0) return;
+
+    const senderInfo = await getUserInfo(senderUid);
+    const senderName = senderInfo?.displayName || senderInfo?.email || 'Usuário';
+
+    let categoriaNome = 'Sem categoria';
+    if (transactionData?.categoriaId) {
+      const categoria = await categoriesRepo.getById(transactionData.categoriaId);
+      if (categoria) categoriaNome = categoria.nome;
+    }
+
+    const notificationData = {
+      budgetId,
+      budgetName: budgetData.nome || 'Orçamento',
+      senderUid,
+      senderName,
+      transactionId: transactionData?.id,
+      transactionDescricao: transactionData?.descricao,
+      transactionValor: transactionData?.valor,
+      transactionCategoria: categoriaNome,
+      transactionTipo: transactionData?.tipo || 'despesa',
+      createdAt: serverTimestamp(),
+      read: false,
+      type: 'updated_transaction'
+    };
+
+    const rawRecipients = [...(budgetData.usuariosPermitidos || [])];
+    if (budgetData.criadoPor && !rawRecipients.includes(budgetData.criadoPor)) rawRecipients.push(budgetData.criadoPor);
+    const recipients = rawRecipients.filter((uid, idx) => !!uid && rawRecipients.indexOf(uid) === idx && uid !== senderUid);
+
+    const { create: createNotification } = await import('@data/repositories/notificationsRepo.js');
+    await Promise.all(recipients.map(async (recipientUid) => {
+      try {
+        await createNotification({ ...notificationData, recipientUid });
+        console.log(`📧 Notificação de atualização enviada para usuário: ${recipientUid}`);
+      } catch (err) {
+        console.error(`Erro ao enviar notificação de atualização para ${recipientUid}:`, err);
+      }
+    }));
+  } catch (error) {
+    console.error('Erro ao enviar notificações de atualização:', error);
+  }
+}
+
+// Função genérica para notificar mudanças de categoria
+async function sendCategoryChangeNotification(budgetId, senderUid, categoryData, changeType) {
+  try {
+    const { serverTimestamp } = await import('firebase/firestore');
+    const budgetData = await budgetsRepo.getById(budgetId);
+    if (!budgetData) return;
+    if (!budgetData.usuariosPermitidos || budgetData.usuariosPermitidos.length === 0) return;
+
+    const senderInfo = await getUserInfo(senderUid);
+    const senderName = senderInfo?.displayName || senderInfo?.email || 'Usuário';
+
+    const notificationData = {
+      budgetId,
+      budgetName: budgetData.nome || 'Orçamento',
+      senderUid,
+      senderName,
+      categoryId: categoryData?.id,
+      categoryNome: categoryData?.nome,
+      categoryTipo: categoryData?.tipo,
+      categoryLimite: categoryData?.limite,
+      createdAt: serverTimestamp(),
+      read: false,
+      type: changeType // 'category_added' | 'category_updated' | 'category_deleted'
+    };
+
+    const rawRecipients = [...(budgetData.usuariosPermitidos || [])];
+    if (budgetData.criadoPor && !rawRecipients.includes(budgetData.criadoPor)) rawRecipients.push(budgetData.criadoPor);
+    const recipients = rawRecipients.filter((uid, idx) => !!uid && rawRecipients.indexOf(uid) === idx && uid !== senderUid);
+
+    const { create: createNotification } = await import('@data/repositories/notificationsRepo.js');
+    await Promise.all(recipients.map(async (recipientUid) => {
+      try {
+        await createNotification({ ...notificationData, recipientUid });
+        console.log(`📧 Notificação de categoria (${changeType}) enviada para usuário: ${recipientUid}`);
+      } catch (err) {
+        console.error(`Erro ao enviar notificação de categoria para ${recipientUid}:`, err);
+      }
+    }));
+  } catch (error) {
+    console.error('Erro ao enviar notificações de categoria:', error);
   }
 }
 
@@ -6215,6 +7976,9 @@ async function removeUserFromBudget(budgetId, userUid) {
 // Expor funções adicionais globalmente
 window.getUserInfo = getUserInfo;
 window.sendTransactionNotification = sendTransactionNotification;
+window.sendTransactionDeletedNotification = sendTransactionDeletedNotification;
+window.sendTransactionUpdatedNotification = sendTransactionUpdatedNotification;
+window.sendCategoryChangeNotification = sendCategoryChangeNotification;
 window.leaveSharedBudget = leaveSharedBudget;
 window.removeUserFromBudget = removeUserFromBudget;
 window.calcularParcelaRecorrente = calcularParcelaRecorrente;
@@ -6256,6 +8020,47 @@ window.closeModal = function() {
 };
 
 // Função universal para mostrar modal de confirmação
+// Resolve and call a global callback reference safely (e.g., 'minhaFuncao' or 'AlgumObjeto.metodo')
+function __safeCallGlobal(ref) {
+  try {
+    if (!ref || typeof ref !== 'string') return;
+    let path = ref.trim();
+    if (!path) return;
+    // Drop trailing parentheses if provided (e.g., 'foo()')
+    if (path.endsWith('()')) path = path.slice(0, -2);
+    // Remove leading 'window.' if present
+    path = path.replace(/^window\./, '');
+    const parts = path.split('.');
+    let ctx = window;
+    for (let i = 0; i < parts.length - 1; i++) {
+      const key = parts[i];
+      if (ctx && Object.prototype.hasOwnProperty.call(ctx, key)) {
+        ctx = ctx[key];
+      } else {
+        return console.warn('onConfirm não resolvido (contexto):', ref);
+      }
+    }
+    const fnKey = parts[parts.length - 1];
+    const fn = ctx && ctx[fnKey];
+    if (typeof fn === 'function') {
+      fn.call(ctx);
+    } else {
+      console.warn('onConfirm não é função:', ref);
+    }
+  } catch (e) {
+    console.warn('Falha ao resolver onConfirm:', e);
+  }
+}
+
+// Expor helper no escopo global para chamadas geradas e fallback de build
+// Isso permite substituir com segurança qualquer uso antigo de eval no bundle final
+// sem quebrar quando os módulos são divididos.
+try {
+  window.__safeCallGlobal = __safeCallGlobal;
+} catch (e) {
+  // ignore
+}
+
 window.showConfirmationModal = function(options) {
   const {
     title = 'Confirmar Ação',
@@ -6300,7 +8105,16 @@ window.showConfirmationModal = function(options) {
     if (confirmBtn) {
       confirmBtn.onclick = () => {
         window.closeModal();
-        if (onConfirm) onConfirm();
+        try {
+          if (typeof onConfirm === 'function') {
+            onConfirm();
+          } else if (typeof onConfirm === 'string' && onConfirm.trim()) {
+            // Evita eval — tenta resolver função global de forma segura
+            __safeCallGlobal(onConfirm);
+          }
+        } catch (err) {
+          console.warn('onConfirm gerou um erro:', err);
+        }
       };
     }
   }, 100);
@@ -6459,9 +8273,40 @@ window.compartilharOrcamento = async function () {
   window.showModal(modalContent);
 };
 
+// Fallback: caso alguma UI chame showShareBudgetModal, rolar até a seção de compartilhar
+if (!window.showShareBudgetModal) {
+  window.showShareBudgetModal = function() {
+    const el = document.getElementById('share-email');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => el.focus(), 300);
+    } else if (window.Snackbar) {
+      window.Snackbar({ message: 'Abra a aba Config > Compartilhar Orçamento', type: 'info' });
+    }
+  }
+}
+
+// Utilidades de convites
+function normalizeInvitationStatus(s) {
+  const raw = (s ?? 'pending').toString().trim().toLowerCase();
+  // Mapear sinônimos PT/EN
+  if (raw === 'pendente') return 'pending';
+  if (raw === 'aceito' || raw === 'aceita' || raw === 'accepted') return 'accepted';
+  if (raw === 'recusado' || raw === 'recusada' || raw === 'declined' || raw === 'refused' || raw === 'rejected') return 'declined';
+  if (raw === 'cancelado' || raw === 'cancelada' || raw === 'canceled' || raw === 'cancelled') return 'canceled';
+  return raw; // pending, unknown, etc.
+}
+
+function isInvitationClosed(status) {
+  const st = normalizeInvitationStatus(status);
+  return ['accepted', 'declined', 'canceled'].includes(st);
+}
+
 // Função para convidar usuário para orçamento
-window.inviteUserToBudget = async function () {
-  const email = document.getElementById('user-email').value;
+window.inviteUserToBudget = async function (emailArg) {
+  const inputEl = document.getElementById('share-email') || document.getElementById('user-email');
+  const email = (emailArg && emailArg.trim()) || (inputEl ? inputEl.value.trim() : '');
+  const emailLower = email ? email.toLowerCase() : '';
   const currentBudget = window.appState.currentBudget;
   
   console.log('🔍 Tentando convidar usuário:', { 
@@ -6476,7 +8321,7 @@ window.inviteUserToBudget = async function () {
     console.log('❌ Email ou orçamento inválido:', { email, budgetId: currentBudget?.id });
     if (window.Snackbar) {
       window.Snackbar({
-        message: 'Email inválido ou orçamento não selecionado',
+        message: !email ? 'Digite um email válido' : 'Orçamento não selecionado',
         type: 'error'
       });
     }
@@ -6484,33 +8329,21 @@ window.inviteUserToBudget = async function () {
   }
   
   try {
-    // Buscar usuário por email
+    // Buscar usuário por email (se existir)
     console.log('🔍 Buscando usuário por email:', email);
     const userQuery = query(collection(db, 'users'), where('email', '==', email));
     const userSnapshot = await getDocs(userQuery);
-    
-    console.log('🔍 Resultado da busca:', { 
-      empty: userSnapshot.empty, 
-      size: userSnapshot.size,
-      docs: userSnapshot.docs.map(doc => ({ id: doc.id, data: doc.data() }))
-    });
-    
-    if (userSnapshot.empty) {
-      console.log('❌ Usuário não encontrado com email:', email);
-      if (window.Snackbar) {
-        window.Snackbar({
-          message: 'Usuário não encontrado com este email',
-          type: 'warning'
-        });
-      }
+    const userDoc = !userSnapshot.empty ? userSnapshot.docs[0] : null;
+    const invitedUserId = userDoc ? userDoc.id : null;
+
+    // Impedir auto-convite (por UID ou email)
+    if (invitedUserId === window.appState.currentUser.uid || emailLower === (window.appState.currentUser.email || '').toLowerCase()) {
+      window.Snackbar?.({ message: 'Você já tem acesso a este orçamento', type: 'info' });
       return;
     }
     
-    const userDoc = userSnapshot.docs[0];
-    const invitedUserId = userDoc.id;
-    
-    // Verificar se já é membro
-    if (currentBudget.usuariosPermitidos && currentBudget.usuariosPermitidos.includes(invitedUserId)) {
+    // Verificar se já é membro (apenas se tiver UID)
+    if (invitedUserId && currentBudget.usuariosPermitidos && currentBudget.usuariosPermitidos.includes(invitedUserId)) {
       if (window.Snackbar) {
         window.Snackbar({
           message: 'Usuário já é membro deste orçamento',
@@ -6520,30 +8353,45 @@ window.inviteUserToBudget = async function () {
       return;
     }
     
-    // Verificar se já existe um convite pendente
-    console.log('🔍 Verificando convites existentes para:', { budgetId: currentBudget.id, invitedUserId });
-    const existingInviteQuery = query(
-      collection(db, 'budgetInvitations'),
-      where('budgetId', '==', currentBudget.id),
-      where('invitedUserId', '==', invitedUserId),
-      where('status', '==', 'pending')
-    );
-    const existingInviteSnapshot = await getDocs(existingInviteQuery);
-    
-    console.log('🔍 Convites existentes:', { 
-      empty: existingInviteSnapshot.empty, 
-      size: existingInviteSnapshot.size,
-      docs: existingInviteSnapshot.docs.map(doc => ({ id: doc.id, data: doc.data() }))
-    });
-    
-    if (!existingInviteSnapshot.empty) {
-      console.log('❌ Convite já existe para este usuário');
-      if (window.Snackbar) {
-        window.Snackbar({
-          message: 'Convite já enviado para este usuário',
-          type: 'info'
+    // Verificar se já existe um convite pendente (por UID ou por email)
+    console.log('🔍 Verificando convites existentes para:', { budgetId: currentBudget.id, invitedUserId, email });
+    let exists = false;
+    if (invitedUserId) {
+      const q1 = query(
+        collection(db, 'budgetInvitations'),
+        where('budgetId', '==', currentBudget.id),
+        where('invitedUserId', '==', invitedUserId)
+      );
+      const s1 = await getDocs(q1);
+      exists = s1.docs.some(d => !isInvitationClosed(d.data().status));
+    }
+    if (!exists) {
+      // Buscar convites por email (case-insensitive) usando invitedUserEmailLower
+      const q2Lower = query(
+        collection(db, 'budgetInvitations'),
+        where('invitedUserEmailLower', '==', emailLower)
+      );
+      const s2Lower = await getDocs(q2Lower);
+      exists = s2Lower.docs.some(d => {
+        const data = d.data();
+        return data.budgetId === currentBudget.id && !isInvitationClosed(data.status);
+      });
+      if (!exists) {
+        // Compatibilidade: convites antigos que não possuem invitedUserEmailLower
+        const q2Exact = query(
+          collection(db, 'budgetInvitations'),
+          where('invitedUserEmail', '==', email)
+        );
+        const s2Exact = await getDocs(q2Exact);
+        exists = s2Exact.docs.some(d => {
+          const data = d.data();
+          return data.budgetId === currentBudget.id && !isInvitationClosed(data.status);
         });
       }
+    }
+    if (exists) {
+      console.log('❌ Convite já existe para este usuário/email');
+      window.Snackbar?.({ message: 'Convite já enviado para este usuário', type: 'info' });
       return;
     }
     
@@ -6553,6 +8401,7 @@ window.inviteUserToBudget = async function () {
       budgetName: currentBudget.nome || 'Orçamento sem nome',
       invitedUserId: invitedUserId,
       invitedUserEmail: email,
+      invitedUserEmailLower: emailLower,
       invitedByUserId: window.appState.currentUser.uid,
       invitedByUserEmail: window.appState.currentUser.email,
       status: 'pending', // pending, accepted, declined
@@ -6605,8 +8454,11 @@ window.acceptBudgetInvitation = async function (invitationId) {
     
     const invitationData = invitationDoc.data();
     
-    // Verificar se o convite é para o usuário atual
-    if (invitationData.invitedUserId !== window.appState.currentUser.uid) {
+    // Verificar se o convite é para o usuário atual (por UID ou por email)
+    const isForCurrentUser =
+      invitationData.invitedUserId === window.appState.currentUser.uid ||
+      ((invitationData.invitedUserEmail || '').toLowerCase() === (window.appState.currentUser.email || '').toLowerCase());
+    if (!isForCurrentUser) {
       if (window.Snackbar) {
         window.Snackbar({
           message: 'Este convite não é para você',
@@ -6616,16 +8468,8 @@ window.acceptBudgetInvitation = async function (invitationId) {
       return;
     }
     
-    // Verificar se o convite ainda está pendente
-    if (invitationData.status !== 'pending') {
-      if (window.Snackbar) {
-        window.Snackbar({
-          message: 'Este convite já foi respondido',
-          type: 'info'
-        });
-      }
-      return;
-    }
+  // Aceitar é idempotente; mesmo que não esteja 'pending', garantimos acesso
+  const normStatus = normalizeInvitationStatus(invitationData.status);
     
     // Buscar o orçamento
     const budgetRef = doc(db, 'budgets', invitationData.budgetId);
@@ -6646,21 +8490,32 @@ window.acceptBudgetInvitation = async function (invitationId) {
       userId: window.appState.currentUser.uid
     });
     
-    // Adicionar usuário ao orçamento
+    // Se o convite foi por email e ainda não tem UID, associe agora ao usuário corrente
+    if (!invitationData.invitedUserId) {
+      try {
+        await updateDoc(invitationRef, {
+          invitedUserId: window.appState.currentUser.uid,
+          updatedAt: serverTimestamp()
+        });
+      } catch {}
+    }
+
+    // Adicionar usuário ao orçamento (sempre garante acesso)
     await updateDoc(budgetRef, {
       usuariosPermitidos: arrayUnion(window.appState.currentUser.uid),
       updatedAt: serverTimestamp()
     });
-    
     console.log('✅ Usuário adicionado ao orçamento');
-    
-    // Atualizar status do convite para aceito
-    await updateDoc(invitationRef, {
-      status: 'accepted',
-      updatedAt: serverTimestamp()
-    });
-    
-    console.log('✅ Status do convite atualizado para aceito');
+
+    // Marcar como aceito (idempotente)
+    try {
+      await updateDoc(invitationRef, {
+        status: 'accepted',
+        acceptedAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+      console.log('✅ Status do convite atualizado para aceito');
+    } catch {}
     
     if (window.Snackbar) {
       window.Snackbar({
@@ -6671,6 +8526,13 @@ window.acceptBudgetInvitation = async function (invitationId) {
     
     // Recarregar orçamentos e configurações
     await loadBudgets();
+    try {
+      // Se o orçamento agora existir na lista, opcionalmente ativar automaticamente
+      const justJoined = window.appState?.budgets?.find(b => b.id === invitationData.budgetId);
+      if (justJoined && window.setCurrentBudget) {
+        window.setCurrentBudget(justJoined);
+      }
+    } catch {}
     if (window.renderSettings) {
       await window.renderSettings();
     }
@@ -6705,8 +8567,11 @@ window.declineBudgetInvitation = async function (invitationId) {
     
     const invitationData = invitationDoc.data();
     
-    // Verificar se o convite é para o usuário atual
-    if (invitationData.invitedUserId !== window.appState.currentUser.uid) {
+    // Verificar se o convite é para o usuário atual (por UID ou por email)
+    const isForCurrentUser =
+      invitationData.invitedUserId === window.appState.currentUser.uid ||
+      ((invitationData.invitedUserEmail || '').toLowerCase() === (window.appState.currentUser.email || '').toLowerCase());
+    if (!isForCurrentUser) {
       if (window.Snackbar) {
         window.Snackbar({
           message: 'Este convite não é para você',
@@ -6716,11 +8581,11 @@ window.declineBudgetInvitation = async function (invitationId) {
       return;
     }
     
-    // Verificar se o convite ainda está pendente
-    if (invitationData.status !== 'pending') {
+  // Só permitir recusar se ainda estiver aberto (não fechado)
+  if (isInvitationClosed(invitationData.status)) {
       if (window.Snackbar) {
         window.Snackbar({
-          message: 'Este convite já foi respondido',
+      message: 'Este convite já foi finalizado',
           type: 'info'
         });
       }
@@ -6730,6 +8595,7 @@ window.declineBudgetInvitation = async function (invitationId) {
     // Atualizar status do convite para recusado
     await updateDoc(invitationRef, {
       status: 'declined',
+      declinedAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     });
     
@@ -6756,6 +8622,34 @@ window.declineBudgetInvitation = async function (invitationId) {
   }
 };
 
+// Aceitar convite e já entrar no orçamento
+window.acceptAndEnterInvitation = async function(invitationId, budgetId, budgetName) {
+  try {
+    await window.acceptBudgetInvitation(invitationId);
+    // Após aceitar, tentar ativar imediatamente o orçamento
+    if (window.appState?.budgets && window.setCurrentBudget) {
+      const target = window.appState.budgets.find(b => b.id === budgetId);
+      if (target) {
+        window.setCurrentBudget(target);
+        window.Snackbar?.({ message: `Entrou em "${budgetName}"`, type: 'success' });
+      } else {
+        // Se ainda não estiver na lista, recarregar orçamentos e tentar novamente
+        await loadBudgets();
+        const target2 = window.appState.budgets.find(b => b.id === budgetId);
+        if (target2) {
+          window.setCurrentBudget(target2);
+          window.Snackbar?.({ message: `Entrou em "${budgetName}"`, type: 'success' });
+        }
+      }
+      // Re-render Config para refletir alterações
+      if (window.renderSettings) await window.renderSettings();
+    }
+  } catch (e) {
+    console.error('Erro ao aceitar e entrar no orçamento:', e);
+    window.Snackbar?.({ message: 'Erro ao aceitar e entrar no orçamento', type: 'error' });
+  }
+}
+
 // Função para carregar convites pendentes
 window.loadBudgetInvitations = async function () {
   try {
@@ -6768,38 +8662,96 @@ window.loadBudgetInvitations = async function () {
     }
     
     // Versão temporária sem orderBy enquanto o índice está sendo construído
-    const invitationsQuery = query(
-      collection(db, 'budgetInvitations'),
-      where('invitedUserId', '==', user.uid),
-      where('status', '==', 'pending')
-    );
-    
-    console.log('🔍 Executando query de convites...');
-    const invitationsSnapshot = await getDocs(invitationsQuery);
+  // Tentar por UID e por email (usuário pode não existir em /users ainda)
+  const qByUid = query(collection(db, 'budgetInvitations'), where('invitedUserId', '==', user.uid));
+  const qByEmailLower = query(collection(db, 'budgetInvitations'), where('invitedUserEmailLower', '==', (user.email || '').toLowerCase()));
+  const qByEmailExact = query(collection(db, 'budgetInvitations'), where('invitedUserEmail', '==', user.email || ''));
+  console.log('🔍 Executando queries de convites (uid, emailLower e emailExact)...');
+  const [snapUid, snapEmailLower, snapEmailExact] = await Promise.all([getDocs(qByUid), getDocs(qByEmailLower), getDocs(qByEmailExact)]);
+  // Combinar resultados únicos
+  const combineDocs = (arrs) => {
+    const map = new Map();
+    for (const arr of arrs) {
+      for (const d of arr) {
+        if (!map.has(d.id)) map.set(d.id, d);
+      }
+    }
+    return Array.from(map.values());
+  };
+  const combinedDocs = combineDocs([snapUid.docs, snapEmailLower.docs, snapEmailExact.docs]);
+  const invitationsSnapshot = { docs: combinedDocs, size: combinedDocs.length };
+  invitationsSnapshot.size = invitationsSnapshot.docs.length;
     console.log('📊 Total de convites encontrados:', invitationsSnapshot.size);
     
     const invitations = [];
     
-    invitationsSnapshot.forEach(doc => {
-      const data = doc.data();
-      console.log('📨 Convite encontrado:', { id: doc.id, ...data });
-      invitations.push({
-        id: doc.id,
-        ...data
-      });
-    });
+    for (const doc of invitationsSnapshot.docs) {
+  const data = doc.data();
+  if (!isInvitationClosed(data.status)) {
+        console.log('📨 Convite encontrado:', { id: doc.id, ...data });
+        invitations.push({
+          id: doc.id,
+          ...data
+        });
+      }
+    }
     
     // Ordenar localmente por data de criação (mais recente primeiro)
     invitations.sort((a, b) => {
-      const dateA = a.createdAt ? a.createdAt.toDate() : new Date(0);
-      const dateB = b.createdAt ? b.createdAt.toDate() : new Date(0);
+  const dateA = a.createdAt ? (a.createdAt.toDate ? a.createdAt.toDate() : (a.createdAt.seconds ? new Date(a.createdAt.seconds * 1000) : new Date(a.createdAt))) : new Date(0);
+  const dateB = b.createdAt ? (b.createdAt.toDate ? b.createdAt.toDate() : (b.createdAt.seconds ? new Date(b.createdAt.seconds * 1000) : new Date(b.createdAt))) : new Date(0);
       return dateB - dateA;
     });
     
+    if (invitations.length === 0 && invitationsSnapshot.size > 0) {
+      try {
+        console.log('🕵️ Debug convites: nenhum convite listado, imprimindo status de cada doc');
+        for (const d of invitationsSnapshot.docs) {
+          const data = d.data();
+          console.log('ℹ️ Convite bruto', d.id, {
+            budgetId: data.budgetId,
+            status: data.status,
+            invitedUserId: data.invitedUserId,
+            invitedUserEmail: data.invitedUserEmail,
+            invitedUserEmailLower: data.invitedUserEmailLower
+          });
+        }
+      } catch {}
+    }
     console.log('✅ Convites carregados com sucesso:', invitations.length);
     return invitations;
   } catch (error) {
     console.error('❌ Erro ao carregar convites:', error);
+    return [];
+  }
+};
+
+// Função para carregar convites enviados pelo usuário atual (ainda abertos)
+window.loadSentBudgetInvitations = async function () {
+  try {
+    const user = window.appState.currentUser;
+    if (!user) return [];
+    const qSent = query(collection(db, 'budgetInvitations'), where('invitedByUserId', '==', user.uid));
+    const snapSent = await getDocs(qSent);
+    const items = [];
+    for (const d of snapSent.docs) {
+      const data = d.data();
+      const normStatus = (data.status ?? 'pending').toString().trim().toLowerCase();
+      const isClosed = ['accepted', 'declined', 'rejected', 'recusado', 'aceito', 'cancelled', 'canceled', 'cancelado'].includes(normStatus);
+      if (!isClosed) {
+        items.push({ id: d.id, ...data });
+      }
+    }
+    // Ordenar mais recentes primeiro
+    items.sort((a, b) => {
+      const da = a.createdAt ? (a.createdAt.toDate ? a.createdAt.toDate() : new Date(a.createdAt.seconds * 1000)) : new Date(0);
+      const dbb = b.createdAt ? (b.createdAt.toDate ? b.createdAt.toDate() : new Date(b.createdAt.seconds * 1000)) : new Date(0);
+      return dbb - da;
+    });
+    console.log('📤 Convites enviados (abertos) carregados:', items.length);
+    return items;
+  } catch (err) {
+    console.error('❌ Erro ao carregar convites enviados:', err);
     return [];
   }
 };
@@ -6853,11 +8805,11 @@ window.selectSharedBudget = function () {
     }
     
     try {
-      // Buscar orçamento
-      const budgetRef = doc(db, 'budgets', budgetId);
-      const budgetDoc = await getDoc(budgetRef);
+  // Buscar orçamento via repositório
+  const { getById, addUser } = await import('@data/repositories/budgetsRepo.js');
+  const budgetData = await getById(budgetId);
       
-      if (!budgetDoc.exists()) {
+  if (!budgetData) {
         if (window.Snackbar) {
           window.Snackbar({
             message: 'Orçamento não encontrado',
@@ -6866,8 +8818,6 @@ window.selectSharedBudget = function () {
         }
         return;
       }
-      
-      const budgetData = budgetDoc.data();
       
       // Verificar se já é membro
       if (budgetData.usuariosPermitidos && budgetData.usuariosPermitidos.includes(window.appState.currentUser.uid)) {
@@ -6880,11 +8830,8 @@ window.selectSharedBudget = function () {
         return;
       }
       
-      // Adicionar usuário ao orçamento
-      await updateDoc(budgetRef, {
-        usuariosPermitidos: arrayUnion(window.appState.currentUser.uid),
-        updatedAt: serverTimestamp()
-      });
+  // Adicionar usuário ao orçamento via repositório
+  await addUser(budgetId, window.appState.currentUser.uid);
       
       closeModal();
       
@@ -6925,13 +8872,32 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('Botão existe, chamando setupThemeToggle...');
     setupThemeToggle();
   } else {
-    console.log('Botão não encontrado no DOM, tentando novamente em 1 segundo...');
-    setTimeout(() => {
+    console.log('Botão não encontrado no DOM, observando até aparecer...');
+    let retryTimer = setTimeout(() => {
       const buttonRetry = document.getElementById('theme-toggle-btn');
       console.log('Tentativa 2 - Botão encontrado:', buttonRetry);
-      if (buttonRetry) {
+      if (buttonRetry && !window.__themeToggleWired) {
+        window.__themeToggleWired = true;
         setupThemeToggle();
       }
     }, 1000);
+
+    try {
+      const observer = new MutationObserver((mutations, obs) => {
+        const btnNow = document.getElementById('theme-toggle-btn');
+        if (btnNow && !window.__themeToggleWired) {
+          window.__themeToggleWired = true;
+          try { clearTimeout(retryTimer); } catch {}
+          setupThemeToggle();
+          obs.disconnect();
+          console.log('✅ Theme toggle inicializado via MutationObserver');
+        }
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+      // Segurança: parar de observar após 5s
+      setTimeout(() => { try { observer.disconnect(); } catch {} }, 5000);
+    } catch (e) {
+      console.warn('⚠️ Falha ao observar DOM para theme-toggle:', e);
+    }
   }
 });

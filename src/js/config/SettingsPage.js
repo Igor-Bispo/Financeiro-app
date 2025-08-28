@@ -7,6 +7,21 @@ import { db } from '../firebase.js';
 
 export async function renderSettings() {
   const content = document.getElementById('app-content');
+  // Throttle chamadas muito próximas no tempo para evitar renders duplicados em sequência
+  try {
+    const now = Date.now();
+    if (typeof window !== 'undefined') {
+      if (window.__lastSettingsRender && (now - window.__lastSettingsRender) < 500) {
+        console.log('⏱️ renderSettings: chamada muito próxima, pulando...');
+        return;
+      }
+      window.__lastSettingsRender = now;
+    }
+  } catch {}
+  if (!content) {
+    console.warn('⚠️ SettingsPage: elemento #app-content não encontrado');
+    return;
+  }
 
   // Obter informações do orçamento atual
   const currentBudget = window.appState?.currentBudget;
@@ -55,6 +70,18 @@ export async function renderSettings() {
     console.log('❌ SettingsPage: Função loadBudgetInvitations não encontrada');
   }
 
+  // Carregar convites enviados por mim (ainda abertos)
+  let sentInvitations = [];
+  if (window.loadSentBudgetInvitations) {
+    try {
+      console.log('🔍 SettingsPage: Carregando convites enviados...');
+      sentInvitations = await window.loadSentBudgetInvitations();
+      console.log('📊 SettingsPage: Convites enviados carregados:', sentInvitations.length);
+    } catch (error) {
+      console.error('❌ SettingsPage: Erro ao carregar convites enviados:', error);
+    }
+  }
+
   // Inicializar ícone do tema após renderização
   setTimeout(() => {
     if (window.initializeThemeIcon) {
@@ -69,142 +96,269 @@ export async function renderSettings() {
     
     // Adicionar listener de resize para auto-compacto
     if (window.handleResize) {
-      window.addEventListener('resize', window.handleResize);
-      // Executar uma vez para verificar tamanho atual
-      window.handleResize();
+      try {
+        if (!window.__settingsResizeBound) {
+          window.addEventListener('resize', window.handleResize);
+          window.__settingsResizeBound = true;
+        }
+        // Executar uma vez para verificar tamanho atual
+        window.handleResize();
+      } catch (e) {
+        console.warn('⚠️ SettingsPage: erro ao vincular handleResize:', e);
+      }
     }
   }, 100);
 
   content.innerHTML = `
     <div class="tab-container">
       <div class="tab-header">
-        <h2 class="tab-title-highlight">⚙️ Configurações</h2>
+  <h2 class="tab-title-highlight">⚙️ Configurações</h2>
+  <div id="settings-period-indicator"></div>
       </div>
       <div class="tab-content">
-        <div class="content-spacing">
+        <div class="settings-container">
+          <div class="content-spacing">
 
-      <!-- Seção: Orçamento Atual (Card importante) -->
-      ${currentBudget ? `
-      <section class="content-section">
-        <h2 class="section-title green-border">Orçamento Atual</h2>
-        
-        <div class="budget-card">
-          <div class="budget-header">
-            <div class="budget-icon">📋</div>
-            <div class="budget-info">
-              <div class="budget-name">${currentBudget.nome || 'Orçamento sem nome'}</div>
-              <div class="budget-status">Ativo</div>
+          ${pendingInvitations && pendingInvitations.length > 0 ? `
+          <!-- Resumo rápido de Convites Recebidos -->
+          <div class="mb-6">
+            <div class="flex items-center justify-between mb-2">
+              <h2 class="section-title purple-border">📬 Convites Recebidos <span class="ml-2 inline-flex items-center justify-center text-xs font-semibold bg-purple-100 text-purple-700 rounded-full px-2 py-0.5">${pendingInvitations.length}</span></h2>
             </div>
-            <button class="edit-button" onclick="editBudgetName()">
-              <span class="edit-icon">✏️</span>
-            </button>
+            <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-3">
+              ${pendingInvitations.slice(0,3).map(invite => `
+                <div class="flex items-center justify-between p-3 rounded-lg ${invite._rowAlt?'bg-gray-50 dark:bg-gray-800':''}">
+                  <div class="min-w-0">
+                    <div class="font-medium text-gray-900 dark:text-gray-100 truncate">${invite.budgetName || 'Orçamento'}</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400 truncate">Convidado por ${invite.invitedByUserEmail || invite.invitedByUserId || 'usuário'}</div>
+                  </div>
+                  <div class="flex items-center gap-2 flex-shrink-0">
+                    <button onclick="acceptBudgetInvitation('${invite.id}')" class="px-2 py-1 text-xs rounded bg-green-500 hover:bg-green-600 text-white">Aceitar</button>
+                    <button onclick="acceptAndEnterInvitation('${invite.id}','${invite.budgetId}','${(invite.budgetName || 'Orçamento').replace(/'/g, "\\'")}')" class="px-2 py-1 text-xs rounded bg-blue-500 hover:bg-blue-600 text-white">Aceitar e entrar</button>
+                  </div>
+                </div>
+              `).join('')}
+              ${pendingInvitations.length > 3 ? `<div class="text-xs text-gray-500 mt-2">+${pendingInvitations.length - 3} convid${pendingInvitations.length - 3 === 1 ? 'o' : 'os'} adicionais</div>` : ''}
+            </div>
           </div>
+          ` : ''}
           
-          <div class="budget-details">
-            <div class="detail-item">
-              <span class="detail-label">Criado em:</span>
-              <span class="detail-value">${currentBudget.createdAt ? new Date(currentBudget.createdAt.seconds * 1000).toLocaleDateString('pt-BR') : 'Data não disponível'}</span>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">Usuários com acesso:</span>
-              <span class="detail-value">${usersWithAccess.length + 1}</span>
-            </div>
-          </div>
-        </div>
-      </section>
-      ` : ''}
-
-      <!-- Seção: Usuários com Acesso ao Orçamento -->
-      ${usersWithAccess.length > 0 ? `
-      <section class="content-section">
-        <h2 class="section-title blue-border">Usuários com Acesso</h2>
-        <p class="section-description">Usuários que têm acesso ao seu orçamento atual</p>
-        
-        <div class="users-list">
-          ${usersWithAccess.map(user => `
-            <div class="user-item">
-              <div class="user-info">
-                <div class="user-avatar">👤</div>
-                <div class="user-details">
-                  <div class="user-email">${user.email}</div>
-                  <div class="user-role">${user.role}</div>
-                  <div class="user-date">Adicionado em ${new Date().toLocaleDateString('pt-BR')}</div>
+          
+          <!-- ========== SEÇÃO 1: RESUMO DO ORÇAMENTO ========== -->
+          ${currentBudget ? `
+          <div class="mb-8">
+            <h2 class="section-title green-border">📋 Orçamento Atual</h2>
+            
+            <div class="bg-gradient-to-br from-green-500 via-emerald-500 to-teal-600 rounded-2xl shadow-xl p-6 md:p-8 text-white">
+              <!-- Header do Card -->
+              <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center gap-4">
+                  <div class="w-16 h-16 rounded-full bg-white bg-opacity-20 flex items-center justify-center text-3xl">
+                    📋
+                  </div>
+                  <div>
+                    <h3 class="text-xl md:text-2xl font-bold">${currentBudget.nome || 'Orçamento sem nome'}</h3>
+                    <p class="text-sm opacity-90">Orçamento Ativo</p>
+                  </div>
+                </div>
+                <button onclick="editBudgetName()" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white p-3 rounded-xl transition-all duration-200">
+                  ✏️
+                </button>
+              </div>
+              
+              <!-- Grid de Métricas -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-white bg-opacity-15 backdrop-blur-sm rounded-xl p-4">
+                  <div class="text-2xl mb-2">📅</div>
+                  <div class="text-lg font-bold">${currentBudget.createdAt ? new Date(currentBudget.createdAt.seconds * 1000).toLocaleDateString('pt-BR') : 'Data não disponível'}</div>
+                  <div class="text-sm opacity-90">Data de Criação</div>
+                </div>
+                
+                <div class="bg-white bg-opacity-15 backdrop-blur-sm rounded-xl p-4">
+                  <div class="text-2xl mb-2">👥</div>
+                  <div class="text-lg font-bold">${usersWithAccess.length + 1}</div>
+                  <div class="text-sm opacity-90">Usuários com Acesso</div>
                 </div>
               </div>
-              <div class="user-actions">
-                <button class="remove-user-button" onclick="removeUserFromBudget('${user.uid}', '${user.email}')" title="Remover usuário do orçamento">
-                  <span class="remove-icon">🚫</span>
-                  <span class="remove-text">Remover</span>
-                </button>
-              </div>
             </div>
-          `).join('')}
-        </div>
-      </section>
-      ` : `
-      <section class="content-section">
-        <h2 class="section-title blue-border">Usuários com Acesso</h2>
-        <p class="section-description">Usuários que têm acesso ao seu orçamento atual</p>
-        
-        <div class="empty-state">
-          <div class="empty-icon">👥</div>
-          <div class="empty-text">Nenhum usuário compartilhado</div>
-          <div class="empty-description">Compartilhe seu orçamento para ver usuários aqui</div>
-        </div>
-      </section>
-      `}
+          </div>
+          ` : ''}
 
-      <!-- Seção: Convites Enviados Pendentes -->
-      ${pendingInvitations.length > 0 ? `
-      <section class="content-section">
-        <h2 class="section-title orange-border">Convites Enviados</h2>
-        <p class="section-description">Convites aguardando resposta dos usuários</p>
-        
-        <div class="invitations-list">
-          ${pendingInvitations.map(invite => `
-            <div class="invitation-item">
-              <div class="invitation-info">
-                <div class="invitation-email">${invite.email}</div>
-                <div class="invitation-date">Enviado em ${new Date(invite.createdAt.seconds * 1000).toLocaleDateString('pt-BR')}</div>
-                <div class="invitation-status">Status: Aguardando resposta</div>
+          <!-- ========== SEÇÃO 2: USUÁRIOS E COMPARTILHAMENTO ========== -->
+          <div class="mb-8">
+            <h2 class="section-title blue-border">👥 Usuários & Compartilhamento</h2>
+            
+            <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <!-- Header -->
+              <div class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-800 p-4 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex flex-wrap justify-between items-center gap-2">
+                  <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Gerenciar Acesso</h3>
+                  <button onclick="document.getElementById('share-email')?.focus()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 shadow-md hover:shadow-lg">
+                    📤 Compartilhar
+                  </button>
+                </div>
               </div>
-              <div class="invitation-actions">
-                <button class="cancel-invitation-button" onclick="cancelInvitation('${invite.id}', '${invite.email}')" title="Cancelar convite">
-                  <span class="cancel-icon">❌</span>
-                  <span class="cancel-text">Cancelar</span>
-                </button>
-                <button class="resend-invitation-button" onclick="resendInvitation('${invite.id}', '${invite.email}')" title="Reenviar convite">
-                  <span class="resend-icon">📤</span>
-                  <span class="resend-text">Reenviar</span>
-                </button>
+              
+              <!-- Conteúdo -->
+              <div class="p-4">
+                ${usersWithAccess.length > 0 ? `
+                  <div class="space-y-3">
+                    ${usersWithAccess.map(user => `
+                      <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200">
+                        <div class="flex items-center gap-3">
+                          <div class="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-xl">
+                            👤
+                          </div>
+                          <div>
+                            <div class="font-medium text-gray-900 dark:text-gray-100">${user.email}</div>
+                            <div class="text-sm text-gray-500 dark:text-gray-400">${user.role} • Adicionado em ${new Date().toLocaleDateString('pt-BR')}</div>
+                          </div>
+                        </div>
+                        <button onclick="removeUserFromBudget('${user.uid}', '${user.email}')" class="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200">
+                          🚫 Remover
+                        </button>
+                      </div>
+                    `).join('')}
+                  </div>
+                ` : `
+                  <div class="text-center py-8">
+                    <div class="text-4xl mb-4">👥</div>
+                    <div class="text-lg font-semibold text-gray-800 dark:text-white mb-2">Nenhum usuário compartilhado</div>
+                    <div class="text-gray-600 dark:text-gray-400 mb-4">Compartilhe seu orçamento para ver usuários aqui</div>
+                    <button onclick="document.getElementById('share-email')?.focus()" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-xl font-medium transition-all duration-200 shadow-lg">
+                      📤 Compartilhar Orçamento
+                    </button>
+                  </div>
+                `}
               </div>
             </div>
-          `).join('')}
-        </div>
-      </section>
-      ` : `
-      <section class="content-section">
-        <h2 class="section-title orange-border">Convites Enviados</h2>
-        <p class="section-description">Convites aguardando resposta dos usuários</p>
-        
-        <div class="empty-state">
-          <div class="empty-icon">📨</div>
-          <div class="empty-text">Nenhum convite pendente</div>
-          <div class="empty-description">Você não tem convites aguardando resposta</div>
-        </div>
-      </section>
-      `}
+          </div>
+
+          <!-- ========== SEÇÃO 3: CONVITES PENDENTES (ENVIADOS POR MIM) ========== -->
+          ${sentInvitations.length > 0 ? `
+          <div class="mb-8">
+            <h2 class="section-title orange-border">📤 Convites Pendentes</h2>
+            
+            <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <!-- Header -->
+              <div class="bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-gray-800 dark:to-gray-800 p-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Convites Aguardando Resposta</h3>
+              </div>
+              
+              <!-- Lista de Convites -->
+              <div class="p-4">
+                <div class="space-y-3">
+                  ${sentInvitations.map(invite => {
+                    const email = invite.invitedUserEmail || invite.email || invite.invitedUserId || 'Destinatário';
+                    const created = invite.createdAt ? (invite.createdAt.toDate ? invite.createdAt.toDate() : (invite.createdAt.seconds ? new Date(invite.createdAt.seconds * 1000) : new Date(invite.createdAt))) : null;
+                    const createdStr = created ? created.toLocaleDateString('pt-BR') : 'Data não disponível';
+                    return `
+                    <div class="flex items-center justify-between p-4 bg-orange-50 dark:bg-orange-900 dark:bg-opacity-20 border border-orange-200 dark:border-orange-800 rounded-xl">
+                      <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-full bg-orange-100 dark:bg-orange-900 flex items-center justify-center text-xl">
+                          📤
+                        </div>
+                        <div>
+                          <div class="font-medium text-gray-900 dark:text-gray-100">${email}</div>
+                          <div class="text-sm text-gray-500 dark:text-gray-400">
+                            Enviado em ${createdStr} • Aguardando resposta
+                          </div>
+                        </div>
+                      </div>
+                      <div class="flex gap-2">
+                        <button onclick="resendInvitation('${invite.id}', '${email}')" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200">
+                          📤 Reenviar
+                        </button>
+                        <button onclick="cancelInvitation('${invite.id}', '${email}')" class="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200">
+                          ❌ Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  `}).join('')}
+                </div>
+              </div>
+            </div>
+          </div>
+          ` : ''}
 
       <!-- Seção: Convites Recebidos -->
       <section class="content-section">
         <h2 class="section-title purple-border">Convites Recebidos</h2>
-        <p class="section-description">Convites de outros usuários para acessar seus orçamentos</p>
-        
-        <div class="empty-state">
-          <div class="empty-icon">📬</div>
-          <div class="empty-text">Nenhum convite recebido</div>
-          <div class="empty-description">Você não tem convites pendentes de outros usuários</div>
-        </div>
+        <p class="section-description">Convites de outros usuários para acessar orçamentos compartilhados com você</p>
+
+        ${pendingInvitations && pendingInvitations.length > 0 ? `
+          <div class="invitations-list space-y-3">
+            ${pendingInvitations.map(invite => `
+              <div class="invitation-item flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+                <div>
+                  <div class="invitation-email font-medium text-gray-900 dark:text-gray-100">
+                    📋 ${invite.budgetName || 'Orçamento'}
+                  </div>
+                  <div class="invitation-date text-sm text-gray-500 dark:text-gray-400">
+                    Convidado por ${invite.invitedByUserEmail || invite.invitedByUserId || 'usuário'} • ${invite.createdAt ? (invite.createdAt.toDate ? invite.createdAt.toDate() : new Date(invite.createdAt.seconds * 1000)).toLocaleDateString('pt-BR') : 'data desconhecida'}
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button onclick="acceptBudgetInvitation('${invite.id}')" class="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200">✅ Aceitar</button>
+                  <button onclick="declineBudgetInvitation('${invite.id}')" class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200">❌ Recusar</button>
+                  <button onclick="acceptAndEnterInvitation('${invite.id}','${invite.budgetId}','${(invite.budgetName || 'Orçamento').replace(/'/g, "\'")}')" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200">🚪 Aceitar e entrar</button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        ` : `
+          <div class="empty-state">
+            <div class="empty-icon">📬</div>
+            <div class="empty-text">Nenhum convite recebido</div>
+            <div class="empty-description">Você não tem convites pendentes de outros usuários</div>
+          </div>
+        `}
+      </section>
+
+      <!-- Seção: Orçamentos Compartilhados com Você -->
+      <section class="content-section">
+        <h2 class="section-title blue-border">Orçamentos Compartilhados com Você</h2>
+        <p class="section-description">Orçamentos onde você tem acesso, mas não é o proprietário</p>
+
+        ${(() => {
+          const me = currentUser?.uid;
+          const shared = (budgets || []).filter(b => b && (b.isOwner === false || (me && b.userId && b.userId !== me)));
+          if (!shared || shared.length === 0) {
+            return `
+              <div class="empty-state">
+                <div class="empty-icon">🤝</div>
+                <div class="empty-text">Nenhum orçamento compartilhado</div>
+                <div class="empty-description">Convites aceitos aparecerão aqui para você entrar</div>
+              </div>
+            `;
+          }
+          return `
+            <div class="budgets-list">
+              ${shared.map(budget => `
+                <div class="budget-item ${budget.id === currentBudget?.id ? 'active' : ''}">
+                  <div class="budget-item-info">
+                    <div class="budget-item-name">${budget.nome || 'Orçamento'}</div>
+                    <div class="budget-item-date">ID: ${budget.id}</div>
+                    <div class="budget-item-status">Compartilhado</div>
+                  </div>
+                  <div class="budget-item-actions">
+                    ${budget.id !== currentBudget?.id ? `
+                      <button class="enter-budget-button" onclick="enterBudget('${budget.id}', '${(budget.nome || 'Orçamento').replace(/'/g, "\'")}')" title="Entrar neste orçamento">
+                        <span class="enter-icon">🚪</span>
+                        <span class="enter-text">Entrar</span>
+                      </button>
+                    ` : `
+                      <div class="current-budget-badge">
+                        <span class="current-icon">✅</span>
+                        <span class="current-text">Ativo</span>
+                      </div>
+                    `}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `;
+        })()}
       </section>
 
       <!-- Seção: Compartilhar Orçamento -->
@@ -218,7 +372,13 @@ export async function renderSettings() {
             <label class="input-label">Email do usuário:</label>
             <input type="email" id="share-email" class="form-input" placeholder="usuario@exemplo.com">
           </div>
-          <button onclick="shareBudget()" class="share-button">
+          <div class="input-group">
+            <label class="input-label">Selecionar orçamento para compartilhar:</label>
+            <select id="share-budget-select" class="form-input">
+              ${budgets.map(b => `<option value="${b.id}" ${b.id === currentBudget.id ? 'selected' : ''}>${b.nome || 'Sem nome'}</option>`).join('')}
+            </select>
+          </div>
+          <button onclick="inviteUserToBudget()" class="share-button">
             <span class="share-icon">📤</span>
             <span class="share-text">Enviar Convite</span>
           </button>
@@ -344,74 +504,97 @@ export async function renderSettings() {
         </div>
       </section>
 
-      <!-- Seção: Configurações de Interface -->
-      <section class="content-section">
-        <h2 class="section-title blue-border">Interface</h2>
-        
-        <div class="interface-settings">
-          <div class="setting-item">
-            <div class="setting-info">
-              <div class="setting-label">Modo Escuro</div>
-              <div class="setting-description">Alternar entre tema claro e escuro</div>
+          <!-- ========== SEÇÃO 4: CONFIGURAÇÕES DE INTERFACE ========== -->
+          <div class="mb-8">
+            <h2 class="section-title purple-border">🎨 Interface & Aparência</h2>
+            
+            <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <!-- Header -->
+              <div class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-800 p-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Personalizar Aparência</h3>
+              </div>
+              
+              <!-- Configurações -->
+              <div class="p-4 space-y-4">
+                <!-- Modo Escuro -->
+                <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
+                  <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-xl">
+                      🌙
+                    </div>
+                    <div>
+                      <div class="font-medium text-gray-900 dark:text-gray-100">Modo Escuro</div>
+                      <div class="text-sm text-gray-500 dark:text-gray-400">Alternar entre tema claro e escuro</div>
+                    </div>
+                  </div>
+                  <button onclick="toggleTheme()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200">
+                    Alternar
+                  </button>
+                </div>
+                
+                <!-- Tema de Cores -->
+                <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
+                  <div class="flex items-center gap-3 mb-3">
+                    <div class="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center text-xl">
+                      🎨
+                    </div>
+                    <div>
+                      <div class="font-medium text-gray-900 dark:text-gray-100">Tema de Cores</div>
+                      <div class="text-sm text-gray-500 dark:text-gray-400">Escolher cores preferidas para o app</div>
+                    </div>
+                  </div>
+                  <div class="flex gap-2">
+                    <button onclick="setColorTheme('blue')" class="w-10 h-10 rounded-full bg-blue-500 hover:bg-blue-600 transition-all duration-200" title="Azul"></button>
+                    <button onclick="setColorTheme('green')" class="w-10 h-10 rounded-full bg-green-500 hover:bg-green-600 transition-all duration-200" title="Verde"></button>
+                    <button onclick="setColorTheme('purple')" class="w-10 h-10 rounded-full bg-purple-500 hover:bg-purple-600 transition-all duration-200" title="Roxo"></button>
+                    <button onclick="setColorTheme('orange')" class="w-10 h-10 rounded-full bg-orange-500 hover:bg-orange-600 transition-all duration-200" title="Laranja"></button>
+                  </div>
+                </div>
+                
+                <!-- Compactar Interface -->
+                <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
+                  <div class="flex items-center gap-3 mb-3">
+                    <div class="w-12 h-12 rounded-full bg-yellow-100 dark:bg-yellow-900 flex items-center justify-center text-xl">
+                      📏
+                    </div>
+                    <div>
+                      <div class="font-medium text-gray-900 dark:text-gray-100">Compactar Interface</div>
+                      <div class="text-sm text-gray-500 dark:text-gray-400">Mostrar mais informações em menos espaço</div>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-3">
+                    <label class="relative inline-flex items-center cursor-pointer">
+                      <input type="checkbox" id="compact-interface" onchange="toggleCompactMode(this.checked)" class="sr-only peer">
+                      <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                    </label>
+                    <button onclick="toggleMicroMode()" class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200" title="Modo micro-compacto">
+                      📏 Micro
+                    </button>
+                    <button onclick="toggleNanoMode()" class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200" title="Modo nano-compacto">
+                      🔬 Nano
+                    </button>
+                  </div>
+                </div>
+                
+                <!-- Animações -->
+                <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
+                  <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center text-xl">
+                      ✨
+                    </div>
+                    <div>
+                      <div class="font-medium text-gray-900 dark:text-gray-100">Animações</div>
+                      <div class="text-sm text-gray-500 dark:text-gray-400">Mostrar animações e transições</div>
+                    </div>
+                  </div>
+                  <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="animations" checked class="sr-only peer">
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                  </label>
+                </div>
+              </div>
             </div>
-            <button onclick="toggleTheme()" class="theme-button">
-              <span class="theme-icon">🌙</span>
-              <span class="theme-text">Alternar</span>
-            </button>
           </div>
-          
-          <div class="setting-item">
-            <div class="setting-info">
-              <div class="setting-label">Tema de Cores</div>
-              <div class="setting-description">Escolher cores preferidas para o app</div>
-            </div>
-            <div class="color-theme-selector">
-              <button onclick="setColorTheme('blue')" class="color-option blue" title="Azul">
-                <span class="color-preview" style="background: #3B82F6;"></span>
-              </button>
-              <button onclick="setColorTheme('green')" class="color-option green" title="Verde">
-                <span class="color-preview" style="background: #10B981;"></span>
-              </button>
-              <button onclick="setColorTheme('purple')" class="color-option purple" title="Roxo">
-                <span class="color-preview" style="background: #8B5CF6;"></span>
-              </button>
-              <button onclick="setColorTheme('orange')" class="color-option orange" title="Laranja">
-                <span class="color-preview" style="background: #F59E0B;"></span>
-              </button>
-            </div>
-          </div>
-          
-          <div class="setting-item">
-            <div class="setting-info">
-              <div class="setting-label">Compactar Interface</div>
-              <div class="setting-description">Mostrar mais informações em menos espaço</div>
-            </div>
-            <div class="compact-controls">
-              <label class="toggle-switch">
-                <input type="checkbox" id="compact-interface" onchange="toggleCompactMode(this.checked)">
-                <span class="toggle-slider"></span>
-              </label>
-              <button class="micro-compact-btn" onclick="toggleMicroMode()" title="Modo micro-compacto">
-                📏
-              </button>
-              <button class="nano-compact-btn" onclick="toggleNanoMode()" title="Modo nano-compacto">
-                🔬
-              </button>
-            </div>
-          </div>
-          
-          <div class="setting-item">
-            <div class="setting-info">
-              <div class="setting-label">Animações</div>
-              <div class="setting-description">Mostrar animações e transições</div>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="animations" checked>
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
-        </div>
-      </section>
 
       <!-- Seção: Configurações de Privacidade -->
       <section class="content-section">
@@ -493,6 +676,7 @@ export async function renderSettings() {
           </button>
         </div>
       </section>
+          </div>
         </div>
       </div>
     </div>
@@ -501,9 +685,11 @@ export async function renderSettings() {
       /* Estilos da Abordagem Híbrida para Configurações */
       
       .settings-container {
-        max-width: 800px;
-        margin: 0 auto;
-        padding: 0.5rem;
+        /* Ocupa toda a largura disponível */
+        max-width: none;
+        width: 100%;
+        margin: 0;
+        padding: 0.5rem 1rem;
       }
 
             /* Mobile-first: Design ultra-compacto */
@@ -780,6 +966,26 @@ export async function renderSettings() {
            line-height: 1.2;
            min-height: auto;
          }
+
+      /* Desktop: duas colunas automáticas para preencher melhor a largura */
+      @media (min-width: 1024px) {
+        .content-spacing {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 1.25rem;
+        }
+        /* A primeira seção (Resumo do Orçamento) ocupa largura completa */
+        .content-spacing > .mb-8:first-child {
+          grid-column: 1 / -1;
+        }
+      }
+
+      /* Ultrawide: aumenta o gap para conforto visual */
+      @media (min-width: 1600px) {
+        .content-spacing {
+          gap: 1.5rem;
+        }
+      }
         
         /* Cards mais compactos */
         .compact-card {
@@ -2562,6 +2768,18 @@ export async function renderSettings() {
     </style>
   `;
 
+  // Injetar indicador de período somente leitura
+  try {
+    const { createPeriodIndicator } = await import('../ui/PeriodIndicator.js');
+    const holder = document.getElementById('settings-period-indicator');
+    if (holder) {
+      holder.innerHTML = '';
+      holder.appendChild(createPeriodIndicator({ readonly: true }));
+    }
+  } catch (e) {
+    console.warn('Settings PeriodIndicator indisponível:', e);
+  }
+
   // Configurar evento do botão de tema
   const themeToggleBtn = document.getElementById('theme-toggle-btn');
   if (themeToggleBtn) {
@@ -2572,6 +2790,13 @@ export async function renderSettings() {
     });
   }
 }
+
+// Compat: expor no escopo global para integração com roteador legado
+try {
+  if (typeof window !== 'undefined') {
+    window.renderSettings = renderSettings;
+  }
+} catch {}
 
 // Funções auxiliares implementadas - Expor para escopo global
 window.editBudgetName = function() {
@@ -2671,55 +2896,7 @@ window.resendInvitation = function(inviteId, email) {
   }
 }
 
-window.shareBudget = function() {
-  const email = document.getElementById('share-email').value;
-  if (!email || !email.trim()) {
-    window.Snackbar?.({ message: 'Digite um email válido', type: 'warning' });
-    return;
-  }
-
-  if (email === window.appState?.currentUser?.email) {
-    window.Snackbar?.({ message: 'Você não pode compartilhar com seu próprio email', type: 'warning' });
-    return;
-  }
-
-  // Verificar se já existe um convite para este email
-  const currentBudget = window.appState?.currentBudget;
-  if (!currentBudget) {
-    window.Snackbar?.({ message: 'Nenhum orçamento selecionado', type: 'warning' });
-    return;
-  }
-
-  // Verificar se o usuário já tem acesso
-  if (currentBudget.usuariosPermitidos?.includes(email)) {
-    window.Snackbar?.({ message: 'Este usuário já tem acesso ao orçamento', type: 'warning' });
-    return;
-  }
-
-  console.log('Compartilhar orçamento com:', email);
-  
-  // Mostrar loading
-  window.Snackbar?.({ 
-    message: `Enviando convite para ${email}...`, 
-    type: 'info' 
-  });
-
-  // Simular envio do convite (implementar lógica real aqui)
-  setTimeout(() => {
-    window.Snackbar?.({ 
-      message: `Convite enviado com sucesso para ${email}!`, 
-      type: 'success' 
-    });
-    
-    // Limpar campo
-    document.getElementById('share-email').value = '';
-    
-    // Recarregar a página para mostrar o novo convite
-    setTimeout(() => {
-      window.renderSettings();
-    }, 1000);
-  }, 2000);
-}
+// shareBudget (mock antigo) removido; usamos inviteUserToBudget do app.js
 
 window.enterBudget = function(budgetId, budgetName) {
   const budget = window.appState?.budgets?.find(b => b.id === budgetId);

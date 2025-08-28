@@ -4,6 +4,24 @@
 export function FAB() {
   console.log('🔧 Criando FAB corrigido...');
 
+  // Idempotência: garantir apenas uma instância do FAB no DOM
+  const existing = document.getElementById('fab-container-main');
+  if (existing) {
+    try {
+      if (typeof existing.cleanup === 'function') {
+        existing.cleanup();
+      }
+    } catch (e) {
+      console.warn('⚠️ Erro ao limpar FAB existente:', e);
+    }
+    try {
+      existing.remove();
+      console.log('♻️ FAB existente removido antes de criar novo.');
+    } catch (e) {
+      console.warn('⚠️ Erro ao remover FAB existente:', e);
+    }
+  }
+
   // Estado interno do FAB
   let isOpen = false;
   let isAnimating = false;

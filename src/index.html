@@ -462,26 +462,28 @@
 
 
     <!-- App Principal -->
-    <script type="module" src="./js/app.js"></script>
+  <script type="module" src="./js/app.js"></script>
+  <!-- Shim do Router (não interfere no fluxo legado; expõe window.routerNavigate) -->
+  <script type="module" src="./app/devRouterShim.js"></script>
 
-    <!-- Service Worker Registration -->
+    <!-- Service Worker Registration (somente quando acessível corretamente) -->
     <script>
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function () {
-          navigator.serviceWorker
-            .register('/service-worker.js')
-            .then(function (registration) {
-              console.log(
-                '📱 PWA: Service Worker registrado com sucesso:',
-                registration.scope
-              );
-            })
-            .catch(function (error) {
-              console.log(
-                '📱 PWA: Falha no registro do Service Worker:',
-                error
-              );
-            });
+        window.addEventListener('load', async function () {
+          try {
+            // Em dev, garantir que o arquivo exista sob a raiz (publicDir cobre produção/dev):
+            const swUrl = '/service-worker.js';
+            const res = await fetch(swUrl, { cache: 'no-store' });
+            const ct = res.headers.get('content-type') || '';
+            if (!res.ok || !ct.includes('javascript')) {
+              console.log('📱 PWA: SW não registrado (dev ou MIME inválido):', { status: res.status, ct });
+              return;
+            }
+            const registration = await navigator.serviceWorker.register(swUrl);
+            console.log('📱 PWA: Service Worker registrado com sucesso:', registration.scope);
+          } catch (error) {
+            console.log('📱 PWA: Falha no registro do Service Worker:', error);
+          }
         });
       }
     </script>

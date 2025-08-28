@@ -365,42 +365,41 @@ export class Analytics {
         <div class="analytics-chart">
           <h3 class="text-lg font-medium mb-4">Evolução Financeira</h3>
           
-          <div class="relative h-64 mt-4">
+          <div class="relative h-64 mt-4 pl-12 pr-4">
             <!-- Linhas de grade -->
             <div class="absolute inset-0 grid grid-rows-4 w-full h-full">
               ${[0, 1, 2, 3].map(i => `
                 <div class="border-t border-gray-200 dark:border-gray-700 relative">
-                  <span class="absolute -top-3 -left-12 text-xs text-gray-500 dark:text-gray-400">
+                  <span class="absolute -top-3 -left-16 text-xs text-gray-500 dark:text-gray-400">
                     R$ ${((maxValor / 4) * (4 - i)).toFixed(0)}
                   </span>
                 </div>
               `).join('')}
             </div>
             
-            <!-- Gráfico de linhas -->
-            <div class="absolute inset-0 flex items-end justify-between">
+            <!-- Gráfico de barras -->
+            <div class="absolute inset-0 flex items-end justify-between gap-1">
               ${dados.map((periodo, index) => {
-                const alturaReceita = (periodo.receitas / maxValor) * 100;
-                const alturaDespesa = (periodo.despesas / maxValor) * 100;
-                const corSaldo = periodo.saldo >= 0 ? 'bg-green-500' : 'bg-red-500';
+                const alturaReceita = Math.max((periodo.receitas / maxValor) * 100, 2);
+                const alturaDespesa = Math.max((periodo.despesas / maxValor) * 100, 2);
                 const isPrevisto = periodo.isPrevisto;
                 
                 return `
-                  <div class="flex flex-col items-center justify-end w-full max-w-[${100 / dados.length}%] px-1">
+                  <div class="flex flex-col items-center justify-end flex-1 min-w-0">
                     <!-- Barra de receita -->
                     <div class="w-full flex justify-center mb-1">
-                      <div class="w-4 ${isPrevisto ? 'bg-green-300/50' : 'bg-green-500'} rounded-t" 
+                      <div class="w-3 ${isPrevisto ? 'bg-green-300/50' : 'bg-green-500'} rounded-t transition-all duration-300 hover:w-4" 
                            style="height: ${alturaReceita}%"></div>
                     </div>
                     
                     <!-- Barra de despesa -->
                     <div class="w-full flex justify-center mb-1">
-                      <div class="w-4 ${isPrevisto ? 'bg-red-300/50' : 'bg-red-500'} rounded-t" 
+                      <div class="w-3 ${isPrevisto ? 'bg-red-300/50' : 'bg-red-500'} rounded-t transition-all duration-300 hover:w-4" 
                            style="height: ${alturaDespesa}%"></div>
                     </div>
                     
                     <!-- Rótulo do mês -->
-                    <div class="text-xs text-gray-600 dark:text-gray-400 mt-1 ${isPrevisto ? 'italic' : ''}">
+                    <div class="text-xs text-gray-600 dark:text-gray-400 mt-1 ${isPrevisto ? 'italic' : ''} text-center truncate w-full">
                       ${periodo.nome.substring(0, 3)}
                       ${isPrevisto ? '*' : ''}
                     </div>
@@ -442,7 +441,7 @@ export class Analytics {
    * @param {string} budgetId - ID do orçamento
    * @returns {Promise<Object>} - Objeto com todos os dados do relatório
    */
-  static async gerarRelatorioCompleto(budgetId) {
+  static async gerarRelatorioCompleto(budgetId, startDate, endDate) {
     try {
       console.log('📊 Gerando relatório completo...');
       
@@ -460,7 +459,7 @@ export class Analytics {
       
       // Obter dados de diferentes fontes
       const [gastosPorCategoria, evolucaoSaldo, previsaoGastos] = await Promise.all([
-        this.getGastosPorCategoria(budgetId),
+        this.getGastosPorCategoria(budgetId, startDate, endDate),
         this.getEvolucaoSaldo(budgetId, 6),
         this.getPrevisaoGastos(budgetId, 3, 3)
       ]);
@@ -472,14 +471,27 @@ export class Analytics {
       });
       
       // Combinar dados em um único relatório
+      // Calcular resumo do mês selecionado
+      let receitasMes = 0;
+      let despesasMes = 0;
+      if (window.appState?.transactions && startDate && endDate) {
+        const tx = window.appState.transactions.filter(t => {
+          if (t.budgetId !== budgetId) return false;
+          const d = t.createdAt?.toDate ? t.createdAt.toDate() : new Date(t.createdAt);
+          return d >= startDate && d <= endDate;
+        });
+        receitasMes = tx.filter(t => t.tipo === 'receita').reduce((s, t) => s + parseFloat(t.valor), 0);
+        despesasMes = tx.filter(t => t.tipo === 'despesa').reduce((s, t) => s + parseFloat(t.valor), 0);
+      }
+
       const relatorio = {
         gastosPorCategoria,
         evolucaoSaldo,
         previsaoGastos,
         resumo: {
           saldoAtual: evolucaoSaldo[0]?.saldo || 0,
-          receitasMes: evolucaoSaldo[0]?.receitas || 0,
-          despesasMes: evolucaoSaldo[0]?.despesas || 0,
+          receitasMes: receitasMes || evolucaoSaldo[0]?.receitas || 0,
+          despesasMes: despesasMes || evolucaoSaldo[0]?.despesas || 0,
           tendencia: previsaoGastos[0]?.saldo >= 0 ? 'positiva' : 'negativa',
           categoriasMaioresGastos: gastosPorCategoria.slice(0, 3)
         }

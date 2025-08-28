@@ -245,8 +245,13 @@
         will-change: transform;
       }
     </style>
-    <script type="module" crossorigin src="/assets/main-BJm0YUzU.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/style-CMR_QTir.css">
+    
+    <link rel="modulepreload" crossorigin href="/assets/vendor-firebase-C4kXrcIK.js">
+    <link rel="modulepreload" crossorigin href="/assets/firebase-client-DD5KHm87.js">
+    <link rel="modulepreload" crossorigin href="/assets/repos-DzrwR68n.js">
+    <link rel="modulepreload" crossorigin href="/assets/features-dCq1aK62.js">
+    <link rel="modulepreload" crossorigin href="/assets/ui-DCql8oje.js">
+    <link rel="stylesheet" crossorigin href="/assets/style-AkKf4wBF.css">
   </head>
   <body
     class="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-400 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4 font-sans font-inter"
@@ -465,26 +470,28 @@
 
 
     <!-- App Principal -->
-    <script type="module" src="./assets/main-BJm0YUzU.js"></script>
+    <script type="module" src="/assets/main-CZfSjfJO.js"></script>
+    
+  <!-- Shim do Router (não interfere no fluxo legado; expõe window.routerNavigate) -->
 
-    <!-- Service Worker Registration -->
+    <!-- Service Worker Registration (somente quando acessível corretamente) -->
     <script>
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function () {
-          navigator.serviceWorker
-            .register('/service-worker.js')
-            .then(function (registration) {
-              console.log(
-                '📱 PWA: Service Worker registrado com sucesso:',
-                registration.scope
-              );
-            })
-            .catch(function (error) {
-              console.log(
-                '📱 PWA: Falha no registro do Service Worker:',
-                error
-              );
-            });
+        window.addEventListener('load', async function () {
+          try {
+            // Em dev, garantir que o arquivo exista sob a raiz (publicDir cobre produção/dev):
+            const swUrl = '/service-worker.js';
+            const res = await fetch(swUrl, { cache: 'no-store' });
+            const ct = res.headers.get('content-type') || '';
+            if (!res.ok || !ct.includes('javascript')) {
+              console.log('📱 PWA: SW não registrado (dev ou MIME inválido):', { status: res.status, ct });
+              return;
+            }
+            const registration = await navigator.serviceWorker.register(swUrl);
+            console.log('📱 PWA: Service Worker registrado com sucesso:', registration.scope);
+          } catch (error) {
+            console.log('📱 PWA: Falha no registro do Service Worker:', error);
+          }
         });
       }
     </script>

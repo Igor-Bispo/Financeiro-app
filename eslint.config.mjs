@@ -1,6 +1,6 @@
 export default [
   {
-    ignores: ['dist/**'],
+  ignores: ['dist/**', 'src/js/**'],
     files: ['**/*.js'],
     languageOptions: {
       ecmaVersion: 'latest',

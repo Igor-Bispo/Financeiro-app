@@ -120,12 +120,12 @@ function createAnalyticsPageHTML() {
   return `
     <div class="tab-container">
       <div class="tab-header">
-        <h2 class="tab-title-highlight">Análises Financeiras</h2>
+        <h2 class="tab-title-highlight">📊 Análises</h2>
       </div>
       <div class="tab-content">
         <div class="content-spacing" id="analytics-content">
           <div class="flex justify-center items-center py-12">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
             <span class="ml-3 text-gray-600 dark:text-gray-400">Carregando análises...</span>
           </div>
         </div>

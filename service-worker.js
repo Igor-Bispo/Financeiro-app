@@ -149,16 +149,13 @@ function isStaleWhileRevalidate(pathname) {
   return STALE_WHILE_REVALIDATE_ROUTES.some(route => pathname.includes(route));
 }
 
-// Verificar se é uma rota que deve ignorar o cache
+// Verificar se deve usar apenas network (única definição)
 function isNetworkOnly(url) {
-  return NETWORK_ONLY_ROUTES.some(route => url.pathname.includes(route)) ||
-         url.pathname.includes('/@vite/') ||
-         url.pathname.includes('/@fs/');
-}
-
-// Verificar se deve usar apenas network
-function isNetworkOnly(url) {
-  return NETWORK_ONLY_ROUTES.some(route => url.href.includes(route));
+  return (
+    NETWORK_ONLY_ROUTES.some(route => url.href.includes(route)) ||
+    url.pathname.includes('/@vite/') ||
+    url.pathname.includes('/@fs/')
+  );
 }
 
 // Estratégia: Network First com fallback para cache
@@ -369,8 +366,8 @@ self.addEventListener('push', (e) => {
   const data = e.data.json();
   const options = {
     body: data.body,
-    icon: '/icon-192.webp',
-    badge: '/badge.webp',
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
     vibrate: [100, 50, 100],
     data: { url: data.url }
   };
