@@ -1,61 +1,61 @@
-export function CardResumo({ titulo, valor, cor = '', icone = '', progresso = null, status = null, alerta = null }) {
+﻿export function CardResumo({ titulo, valor, cor = '', icone = '', progresso = null, status = null, alerta = null }) {
   const card = document.createElement('div');
   card.className = 'card-resumo card-standard mobile-optimized';
 
   // Calcular cor baseada no status
   let corFundo, corTexto, corBarra, emojiStatus;
-  
+
   switch (cor) {
-    case 'card-resumo receita':
+  case 'card-resumo receita':
+    corFundo = 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)';
+    corTexto = '#fff';
+    corBarra = '#ffffff';
+    emojiStatus = 'ðŸ“ˆ';
+    break;
+  case 'card-resumo despesa':
+    corFundo = 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)';
+    corTexto = '#fff';
+    corBarra = '#ffffff';
+    emojiStatus = 'ðŸ“‰';
+    break;
+  case 'card-resumo saldo':
+    // Cor baseada no valor (positivo/negativo)
+    const valorNumerico = parseFloat(valor.replace('R$ ', '').replace(',', '.'));
+    if (valorNumerico >= 0) {
       corFundo = 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)';
-      corTexto = '#fff';
-      corBarra = '#ffffff';
-      emojiStatus = '📈';
-      break;
-    case 'card-resumo despesa':
+      emojiStatus = 'âœ…';
+    } else {
       corFundo = 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)';
-      corTexto = '#fff';
-      corBarra = '#ffffff';
-      emojiStatus = '📉';
-      break;
-    case 'card-resumo saldo':
-      // Cor baseada no valor (positivo/negativo)
-      const valorNumerico = parseFloat(valor.replace('R$ ', '').replace(',', '.'));
-      if (valorNumerico >= 0) {
+      emojiStatus = 'âŒ';
+    }
+    corTexto = '#fff';
+    corBarra = '#ffffff';
+    break;
+  case 'card-resumo orcado':
+    // Cor baseada no progresso do orÃ§ado
+    if (progresso !== null) {
+      if (progresso <= 0.7) {
         corFundo = 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)';
-        emojiStatus = '✅';
+        emojiStatus = 'âœ…';
+      } else if (progresso <= 1.0) {
+        corFundo = 'linear-gradient(135deg, #eab308 0%, #f59e42 100%)';
+        emojiStatus = 'âš ï¸';
       } else {
         corFundo = 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)';
-        emojiStatus = '❌';
+        emojiStatus = 'ðŸš¨';
       }
-      corTexto = '#fff';
-      corBarra = '#ffffff';
-      break;
-    case 'card-resumo orcado':
-      // Cor baseada no progresso do orçado
-      if (progresso !== null) {
-        if (progresso <= 0.7) {
-          corFundo = 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)';
-          emojiStatus = '✅';
-        } else if (progresso <= 1.0) {
-          corFundo = 'linear-gradient(135deg, #eab308 0%, #f59e42 100%)';
-          emojiStatus = '⚠️';
-        } else {
-          corFundo = 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)';
-          emojiStatus = '🚨';
-        }
-      } else {
-        corFundo = 'linear-gradient(135deg, #eab308 0%, #f59e42 100%)';
-        emojiStatus = '📋';
-      }
-      corTexto = '#fff';
-      corBarra = '#ffffff';
-      break;
-    default:
-      corFundo = '#fff';
-      corTexto = '#222';
-      corBarra = '#3b82f6';
-      emojiStatus = '';
+    } else {
+      corFundo = 'linear-gradient(135deg, #eab308 0%, #f59e42 100%)';
+      emojiStatus = 'ðŸ“‹';
+    }
+    corTexto = '#fff';
+    corBarra = '#ffffff';
+    break;
+  default:
+    corFundo = '#fff';
+    corTexto = '#222';
+    corBarra = '#3b82f6';
+    emojiStatus = '';
   }
 
   card.style.background = corFundo;
@@ -94,7 +94,7 @@ export function CardResumo({ titulo, valor, cor = '', icone = '', progresso = nu
   if (alerta) {
     alertaHtml = `
       <div class="p-2 bg-white bg-opacity-20 rounded-lg text-sm">
-        ⚠️ ${alerta}
+        âš ï¸ ${alerta}
       </div>
     `;
   }

@@ -14,6 +14,19 @@ O **Servo Tech - Controle Financeiro** é uma aplicação web completa desenvolv
 
 **🌐 URL do Aplicativo:** https://controle-financeiro-b98ec.web.app
 
+Documentos rápidos: [LEIA-ME.md](./LEIA-ME.md) • [docs/ARCHITECTURE-OVERVIEW.md](./docs/ARCHITECTURE-OVERVIEW.md)
+
+Diagrama (alto nível):
+
+```text
+index.html (#app-content)
+   |
+ entry.js → main.js → routes.js ── lazy → features/*/Page.js
+   |                               \
+   |                                → features/*/service.js → data/repositories → firebase/client
+   └─ globalUtils(eventBus, period) ──────────────────────────▲
+```
+
 ## ✨ **Funcionalidades Principais**
 
 ### 🔐 **Sistema de Autenticação e Usuários**
@@ -91,6 +104,8 @@ O **Servo Tech - Controle Financeiro** é uma aplicação web completa desenvolv
 - ✅ **Offline Support** - Funcionamento sem internet
 - ✅ **Bottom Navigation** - Navegação intuitiva
 
+Para a lista completa de funcionalidades e notas de arquitetura, consulte [docs/ARCHITECTURE-OVERVIEW.md](./docs/ARCHITECTURE-OVERVIEW.md).
+
 ## 🛠️ **Stack Tecnológica**
 
 ### **Frontend**
@@ -124,6 +139,18 @@ O **Servo Tech - Controle Financeiro** é uma aplicação web completa desenvolv
 - ✅ **Cache Inteligente** - Estratégias diferentes por recurso
 - ✅ **Página Offline** - Interface quando sem internet
 - ✅ **Background Sync** - Sincronização em segundo plano
+
+### 🔄 Atualizações sem hard refresh (PWA)
+- ✅ Detecção automática de novas versões (checks periódicos a cada ~30 min e ao voltar o foco da aba)
+- ✅ Banner persistente “Nova versão disponível” com ações: “Atualizar” (aplica a atualização) e “Detalhes” (leva à aba Configurações)
+- ✅ Indicador visual na aba Configurações (ponto) quando há atualização disponível
+- ✅ Aplicação automática com segurança quando a aba estiver oculta ou após ~60s de inatividade
+- ✅ Botão “Verificar Atualizações” na tela de Configurações para forçar a checagem
+
+Como testar:
+- Abra o app, instale como PWA (opcional) e mantenha a aba aberta. Publique uma nova versão e, ao retornar o foco, a atualização será detectada; o banner aparecerá e o ponto na aba Configurações ficará visível.
+- Em ambiente de desenvolvimento, use DevTools → Application → Service Workers para acionar “Update/Skip waiting” e verificar o fluxo de recarregamento controlado.
+
 
 ## 🚀 **Como Usar**
 

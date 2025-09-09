@@ -10,11 +10,11 @@ function copyPWAFiles() {
     name: 'copy-pwa-files',
     closeBundle() {
       const filesToCopy = [
-        'service-worker.js',
+        'public/service-worker.js',
         'public/manifest.json',
         'public/icon-192.png',
         'public/icon-512.png',
-        'offline.html'
+        'public/offline.html'
       ];
       
       filesToCopy.forEach(file => {
@@ -61,33 +61,46 @@ function copyPWAFiles() {
 
 export default defineConfig({
   root: 'src',
+  publicDir: resolve(__dirname, 'public'),
   build: {
     outDir: '../dist',
     emptyOutDir: true,
-    cssCodeSplit: false,
+    cssCodeSplit: true, // Habilitar code splitting CSS
     rollupOptions: {
       external: ['css'],
       input: {
         main: resolve(__dirname, 'src/index.html')
+      },
+      output: {
+        // Configurações básicas de output
+        chunkFileNames: 'assets/[name]-[hash].js',
+        entryFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]'
       }
-    }
+    },
+    // Otimizações de build
+    minify: true,
+    // Análise de bundle
+    reportCompressedSize: true,
+    chunkSizeWarningLimit: 1000
   },
   resolve: {
     alias: {
       '@js': resolve(__dirname, 'src/js'),
       '@css': resolve(__dirname, 'src/css'),
       '@assets': resolve(__dirname, 'src/assets'),
+      '@app': resolve(__dirname, 'src/app'),
+      '@core': resolve(__dirname, 'src/core'),
+      '@data': resolve(__dirname, 'src/data'),
+      '@features': resolve(__dirname, 'src/features'),
+      '@ui': resolve(__dirname, 'src/ui'),
     },
   },
   server: {
     open: true,
     host: true,
-    port: 5175,
-    strictPort: false,
-    hmr: {
-      host: 'localhost',
-      port: 5175
-    },
+  port: 5176,
+  strictPort: true,
   },
   plugins: [
     viteCompression({
@@ -97,4 +110,19 @@ export default defineConfig({
     }),
     copyPWAFiles(),
   ],
+  test: {
+    environment: 'node',
+    globals: true,
+    include: ['../tests/**/*.test.js', 'tests/**/*.test.js'],
+  },
+  // Otimizações de desenvolvimento
+  optimizeDeps: {
+    include: [
+      'firebase/app',
+  'firebase/auth',
+      'firebase/firestore',
+      '@core/events/eventBus',
+      '@core/store/createStore'
+    ]
+  }
 });

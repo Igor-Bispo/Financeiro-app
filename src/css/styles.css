@@ -1,13 +1,247 @@
-@tailwind base;
+﻿@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* === SISTEMA DE PADRONIZAÇÃO COMPLETA === */
+/* === SISTEMA DE PADRONIZAÃ‡ÃƒO COMPLETA === */
 
-/* === Variáveis CSS para temas de cores === */
+/* === Mobile UI Kit: tokens e componentes === */
 :root {
-  --primary-color: #3B82F6;    /* Azul padrão */
-  --primary-color-rgb: 59, 130, 246;  /* Azul padrão em RGB */
+  /* Alturas e medidas de navegaÃ§Ã£o/fab */
+  --bottom-nav-height: 72px;
+  --bottom-nav-radius: 20px;
+  --fab-size: 56px;
+  --fab-radius: 16px;
+  --container-max-width: 720px;
+}
+
+/* Login buttons styling moved from inline */
+.btn-login-google {
+  background: linear-gradient(135deg, #3b82f6, #e0e7ff) !important;
+  box-shadow: 0 10px 30px rgba(59, 130, 246, 0.4), 0 6px 15px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+}
+.btn-login-bio {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 6px 15px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+}
+.btn-login-text {
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Voice modal overlay/content styling moved from inline */
+.voice-modal,
+#voice-modal {
+  /* Garantir que o modal de voz inicie totalmente oculto e sem eventos */
+  display: none;
+  pointer-events: none;
+}
+.voice-modal-overlay {
+  background: rgba(0, 0, 0, 0);
+  -webkit-backdrop-filter: blur(0px);
+  backdrop-filter: blur(0px);
+}
+.voice-content-styles {
+  border: 2px solid rgba(79, 70, 229, 0.2);
+  box-shadow: 0 25px 50px rgba(79, 70, 229, 0.15), 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Utility animation delay classes used in voice modal */
+.anim-delay-100 { animation-delay: 0.1s; }
+.anim-delay-200 { animation-delay: 0.2s; }
+
+body.mobile-ui {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+/* Reduce tap highlight on mobile */
+* { -webkit-tap-highlight-color: rgba(0,0,0,0.05); }
+
+/* Base tipografia e fonte padrÃ£o */
+html, body {
+  font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+h1, h2, h3 { font-weight: 700; line-height: 1.2; color: var(--text-primary); }
+small, .text-muted { color: var(--text-secondary); }
+
+/* ContÃªiner principal responsivo */
+.app-container {
+  width: 100%;
+  max-width: var(--container-max-width);
+  margin: 0 auto;
+  padding: var(--spacing-md);
+}
+
+/* CabeÃ§alho fixo com blur e safe-area */
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.85);
+  border-bottom: 1px solid var(--border-light);
+}
+.dark .app-header { background: rgba(17, 24, 39, 0.7); border-color: var(--border-dark); }
+
+/* Ãrea de conteÃºdo com espaÃ§o para a bottom-nav */
+.content-area {
+  padding: var(--spacing-md);
+  padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom) + 24px);
+  min-height: calc(100vh - var(--bottom-nav-height));
+  overflow-y: auto;
+}
+
+/* === Edge-to-edge em mobile com respeito Ã s safe areas === */
+@media (max-width: 480px) {
+  body.mobile-ui .app-container {
+    max-width: 100%;
+    margin: 0;
+    padding-left: max(env(safe-area-inset-left), var(--spacing-sm));
+    padding-right: max(env(safe-area-inset-right), var(--spacing-sm));
+    padding-top: var(--spacing-sm);
+    padding-bottom: var(--spacing-sm);
+  }
+  body.mobile-ui .content-area {
+    padding-left: max(env(safe-area-inset-left), var(--spacing-sm));
+    padding-right: max(env(safe-area-inset-right), var(--spacing-sm));
+    padding-top: var(--spacing-sm);
+    /* manter o padding-bottom para a bottom-nav e safe-area */
+  }
+  /* Preservar conforto de leitura na aba Config (evitar "duplo-compacto") */
+  body.mobile-ui .settings-container {
+    padding-left: var(--spacing-md);
+    padding-right: var(--spacing-md);
+  }
+}
+
+/* === Modos compactos existentes (micro/nano) com bordas ainda mais prÃ³ximas === */
+body.micro-mode .app-container,
+body.micro-mode .content-area {
+  padding-left: max(env(safe-area-inset-left), 6px);
+  padding-right: max(env(safe-area-inset-right), 6px);
+}
+body.nano-mode .app-container,
+body.nano-mode .content-area {
+  padding-left: max(env(safe-area-inset-left), var(--spacing-xs));
+  padding-right: max(env(safe-area-inset-right), var(--spacing-xs));
+}
+
+/* Ajustes de densidade para cartÃµes no edge/compact */
+@media (max-width: 480px) {
+  body.mobile-ui .card { padding: var(--spacing-md); border-radius: var(--border-radius-lg); }
+}
+body.micro-mode .card { padding: var(--spacing-md); border-radius: var(--border-radius-md); }
+body.nano-mode .card { padding: var(--spacing-sm); border-radius: var(--border-radius-sm); }
+
+/* CartÃµes padrÃ£o */
+.card {
+  background: var(--bg-primary);
+  border-radius: var(--border-radius-xl);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-light);
+  padding: var(--spacing-lg);
+}
+.dark .card { border-color: rgba(255,255,255,0.06); box-shadow: none; }
+
+/* BotÃµes padrÃ£o */
+.btn { 
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 8px; height: 44px; padding: 0 16px; border-radius: 12px;
+  font-weight: 600; transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+.btn:active { transform: translateY(1px); }
+.btn-primary { background: var(--primary-color); color: #fff; box-shadow: 0 6px 16px rgba(var(--primary-color-rgb), .25); }
+.btn-primary:hover { filter: brightness(0.96); }
+.btn-secondary { background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-light); }
+
+/* Inputs padrÃ£o */
+.input,
+input, select, textarea {
+  height: 44px; border-radius: 12px; border: 1px solid var(--border-light);
+  padding: 0 12px; background: #fff; transition: box-shadow var(--transition-fast), border-color var(--transition-fast);
+}
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(59,130,246,.15); }
+
+/* Esconder scrollbar em listas com overflow */
+/* Removido helper de scrollbar para evitar avisos de compatibilidade */
+
+/* Bottom Navigation moderna */
+.bottom-nav { 
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+  display: flex; gap: 4px; justify-content: space-around; align-items: center;
+  height: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  background: rgba(255,255,255,.95);
+  border-top: 1px solid var(--border-light);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  box-shadow: 0 -6px 20px rgba(0,0,0,.06);
+}
+.dark .bottom-nav { background: rgba(17,24,39,.75); border-color: rgba(255,255,255,.06); }
+
+.bottom-nav .nav-btn {
+  flex: 1; min-width: 0; min-height: 48px; line-height: 1;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 6px; position: relative; border-radius: 12px; padding: 6px 4px; 
+  transition: transform var(--transition-fast), background var(--transition-fast);
+}
+.bottom-nav .nav-btn:active { transform: scale(.97); }
+.bottom-nav .nav-btn.active { background: var(--bg-secondary); }
+.dark .bottom-nav .nav-btn.active { background: rgba(255,255,255,.06); }
+
+/* Indicador de aba ativa */
+.bottom-nav .nav-btn .tab-indicator {
+  position: absolute; top: 2px; height: 3px; width: 28px; border-radius: 999px;
+  background: var(--primary-color); transform: scaleX(0); transform-origin: center; transition: transform var(--transition-fast);
+}
+.bottom-nav .nav-btn.active .tab-indicator { transform: scaleX(1); }
+
+/* FAB container e botÃ£o */
+.fab-container { position: fixed; right: 16px; bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom) + 16px); z-index: 60; }
+.fab {
+  width: var(--fab-size); height: var(--fab-size); border-radius: var(--fab-radius);
+  display: inline-flex; align-items: center; justify-content: center; font-size: 22px;
+  background: linear-gradient(135deg, #2563eb, #7c3aed); color: #fff;
+  box-shadow: 0 12px 28px rgba(99, 102, 241, .35);
+}
+.fab:active { transform: translateY(1px); }
+
+/* Estados vazios */
+.empty-state { text-align: center; padding: 24px; color: var(--text-secondary); }
+.empty-state .empty-icon { font-size: 28px; margin-bottom: 8px; }
+.empty-state .empty-text { font-weight: 600; }
+
+/* Tipografia responsiva bÃ¡sica */
+h1 { font-size: 1.375rem; }
+h2 { font-size: 1.125rem; }
+h3 { font-size: 1rem; }
+
+@media (min-width: 640px) {
+  h1 { font-size: 1.5rem; }
+  h2 { font-size: 1.25rem; }
+}
+
+/* Garantir rolagem vertical nativa do container principal em todas as plataformas */
+#app-content {
+  -ms-touch-action: pan-y;
+  touch-action: pan-y;
+  overflow-y: auto;
+  /* removed -webkit-overflow-scrolling for compatibility */
+}
+/* Prefer reported color schemes for the UA (improves rendering in high contrast) */
+:root { color-scheme: light dark; }
+
+/* === VariÃ¡veis CSS para temas de cores === */
+:root {
+  --primary-color: #3B82F6;    /* Azul padrÃ£o */
+  --primary-color-rgb: 59, 130, 246;  /* Azul padrÃ£o em RGB */
   --secondary-color: #1E40AF;  /* Azul escuro */
   --accent-color: #DBEAFE;     /* Azul claro */
   
@@ -19,7 +253,7 @@
   
   /* === Cores de Texto === */
   --text-primary: #1F2937;     /* Cinza escuro */
-  --text-secondary: #6B7280;   /* Cinza médio */
+  --text-secondary: #6B7280;   /* Cinza mÃ©dio */
   --text-light: #9CA3AF;       /* Cinza claro */
   --text-white: #FFFFFF;       /* Branco */
   
@@ -83,9 +317,146 @@
   --border-medium: #d1d5db;
   --border-dark: #9ca3af;
   
-  /* === SISTEMA DE COMPACTAÇÃO GLOBAL === */
+  /* === SISTEMA DE COMPACTAÃ‡ÃƒO GLOBAL === */
+  
+  /* UtilitÃ¡rios semÃ¢nticos (opt-in) */
+}
 
-/* Modo Compacto - Redução geral de espaçamentos */
+/* === Ajustes de contraste no tema escuro (acessibilidade) === */
+/* Escopo: conteÃºdo das pÃ¡ginas (especialmente ConfiguraÃ§Ãµes) e rodapÃ© de abas */
+.dark .bottom-nav-container {
+  background: #111827 !important;
+  border-top-color: #374151 !important;
+}
+.dark .bottom-nav {
+  background: #111827 !important;
+  border-top-color: #374151 !important;
+}
+.dark .bottom-nav .nav-btn { color: #e5e7eb !important; }
+.dark .bottom-nav .nav-btn span:first-child { color: #e5e7eb !important; }
+.dark .bottom-nav .nav-btn span:last-child { color: #cbd5e1 !important; }
+.dark .bottom-nav .nav-btn:hover { background: #374151 !important; color: #ffffff !important; }
+.dark .bottom-nav .nav-btn.active {
+  background: rgba(255,255,255,0.12) !important;
+  color: #ffffff !important;
+}
+.dark .bottom-nav .nav-btn .tab-indicator { background: var(--primary-color) !important; opacity: 0.95; }
+
+.dark .tab-container .text-gray-500,
+.dark .tab-container .text-gray-400 { color: #cbd5e1 !important; }
+.dark .tab-container .text-gray-300 { color: #e5e7eb !important; }
+.dark .tab-container .text-gray-200 { color: #f3f4f6 !important; }
+
+.dark .tab-container h1,
+.dark .tab-container h2,
+.dark .tab-container h3,
+.dark .tab-container label,
+.dark .tab-container .section-title { color: #f3f4f6 !important; }
+
+.dark .tab-container .u-card,
+.dark .tab-container .u-card__header,
+.dark .tab-container .u-card__footer { border-color: #374151 !important; }
+
+.dark .tab-container input::placeholder,
+.dark .tab-container textarea::placeholder,
+.dark .tab-container select::placeholder { color: #cbd5e1 !important; opacity: 0.8; }
+
+/* === UTILITÃRIOS SEMÃ‚NTICOS LIGADOS AOS TOKENS === */
+.u-text-primary { color: var(--text-primary) !important; }
+.u-text-secondary { color: var(--text-secondary) !important; }
+.u-text-light { color: var(--text-light) !important; }
+.u-text-inverse { color: var(--text-white) !important; }
+
+.u-bg-primary { background-color: var(--primary-color) !important; }
+.u-bg-accent { background-color: var(--accent-color) !important; }
+.u-bg-success { background-color: var(--success-color) !important; }
+.u-bg-warning { background-color: var(--warning-color) !important; }
+.u-bg-danger { background-color: var(--danger-color) !important; }
+
+.u-border-primary { border-color: var(--primary-color) !important; }
+.u-border-light { border-color: var(--border-light) !important; }
+.u-border-dark { border-color: var(--border-dark) !important; }
+
+/* Ring/foco consistente */
+.u-ring-focus { box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), .2) !important; }
+*:focus-visible { outline: 2px solid transparent; box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), .35); border-radius: 6px; }
+
+/* BotÃµes base padronizados (opt-in) */
+.u-btn { 
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 10px 14px; border-radius: var(--border-radius-md);
+  font-weight: 600; line-height: 1.2; cursor: pointer; -webkit-user-select: none; user-select: none;
+  transition: background-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+}
+.u-btn:disabled { opacity: .6; cursor: not-allowed; }
+.u-btn--primary { background: var(--primary-color); color: var(--text-white); box-shadow: 0 6px 16px rgba(var(--primary-color-rgb), .25); }
+.u-btn--primary:hover { filter: brightness(1.05); }
+.u-btn--outline { background: transparent; color: var(--primary-color); border: 2px solid var(--primary-color); }
+.u-btn--ghost { background: transparent; color: var(--text-primary); }
+.u-btn--danger { background: var(--danger-color); color: var(--text-white); }
+
+/* Inputs/Select padronizados (opt-in) */
+.u-input, .u-select, .u-textarea { 
+  width: 100%; padding: 10px 12px; border-radius: var(--border-radius-md);
+  border: 1px solid var(--border-light); background: var(--select-bg); color: var(--select-text);
+}
+.u-input:focus, .u-select:focus, .u-textarea:focus { border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), .15); outline: none; }
+
+/* Cards (opt-in) */
+.u-card { background: var(--bg-primary); border: 1px solid var(--border-light); border-radius: var(--border-radius-lg); }
+.u-card__header { padding: 12px 16px; border-bottom: 1px solid var(--border-light); font-weight: 600; }
+.u-card__body { padding: 12px 16px; }
+.u-card__footer { padding: 12px 16px; border-top: 1px solid var(--border-light); }
+
+  /* CompactaÃ§Ã£o especÃ­fica para a aba de AnÃ¡lises em telas pequenas */
+  .analytics-compact .content-spacing {
+    padding: var(--spacing-sm) !important;
+  }
+
+  .analytics-compact .tab-header {
+    padding-left: var(--spacing-sm) !important;
+    padding-right: var(--spacing-sm) !important;
+  }
+  .analytics-compact .content-spacing .mb-8 {
+    margin-bottom: 1rem !important;
+  }
+  .analytics-compact .content-spacing .gap-4 {
+    gap: 0.75rem !important;
+  }
+  .analytics-compact .content-spacing .p-6 {
+    padding: 1rem !important;
+  }
+
+  /* CompactaÃ§Ã£o especÃ­fica para a aba de Recorrentes em telas pequenas */
+  .recorrentes-compact .content-spacing {
+    padding: var(--spacing-sm) !important;
+  }
+
+  .recorrentes-compact .tab-header {
+    padding-left: var(--spacing-sm) !important;
+    padding-right: var(--spacing-sm) !important;
+  }
+
+  /* Ajustes de densidade no modo compacto de Recorrentes */
+  .recorrentes-compact .content-spacing .mb-8 {
+    margin-bottom: 1rem !important; /* reduzir espaÃ§amento vertical entre seÃ§Ãµes */
+  }
+  .recorrentes-compact #rec-list {
+    padding: var(--spacing-sm) !important;
+  }
+  .recorrentes-compact #rec-list > div {
+    padding: 0.5rem !important; /* reduzir padding dos itens da lista */
+    margin-bottom: 0.375rem !important; /* reduzir gap entre itens */
+  }
+  .recorrentes-compact .summary-card {
+    padding: 0.75rem !important;
+    margin-bottom: 0.75rem !important;
+  }
+  .recorrentes-compact .summary-card h3 { font-size: 1rem !important; }
+  .recorrentes-compact .summary-card p { font-size: 0.75rem !important; }
+  .recorrentes-compact .summary-value { font-size: 1.25rem !important; }
+
+/* Modo Compacto - ReduÃ§Ã£o geral de espaÃ§amentos */
 .compact-mode {
   --spacing-xs: 2px;
   --spacing-sm: 4px;
@@ -336,7 +707,7 @@
   border-radius: 3px;
 }
 
-/* Modo Micro-Compacto - Compactação extrema */
+/* Modo Micro-Compacto - CompactaÃ§Ã£o extrema */
 .micro-mode {
   --spacing-xs: 1px;
   --spacing-sm: 2px;
@@ -587,7 +958,7 @@
   border-radius: 2px;
 }
 
-/* Modo Nano-Compacto - Compactação máxima */
+/* Modo Nano-Compacto - CompactaÃ§Ã£o mÃ¡xima */
 .nano-mode {
   --spacing-xs: 0px;
   --spacing-sm: 0px;
@@ -995,7 +1366,7 @@
   padding-right: 0.0625rem !important;
 }
 
-/* Estilos específicos para elementos Tailwind */
+/* Estilos especÃ­ficos para elementos Tailwind */
 .compact-mode .text-lg {
   font-size: 0.875rem !important;
 }
@@ -1056,7 +1427,7 @@
   font-size: 1.125rem !important;
 }
 
-/* Espaçamentos específicos */
+/* EspaÃ§amentos especÃ­ficos */
 .compact-mode .space-y-2 > * + * {
   margin-top: 0.125rem !important;
 }
@@ -1105,7 +1476,7 @@
   margin-top: 0.125rem !important;
 }
 
-/* Gaps específicos */
+/* Gaps especÃ­ficos */
 .compact-mode .gap-2 {
   gap: 0.125rem !important;
 }
@@ -1154,7 +1525,7 @@
   gap: 0.125rem !important;
 }
 
-/* Padding específico */
+/* Padding especÃ­fico */
 .compact-mode .p-2 {
   padding: 0.125rem !important;
 }
@@ -1203,7 +1574,7 @@
   padding: 0.125rem !important;
 }
 
-/* Margin específico */
+/* Margin especÃ­fico */
 .compact-mode .m-2 {
   margin: 0.125rem !important;
 }
@@ -1253,7 +1624,7 @@
 }
 
 /* === FAB (Floating Action Button) - COMPLETAMENTE REFATORADO === */
-/* Estilos mínimos para evitar conflitos - FAB usa estilos inline */
+/* Estilos mÃ­nimos para evitar conflitos - FAB usa estilos inline */
 .fab-container {
   position: fixed !important;
   bottom: 120px !important;
@@ -1265,10 +1636,8 @@
   max-height: none !important;
 }
 
-  /* Classe para FAB refatorado */
-  .fab-container-refactored {
-    /* Estilos aplicados via inline para evitar conflitos */
-  }
+  /* Classe para FAB refatorado - estilos aplicados inline no componente */
+  /* .fab-container-refactored { } removido para evitar regra vazia */
 
 
 
@@ -1310,7 +1679,7 @@
     line-height: 1 !important;
   }
 
-  /* === Navegação por Swipe === */
+  /* === NavegaÃ§Ã£o por Swipe === */
   .app-container {
     overflow-x: hidden;
     touch-action: pan-y;
@@ -1337,13 +1706,13 @@
     opacity: 1;
   }
 
-  /* Melhorar navegação por teclado */
+  /* Melhorar navegaÃ§Ã£o por teclado */
   .nav-btn:focus {
     outline: 2px solid #4F46E5;
     outline-offset: 2px;
   }
 
-  /* Animações de transição entre abas */
+  /* AnimaÃ§Ãµes de transiÃ§Ã£o entre abas */
   .tab-container {
     transition: opacity 0.3s ease;
   }
@@ -1351,7 +1720,7 @@
   .tab-container.loading {
     opacity: 0.7;
   }
-}
+
 
 /* === Temas de cores === */
 [data-theme-color="blue"] {
@@ -1378,7 +1747,7 @@
   --accent-color: #FEF3C7;
 }
 
-/* === PADRÃO DE TÍTULOS === */
+/* === PADRÃƒO DE TÃTULOS === */
 .tab-title-highlight {
   background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
   color: var(--text-white);
@@ -1409,7 +1778,7 @@
   box-shadow: var(--shadow-md);
 }
 
-/* === PADRÃO DE ABAS === */
+/* === PADRÃƒO DE ABAS === */
 .tab-container {
   background: var(--bg-primary);
   border-radius: var(--border-radius-xl);
@@ -1436,9 +1805,123 @@
   box-shadow: none;
   border: none;
   overflow: hidden;
+#app-content {
+  -ms-touch-action: pan-y;
+  touch-action: pan-y;
+  overflow-y: auto;
+  /* removed -webkit-overflow-scrolling for compatibility */
+}
+  background: var(--bg-secondary);
+  min-height: 100vh;
+  padding: var(--spacing-lg);
 }
 
-/* === PADRÃO DE BOTÕES === */
+.dashboard-content {
+  background: var(--bg-primary);
+  border-radius: var(--border-radius-xl);
+  padding: var(--spacing-xl);
+  box-shadow: var(--shadow-lg);
+}
+
+.dashboard-card {
+  background: var(--bg-primary);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-light);
+  transition: all var(--transition-normal);
+}
+
+.dashboard-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-xl);
+}
+
+/* Transactions Page */
+.transactions-page {
+  background: var(--bg-secondary);
+  min-height: 100vh;
+  padding: var(--spacing-lg);
+}
+
+.transactions-content {
+  background: var(--bg-primary);
+  border-radius: var(--border-radius-xl);
+  padding: var(--spacing-xl);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Categories Page */
+.categories-page {
+  background: var(--bg-secondary);
+  min-height: 100vh;
+  padding: var(--spacing-lg);
+}
+
+.categories-content {
+  background: var(--bg-primary);
+  border-radius: var(--border-radius-xl);
+  padding: var(--spacing-xl);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Dark mode para as pÃ¡ginas */
+.dark .dashboard-page,
+.dark .transactions-page,
+.dark .categories-page {
+  background: var(--bg-secondary);
+}
+
+.dark .dashboard-content,
+.dark .transactions-content,
+.dark .categories-content {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-dark);
+}
+
+.dark .dashboard-card {
+  background: var(--bg-primary);
+  border-color: var(--border-dark);
+}
+
+/* Responsividade para mobile */
+@media (max-width: 768px) {
+  .dashboard-page,
+  .transactions-page,
+  .categories-page {
+    padding: var(--spacing-md);
+  }
+  
+  .dashboard-content,
+  .transactions-content,
+  .categories-content {
+    padding: var(--spacing-lg);
+  }
+  
+  .dashboard-card {
+    padding: var(--spacing-md);
+  }
+}
+
+/* === CONTAINERS AMPLOS (DESKTOP) === */
+.container-wide {
+  max-width: 1280px;
+  width: 100%;
+  margin: 0 auto;
+  padding-left: var(--spacing-lg);
+  padding-right: var(--spacing-lg);
+}
+
+/* === CONTAINERS AMPLOS (DESKTOP) === */
+.container-wide {
+  max-width: 1280px;
+  width: 100%;
+  margin: 0 auto;
+  padding-left: var(--spacing-lg);
+  padding-right: var(--spacing-lg);
+}
+
+/* === PADRÃƒO DE BOTÃ•ES === */
 .btn-primary {
   background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
   color: var(--text-white);
@@ -1500,7 +1983,75 @@
   box-shadow: var(--shadow-sm);
 }
 
-/* === PADRÃO DE BOTÕES DE PERIGO === */
+/* Estados de foco visÃ­vel e desabilitado (acessibilidade) */
+.btn-primary:focus-visible,
+.btn-secondary:focus-visible,
+.btn-danger:focus-visible {
+  outline: 3px solid var(--focus-ring, #3b82f6);
+  outline-offset: 2px;
+}
+
+.btn-primary:disabled,
+.btn-secondary:disabled,
+.btn-danger:disabled,
+.is-disabled {
+  opacity: 0.6;
+  filter: grayscale(0.1);
+  cursor: not-allowed !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* UtilitÃ¡rios de tamanho/forma */
+.btn-block { width: 100%; }
+
+.btn-sm {
+  padding: calc(var(--spacing-xs) + 1px) var(--spacing-md) !important;
+  font-size: var(--font-size-xs) !important;
+  min-height: 36px !important;
+}
+
+.btn-lg {
+  padding: var(--spacing-md) var(--spacing-xl) !important;
+  font-size: var(--font-size-base) !important;
+  min-height: 52px !important;
+}
+
+.btn-icon {
+  width: 44px;
+  height: 44px;
+  padding: 0 !important;
+  justify-content: center;
+}
+
+/* Tamanhos aplicados Ã s variantes */
+/* Variantes combinadas herdam de utilitÃ¡rios acima */
+
+/* Estado de loading simples */
+.btn-loading {
+  position: relative;
+  pointer-events: none !important;
+  opacity: 0.85;
+}
+.btn-loading::after {
+  content: '';
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255,255,255,0.6);
+  border-top-color: rgba(255,255,255,1);
+  border-radius: 9999px;
+  display: inline-block;
+  margin-left: 8px;
+  animation: btn-spin 0.9s linear infinite;
+}
+
+@keyframes btn-spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-primary, .btn-secondary, .btn-danger, .mobile-btn { transition: none !important; }
+}
+
+/* === PADRÃƒO DE BOTÃ•ES DE PERIGO === */
 .btn-danger {
   background: linear-gradient(135deg, var(--danger-color) 0%, #B91C1C 100%);
   color: var(--text-white);
@@ -1521,10 +2072,11 @@
   text-transform: uppercase;
 }
 
-/* === BOTÕES OTIMIZADOS PARA MOBILE === */
+/* === BOTÃ•ES OTIMIZADOS PARA MOBILE === */
 .mobile-btn {
   touch-action: manipulation !important;
   -webkit-tap-highlight-color: transparent !important;
+  -webkit-user-select: none !important;
   user-select: none !important;
   transition: all 0.2s ease !important;
 }
@@ -1568,7 +2120,7 @@
   box-shadow: var(--shadow-md);
 }
 
-/* === PADRÃO DE CARDS === */
+/* === PADRÃƒO DE CARDS === */
 .card-standard {
   background: var(--bg-card);
   border-radius: var(--border-radius-xl);
@@ -1589,7 +2141,7 @@
   box-shadow: var(--shadow-md);
 }
 
-/* === PADRÃO DE FORMULÁRIOS === */
+/* === PADRÃƒO DE FORMULÃRIOS === */
 .form-group {
   margin-bottom: var(--spacing-lg);
 }
@@ -1624,7 +2176,7 @@
   transform: translateY(-1px);
 }
 
-/* === PADRÃO DE NAVEGAÇÃO === */
+/* === PADRÃƒO DE NAVEGAÃ‡ÃƒO === */
 .nav-btn {
   font-family: var(--font-family);
   font-size: var(--font-size-sm);
@@ -1650,7 +2202,7 @@
   transform: scale(1.05);
 }
 
-/* === PADRÃO DE MODAIS === */
+/* === PADRÃƒO DE MODAIS === */
 .modal-content {
   background: var(--bg-primary);
   border-radius: var(--border-radius-xl);
@@ -1673,7 +2225,7 @@
   letter-spacing: 0.05em;
 }
 
-/* === PADRÃO DE LISTAS === */
+/* === PADRÃƒO DE LISTAS === */
 .list-item {
   display: flex;
   justify-content: space-between;
@@ -1706,7 +2258,7 @@
   margin-top: var(--spacing-xs);
 }
 
-/* === PADRÃO DE PROGRESS BARS === */
+/* === PADRÃƒO DE PROGRESS BARS === */
 .progress-bar {
   width: 100%;
   height: 12px;
@@ -1734,7 +2286,7 @@
   background: linear-gradient(90deg, var(--danger-color) 0%, #B91C1C 100%);
 }
 
-/* === PADRÃO DE ÍCONES === */
+/* === PADRÃƒO DE ÃCONES === */
 .icon-standard {
   font-size: var(--font-size-lg);
   display: inline-flex;
@@ -1753,7 +2305,7 @@
   height: 32px;
 }
 
-/* === PADRÃO DE ESPAÇAMENTOS === */
+/* === PADRÃƒO DE ESPAÃ‡AMENTOS === */
 .section-spacing {
   margin-bottom: var(--spacing-xl);
 }
@@ -1762,7 +2314,7 @@
   padding: var(--spacing-lg);
 }
 
-/* === PADRÃO DE RESPONSIVIDADE === */
+/* === PADRÃƒO DE RESPONSIVIDADE === */
 @media (max-width: 768px) {
   .tab-title-highlight {
     font-size: var(--font-size-base);
@@ -1880,7 +2432,7 @@
   }
 }
 
-/* === OTIMIZAÇÕES ESPECÍFICAS PARA MOBILE === */
+/* === OTIMIZAÃ‡Ã•ES ESPECÃFICAS PARA MOBILE === */
 @media (max-width: 480px) {
   /* Touch targets maiores para telas pequenas */
   button,
@@ -1892,7 +2444,8 @@
     min-width: 56px !important;
     touch-action: manipulation !important;
     -webkit-tap-highlight-color: transparent !important;
-    user-select: none !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
   }
 
   /* Prevenir zoom em inputs */
@@ -1905,7 +2458,7 @@
     border-radius: 12px !important;
   }
 
-  /* Melhorar espaçamento em cards */
+  /* Melhorar espaÃ§amento em cards */
   .card-resumo {
     padding: 1rem !important;
     min-height: 140px !important;
@@ -1918,7 +2471,7 @@
     gap: 0.75rem !important;
   }
 
-  /* Melhorar botões de ação */
+  /* Melhorar botÃµes de aÃ§Ã£o */
   .list-item button {
     min-width: 44px !important;
     min-height: 44px !important;
@@ -1933,7 +2486,7 @@
     border-radius: 16px !important;
   }
 
-  /* Melhorar navegação inferior */
+  /* Melhorar navegaÃ§Ã£o inferior */
   .bottom-nav {
     padding: 0.25rem 0.125rem !important;
     gap: 0.125rem !important;
@@ -1970,14 +2523,14 @@
     font-size: 24px !important;
   }
 
-  /* Melhorar títulos */
+  /* Melhorar tÃ­tulos */
   .tab-title-highlight {
     font-size: 0.875rem !important;
     padding: 0.5rem 1rem !important;
     min-height: 44px !important;
   }
 
-  /* Ajustar espaçamentos gerais */
+  /* Ajustar espaÃ§amentos gerais */
   .tab-container {
     padding: 1rem !important;
     margin-bottom: 1rem !important;
@@ -1994,7 +2547,7 @@
     min-height: 80px !important;
   }
 
-  /* Ajustar botões de ação */
+  /* Ajustar botÃµes de aÃ§Ã£o */
   .btn-primary,
   .btn-secondary,
   .btn-danger {
@@ -2026,7 +2579,7 @@
   }
 }
 
-/* === MELHORIAS PARA ORIENTAÇÃO LANDSCAPE NO MOBILE === */
+/* === MELHORIAS PARA ORIENTAÃ‡ÃƒO LANDSCAPE NO MOBILE === */
 @media (max-width: 768px) and (orientation: landscape) {
   .app-container {
     height: 100vh !important;
@@ -2034,7 +2587,7 @@
 
   #app-content {
     height: calc(100vh - 120px) !important;
-    padding-bottom: 80px !important; /* Reduzido para dar espaço à bottom nav fixa */
+    padding-bottom: 80px !important; /* Reduzido para dar espaÃ§o Ã  bottom nav fixa */
   }
 
   .bottom-nav {
@@ -2102,13 +2655,13 @@
     outline-offset: 2px !important;
   }
 
-  /* Melhorar seleção */
+  /* Melhorar seleÃ§Ã£o */
   ::selection {
     background: var(--primary-color) !important;
     color: white !important;
   }
 
-  /* Prevenir seleção indesejada */
+  /* Prevenir seleÃ§Ã£o indesejada */
   button,
   .btn,
   .nav-btn,
@@ -2119,12 +2672,10 @@
     user-select: none !important;
   }
 
-  /* Melhorar scroll */
-  * {
-    scroll-behavior: smooth !important;
-  }
+  /* Melhorar scroll: evitar smooth global que pode conflitar com rolagem natural */
+  /* Removido smooth global para permitir comportamento nativo por pÃ¡gina */
 
-  /* Melhorar animações */
+  /* Melhorar animaÃ§Ãµes */
   .transition-all {
     transition: all 0.2s ease !important;
   }
@@ -2147,12 +2698,12 @@
 
 /* === MELHORIAS PARA PERFORMANCE NO MOBILE === */
 @media (max-width: 768px) {
-  /* Otimizar animações */
+  /* Otimizar animaÃ§Ãµes */
   .transform {
     will-change: transform !important;
   }
 
-  /* Melhorar renderização */
+  /* Melhorar renderizaÃ§Ã£o */
   .card-resumo,
   .card-standard,
   .list-item {
@@ -2162,8 +2713,9 @@
 
   /* Melhorar scroll */
   #app-content {
-    -webkit-overflow-scrolling: touch !important;
+  /* removed -webkit-overflow-scrolling for compatibility */
     overscroll-behavior: contain !important;
+  touch-action: pan-y !important;
   }
 
   /* Prevenir zoom indesejado */
@@ -2184,7 +2736,7 @@
   touch-action: manipulation;
 }
 
-/* === Área de toque mínima para botões === */
+/* === Ãrea de toque mÃ­nima para botÃµes === */
 button,
 .btn,
 .nav-btn,
@@ -2221,7 +2773,7 @@ textarea {
   appearance: none;
 }
 
-/* === Botões de modal com melhor visibilidade === */
+/* === BotÃµes de modal com melhor visibilidade === */
 .modal button {
   font-weight: 600 !important;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
@@ -2240,11 +2792,9 @@ textarea {
   border: 2px solid #D1D5DB !important;
 }
 
-/* === Estilos específicos para checkboxes e radio buttons === */
+/* === Estilos especÃ­ficos para checkboxes e radio buttons === */
 input[type="checkbox"],
 input[type="radio"] {
-  min-height: auto;
-  min-width: auto;
   padding: 0;
   border-radius: 4px;
   border: 2px solid #d1d5db;
@@ -2267,7 +2817,7 @@ input[type="radio"]:checked {
 }
 
 input[type="checkbox"]:checked::after {
-  content: "✓";
+  content: "âœ“";
   position: absolute;
   top: -2px;
   left: 1px;
@@ -2308,7 +2858,7 @@ textarea:focus {
   transform: translateY(-1px);
 }
 
-/* === Melhorias para formulários mobile === */
+/* === Melhorias para formulÃ¡rios mobile === */
 .form-group {
   margin-bottom: 1rem;
 }
@@ -2339,7 +2889,7 @@ textarea:focus {
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-/* === Melhorias para botões === */
+/* === Melhorias para botÃµes === */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -2420,7 +2970,7 @@ textarea:focus {
   border-color: #f59e42;
 }
 
-/* === Melhorias para navegação === */
+/* === Melhorias para navegaÃ§Ã£o === */
 .bottom-nav-container {
   position: fixed !important;
   bottom: 0 !important;
@@ -2479,9 +3029,12 @@ textarea:focus {
 
 /* === Melhorias para app-content com bottom nav fixa === */
 #app-content {
-  padding-bottom: 100px; /* Espaço para bottom navigation fixa */
+  padding-bottom: 100px; /* EspaÃ§o para bottom navigation fixa */
+  -ms-touch-action: pan-y; /* IE/Edge legacy */
   touch-action: pan-y; /* Permitir scroll vertical mas capturar swipe horizontal */
-  user-select: none; /* Prevenir seleção de texto durante swipe */
+  -webkit-user-select: none; /* iOS Safari */
+  -webkit-user-select: none; /* iOS Safari */
+  user-select: none; /* Prevenir seleÃ§Ã£o de texto durante swipe */
 }
 
 /* === Sistema de Swipe Navigation === */
@@ -2556,7 +3109,7 @@ textarea:focus {
 @media (max-width: 768px) {
   #app-content {
     touch-action: pan-y;
-    -webkit-overflow-scrolling: touch;
+  /* removed -webkit-overflow-scrolling for compatibility */
   }
   
   .swipe-indicator {
@@ -2608,6 +3161,7 @@ textarea:focus {
   align-items: center;
   justify-content: center;
   z-index: 2000;
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
 }
 
@@ -2680,7 +3234,7 @@ textarea:focus {
   --option-selected-text: #ffffff;
 }
 
-/* Fundo da página no tema escuro */
+/* Fundo da pÃ¡gina no tema escuro */
 .dark body,
 .dark html {
   background-color: #111827 !important;
@@ -2761,7 +3315,7 @@ textarea:focus {
   outline-offset: 2px;
 }
 
-/* === Melhorias para seleção === */
+/* === Melhorias para seleÃ§Ã£o === */
 ::selection {
   background: var(--primary-color);
   color: white;
@@ -2800,7 +3354,7 @@ textarea:focus {
   100% { transform: rotate(360deg); }
 }
 
-/* === Melhorias para animações === */
+/* === Melhorias para animaÃ§Ãµes === */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
@@ -2835,13 +3389,13 @@ textarea:focus {
 .z-fab { z-index: 999; }
 .z-snackbar { z-index: 3000; }
 
-/* === Esconder FAB quando modal está ativo === */
+/* === Esconder FAB quando modal estÃ¡ ativo === */
 body:has(#app-modal) .fab,
 body:has(.modal) .fab {
   display: none !important;
 }
 
-/* === FAB FORÇADO A APARECER === */
+/* === FAB FORÃ‡ADO A APARECER === */
 .fab {
   position: fixed !important;
   bottom: 120px !important;
@@ -2898,7 +3452,7 @@ body:has(.modal) .fab {
   max-height: none !important;
 }
 
-/* === MODAL FORÇADO A APARECER === */
+/* === MODAL FORÃ‡ADO A APARECER === */
 .modal {
   position: fixed !important;
   top: 0 !important;
@@ -2932,7 +3486,7 @@ body:has(.modal) .fab {
   color: white !important;
 }
 
-/* === Melhorias para botões de modal === */
+/* === Melhorias para botÃµes de modal === */
 .modal-content button {
   font-weight: 600 !important;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
@@ -2953,7 +3507,7 @@ body:has(.modal) .fab {
 
 
 
-/* === Melhorias para formulários de modais === */
+/* === Melhorias para formulÃ¡rios de modais === */
 .modal-content input,
 .modal-content select,
 .modal-content textarea {
@@ -2996,7 +3550,7 @@ body:has(.modal) .fab {
   display: block !important;
 }
 
-/* Tema escuro para formulários de modais */
+/* Tema escuro para formulÃ¡rios de modais */
 .dark .modal-content input,
 .dark .modal-content select,
 .dark .modal-content textarea {
@@ -3049,7 +3603,7 @@ body:has(.modal) .fab {
   opacity: 1 !important;
 }
 
-/* Melhorar visibilidade dos botões de rádio e checkbox */
+/* Melhorar visibilidade dos botÃµes de rÃ¡dio e checkbox */
 .modal-content input[type="radio"],
 .modal-content input[type="checkbox"] {
   width: 18px !important;
@@ -3063,7 +3617,7 @@ body:has(.modal) .fab {
   accent-color: #60a5fa !important;
 }
 
-/* Melhorar visibilidade das opções do select */
+/* Melhorar visibilidade das opÃ§Ãµes do select */
 .modal-content select option {
   background-color: #ffffff !important;
   color: #1f2937 !important;
@@ -3087,7 +3641,7 @@ body:has(.modal) .fab {
   line-height: 1.5 !important;
 }
 
-/* Melhorar espaçamento dos elementos do formulário */
+/* Melhorar espaÃ§amento dos elementos do formulÃ¡rio */
 .modal-content .space-y-4 > * + * {
   margin-top: 16px !important;
 }
@@ -3100,7 +3654,7 @@ body:has(.modal) .fab {
   gap: 8px !important;
 }
 
-/* Melhorar visibilidade dos botões do formulário */
+/* Melhorar visibilidade dos botÃµes do formulÃ¡rio */
 .modal-content button[type="submit"] {
   background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
   color: #ffffff !important;
@@ -3144,7 +3698,7 @@ body:has(.modal) .fab {
   color: #f9fafb !important;
 }
 
-/* Melhorar visibilidade das informações de valores */
+/* Melhorar visibilidade das informaÃ§Ãµes de valores */
 #recorrente-valores-info {
   background: #f8fafc !important;
   border: 1px solid #e2e8f0 !important;
@@ -3160,7 +3714,7 @@ body:has(.modal) .fab {
   color: #e5e7eb !important;
 }
 
-/* Melhorar visibilidade dos textos de opções */
+/* Melhorar visibilidade dos textos de opÃ§Ãµes */
 .modal-content span {
   font-weight: 500 !important;
   color: inherit !important;
@@ -3173,6 +3727,7 @@ body:has(.modal) .fab {
 /* Melhorar visibilidade dos labels de checkbox e radio */
 .modal-content label.cursor-pointer {
   cursor: pointer !important;
+  -webkit-user-select: none !important;
   user-select: none !important;
   font-weight: 500 !important;
 }
@@ -3186,7 +3741,7 @@ body:has(.modal) .fab {
   color: #9ca3af !important;
 }
 
-/* === Melhorias específicas para modal de recorrentes no tema escuro === */
+/* === Melhorias especÃ­ficas para modal de recorrentes no tema escuro === */
 .dark .modal-content {
   background: #1f2937 !important;
   color: #f9fafb !important;
@@ -3200,7 +3755,7 @@ body:has(.modal) .fab {
   text-transform: none !important;
 }
 
-/* Melhorar visibilidade dos labels específicos do modal de recorrentes - MAIS BRANCOS */
+/* Melhorar visibilidade dos labels especÃ­ficos do modal de recorrentes - MAIS BRANCOS */
 .dark .modal-content .block.text-sm.font-medium {
   color: #ffffff !important;
   font-weight: 600 !important;
@@ -3219,7 +3774,7 @@ body:has(.modal) .fab {
   letter-spacing: 0.025em !important;
 }
 
-/* Forçar estilos para todos os labels - MAIS BRANCOS */
+/* ForÃ§ar estilos para todos os labels - MAIS BRANCOS */
 .dark .modal-content label {
   color: #ffffff !important;
   font-weight: 600 !important;
@@ -3229,7 +3784,7 @@ body:has(.modal) .fab {
   letter-spacing: 0.025em !important;
 }
 
-/* Melhorar visibilidade dos textos de opções de rádio */
+/* Melhorar visibilidade dos textos de opÃ§Ãµes de rÃ¡dio */
 .dark .modal-content .flex.items-center.gap-2 span {
   color: #f9fafb !important;
   font-weight: 500 !important;
@@ -3255,7 +3810,7 @@ body:has(.modal) .fab {
   font-size: 14px !important;
 }
 
-/* Melhorar visibilidade das informações de valores */
+/* Melhorar visibilidade das informaÃ§Ãµes de valores */
 .dark #recorrente-valores-info {
   background: #374151 !important;
   border: 2px solid #4b5563 !important;
@@ -3272,7 +3827,7 @@ body:has(.modal) .fab {
   text-transform: none !important;
 }
 
-/* Forçar visibilidade das opções do select no tema escuro - ULTRA REFORÇADO */
+/* ForÃ§ar visibilidade das opÃ§Ãµes do select no tema escuro - ULTRA REFORÃ‡ADO */
 .dark .modal-content select option {
   background-color: #374151 !important;
   color: #f9fafb !important;
@@ -3286,7 +3841,7 @@ body:has(.modal) .fab {
   text-transform: none !important;
 }
 
-/* Opções do select quando hover - ULTRA REFORÇADO */
+/* OpÃ§Ãµes do select quando hover - ULTRA REFORÃ‡ADO */
 .dark .modal-content select option:hover,
 .dark .modal-content select option:focus,
 .dark .modal-content select option:active {
@@ -3296,7 +3851,7 @@ body:has(.modal) .fab {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
 }
 
-/* Opção selecionada - ULTRA REFORÇADO */
+/* OpÃ§Ã£o selecionada - ULTRA REFORÃ‡ADO */
 .dark .modal-content select option:checked,
 .dark .modal-content select option:selected {
   background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
@@ -3305,7 +3860,7 @@ body:has(.modal) .fab {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
 }
 
-/* Estilo específico para o select de categoria - ULTRA REFORÇADO */
+/* Estilo especÃ­fico para o select de categoria - ULTRA REFORÃ‡ADO */
 .dark .modal-content #rec-categoria {
   background-color: #374151 !important;
   border: 2px solid #4b5563 !important;
@@ -3343,7 +3898,7 @@ body:has(.modal) .fab {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
 }
 
-/* Forçar estilos para todos os selects no modal - ULTRA REFORÇADO */
+/* ForÃ§ar estilos para todos os selects no modal - ULTRA REFORÃ‡ADO */
 .dark .modal-content select,
 .dark .modal-content select option,
 .dark .modal-content select:focus,
@@ -3382,7 +3937,7 @@ body:has(.modal) .fab {
   text-transform: none !important;
 }
 
-/* Garantir que nenhum texto fique em maiúsculas */
+/* Garantir que nenhum texto fique em maiÃºsculas */
 .dark .modal-content * {
   text-transform: none !important;
 }
@@ -3410,7 +3965,7 @@ body:has(.modal) .fab {
   opacity: 1 !important;
 }
 
-/* Melhorar visibilidade dos placeholders específicos */
+/* Melhorar visibilidade dos placeholders especÃ­ficos */
 .dark .modal-content input[type="date"]::placeholder,
 .dark .modal-content input[type="number"]::placeholder {
   color: #d1d5db !important;
@@ -3418,7 +3973,7 @@ body:has(.modal) .fab {
   opacity: 1 !important;
 }
 
-/* Estilos específicos para os campos de data e parcelas */
+/* Estilos especÃ­ficos para os campos de data e parcelas */
 .dark .modal-content #rec-data {
   background-color: #374151 !important;
   border: 2px solid #4b5563 !important;
@@ -3433,7 +3988,7 @@ body:has(.modal) .fab {
   font-weight: 500 !important;
 }
 
-/* Melhorar visibilidade do ícone de calendário no campo de data */
+/* Melhorar visibilidade do Ã­cone de calendÃ¡rio no campo de data */
 .dark .modal-content input[type="date"]::-webkit-calendar-picker-indicator {
   filter: invert(1) brightness(0.8);
   cursor: pointer;
@@ -3444,7 +3999,7 @@ body:has(.modal) .fab {
   filter: invert(1) brightness(0.8);
 }
 
-/* Melhorar visibilidade dos botões de incremento/decremento no campo de número */
+/* Melhorar visibilidade dos botÃµes de incremento/decremento no campo de nÃºmero */
 .dark .modal-content input[type="number"]::-webkit-inner-spin-button,
 .dark .modal-content input[type="number"]::-webkit-outer-spin-button {
   filter: invert(1) brightness(0.8);
@@ -3486,7 +4041,7 @@ body:has(.modal) .fab {
   font-weight: 600 !important;
 }
 
-/* Melhorar visibilidade dos botões de login */
+/* Melhorar visibilidade dos botÃµes de login */
 #btn-entrar,
 #biometric-login-btn {
   position: relative !important;
@@ -3532,7 +4087,7 @@ body:has(.modal) .fab {
   letter-spacing: 0.8px !important;
 }
 
-/* Garantir que o botão seja sempre visível */
+/* Garantir que o botÃ£o seja sempre visÃ­vel */
 #btn-entrar {
   background: linear-gradient(135deg, #3b82f6, #e0e7ff) !important;
   color: #ffffff !important;
@@ -3557,7 +4112,7 @@ body:has(.modal) .fab {
     inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
 }
 
-/* === Estilos específicos para o modal de recorrentes === */
+/* === Estilos especÃ­ficos para o modal de recorrentes === */
 
 /* Labels principais do modal */
 .modal-label {
@@ -3570,7 +4125,7 @@ body:has(.modal) .fab {
   letter-spacing: 0.025em !important;
 }
 
-/* Labels de rádio */
+/* Labels de rÃ¡dio */
 .radio-label {
   display: flex !important;
   align-items: center !important;
@@ -3594,11 +4149,12 @@ body:has(.modal) .fab {
   font-weight: 500 !important;
   color: #374151 !important;
   cursor: pointer !important;
+  -webkit-user-select: none !important;
   user-select: none !important;
   text-transform: none !important;
 }
 
-/* Informações do modal */
+/* InformaÃ§Ãµes do modal */
 .modal-info {
   color: #6b7280 !important;
   font-weight: 500 !important;
@@ -3648,7 +4204,7 @@ body:has(.modal) .fab {
   font-size: 12px !important;
 }
 
-/* Garantir que todos os labels do modal sejam visíveis no tema escuro */
+/* Garantir que todos os labels do modal sejam visÃ­veis no tema escuro */
 .dark .modal-content .modal-label,
 .dark .modal-content .radio-label,
 .dark .modal-content .radio-text,
@@ -3661,23 +4217,24 @@ body:has(.modal) .fab {
 }
 
 /* === ESTILOS DO DRAWER REMOVIDOS === */
-/* Drawer removido - funcionalidades movidas para as abas do rodapé */
+/* Drawer removido - funcionalidades movidas para as abas do rodapÃ© */
 
-/* Estilos do drawer removidos - funcionalidades movidas para as abas do rodapé */
+/* Estilos do drawer removidos - funcionalidades movidas para as abas do rodapÃ© */
 
 /* === MELHORAR MODAL DE VOZ === */
 
-/* Esconder botão de voz quando modal estiver aberto (removido - botão movido para FAB) */
+/* Esconder botÃ£o de voz quando modal estiver aberto (removido - botÃ£o movido para FAB) */
 
-/* === MELHORAR MODAL DE VOZ - VERSÃO SEGURA === */
+/* === MELHORAR MODAL DE VOZ - VERSÃƒO SEGURA === */
 
 /* Garantir que o modal de voz tenha fundo adequado quando aberto */
 #voice-modal[style*="pointer-events: auto"] {
   background: rgba(0, 0, 0, 0.95) !important;
+  -webkit-backdrop-filter: blur(30px) !important;
   backdrop-filter: blur(30px) !important;
 }
 
-/* Melhorar o conteúdo do modal de voz */
+/* Melhorar o conteÃºdo do modal de voz */
 #voice-modal .voice-content {
   background: rgba(255, 255, 255, 0.98) !important;
 }
@@ -3686,19 +4243,30 @@ body:has(.modal) .fab {
   background: rgba(31, 41, 55, 0.98) !important;
 }
 
-/* === CORREÇÃO DE OVERLAY - GARANTIR QUE ELEMENTOS FECHADOS NÃO INTERFIAM === */
-/* Garantir que modal fechado não interfira com a tela principal */
+/* === CORREÃ‡ÃƒO DE OVERLAY - GARANTIR QUE ELEMENTOS FECHADOS NÃƒO INTERFIAM === */
+/* Garantir que modal fechado nÃ£o interfira com a tela principal */
 #voice-modal[style*="display: none"] {
   pointer-events: none !important;
   z-index: -1 !important;
 }
 
-/* Garantir que elementos com pointer-events: none não interfiram */
+/* Quando fechado (sem pointer-events: auto via style inline), mantenha abaixo de tudo */
+#voice-modal:not([style*="pointer-events: auto"]) {
+  z-index: -1 !important;
+}
+
+/* Login e loading overlays nÃ£o devem capturar cliques quando ocultos */
+#loading-page[style*="display: none"],
+#login-page[style*="display: none"] {
+  pointer-events: none !important;
+}
+
+/* Garantir que elementos com pointer-events: none nÃ£o interfiram */
 #voice-modal[style*="pointer-events: none"] {
   z-index: -1 !important;
 }
 
-/* === ANIMAÇÕES DO SNACKBAR === */
+/* === ANIMAÃ‡Ã•ES DO SNACKBAR === */
 .snackbar-show {
   opacity: 1 !important;
   transform: translateX(-50%) translateY(0) !important;
@@ -3709,8 +4277,8 @@ body:has(.modal) .fab {
   transform: translateX(-50%) translateY(1rem) !important;
 }
 
-/* === CORREÇÃO Z-INDEX SNACKBAR === */
-/* Garantir que o Snackbar sempre apareça acima de todos os elementos */
+/* === CORREÃ‡ÃƒO Z-INDEX SNACKBAR === */
+/* Garantir que o Snackbar sempre apareÃ§a acima de todos os elementos */
 [class*="snackbar"], 
 .snackbar-show, 
 .snackbar-hide {
@@ -3719,10 +4287,10 @@ body:has(.modal) .fab {
   bottom: 80px !important;
 }
 
-/* === SUPORTE A TEMAS PARA NOTIFICAÇÕES === */
-/* Estilos removidos - cores aplicadas via JavaScript inline para seguir tema dinâmico */
+/* === SUPORTE A TEMAS PARA NOTIFICAÃ‡Ã•ES === */
+/* Estilos removidos - cores aplicadas via JavaScript inline para seguir tema dinÃ¢mico */
 
-/* Botão de fechar nas notificações */
+/* BotÃ£o de fechar nas notificaÃ§Ãµes */
 .snackbar-close {
   opacity: 0.8 !important;
   transition: opacity 0.2s ease !important;
@@ -3732,13 +4300,13 @@ body:has(.modal) .fab {
   opacity: 1 !important;
 }
 
-/* Garantir que o footer não interfira com notificações */
+/* Garantir que o footer nÃ£o interfira com notificaÃ§Ãµes */
 footer {
   z-index: 1 !important;
   position: relative !important;
 }
 
-/* Correção específica para tela de login */
+/* CorreÃ§Ã£o especÃ­fica para tela de login */
 .login-container footer {
   z-index: 1 !important;
 }
@@ -3982,7 +4550,7 @@ footer {
 
 /* ===== BORDAS COLORIDAS - SETTINGS PAGE ===== */
 
-/* Bordas coloridas para seções seguindo as cores do sistema */
+/* Bordas coloridas para seÃ§Ãµes seguindo as cores do sistema */
 .section-title {
   font-size: 1.25rem;
   font-weight: 600;
@@ -3993,7 +4561,7 @@ footer {
   position: relative;
 }
 
-/* Bordas com cores do sistema - Diferenciação de títulos */
+/* Bordas com cores do sistema - DiferenciaÃ§Ã£o de tÃ­tulos */
 .green-border {
   border-left-color: #10B981;
   background: linear-gradient(90deg, rgba(16, 185, 129, 0.08) 0%, transparent 100%);
@@ -4092,7 +4660,7 @@ footer {
   border-left-color: #8B5CF6;
 }
 
-/* ===== TEMA ESCURO - DIFERENCIAÇÃO DE TÍTULOS E ITENS ===== */
+/* ===== TEMA ESCURO - DIFERENCIAÃ‡ÃƒO DE TÃTULOS E ITENS ===== */
 /* Bordas coloridas no tema escuro - cores mais vibrantes */
 .dark .green-border {
   background: linear-gradient(90deg, rgba(16, 185, 129, 0.15) 0%, transparent 100%);
@@ -4112,7 +4680,7 @@ footer {
   border-left-color: #F59E0B;
 }
 
-/* Itens de conteúdo no tema escuro */
+/* Itens de conteÃºdo no tema escuro */
 .dark .content-section > div:not(.section-title):not(h2) {
   border-left-color: #374151 !important;
 }
@@ -4126,8 +4694,8 @@ footer {
   background: #111827 !important;
 }
 
-/* ===== OTIMIZAÇÕES PARA ABA TRANSAÇÕES ===== */
-/* Remover bordas externas e otimizar espaçamentos */
+/* ===== OTIMIZAÃ‡Ã•ES PARA ABA TRANSAÃ‡Ã•ES ===== */
+/* Remover bordas externas e otimizar espaÃ§amentos */
 #transactions-list .list-item {
   border: none !important;
   border-radius: 0 !important;
@@ -4138,7 +4706,7 @@ footer {
   border-bottom: 1px solid #f3f4f6 !important;
 }
 
-/* Manter apenas a borda lateral colorida para diferenciação */
+/* Manter apenas a borda lateral colorida para diferenciaÃ§Ã£o */
 #transactions-list .list-item.border-l-green-500 {
   border-left: 3px solid #10B981 !important;
   padding-left: 0.75rem !important;
@@ -4158,7 +4726,7 @@ footer {
   margin-bottom: 0.5rem !important;
 }
 
-/* Tema escuro para transações */
+/* Tema escuro para transaÃ§Ãµes */
 .dark #transactions-list .list-item {
   border-bottom-color: #374151 !important;
 }
@@ -4176,8 +4744,8 @@ footer {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
 }
 
-/* ===== OTIMIZAÇÕES PARA ABA DASHBOARD ===== */
-/* Remover bordas externas e otimizar espaçamentos */
+/* ===== OTIMIZAÃ‡Ã•ES PARA ABA DASHBOARD ===== */
+/* Remover bordas externas e otimizar espaÃ§amentos */
 #dashboard-content .bg-gradient-to-r {
   border: none !important;
   margin-bottom: 1rem !important;
@@ -4196,7 +4764,7 @@ footer {
   gap: 0.75rem !important;
 }
 
-/* Seletor de mês mais compacto */
+/* Seletor de mÃªs mais compacto */
 #mes-selector {
   gap: 0.75rem !important;
 }
@@ -4214,10 +4782,10 @@ footer {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
 }
 
-/* ===== OTIMIZAÇÃO GERAL DE ESPAÇAMENTOS INTERNOS ===== */
-/* Reduzir espaçamentos internos para ganhar mais espaço */
+/* ===== OTIMIZAÃ‡ÃƒO GERAL DE ESPAÃ‡AMENTOS INTERNOS ===== */
+/* Reduzir espaÃ§amentos internos para ganhar mais espaÃ§o */
 
-/* 1. CONFIGURAÇÕES - Espaçamentos internos otimizados */
+/* 1. CONFIGURAÃ‡Ã•ES - EspaÃ§amentos internos otimizados */
 .content-section {
   margin-bottom: 0.75rem !important;
   padding-bottom: 0.5rem !important;
@@ -4249,11 +4817,42 @@ footer {
   line-height: 1.3 !important;
 }
 
-/* 2. TRANSAÇÕES - Lista mais compacta */
+/* 2. TRANSAÃ‡Ã•ES - Lista mais compacta */
 #transactions-list .list-item {
   padding: 0.5rem 0 !important;
   margin-bottom: 0.375rem !important;
 }
+
+/* CabeÃ§alho de agrupamento por dia */
+.tx-day-group { margin-top: 0.25rem; }
+.tx-day-header {
+  font-size: 0.75rem;
+  color: #6B7280;
+  padding: 0.25rem 0.25rem;
+  position: sticky;
+  top: 0; /* fica colado no topo do container ao rolar */
+  background: rgba(255,255,255,0.9);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+  z-index: 1;
+}
+.tx-day-header--clickable { cursor: pointer; -webkit-user-select: none; user-select: none; display: flex; align-items: center; gap: 0.35rem; }
+.tx-day-chevron { font-size: 0.85rem; opacity: 0.8; }
+.dark .tx-day-header {
+  color: #9CA3AF;
+  background: rgba(17,24,39,0.8);
+}
+
+/* Linha de resumo do dia (receitas, despesas, saldo) */
+.tx-day-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.25rem 0.25rem 0.25rem;
+  margin-bottom: 0.25rem;
+}
+.dark .tx-day-summary span { filter: brightness(0.9); }
 
 .list-item-title {
   font-size: 0.95rem !important;
@@ -4286,7 +4885,7 @@ footer {
   padding: 0.5rem !important;
 }
 
-/* Títulos de seções do dashboard */
+/* TÃ­tulos de seÃ§Ãµes do dashboard */
 #dashboard-content h2 {
   font-size: 1.1rem !important;
   margin-bottom: 0.5rem !important;
@@ -4299,7 +4898,7 @@ footer {
   line-height: 1.2 !important;
 }
 
-/* 4. BOTÕES DE AÇÃO - Mais compactos */
+/* 4. BOTÃ•ES DE AÃ‡ÃƒO - Mais compactos */
 .btn-primary,
 .btn-secondary {
   padding: 0.5rem 0.75rem !important;
@@ -4307,7 +4906,7 @@ footer {
   line-height: 1.2 !important;
 }
 
-/* 5. CAMPOS DE FORMULÁRIO - Mais compactos */
+/* 5. CAMPOS DE FORMULÃRIO - Mais compactos */
 input[type="text"],
 input[type="email"],
 input[type="password"],
@@ -4318,7 +4917,7 @@ textarea {
   line-height: 1.3 !important;
 }
 
-/* 6. MOBILE - Espaçamentos ainda menores */
+/* 6. MOBILE - EspaÃ§amentos ainda menores */
 @media (max-width: 768px) {
   .content-spacing {
     padding: 0.75rem !important;
@@ -4348,8 +4947,13 @@ textarea {
   }
   
   #transactions-list .list-item {
-    padding: 0.375rem 0 !important;
+    padding: 0.25rem 0.25rem !important;
     margin-bottom: 0.25rem !important;
+  }
+
+  /* Evitar que o FAB sobreponha os Ãºltimos itens no mobile */
+  #app-content {
+    padding-bottom: 88px !important; /* altura aproximada do FAB + margem */
   }
   
   #dashboard-content .bg-gradient-to-r {
@@ -4369,9 +4973,9 @@ textarea {
   }
 }
 
-/* ===== OTIMIZAÇÕES ESPECÍFICAS POR TIPO DE CONTEÚDO ===== */
+/* ===== OTIMIZAÃ‡Ã•ES ESPECÃFICAS POR TIPO DE CONTEÃšDO ===== */
 
-/* 7. LISTAS E ITENS - Melhor aproveitamento do espaço */
+/* 7. LISTAS E ITENS - Melhor aproveitamento do espaÃ§o */
 .list-item .flex {
   gap: 0.5rem !important;
 }
@@ -4386,7 +4990,7 @@ textarea {
   font-size: 0.9rem !important;
 }
 
-/* 8. CARDS E RESUMOS - Informações mais densas */
+/* 8. CARDS E RESUMOS - InformaÃ§Ãµes mais densas */
 .card-title {
   font-size: 1rem !important;
   line-height: 1.2 !important;
@@ -4399,7 +5003,7 @@ textarea {
   margin-bottom: 0.125rem !important;
 }
 
-/* 9. ESTATÍSTICAS E VALORES - Melhor hierarquia visual */
+/* 9. ESTATÃSTICAS E VALORES - Melhor hierarquia visual */
 .stat-value {
   font-size: 1.1rem !important;
   line-height: 1.1 !important;
@@ -4412,7 +5016,7 @@ textarea {
   opacity: 0.8 !important;
 }
 
-/* 10. FORMULÁRIOS E INPUTS - Mais compactos */
+/* 10. FORMULÃRIOS E INPUTS - Mais compactos */
 .form-group {
   margin-bottom: 0.75rem !important;
 }
@@ -4423,7 +5027,7 @@ textarea {
   margin-bottom: 0.25rem !important;
 }
 
-/* 11. MODAIS E POPUPS - Espaçamento otimizado */
+/* 11. MODAIS E POPUPS - EspaÃ§amento otimizado */
 .modal-content {
   padding: 1rem !important;
 }
@@ -4442,7 +5046,7 @@ textarea {
   margin-top: 0.75rem !important;
 }
 
-/* 12. NAVEGAÇÃO BOTTOM - Mais compacta */
+/* 12. NAVEGAÃ‡ÃƒO BOTTOM - Mais compacta */
 .bottom-nav {
   padding: 0.5rem 0 !important;
 }
@@ -4451,6 +5055,29 @@ textarea {
   padding: 0.375rem 0.25rem !important;
   font-size: 0.75rem !important;
   line-height: 1.1 !important;
+}
+
+/* === CONFIG > OrÃ§amentos Compartilhados (layout responsivo) === */
+.budgets-list { display: flex; flex-direction: column; gap: 0.5rem; }
+.budget-item { display: flex; align-items: stretch; justify-content: space-between; gap: 0.75rem; overflow: visible; }
+.budget-item-info { flex: 1 1 auto; min-width: 0; }
+.budget-item-name { font-weight: 600; }
+.budget-item-date, .budget-item-status { font-size: 0.8rem; opacity: .8; }
+.budget-item-actions { flex: 0 0 auto; display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-end; }
+.actions-row { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: flex-end; }
+.actions-row.primary { align-items: center; }
+.actions-row.secondary { align-items: center; }
+.enter-budget-button, .leave-button, .copy-id-button { display: inline-flex; align-items: center; gap: 0.375rem; white-space: nowrap; }
+.current-budget-badge { display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.25rem 0.5rem; border-radius: 999px; background: #e0f2fe; color: #0369a1; }
+.current-icon { font-size: 0.9rem; }
+
+@media (max-width: 768px) {
+  .budget-item { flex-direction: column; align-items: stretch; }
+  .budget-item-actions { align-items: stretch; }
+  .actions-row { justify-content: stretch; }
+  .actions-row.primary .enter-budget-button { width: 100%; justify-content: center; }
+  .actions-row.secondary { justify-content: stretch; }
+  .actions-row.secondary button { flex: 1 1 0; min-width: 0; }
 }
 
 /* 13. ESTADOS VAZIOS - Ultra compactos */
@@ -4496,7 +5123,7 @@ textarea {
 }
 
 /* ===== ELIMINAR APENAS BORDAS EXTERNAS - SETTINGS PAGE ===== */
-/* Remover APENAS as bordas externas das seções, manter separações internas */
+/* Remover APENAS as bordas externas das seÃ§Ãµes, manter separaÃ§Ãµes internas */
 .content-section {
   border: none !important;
   background: transparent !important;
@@ -4505,7 +5132,7 @@ textarea {
   padding: 0 !important;
 }
 
-/* REMOVER bordas internas para ganhar espaço no mobile */
+/* REMOVER bordas internas para ganhar espaÃ§o no mobile */
 .budget-card,
 .user-item,
 .invitation-item,
@@ -4546,8 +5173,8 @@ textarea {
   gap: 0.125rem !important;
 }
 
-/* ===== DIFERENCIAÇÃO DE ITENS APÓS TÍTULOS ===== */
-/* Itens de conteúdo com indentação sutil */
+/* ===== DIFERENCIAÃ‡ÃƒO DE ITENS APÃ“S TÃTULOS ===== */
+/* Itens de conteÃºdo com indentaÃ§Ã£o sutil */
 .content-section > .budget-card,
 .content-section > .user-item,
 .content-section > .invitation-item,
@@ -4601,7 +5228,7 @@ textarea {
   line-height: 1.2 !important;
 }
 
-/* Sem separadores entre seções (apenas bordas internas) */
+/* Sem separadores entre seÃ§Ãµes (apenas bordas internas) */
 .content-section:not(:last-child) {
   border-bottom: none !important;
   padding-bottom: 1.5rem !important;
@@ -4650,4 +5277,236 @@ textarea {
 
 .dark .content-section:not(:last-child) {
   border-bottom-color: #374151 !important;
+}
+
+/* Settings: improve dark-mode contrast for About/App actions and toggles */
+.dark .app-button {
+  background: #111827 !important; /* bg-gray-900 */
+  border: 1px solid #374151 !important; /* gray-700 */
+  color: #e5e7eb !important; /* text-gray-200 */
+}
+
+.dark .app-button:hover {
+  background: #1f2937 !important; /* bg-gray-800 */
+}
+
+.dark .app-button .app-text {
+  color: #e5e7eb !important;
+}
+
+/* Privacy action pills in dark mode */
+.dark .privacy-button {
+  background: #111827 !important;
+  border: 1px solid #374151 !important;
+  color: #e5e7eb !important;
+}
+.dark .privacy-button:hover { background: #1f2937 !important; }
+.dark .privacy-button.danger { color: #fca5a5 !important; border-color: #7f1d1d !important; }
+
+/* Settings info rows text colors */
+.dark .setting-label {
+  color: #e5e7eb !important;
+}
+.dark .setting-description {
+  color: #9ca3af !important;
+}
+.dark .section-description { color: #9ca3af !important; }
+.dark .about-label {
+  color: #9ca3af !important;
+}
+.dark .about-value {
+  color: #e5e7eb !important;
+}
+
+/* Toggle switch in dark theme */
+.dark .toggle-slider {
+  background-color: #374151 !important; /* track */
+}
+.dark .toggle-slider:before {
+  background-color: #e5e7eb !important; /* knob */
+}
+.dark input:checked + .toggle-slider {
+  background-color: var(--primary-color, #4f46e5) !important;
+}
+
+/* Empty state in dark mode: add subtle border for legibility */
+.dark .empty-state {
+  border: 1px solid #374151 !important;
+}
+
+/* Slightly brighter separators for key Settings list rows in dark */
+.dark .setting-item,
+.dark .about-item,
+.dark .detail-item {
+  border-bottom-color: #4b5563 !important;
+}
+
+/* Typography alignment with DS in Settings */
+/* Settings typography: unify body text; only titles are larger */
+.settings-container,
+.settings-container .content-section,
+.settings-container p,
+.settings-container li,
+.settings-container label,
+.settings-container small,
+.settings-container button,
+.settings-container input,
+.settings-container select,
+.settings-container textarea,
+.settings-container .content-section .setting-label,
+.settings-container .content-section .setting-description,
+.settings-container .content-section .about-label,
+.settings-container .content-section .about-value,
+.settings-container .content-section .app-button,
+.settings-container .content-section .privacy-button,
+.settings-container .content-section .user-email,
+.settings-container .content-section .invitation-email,
+.settings-container .content-section .budget-name,
+.settings-container .content-section .detail-label,
+.settings-container .content-section .detail-value,
+.settings-container .content-section .budget-item-name,
+.settings-container .content-section .budget-item-date,
+.settings-container .content-section .empty-text {
+  font-size: var(--font-size-base) !important;
+  font-family: var(--font-family);
+}
+
+/* Normalize Tailwind text size utilities inside Settings to base (except titles) */
+.settings-container .text-xs,
+.settings-container .text-sm,
+.settings-container .text-base { font-size: var(--font-size-base) !important; }
+.settings-container .u-btn,
+.settings-container .u-input,
+.settings-container .u-textarea,
+.settings-container .u-select { font-size: var(--font-size-base) !important; }
+/* Keep section/card titles intentionally larger */
+.settings-container .section-title,
+.settings-container h3 { font-size: var(--font-size-lg) !important; }
+
+/* === PERIOD INDICATOR === */
+.period-indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  background: var(--bg-primary);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-sm);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-sm);
+}
+
+.period-indicator__btn {
+  background: var(--primary-color);
+  color: var(--text-white);
+  border: none;
+  border-radius: var(--border-radius-md);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  font-size: var(--font-size-lg);
+  font-weight: bold;
+}
+
+.period-indicator__btn:hover {
+  background: var(--secondary-color);
+  transform: scale(1.05);
+}
+
+.period-indicator__btn:active {
+  transform: scale(0.95);
+}
+
+.period-indicator__current {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 80px;
+}
+
+.period-indicator__month {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: capitalize;
+}
+
+.period-indicator__year {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.period-indicator__icon {
+  font-size: var(--font-size-xl);
+  line-height: 1;
+}
+
+/* Dark mode para PeriodIndicator */
+.dark .period-indicator {
+  background: var(--bg-primary);
+  border-color: var(--border-dark);
+}
+
+.dark .period-indicator__month {
+  color: var(--text-light);
+}
+
+.dark .period-indicator__year {
+  color: var(--text-white);
+}
+
+/* Responsividade para mobile */
+@media (max-width: 768px) {
+  .period-indicator {
+    padding: var(--spacing-xs);
+    gap: var(--spacing-xs);
+  }
+  
+  .period-indicator__btn {
+    width: 28px;
+    height: 28px;
+    font-size: var(--font-size-base);
+  }
+  
+  .period-indicator__current {
+    min-width: 60px;
+  }
+  
+  .period-indicator__month {
+    font-size: var(--font-size-xs);
+  }
+  
+  .period-indicator__year {
+    font-size: var(--font-size-base);
+  }
+/* === Forced Colors Mode (modern replacement for -ms-high-contrast) === */
+@media (forced-colors: active) {
+  /* Let the UA apply high-contrast palette by default */
+  * { forced-color-adjust: auto; }
+
+  /* Map key surfaces/text to system colors for readability */
+  body, .app-container, .content-area { background: Canvas !important; color: CanvasText !important; }
+  .bg-white, .dark\:bg-gray-800, .dark\:from-gray-900, .dark\:via-gray-800, .dark\:to-gray-900 { background: Canvas !important; }
+  .text-gray-800, .dark\:text-white, .text-white { color: CanvasText !important; }
+
+  /* Borders and separators */
+  .border, .divide-y > *, .divide-x > * { border-color: CanvasText !important; }
+
+  /* Remove decorative shadows that reduce contrast */
+  .shadow, .shadow-sm, .shadow-md, .shadow-lg, .shadow-xl, .shadow-2xl { box-shadow: none !important; }
+
+  /* Buttons and interactive elements */
+  button, .btn, [role="button"] {
+    background: ButtonFace !important;
+    color: ButtonText !important;
+    border: 1px solid ButtonText !important;
+  }
+  a { color: LinkText !important; }
+
+  /* Focus visibility */
+  :focus { outline: 2px solid Highlight !important; outline-offset: 2px; }
 }

@@ -4,115 +4,43 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Teste Modal de Voz</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            padding: 20px;
-            background: #f0f0f0;
-        }
-        .test-container {
-            max-width: 600px;
-            margin: 0 auto;
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        .test-button {
-            background: #4F46E5;
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-            margin: 10px;
-        }
-        .test-button:hover {
-            background: #3730A3;
-        }
-        .status {
-            margin: 20px 0;
-            padding: 10px;
-            border-radius: 5px;
-            background: #f8f9fa;
-            border-left: 4px solid #4F46E5;
-        }
-        
-        /* Modal de Voz */
-        .voice-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-        }
-        
-        .voice-content {
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
-            text-align: center;
-            max-width: 400px;
-            width: 90%;
-        }
-        
-        .voice-icon {
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(135deg, #4F46E5, #7C3AED);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 20px;
-            color: white;
-            font-size: 32px;
-        }
-        
-        .voice-status {
-            display: flex;
-            justify-content: center;
-            gap: 5px;
-            margin: 20px 0;
-        }
-        
-        .voice-status div {
-            width: 8px;
-            height: 8px;
-            background: #4F46E5;
-            border-radius: 50%;
-            animation: bounce 1.4s ease-in-out infinite both;
-        }
-        
-        .voice-status div:nth-child(1) { animation-delay: -0.32s; }
-        .voice-status div:nth-child(2) { animation-delay: -0.16s; }
-        .voice-status div:nth-child(3) { animation-delay: 0s; }
-        
-        @keyframes bounce {
-            0%, 80%, 100% { transform: scale(0); }
-            40% { transform: scale(1); }
-        }
-        
-        .close-btn {
-            background: #6B7280;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-top: 20px;
-        }
-    </style>
+        <style>
+                :root {
+                    --primary-color: #4F46E5;
+                    --primary-color-rgb: 79, 70, 229;
+                    --danger-color: #EF4444;
+                    --text-white: #fff;
+                    --text-primary: #111827;
+                    --bg-primary: #ffffff;
+                    --border-light: #e5e7eb;
+                    --border-radius-lg: 16px;
+                }
+                body { font-family: Inter, system-ui, Arial, sans-serif; padding: 20px; background: #f3f4f6; }
+                .u-card { background: var(--bg-primary); border: 1px solid var(--border-light); border-radius: var(--border-radius-lg); box-shadow: 0 6px 16px rgba(0,0,0,.1); }
+                .u-btn { -webkit-tap-highlight-color: transparent; display: inline-flex; align-items: center; justify-content: center; gap: .5rem; padding: .75rem 1.25rem; border-radius: 12px; font-weight: 600; border: 0; cursor: pointer; transition: transform .06s ease, filter .15s ease, background .2s ease; }
+                .u-btn--primary { background: var(--primary-color); color: var(--text-white); box-shadow: 0 6px 16px rgba(var(--primary-color-rgb), .25); }
+                .u-btn--primary:hover { filter: brightness(1.05); }
+                .u-btn--outline { background: transparent; color: var(--primary-color); border: 2px solid var(--primary-color); }
+                .u-btn--ghost { background: transparent; color: var(--text-primary); }
+                .test-container { max-width: 720px; margin: 0 auto; padding: 24px; }
+                .status { margin: 20px 0; padding: 12px 14px; border-radius: 10px; background: #f8fafc; border-left: 4px solid var(--primary-color); }
+                .voice-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,.8); display: none; align-items: center; justify-content: center; z-index: 9999; }
+                .voice-content { background: white; padding: 24px; border-radius: 16px; text-align: center; max-width: 420px; width: 90%; }
+                .voice-icon { width: 80px; height: 80px; background: linear-gradient(135deg, #4F46E5, #7C3AED); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; color: white; font-size: 32px; }
+                .voice-status { display: flex; justify-content: center; gap: 5px; margin: 20px 0; }
+                .voice-status div { width: 8px; height: 8px; background: #4F46E5; border-radius: 50%; animation: bounce 1.4s ease-in-out infinite both; }
+                .voice-status div:nth-child(1) { animation-delay: -0.32s; }
+                .voice-status div:nth-child(2) { animation-delay: -0.16s; }
+                .voice-status div:nth-child(3) { animation-delay: 0s; }
+                @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+            .mt-0 { margin-top: 0; }
+            .mt-5 { margin-top: 20px; }
+            .note { font-size: 14px; color: #666; margin: 20px 0; }
+        </style>
 </head>
 <body>
-    <div class="test-container">
-        <h1>🎤 Teste do Modal de Voz</h1>
+    <div class="test-container u-card">
+        <h1 class="mt-0">🎤 Teste do Modal de Voz</h1>
         
         <div class="status">
             <strong>Status:</strong> <span id="status">Aguardando teste...</span>
@@ -120,23 +48,23 @@
         
         <h3>Testes Disponíveis:</h3>
         
-        <button class="test-button" onclick="testVoiceModal()">
+    <button class="u-btn u-btn--primary" onclick="testVoiceModal()">
             🎤 Testar Modal de Voz
         </button>
         
-        <button class="test-button" onclick="testTransactionVoice()">
+    <button class="u-btn u-btn--outline" onclick="testTransactionVoice()">
             💰 Testar Voz para Transação
         </button>
         
-        <button class="test-button" onclick="testCategoryVoice()">
+    <button class="u-btn u-btn--outline" onclick="testCategoryVoice()">
             📁 Testar Voz para Categoria
         </button>
         
-        <button class="test-button" onclick="testPermissions()">
+    <button class="u-btn u-btn--ghost" onclick="testPermissions()">
             🔒 Testar Permissões
         </button>
         
-        <div id="results" style="margin-top: 20px;"></div>
+    <div id="results" class="mt-5"></div>
     </div>
 
     <!-- Modal de Voz -->
@@ -150,12 +78,12 @@
                 <div></div>
                 <div></div>
             </div>
-            <div style="font-size: 14px; color: #666; margin: 20px 0;">
+            <div class="note">
                 <p><strong>Exemplos:</strong></p>
                 <p>"Adicionar despesa de 50 reais com alimentação"</p>
                 <p>"Nova categoria chamada transporte"</p>
             </div>
-            <button class="close-btn" onclick="closeVoiceModal()">Cancelar</button>
+            <button class="u-btn u-btn--ghost" onclick="closeVoiceModal()">Cancelar</button>
         </div>
     </div>
 

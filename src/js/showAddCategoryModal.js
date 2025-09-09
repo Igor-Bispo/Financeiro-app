@@ -1,16 +1,16 @@
-import { Modal } from './ui/Modal.js';
+﻿import { Modal } from './ui/Modal.js';
 import { Snackbar } from './ui/Snackbar.js';
 
 window.showAddCategoryModal = function (initialData = {}) {
-  console.log('🔧 showAddCategoryModal chamada com:', initialData);
-  console.log('🔧 window.Modal disponível:', !!window.Modal);
-  
+  console.log('ðŸ”§ showAddCategoryModal chamada com:', initialData);
+  console.log('ðŸ”§ window.Modal disponÃ­vel:', !!window.Modal);
+
   const isEdicao = !!initialData && Object.keys(initialData).length > 0;
-  
+
   try {
     const modal = Modal({
-    title: isEdicao ? 'Editar Categoria' : 'Nova Categoria',
-    content: `
+      title: isEdicao ? 'Editar Categoria' : 'Nova Categoria',
+      content: `
       <form id="category-form" class="space-y-4">
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -21,8 +21,8 @@ window.showAddCategoryModal = function (initialData = {}) {
             id="nome" 
             name="nome" 
             value="${initialData.nome || ''}"
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            placeholder="Ex: Alimentação, Transporte..."
+            class="u-input w-full"
+            placeholder="Ex: AlimentaÃ§Ã£o, Transporte..."
             required
           />
         </div>
@@ -34,7 +34,7 @@ window.showAddCategoryModal = function (initialData = {}) {
           <select 
             id="tipo" 
             name="tipo"
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            class="u-input w-full"
             required
           >
             <option value="despesa" ${initialData.tipo === 'despesa' ? 'selected' : ''}>Despesa</option>
@@ -53,7 +53,7 @@ window.showAddCategoryModal = function (initialData = {}) {
             value="${initialData.limite || ''}"
             step="0.01" 
             min="0"
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            class="u-input w-full"
             placeholder="0.00"
           />
         </div>
@@ -61,59 +61,71 @@ window.showAddCategoryModal = function (initialData = {}) {
         <div class="flex gap-2 pt-4">
           <button 
             type="submit" 
-            class="flex-1 bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors"
+            class="flex-1 u-btn u-btn--primary"
           >
             ${isEdicao ? 'Atualizar' : 'Adicionar'}
           </button>
           <button 
             type="button" 
             onclick="this.closest('.modal').remove()"
-            class="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors dark:bg-gray-600 dark:text-gray-300"
+            class="flex-1 u-btn u-btn--ghost"
           >
             Cancelar
           </button>
         </div>
       </form>
     `,
-    onClose: () => modal.remove()
-  });
+      onClose: () => modal.remove()
+    });
 
-  // Adicionar o modal ao DOM
-  document.body.appendChild(modal);
-  console.log('✅ Modal de categoria adicionado ao DOM');
+    // Adicionar o modal ao DOM
+    document.body.appendChild(modal);
+    console.log('âœ… Modal de categoria adicionado ao DOM');
 
-  // Adicionar evento de submit
-  const form = modal.querySelector('#category-form');
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const formData = new FormData(form);
-    const categoryData = {
-      nome: formData.get('nome'),
-      tipo: formData.get('tipo'),
-      limite: formData.get('limite') ? parseFloat(formData.get('limite')) : null
-    };
+    // Adicionar evento de submit
+    const form = modal.querySelector('#category-form');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
 
-    try {
-      if (isEdicao) {
-        await window.updateCategory(initialData.id, categoryData);
+      const formData = new FormData(form);
+      const categoryData = {
+        nome: formData.get('nome'),
+        tipo: formData.get('tipo'),
+        limite: formData.get('limite') ? parseFloat(formData.get('limite')) : null
+      };
+      // Enriquecer com metadados do contexto para evitar "sumir" por filtros
+      try {
+        const curBudgetId = window?.appState?.currentBudget?.id;
+        const curUserId = window?.appState?.currentUser?.uid;
+        if (curBudgetId) categoryData.budgetId = curBudgetId;
+        if (curUserId) categoryData.userId = curUserId;
+      } catch {}
+
+      try {
+      // importar serviÃ§os modernos sob demanda
+        const svc = await import('@features/categories/service.js');
+        if (isEdicao) {
+          await svc.updateCategory(initialData.id, categoryData);
+          Snackbar?.show?.('Categoria atualizada', 'success');
+        } else {
+          await svc.createCategory(categoryData);
+          Snackbar?.show?.('Categoria criada', 'success');
+        }
         modal.remove();
-        window.refreshCurrentView();
-      } else {
-        // Usar função com confirmação para adicionar categoria
-        await window.addCategoryWithConfirmation(categoryData);
-        modal.remove();
-        window.refreshCurrentView();
+        try { window.refreshCurrentView?.(); } catch {}
+        try { if (window.location.hash.includes('/categories')) {
+          const mod = await import('@features/categories/CategoriesPage.js');
+          await mod.renderCategories?.();
+        }} catch {}
+      } catch (error) {
+        console.error('Erro ao salvar categoria:', error);
+        if (error?.message !== 'OperaÃ§Ã£o cancelada pelo usuÃ¡rio') {
+          try { Snackbar.show('Erro ao salvar categoria', 'error'); } catch {}
+        }
       }
-    } catch (error) {
-      console.error('Erro ao salvar categoria:', error);
-      if (error.message !== 'Operação cancelada pelo usuário') {
-        Snackbar.show('Erro ao salvar categoria', 'error');
-      }
-    }
-  });
+    });
   } catch (error) {
-    console.error('❌ Erro ao criar modal de categoria:', error);
+    console.error('âŒ Erro ao criar modal de categoria:', error);
     if (window.Snackbar) {
       window.Snackbar.show('Erro ao abrir modal de categoria', 'error');
     } else {
@@ -122,10 +134,14 @@ window.showAddCategoryModal = function (initialData = {}) {
   }
 };
 
-// Função para editar categoria
+// FunÃ§Ã£o para editar categoria
 window.editCategory = function (categoryId) {
-  const category = window.appState.categories?.find(c => c.id === categoryId);
-  if (category) {
-    window.showAddCategoryModal(category);
+  try {
+    const category = window.appState?.categories?.find(c => c.id === categoryId);
+    if (category) {
+      window.showAddCategoryModal(category);
+    }
+  } catch (e) {
+    console.warn('editCategory fallback falhou:', e);
   }
-}; 
+};

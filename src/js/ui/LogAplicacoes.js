@@ -1,15 +1,15 @@
-import { collection, getDocs } from 'firebase/firestore';
+﻿import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../firebase.js';
 
 export async function renderLogAplicacoes() {
   const user = window.FirebaseAuth?.currentUser;
   const content = document.getElementById('app-content');
   content.innerHTML =
-    '<h2 class="text-xl font-bold mb-4">Log de Aplicações Automáticas</h2>';
+    '<h2 class="text-xl font-bold mb-4">Log de AplicaÃ§Ãµes AutomÃ¡ticas</h2>';
 
   if (!user) {
     content.innerHTML +=
-      '<p class="text-gray-500">Usuário não autenticado.</p>';
+      '<p class="text-gray-500">UsuÃ¡rio nÃ£o autenticado.</p>';
     return;
   }
 
@@ -22,7 +22,7 @@ export async function renderLogAplicacoes() {
 
   if (snap.empty) {
     content.innerHTML +=
-      '<p class="text-gray-500">Nenhum log encontrado para este mês.</p>';
+      '<p class="text-gray-500">Nenhum log encontrado para este mÃªs.</p>';
     return;
   }
 
@@ -37,7 +37,7 @@ export async function renderLogAplicacoes() {
     card.innerHTML = `
       <div>
         <p class="font-semibold">${item.descricao}</p>
-        <p class="text-sm text-gray-500">R$ ${parseFloat(item.valor).toFixed(2)} • ${item.categoriaId || 'Sem categoria'}</p>
+        <p class="text-sm text-gray-500">R$ ${parseFloat(item.valor).toFixed(2)} â€¢ ${item.categoriaId || 'Sem categoria'}</p>
         <p class="text-xs text-gray-400">Aplicado em: ${item.createdAt?.seconds ? new Date(item.createdAt.seconds * 1000).toLocaleDateString() : '-'}</p>
       </div>
     `;

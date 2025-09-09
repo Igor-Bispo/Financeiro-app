@@ -1,9 +1,14 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Permitir acesso às notificações do usuário autenticado
+    // Notificações: criar pelo remetente, ler/atualizar/apagar pelo destinatário
     match /notifications/{notificationId} {
-      allow read, write: if request.auth != null && request.auth.uid == resource.data.recipientUid;
+      // Ler apenas se for o destinatário
+      allow get, list: if request.auth != null && request.auth.uid == resource.data.recipientUid;
+      // Criar apenas se o remetente for o usuário autenticado
+      allow create: if request.auth != null && request.resource.data.senderUid == request.auth.uid;
+      // Atualizar/Excluir apenas se for o destinatário
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.recipientUid;
     }
     
     // Regras existentes para outras coleções

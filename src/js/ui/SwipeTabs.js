@@ -1,11 +1,11 @@
-export class SwipeNavigation {
+﻿export class SwipeNavigation {
   constructor() {
     this.touchStartX = 0;
     this.touchEndX = 0;
     this.touchStartY = 0;
     this.touchEndY = 0;
     this.isSwiping = false;
-    this.swipeThreshold = 80; // Distância mínima para considerar swipe
+    this.swipeThreshold = 80; // DistÃ¢ncia mÃ­nima para considerar swipe
     this.tabs = [
       '/dashboard',
       '/transactions',
@@ -25,32 +25,18 @@ export class SwipeNavigation {
   }
 
   init() {
-    console.log('🔧 SwipeNavigation.init() chamado');
     this.container = document.querySelector('#app-content');
     if (!this.container) {
-      console.warn('SwipeNavigation: Container #app-content não encontrado');
       return;
     }
-    console.log('✅ Container encontrado:', this.container);
 
-    // Verificar se o usuário está logado antes de inicializar
-    if (!window.appState?.currentUser) {
-      console.log('SwipeNavigation: Usuário não logado, aguardando...');
-      return;
-    }
-    console.log('✅ Usuário logado:', window.appState.currentUser.uid);
+    // Verificar se o usuÃ¡rio estÃ¡ logado antes de inicializar
+    if (!window.appState?.currentUser) {return;}
 
     this.createSwipeIndicator();
     this.bindEvents();
     this.updateCurrentTabIndex();
 
-    console.log('SwipeNavigation: Inicializado com sucesso');
-    console.log('🔍 Estado final:', {
-      isEnabled: this.isEnabled,
-      container: this.container,
-      tabs: this.tabs,
-      currentTabIndex: this.currentTabIndex
-    });
   }
 
   createSwipeIndicator() {
@@ -61,7 +47,7 @@ export class SwipeNavigation {
       <div class="swipe-dots">
         ${this.tabs.map((_, index) => `<div class="swipe-dot ${index === 0 ? 'active' : ''}" data-index="${index}"></div>`).join('')}
       </div>
-      <div class="swipe-hint">← Deslize para navegar →</div>
+      <div class="swipe-hint">â† Deslize para navegar â†’</div>
     `;
     this.swipeIndicator.className = 'swipe-indicator';
 
@@ -151,22 +137,15 @@ export class SwipeNavigation {
   }
 
   bindEvents() {
-    // Verificar se não está na tela de login
+    // Verificar se nÃ£o estÃ¡ na tela de login
     const loginPage = document.getElementById('login-page');
-    if (loginPage && loginPage.style.display !== 'none') {
-      console.log(
-        'SwipeNavigation: Tela de login ativa, não inicializando eventos'
-      );
-      return;
-    }
-
-    console.log('SwipeNavigation: Configurando eventos de navegação...');
+    if (loginPage && loginPage.style.display !== 'none') {return;}
 
     // Touch events
     this.container.addEventListener(
       'touchstart',
       this.handleTouchStart.bind(this),
-      { passive: false }
+      { passive: true }
     );
     this.container.addEventListener(
       'touchmove',
@@ -194,45 +173,28 @@ export class SwipeNavigation {
     document.addEventListener('keydown', this.handleKeydown.bind(this), {
       capture: true
     });
-    console.log('SwipeNavigation: Evento de teclado configurado no document');
-
-    // Teste adicional para verificar se o evento está funcionando
-    document.addEventListener(
-      'keydown',
-      e => {
-        console.log(
-          '🎹 SwipeNavigation - Evento de teclado capturado:',
-          e.key,
-          'Target:',
-          e.target.tagName
-        );
-      },
-      { capture: true }
-    );
-
-    // Observer para mudanças de rota
+    // Listener leve para mudanÃ§as de rota
     this.observeRouteChanges();
-
-    console.log('SwipeNavigation: Todos os eventos configurados com sucesso');
   }
 
   handleTouchStart(e) {
-    if (!this.isEnabled) {
-      console.log('👆 SwipeNavigation: Desabilitado, ignorando touch start');
-      return;
-    }
+    if (!this.isEnabled) {return;}
 
     this.touchStartX = e.touches[0].clientX;
     this.touchStartY = e.touches[0].clientY;
     this.isSwiping = false;
 
-    console.log('👆 SwipeNavigation: Touch start em', this.touchStartX, this.touchStartY);
-    // Não prevenir scroll por padrão - só se for swipe horizontal
+    // NÃ£o prevenir scroll por padrÃ£o - sÃ³ se for swipe horizontal
   }
 
   handleTouchMove(e) {
-    if (!this.isEnabled || !this.touchStartX) {
-      if (!this.isEnabled) console.log('👆 SwipeNavigation: Desabilitado, ignorando touch move');
+    if (!this.isEnabled || !this.touchStartX) {return;}
+
+    // Se o alvo Ã© um elemento interativo (botÃ£o, link, input), nÃ£o interferir na rolagem/clique
+    const target = e.target;
+    const tag = target.tagName;
+    if (['BUTTON','A','INPUT','SELECT','TEXTAREA','LABEL'].includes(tag)) {
+      this.isSwiping = false;
       return;
     }
 
@@ -241,23 +203,17 @@ export class SwipeNavigation {
     const deltaX = Math.abs(currentX - this.touchStartX);
     const deltaY = Math.abs(currentY - this.touchStartY);
 
-    // Determinar se é um swipe horizontal
-    if (deltaX > deltaY && deltaX > 20) {
+    // Determinar se Ã© um swipe horizontal (intenÃ§Ã£o clara) e sÃ³ entÃ£o prevenir scroll
+    if (deltaX > deltaY * 1.5 && deltaX > 24) {
       this.isSwiping = true;
       e.preventDefault();
-      console.log('👆 SwipeNavigation: Swipe horizontal detectado, deltaX:', deltaX);
-
       // Adicionar feedback visual durante o swipe
       this.showSwipeFeedback(deltaX);
     }
   }
 
   handleTouchEnd(e) {
-    if (!this.isEnabled || !this.isSwiping) {
-      if (!this.isEnabled) console.log('👆 SwipeNavigation: Desabilitado, ignorando touch end');
-      if (!this.isSwiping) console.log('👆 SwipeNavigation: Não estava fazendo swipe, ignorando touch end');
-      return;
-    }
+    if (!this.isEnabled || !this.isSwiping) {return;}
 
     this.touchEndX = e.changedTouches[0].clientX;
     this.touchEndY = e.changedTouches[0].clientY;
@@ -265,24 +221,20 @@ export class SwipeNavigation {
     const deltaX = this.touchEndX - this.touchStartX;
     const deltaY = this.touchEndY - this.touchStartY;
 
-    console.log('👆 SwipeNavigation: Touch end, deltaX:', deltaX, 'deltaY:', deltaY);
-
-    // Verificar se é um swipe válido
+    // Verificar se Ã© um swipe vÃ¡lido
     if (
       Math.abs(deltaX) > this.swipeThreshold &&
       Math.abs(deltaX) > Math.abs(deltaY)
     ) {
-      console.log('👆 SwipeNavigation: Swipe válido detectado, direção:', deltaX > 0 ? 'right' : 'left');
       this.handleSwipe(deltaX > 0 ? 'right' : 'left');
     } else {
-      console.log('👆 SwipeNavigation: Swipe inválido ou insuficiente');
     }
 
     this.resetSwipe();
   }
 
   handleMouseStart(e) {
-    if (!this.isEnabled || e.button !== 0) {return;} // Apenas botão esquerdo
+    if (!this.isEnabled || e.button !== 0) {return;} // Apenas botÃ£o esquerdo
 
     this.touchStartX = e.clientX;
     this.touchStartY = e.clientY;
@@ -320,7 +272,7 @@ export class SwipeNavigation {
   }
 
   handleKeydown(e) {
-    // Verificar se não está em um input ou textarea
+    // Verificar se nÃ£o estÃ¡ em um input ou textarea
     if (
       e.target.tagName === 'INPUT' ||
       e.target.tagName === 'TEXTAREA' ||
@@ -329,37 +281,21 @@ export class SwipeNavigation {
       return;
     }
 
-    if (!this.isEnabled) {
-      console.log('SwipeNavigation: Desabilitado, ignorando tecla:', e.key);
-      return;
-    }
-
-    console.log('🎹 SwipeNavigation: Tecla pressionada:', e.key, 'Target:', e.target.tagName);
+    if (!this.isEnabled) {return;}
 
     switch (e.key) {
     case 'ArrowLeft':
-      console.log('⬅️ SwipeNavigation: Seta esquerda - navegando para aba anterior');
       e.preventDefault();
       e.stopPropagation();
       this.navigateToTab(this.currentTabIndex - 1);
       break;
     case 'ArrowRight':
-      console.log('➡️ SwipeNavigation: Seta direita - navegando para próxima aba');
       e.preventDefault();
       e.stopPropagation();
       this.navigateToTab(this.currentTabIndex + 1);
       break;
-    case 'ArrowUp':
-      console.log('⬆️ SwipeNavigation: Seta cima - primeira aba');
-      e.preventDefault();
-      e.stopPropagation();
-      this.navigateToTab(0);
-      break;
-    case 'ArrowDown':
-      console.log('⬇️ SwipeNavigation: Seta baixo - última aba');
-      e.preventDefault();
-      e.stopPropagation();
-      this.navigateToTab(this.tabs.length - 1);
+    default:
+      // NÃ£o interceptar ArrowUp/ArrowDown para permitir rolagem natural
       break;
     }
   }
@@ -387,9 +323,8 @@ export class SwipeNavigation {
     if (index < 0 || index >= this.tabs.length) {return;}
 
     const targetTab = this.tabs[index];
-    console.log(`SwipeNavigation: Navegando para ${targetTab}`);
 
-    // Animar transição
+    // Animar transiÃ§Ã£o
     this.animateTransition(index);
 
     // Navegar
@@ -398,8 +333,8 @@ export class SwipeNavigation {
     } else {
       window.location.hash = targetTab;
     }
-    
-    // Atualizar título da página
+
+    // Atualizar tÃ­tulo da pÃ¡gina
     if (window.updatePageTitle) {
       window.updatePageTitle(targetTab);
     }
@@ -412,7 +347,7 @@ export class SwipeNavigation {
     const container = this.container;
     const direction = targetIndex > this.currentTabIndex ? 1 : -1;
 
-    // Adicionar classe de transição
+    // Adicionar classe de transiÃ§Ã£o
     container.classList.add('swipe-transition');
 
     // Animar entrada
@@ -436,7 +371,7 @@ export class SwipeNavigation {
 
     switch (type) {
     case 'edge':
-      message = this.currentTabIndex === 0 ? 'Primeira aba' : 'Última aba';
+      message = this.currentTabIndex === 0 ? 'Primeira aba' : 'Ãšltima aba';
       break;
     default:
       return;
@@ -455,7 +390,7 @@ export class SwipeNavigation {
   }
 
   provideHapticFeedback() {
-    // Feedback tátil no mobile
+    // Feedback tÃ¡til no mobile
     if ('vibrate' in navigator) {
       navigator.vibrate(50);
     }
@@ -467,16 +402,9 @@ export class SwipeNavigation {
       const route = activeTab.getAttribute('data-route');
       const newIndex = this.tabs.indexOf(route);
 
-      // Só atualizar se o índice realmente mudou
+      // SÃ³ atualizar se o Ã­ndice realmente mudou
       if (newIndex !== this.currentTabIndex) {
-        console.log('📍 Atualizando índice da aba atual:', {
-          activeTabRoute: route,
-          oldIndex: this.currentTabIndex,
-          newIndex: newIndex,
-          availableTabs: this.tabs
-        });
         this.currentTabIndex = newIndex;
-        console.log('✅ Índice atualizado:', this.currentTabIndex);
       }
     }
   }
@@ -501,34 +429,13 @@ export class SwipeNavigation {
   }
 
   observeRouteChanges() {
-    // Observer para mudanças de rota
-    let timeoutId = null;
-    let lastActiveTab = null;
-
-    const observer = new MutationObserver(() => {
-      // Debounce para evitar múltiplas chamadas
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-      timeoutId = setTimeout(() => {
-        const currentActiveTab = document.querySelector('.nav-btn.active');
-        const currentRoute = currentActiveTab?.getAttribute('data-route');
-
-        // Só atualizar se a aba realmente mudou
-        if (currentRoute !== lastActiveTab) {
-          lastActiveTab = currentRoute;
-          this.updateCurrentTabIndex();
-          this.updateSwipeIndicator();
-        }
-      }, 200); // Aumentado para 200ms
-    });
-
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ['class']
-    });
+    const handler = () => {
+      this.updateCurrentTabIndex();
+      this.updateSwipeIndicator();
+    };
+    window.addEventListener('hashchange', handler);
+    // Atualizar uma vez na inicializaÃ§Ã£o
+    handler();
   }
 
   resetSwipe() {
@@ -553,14 +460,14 @@ export class SwipeNavigation {
     if (this.swipeIndicator) {
       this.swipeIndicator.remove();
     }
-    console.log('SwipeNavigation: Destruído');
+    console.log('SwipeNavigation: DestruÃ­do');
   }
 }
 
-// Função de compatibilidade com código existente
+// FunÃ§Ã£o de compatibilidade com cÃ³digo existente
 export function enableSwipeNavigation() {
   return new SwipeNavigation();
 }
 
-// Instância global
+// InstÃ¢ncia global
 window.swipeNavigation = null;

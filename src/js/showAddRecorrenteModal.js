@@ -1,4 +1,4 @@
-import { Modal } from './ui/Modal.js';
+﻿import { Modal } from './ui/Modal.js';
 import { RecorrenteForm } from './ui/RecorrenteForm.js';
 import {
   addDespesaRecorrente,
@@ -19,14 +19,14 @@ window.showAddRecorrenteModal = function (dados = {}) {
   const budget = window.appState.currentBudget;
   if (!user) {
     Snackbar({
-      message: 'Você precisa estar logado para adicionar recorrentes.',
+      message: 'VocÃª precisa estar logado para adicionar recorrentes.',
       type: 'error'
     });
     return;
   }
   if (!budget) {
     Snackbar({
-      message: 'Selecione um orçamento antes de adicionar recorrentes.',
+      message: 'Selecione um orÃ§amento antes de adicionar recorrentes.',
       type: 'error'
     });
     return;
@@ -36,10 +36,10 @@ window.showAddRecorrenteModal = function (dados = {}) {
     initialData: dados,
     onSubmit: async dadosForm => {
       try {
-        // Esconder FAB enquanto o modal está aberto
+        // Esconder FAB enquanto o modal estÃ¡ aberto
         document.querySelector('.fab')?.classList.add('hidden');
         if (isEdicao && dados.id) {
-          // Edição: atualizar recorrente existente
+          // EdiÃ§Ã£o: atualizar recorrente existente
           await updateDespesaRecorrente(user.uid, dados.id, dadosForm);
         } else {
           // Nova recorrente
@@ -48,14 +48,14 @@ window.showAddRecorrenteModal = function (dados = {}) {
             budget.id,
             dadosForm
           );
-          // Se marcado, efetivar no mês atual
+          // Se marcado, efetivar no mÃªs atual
           if (dadosForm.efetivarMesAtual) {
-            console.log('🚀 Efetivando recorrente no mês atual...');
+            console.log('ðŸš€ Efetivando recorrente no mÃªs atual...');
             const now = new Date();
             const mesAtual = now.getMonth() + 1;
             const anoAtual = now.getFullYear();
 
-            // Buscar se já existe transação deste recorrente neste mês
+            // Buscar se jÃ¡ existe transaÃ§Ã£o deste recorrente neste mÃªs
             const { db } = await import('./firebase.js');
             const ref = collection(db, 'transactions');
             const snap = await getDocs(
@@ -81,10 +81,10 @@ window.showAddRecorrenteModal = function (dados = {}) {
               );
             });
 
-            console.log('🔍 Já existe transação neste mês?', jaExiste);
+            console.log('ðŸ” JÃ¡ existe transaÃ§Ã£o neste mÃªs?', jaExiste);
 
             if (!jaExiste) {
-              // Criar transação para o mês atual
+              // Criar transaÃ§Ã£o para o mÃªs atual
               const transacaoData = {
                 userId: user.uid,
                 budgetId: budget.id,
@@ -102,12 +102,35 @@ window.showAddRecorrenteModal = function (dados = {}) {
                 transacaoData
               );
               console.log(
-                '✅ Transação criada para mês atual:',
+                'âœ… TransaÃ§Ã£o criada para mÃªs atual:',
                 transacaoRef.id
               );
 
-              // NÃO decrementar parcelas para aplicação imediata
-              // As parcelas só devem ser decrementadas quando aplicadas via "Aplicar Recorrentes"
+              // Enviar notificaÃ§Ã£o para membros do orÃ§amento (recorrente aplicada imediatamente)
+              try {
+                const { sendTransactionNotification } = await import('@features/notifications/NotificationService.js');
+                let parcelaAtual = null;
+                try {
+                  const { calcularParcelaRecorrente } = await import('@features/recorrentes/service.js');
+                  parcelaAtual = calcularParcelaRecorrente(dadosForm);
+                } catch {}
+                const txNotify = {
+                  id: transacaoRef.id,
+                  descricao: transacaoData.descricao,
+                  valor: transacaoData.valor,
+                  categoriaId: transacaoData.categoriaId,
+                  tipo: transacaoData.tipo,
+                  recorrenteId: recorrenteId,
+                  recorrenteParcelaAtual: parcelaAtual ?? null,
+                  recorrenteParcelasTotal: dadosForm.parcelasTotal ?? null,
+                };
+                await sendTransactionNotification(budget.id, user.uid, txNotify);
+              } catch (notifyErr) {
+                console.warn('Falha ao enviar notificaÃ§Ã£o de recorrente imediata:', notifyErr);
+              }
+
+              // NÃƒO decrementar parcelas para aplicaÃ§Ã£o imediata
+              // As parcelas sÃ³ devem ser decrementadas quando aplicadas via "Aplicar Recorrentes"
 
               // Registrar no log
               try {
@@ -121,20 +144,29 @@ window.showAddRecorrenteModal = function (dados = {}) {
                   transacaoId: transacaoRef.id,
                   aplicacaoImediata: true
                 });
-                console.log('📝 Aplicação imediata registrada no log');
+                console.log('ðŸ“ AplicaÃ§Ã£o imediata registrada no log');
               } catch (error) {
                 console.error(
-                  'Erro ao registrar aplicação imediata no log:',
+                  'Erro ao registrar aplicaÃ§Ã£o imediata no log:',
                   error
                 );
               }
             } else {
-              console.log('⏭️ Transação já existe para este mês, pulando...');
+              console.log('â­ï¸ TransaÃ§Ã£o jÃ¡ existe para este mÃªs, pulando...');
             }
           }
         }
         await new Promise(res => setTimeout(res, 200));
-        await window.loadRecorrentes();
+        try {
+          const { loadRecorrentes } = await import('@features/recorrentes/service.js');
+          await loadRecorrentes();
+        } catch (e) {
+          if (typeof window.loadRecorrentes === 'function') {
+            await window.loadRecorrentes();
+          } else {
+            console.warn('loadRecorrentes indisponÃ­vel:', e);
+          }
+        }
 
         // Fechar modal e mostrar feedback
         modal.remove();
@@ -145,31 +177,67 @@ window.showAddRecorrenteModal = function (dados = {}) {
           type: 'success'
         });
 
-        // Sincronização completa de todos os dados
+        // SincronizaÃ§Ã£o completa de todos os dados
         setTimeout(async () => {
           document.querySelector('.fab')?.classList.remove('hidden');
-          
-          // Se for edição, recalcular transações aplicadas
-          if (isEdicao && dados.id) {
-            console.log('🔄 Recalculando transações da recorrente editada:', dados.id);
-            await window.recalcularTransacoesRecorrente(dados.id, dadosForm);
+
+          // Se for ediÃ§Ã£o, recalcular transaÃ§Ãµes aplicadas (se funÃ§Ã£o existir)
+          if (isEdicao && dados.id && typeof window.recalcularTransacoesRecorrente === 'function') {
+            try {
+              console.log('ðŸ”„ Recalculando transaÃ§Ãµes da recorrente editada:', dados.id);
+              await window.recalcularTransacoesRecorrente(dados.id, dadosForm);
+            } catch (err) {
+              console.warn('Falha ao recalcular transaÃ§Ãµes da recorrente:', err);
+            }
           }
-          
-          // Recarregar todos os dados
-          await window.loadRecorrentes();
-          await window.loadTransactions();
-          await window.loadCategories();
-          
+
+          // Recarregar todos os dados usando services diretamente (com fallback)
+          try {
+            const { loadRecorrentes } = await import('@features/recorrentes/service.js');
+            await loadRecorrentes();
+          } catch (err) {
+            if (typeof window.loadRecorrentes === 'function') {
+              await window.loadRecorrentes();
+            } else {
+              console.warn('Falha ao recarregar recorrentes:', err);
+            }
+          }
+
+          try {
+            const { loadTransactions } = await import('@features/transactions/service.js');
+            const budgetId = window.appState?.currentBudget?.id;
+            const userId = window.appState?.currentUser?.uid;
+            await loadTransactions(budgetId, userId);
+          } catch (err) {
+            if (typeof window.loadTransactions === 'function') {
+              await window.loadTransactions();
+            } else {
+              console.warn('Falha ao recarregar transaÃ§Ãµes:', err);
+            }
+          }
+
+          try {
+            const { loadCategories } = await import('@features/categories/service.js');
+            const budgetId = window.appState?.currentBudget?.id;
+            await loadCategories(budgetId);
+          } catch (err) {
+            if (typeof window.loadCategories === 'function') {
+              await window.loadCategories();
+            } else {
+              console.warn('Falha ao recarregar categorias:', err);
+            }
+          }
+
           // Atualizar todas as abas
-          if (window.location.hash.includes('recorrentes')) {
-            window._renderRecorrentes();
-          } else if (window.location.hash.includes('dashboard')) {
-            window.renderDashboard();
-          } else if (window.location.hash.includes('transacoes')) {
-            window.renderTransactions();
+          if (window.location.hash.includes('/recorrentes')) {
+            try { typeof window._renderRecorrentes === 'function' && window._renderRecorrentes(); } catch {}
+          } else if (window.location.hash.includes('/dashboard')) {
+            try { typeof window.renderDashboard === 'function' && window.renderDashboard(); } catch {}
+          } else if (window.location.hash.includes('/transactions')) {
+            try { typeof window.renderTransactions === 'function' && window.renderTransactions(); } catch {}
           }
-          
-          // Disparar evento para sincronização
+
+          // Disparar evento para sincronizaÃ§Ã£o
           document.dispatchEvent(new CustomEvent('recorrente-adicionada'));
           document.dispatchEvent(new CustomEvent('dados-atualizados'));
         }, 100);

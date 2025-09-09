@@ -1,4 +1,4 @@
-export function setupThemeToggle(buttonId = 'theme-toggle-btn') {
+﻿export function setupThemeToggle(buttonId = 'theme-toggle-btn') {
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
   const root = document.documentElement;
   const saved = localStorage.getItem('theme');
@@ -11,120 +11,139 @@ export function setupThemeToggle(buttonId = 'theme-toggle-btn') {
   const btn = document.getElementById(buttonId);
 
   if (btn) {
-    // Remover listeners antigos para evitar duplicação
+    // Remover listeners antigos para evitar duplicaÃ§Ã£o
     const newBtn = btn.cloneNode(true);
     btn.parentNode.replaceChild(newBtn, btn);
-    
+
     // Adicionar novo listener
     newBtn.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      
-      console.log('🔧 Clique no botão de tema detectado');
-      console.log('🔧 Classes antes:', root.classList.toString());
-      
+
+      console.log('ðŸ”§ Clique no botÃ£o de tema detectado');
+      console.log('ðŸ”§ Classes antes:', root.classList.toString());
+
       const isDarkNow = root.classList.toggle('dark');
       localStorage.setItem('theme', isDarkNow ? 'dark' : 'light');
 
-      console.log('🔧 Classes depois:', root.classList.toString());
-      console.log('🔧 isDarkNow:', isDarkNow);
-      console.log('🔧 localStorage theme:', localStorage.getItem('theme'));
+      console.log('ðŸ”§ Classes depois:', root.classList.toString());
+      console.log('ðŸ”§ isDarkNow:', isDarkNow);
+      console.log('ðŸ”§ localStorage theme:', localStorage.getItem('theme'));
 
       updateIcon();
-      
-      // Forçar atualização de todas as abas para sincronizar o tema
+
+      // ForÃ§ar atualizaÃ§Ã£o de todas as abas para sincronizar o tema
       forceThemeUpdate();
-      
-      console.log('🎨 Tema alterado para:', isDarkNow ? 'dark' : 'light');
+
+      console.log('ðŸŽ¨ Tema alterado para:', isDarkNow ? 'dark' : 'light');
     });
-    
-    console.log('✅ Botão de tema configurado:', buttonId);
+
+    console.log('âœ… BotÃ£o de tema configurado:', buttonId);
   } else {
-    console.warn('⚠️ Botão de tema não encontrado:', buttonId);
+    console.warn('âš ï¸ BotÃ£o de tema nÃ£o encontrado:', buttonId);
   }
 
   function updateIcon() {
     const icon = document.getElementById('theme-icon');
-    console.log('🔧 updateIcon chamada, ícone encontrado:', !!icon);
-    console.log('🔧 root.classList.contains("dark"):', root.classList.contains('dark'));
-    
+    console.log('ðŸ”§ updateIcon chamada, Ã­cone encontrado:', !!icon);
+    console.log('ðŸ”§ root.classList.contains("dark"):', root.classList.contains('dark'));
+
     if (icon) {
-      const newIcon = root.classList.contains('dark') ? '🌙' : '☀️';
-      console.log('🔧 Novo ícone:', newIcon);
+      const newIcon = root.classList.contains('dark') ? 'ðŸŒ™' : 'â˜€ï¸';
+      console.log('ðŸ”§ Novo Ã­cone:', newIcon);
       icon.textContent = newIcon;
     } else {
-      console.log('🔧 Elemento theme-icon não encontrado');
+      console.log('ðŸ”§ Elemento theme-icon nÃ£o encontrado');
     }
   }
 
   function forceThemeUpdate() {
-    // Forçar re-renderização da aba atual baseada no hash
+    // ForÃ§ar re-renderizaÃ§Ã£o da aba atual baseada no hash
     const currentRoute = window.location.hash.replace('#', '') || '/dashboard';
 
     // Aplicar tema imediatamente em todos os elementos
     updateThemeElements();
 
     setTimeout(() => {
-      requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
         switch (currentRoute) {
-          case '/dashboard':
-            if (window.renderDashboard) window.renderDashboard();
-            break;
-          case '/transactions':
-            if (window.renderTransactions) window.renderTransactions();
-            break;
-          case '/categories':
-            if (window.renderCategories) window.renderCategories();
-            break;
-          case '/recorrentes':
-            if (window.renderRecorrentes) window.renderRecorrentes();
-            break;
-          case '/notifications':
-            if (window.renderNotifications) window.renderNotifications();
-            break;
-          case '/settings':
-            if (window.renderSettings) window.renderSettings();
-            break;
-          default:
-            if (window.renderDashboard) window.renderDashboard();
+        case '/dashboard':
+          if (window.renderDashboard) window.renderDashboard();
+          break;
+        case '/transactions':
+          if (window.renderTransactions) window.renderTransactions();
+          break;
+        case '/categories':
+          if (window.renderCategories) window.renderCategories();
+          break;
+        case '/recorrentes':
+          if (window.renderRecorrentes) window.renderRecorrentes();
+          break;
+        case '/notifications':
+          if (window.renderNotifications) window.renderNotifications();
+          break;
+        case '/settings':
+          if (window.renderSettings) window.renderSettings();
+          break;
+        default:
+          if (window.renderDashboard) window.renderDashboard();
         }
         updateThemeElements();
-        console.log('✅ Tema aplicado na aba atual');
+        console.log('âœ… Tema aplicado na aba atual');
       });
     }, 200);
   }
 
   function updateThemeElements() {
-    // Forçar reflow em elementos específicos que podem precisar de sincronização
+    // ForÃ§ar reflow em elementos especÃ­ficos que podem precisar de sincronizaÃ§Ã£o
     const elements = document.querySelectorAll('[class*="dark:"]');
     elements.forEach(element => {
-      // Forçar reflow para garantir que as classes sejam aplicadas
+      // ForÃ§ar reflow para garantir que as classes sejam aplicadas
       element.offsetHeight;
     });
-    
-    // Forçar reflow no body e html
+
+    // ForÃ§ar reflow no body e html
     document.body.offsetHeight;
     document.documentElement.offsetHeight;
-    
-    // Atualizar elementos com classes específicas do tema
-    const themeElements = document.querySelectorAll('.card-resumo, .bottom-nav, .modal-content, .btn-secondary, .form-group input, .form-group select, .form-group textarea, .tab-container, .tab-header, .tab-content, .list-item, .card-standard');
+
+    // Atualizar elementos com classes especÃ­ficas do tema
+    // Incluir classes do design system (u-card, u-btn, u-input) alÃ©m das legadas
+    const themeElements = document.querySelectorAll([
+      '.card-resumo',
+      '.bottom-nav',
+      '.modal-content',
+      '.btn-secondary', // legado
+      '.form-group input',
+      '.form-group select',
+      '.form-group textarea',
+      '.tab-container',
+      '.tab-header',
+      '.tab-content',
+      '.list-item',
+      '.card-standard', // legado
+      '.u-card',
+      '.u-btn',
+      'input.u-input',
+      'select.u-input',
+      'textarea.u-input'
+    ].join(', '));
     themeElements.forEach(element => {
       element.offsetHeight;
     });
-    
-    // Forçar atualização de elementos específicos que podem não ter sido atualizados
+
+    // ForÃ§ar atualizaÃ§Ã£o de elementos especÃ­ficos que podem nÃ£o ter sido atualizados
     const root = document.documentElement;
     const isDark = root.classList.contains('dark');
-    
-    // Aplicar tema diretamente em elementos que podem não estar respondendo
+
+    // Aplicar tema diretamente em elementos que podem nÃ£o estar respondendo
     const allElements = document.querySelectorAll('*');
     allElements.forEach(element => {
       const computedStyle = getComputedStyle(element);
       if (computedStyle.backgroundColor && computedStyle.backgroundColor !== 'rgba(0, 0, 0, 0)') {
-        element.offsetHeight; // Forçar reflow
+        element.offsetHeight; // ForÃ§ar reflow
       }
     });
-    
-    console.log('🎨 Elementos de tema atualizados (isDark:', isDark, ')');
+
+    console.log('ðŸŽ¨ Elementos de tema atualizados (isDark:', isDark, ')');
   }
 }

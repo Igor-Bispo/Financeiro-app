@@ -1,4 +1,4 @@
-import {
+﻿import {
   collection,
   getDocs,
   doc,
@@ -7,10 +7,10 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase.js';
 
-// NOTA: Funções de transações movidas para app.js
-// As novas funções estão em: src/js/app.js (addTransaction, loadTransactions, etc.)
+// NOTA: FunÃ§Ãµes de transaÃ§Ãµes movidas para app.js
+// As novas funÃ§Ãµes estÃ£o em: src/js/app.js (addTransaction, loadTransactions, etc.)
 
-// Salva todas as transações do mês em um documento de histórico mensal
+// Salva todas as transaÃ§Ãµes do mÃªs em um documento de histÃ³rico mensal
 export async function salvarHistoricoMensal(
   userId,
   transacoes,
@@ -24,7 +24,7 @@ export async function salvarHistoricoMensal(
   });
 }
 
-// Limpa todas as transações do usuário
+// Limpa todas as transaÃ§Ãµes do usuÃ¡rio
 export async function limparTransacoes(userId) {
   const ref = collection(db, 'users', userId, 'transacoes');
   const snapshot = await getDocs(ref);
@@ -33,10 +33,10 @@ export async function limparTransacoes(userId) {
   await batch.commit();
 }
 
-// NOTA: Funções de recorrentes movidas para recorrentes.js
-// As novas funções estão em: src/js/recorrentes.js
+// NOTA: FunÃ§Ãµes de recorrentes movidas para recorrentes.js
+// As novas funÃ§Ãµes estÃ£o em: src/js/recorrentes.js
 
-// Busca um orçamento pelo ID na coleção 'budgets'
+// Busca um orÃ§amento pelo ID na coleÃ§Ã£o 'budgets'
 export async function buscarOrcamentoPorId(budgetId) {
   const { doc, getDoc } = await import('firebase/firestore');
   const { db } = await import('./firebase.js');
@@ -48,7 +48,7 @@ export async function buscarOrcamentoPorId(budgetId) {
   return null;
 }
 
-// Busca e-mails dos usuários a partir de uma lista de UIDs
+// Busca e-mails dos usuÃ¡rios a partir de uma lista de UIDs
 export async function buscarEmailsPorUids(uids) {
   const { doc, getDoc } = await import('firebase/firestore');
   const { db } = await import('./firebase.js');
@@ -65,7 +65,7 @@ export async function buscarEmailsPorUids(uids) {
   return results;
 }
 
-// Busca o UID de um usuário pelo e-mail na coleção 'users'
+// Busca o UID de um usuÃ¡rio pelo e-mail na coleÃ§Ã£o 'users'
 export async function buscarUidPorEmail(email) {
   const { collection, getDocs, query, where } = await import(
     'firebase/firestore'

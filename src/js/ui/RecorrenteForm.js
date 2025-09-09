@@ -1,27 +1,27 @@
-export function RecorrenteForm({ onSubmit, initialData = {} }) {
+﻿export function RecorrenteForm({ onSubmit, initialData = {} }) {
   const form = document.createElement('form');
   form.className = 'space-y-4';
   form.innerHTML = `
     <div class="form-group">
       <label class="form-label modal-label">Nome da Despesa Recorrente</label>
       <input type="text" id="rec-desc" required
-             class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+        class="u-input w-full"
              placeholder="Ex: Aluguel, Netflix, Academia"
              value="${initialData.descricao || ''}"
              autocomplete="off"
              autocorrect="off"
              autocapitalize="words"
-             style="background-color: var(--select-bg, #ffffff); color: var(--select-text, #1f2937); font-weight: 500; font-size: 16px;">
+        style="font-weight: 500; font-size: 16px;">
     </div>
     <div class="form-group">
       <label class="form-label modal-label">Valor da Despesa (R$)</label>
       <input type="number" id="rec-valor" required step="0.01" min="0"
-             class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+        class="u-input w-full"
              placeholder="0,00"
              value="${initialData.valorTotal || initialData.valor || ''}"
              inputmode="decimal"
              autocomplete="off"
-             style="background-color: var(--select-bg, #ffffff); color: var(--select-text, #1f2937); font-weight: 500; font-size: 16px;">
+        style="font-weight: 500; font-size: 16px;">
     </div>
     <div>
       <label class="modal-label">Tipo do Valor Informado</label>
@@ -43,15 +43,15 @@ export function RecorrenteForm({ onSubmit, initialData = {} }) {
     <div>
       <label class="modal-label">Categoria da Despesa</label>
       <select id="rec-categoria" required
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              style="background-color: var(--select-bg, #ffffff); color: var(--select-text, #1f2937); font-weight: 500; font-size: 16px;">
-        <option value="" style="background-color: var(--option-bg, #ffffff); color: var(--option-text, #1f2937); font-weight: 500; padding: 12px; font-size: 14px;">Selecione uma categoria...</option>
+    class="u-input w-full"
+    style="font-weight: 500; font-size: 16px;">
+   <option value="" style="font-weight: 500; padding: 12px; font-size: 14px;">Selecione uma categoria...</option>
         ${(window.appState.categories || [])
     .sort((a, b) =>
       a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' })
     )
     .map(cat => {
-      // Calcular gasto atual da categoria no mês atual
+      // Calcular gasto atual da categoria no mÃªs atual
       const now = new Date();
       const anoAtual = now.getFullYear();
       const mesAtual = now.getMonth() + 1;
@@ -86,56 +86,56 @@ export function RecorrenteForm({ onSubmit, initialData = {} }) {
       const saldo =
               cat.tipo === 'receita' ? gastoAtual : limite - gastoAtual;
 
-      // Formatar texto da opção
+      // Formatar texto da opÃ§Ã£o
       let textoOpcao = cat.nome;
       if (limite > 0) {
         textoOpcao += ` - Limite: R$ ${limite.toFixed(2)}`;
         if (cat.tipo === 'despesa') {
-          textoOpcao += ` (Disponível: R$ ${Math.max(0, saldo).toFixed(2)})`;
+          textoOpcao += ` (DisponÃ­vel: R$ ${Math.max(0, saldo).toFixed(2)})`;
         } else {
           textoOpcao += ` (Recebido: R$ ${gastoAtual.toFixed(2)})`;
         }
       }
 
-      return `<option value="${cat.id}" ${initialData.categoriaId === cat.id ? 'selected' : ''} style="background-color: var(--option-bg, #ffffff); color: var(--option-text, #1f2937); font-weight: 500; padding: 8px;">${textoOpcao}</option>`;
+      return `<option value="${cat.id}" ${initialData.categoriaId === cat.id ? 'selected' : ''} style="font-weight: 500; padding: 8px;">${textoOpcao}</option>`;
     })
     .join('')}
       </select>
     </div>
     <div>
-      <label class="modal-label">Data de Início da Recorrência</label>
+      <label class="modal-label">Data de InÃ­cio da RecorrÃªncia</label>
       <input type="date" id="rec-data" required
-             class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+        class="u-input w-full"
              value="${initialData.dataInicio || new Date().toISOString().split('T')[0]}"
-             style="background-color: var(--select-bg, #ffffff); color: var(--select-text, #1f2937); font-weight: 500;">
+        style="font-weight: 500;">
     </div>
     <div>
-      <label class="modal-label">Número de Parcelas (deixe vazio para infinito)</label>
+      <label class="modal-label">NÃºmero de Parcelas (deixe vazio para infinito)</label>
       <input type="number" id="rec-parcelas" min="0"
-             class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+        class="u-input w-full"
              placeholder="Ex: 12 para 1 ano, 24 para 2 anos"
              value="${initialData.parcelasRestantes || ''}"
-             style="background-color: var(--select-bg, #ffffff); color: var(--select-text, #1f2937); font-weight: 500;">
+        style="font-weight: 500;">
     </div>
     <div id="recorrente-valores-info" class="text-xs text-gray-600 modal-info"></div>
     <div class="flex items-center gap-2">
       <input type="checkbox" id="rec-efetivar" 
              class="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 focus:ring-2" 
              ${initialData.efetivarMesAtual ? 'checked' : ''} />
-      <label for="rec-efetivar" class="checkbox-label">Criar transação para este mês automaticamente</label>
+      <label for="rec-efetivar" class="checkbox-label">Criar transaÃ§Ã£o para este mÃªs automaticamente</label>
     </div>
     <div class="flex justify-end space-x-3 pt-4">
-      <button type="button" onclick="closeModal()" class="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg">Cancelar</button>
-      <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Salvar</button>
+  <button type="button" onclick="(window.closeModal ? window.closeModal() : (document.getElementById('app-modal')?.remove()))" class="u-btn u-btn--ghost">Cancelar</button>
+  <button type="submit" class="u-btn u-btn--primary">Salvar</button>
     </div>
   `;
 
-  // Função para atualizar a exibição dos valores
+  // FunÃ§Ã£o para atualizar a exibiÃ§Ã£o dos valores
   function atualizarValoresInfo() {
     const valorInput = document.getElementById('rec-valor');
     const parcelasInput = document.getElementById('rec-parcelas');
     const tipoValorRadio = form.querySelector('input[name="tipo-valor"]:checked');
-    
+
     const valor = valorInput ? parseFloat(valorInput.value) || 0 : 0;
     const parcelas = parcelasInput ? parseInt(parcelasInput.value) || 0 : 0;
     const tipoValor = tipoValorRadio ? tipoValorRadio.value : 'total';
@@ -164,22 +164,27 @@ export function RecorrenteForm({ onSubmit, initialData = {} }) {
   form.querySelectorAll('input[name="tipo-valor"]').forEach(radio => {
     radio.addEventListener('change', atualizarValoresInfo);
   });
-  
-  // Garantir que os botões sejam inicializados corretamente
+
+  // Garantir que os botÃµes sejam inicializados corretamente
   setTimeout(() => {
     atualizarValoresInfo();
-    
-    // Forçar a seleção correta dos botões de rádio
+
+    // ForÃ§ar a seleÃ§Ã£o correta dos botÃµes de rÃ¡dio
     const tipoValor = form.querySelector('input[name="tipo-valor"]:checked');
     if (!tipoValor) {
-      // Se nenhum estiver selecionado, selecionar "total" por padrão
+      // Se nenhum estiver selecionado, selecionar "total" por padrÃ£o
       const totalRadio = form.querySelector('input[name="tipo-valor"][value="total"]');
       if (totalRadio) {
         totalRadio.checked = true;
-        totalRadio.dispatchEvent(new Event('change'));
+        try {
+          const ev = (typeof document !== 'undefined' && typeof document.createEvent === 'function')
+            ? (() => { const e = document.createEvent('HTMLEvents'); e.initEvent('change', true, false); return e; })()
+            : null;
+          if (ev) totalRadio.dispatchEvent(ev);
+        } catch {}
       }
     }
-    
+
     // Configurar estado inicial do checkbox
     const checkbox = form.querySelector('#rec-efetivar');
     if (checkbox) {
@@ -195,7 +200,7 @@ export function RecorrenteForm({ onSubmit, initialData = {} }) {
       ? parseInt(document.getElementById('rec-parcelas').value)
       : null;
     if (parcelasRestantes !== null && parcelasRestantes < 1) {
-      parcelasRestantes = null; // Não permitir zero ou negativo
+      parcelasRestantes = null; // NÃ£o permitir zero ou negativo
     }
     const tipoValor = form.querySelector(
       'input[name="tipo-valor"]:checked'
@@ -217,7 +222,7 @@ export function RecorrenteForm({ onSubmit, initialData = {} }) {
     const dados = {
       descricao: document.getElementById('rec-desc').value,
       valor, // valor da parcela
-      valorTotal, // salva também o valor total
+      valorTotal, // salva tambÃ©m o valor total
       categoriaId: document.getElementById('rec-categoria').value,
       dataInicio: document.getElementById('rec-data').value,
       parcelasRestantes,

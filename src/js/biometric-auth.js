@@ -1,4 +1,4 @@
-// Autenticação Biométrica para Mobile
+﻿// AutenticaÃ§Ã£o BiomÃ©trica para Mobile
 // Usa Web Authentication API para fingerprint/facial recognition
 
 import { Snackbar } from './ui/Snackbar.js';
@@ -11,7 +11,7 @@ export class BiometricAuth {
     this.credentials = null;
   }
 
-  // Verificar se o dispositivo suporta autenticação biométrica
+  // Verificar se o dispositivo suporta autenticaÃ§Ã£o biomÃ©trica
   checkSupport() {
     return (
       window.PublicKeyCredential &&
@@ -21,10 +21,10 @@ export class BiometricAuth {
     );
   }
 
-  // Verificar se a autenticação biométrica está disponível
+  // Verificar se a autenticaÃ§Ã£o biomÃ©trica estÃ¡ disponÃ­vel
   async checkAvailability() {
     if (!this.isSupported) {
-      console.log('🔒 BiometricAuth: Web Authentication API não suportada');
+      console.log('ðŸ”’ BiometricAuth: Web Authentication API nÃ£o suportada');
       return false;
     }
 
@@ -35,7 +35,7 @@ export class BiometricAuth {
       ]);
 
       this.isAvailable = userVerifying && conditionalMediation;
-      console.log('🔒 BiometricAuth: Disponibilidade verificada:', {
+      console.log('ðŸ”’ BiometricAuth: Disponibilidade verificada:', {
         userVerifying,
         conditionalMediation,
         isAvailable: this.isAvailable
@@ -44,31 +44,31 @@ export class BiometricAuth {
       return this.isAvailable;
     } catch (error) {
       console.error(
-        '🔒 BiometricAuth: Erro ao verificar disponibilidade:',
+        'ðŸ”’ BiometricAuth: Erro ao verificar disponibilidade:',
         error
       );
       return false;
     }
   }
 
-  // Registrar credenciais biométricas
+  // Registrar credenciais biomÃ©tricas
   async register(userId, userName) {
     if (!this.isAvailable) {
-      throw new Error('Autenticação biométrica não disponível');
+      throw new Error('AutenticaÃ§Ã£o biomÃ©trica nÃ£o disponÃ­vel');
     }
 
     try {
-      console.log('🔒 BiometricAuth: Iniciando registro biométrico...');
+      console.log('ðŸ”’ BiometricAuth: Iniciando registro biomÃ©trico...');
 
       // Gerar challenge
       const challenge = new Uint8Array(32);
       window.crypto.getRandomValues(challenge);
 
-      // Criar opções de registro
+      // Criar opÃ§Ãµes de registro
       const publicKeyOptions = {
         challenge: challenge,
         rp: {
-          name: 'Servo Tech Finanças',
+          name: 'Servo Tech FinanÃ§as',
           id: window.location.hostname
         },
         user: {
@@ -100,34 +100,34 @@ export class BiometricAuth {
       // Salvar no localStorage
       this.saveCredentials(userId, credential);
 
-      console.log('🔒 BiometricAuth: Registro biométrico concluído');
+      console.log('ðŸ”’ BiometricAuth: Registro biomÃ©trico concluÃ­do');
       return true;
     } catch (error) {
-      console.error('🔒 BiometricAuth: Erro no registro:', error);
+      console.error('ðŸ”’ BiometricAuth: Erro no registro:', error);
       throw error;
     }
   }
 
-  // Autenticar usando biométrica
+  // Autenticar usando biomÃ©trica
   async authenticate() {
     if (!this.isAvailable) {
-      throw new Error('Autenticação biométrica não disponível');
+      throw new Error('AutenticaÃ§Ã£o biomÃ©trica nÃ£o disponÃ­vel');
     }
 
     try {
-      console.log('🔒 BiometricAuth: Iniciando autenticação biométrica...');
+      console.log('ðŸ”’ BiometricAuth: Iniciando autenticaÃ§Ã£o biomÃ©trica...');
 
       // Carregar credenciais salvas
       const savedCredentials = this.loadCredentials();
       if (!savedCredentials) {
-        throw new Error('Nenhuma credencial biométrica registrada');
+        throw new Error('Nenhuma credencial biomÃ©trica registrada');
       }
 
       // Gerar challenge
       const challenge = new Uint8Array(32);
       window.crypto.getRandomValues(challenge);
 
-      // Opções de autenticação
+      // OpÃ§Ãµes de autenticaÃ§Ã£o
       const assertionOptions = {
         challenge: challenge,
         rpId: window.location.hostname,
@@ -147,14 +147,14 @@ export class BiometricAuth {
         publicKey: assertionOptions
       });
 
-      console.log('🔒 BiometricAuth: Autenticação biométrica bem-sucedida');
+      console.log('ðŸ”’ BiometricAuth: AutenticaÃ§Ã£o biomÃ©trica bem-sucedida');
       return {
         success: true,
         userId: savedCredentials.userId,
         credential: assertion
       };
     } catch (error) {
-      console.error('🔒 BiometricAuth: Erro na autenticação:', error);
+      console.error('ðŸ”’ BiometricAuth: Erro na autenticaÃ§Ã£o:', error);
       throw error;
     }
   }
@@ -177,16 +177,16 @@ export class BiometricAuth {
         JSON.stringify(credentialData)
       );
 
-      // Salvar também informações do usuário para login automático
+      // Salvar tambÃ©m informaÃ§Ãµes do usuÃ¡rio para login automÃ¡tico
       this.saveUserInfo(userId);
 
-      console.log('🔒 BiometricAuth: Credenciais salvas no localStorage');
+      console.log('ðŸ”’ BiometricAuth: Credenciais salvas no localStorage');
     } catch (error) {
-      console.error('🔒 BiometricAuth: Erro ao salvar credenciais:', error);
+      console.error('ðŸ”’ BiometricAuth: Erro ao salvar credenciais:', error);
     }
   }
 
-  // Salvar informações do usuário
+  // Salvar informaÃ§Ãµes do usuÃ¡rio
   saveUserInfo() {
     try {
       const currentUser = window.FirebaseAuth?.currentUser;
@@ -199,24 +199,24 @@ export class BiometricAuth {
           lastLogin: new Date().toISOString()
         };
         localStorage.setItem('biometric_user_info', JSON.stringify(userInfo));
-        console.log('🔒 BiometricAuth: Informações do usuário salvas');
+        console.log('ðŸ”’ BiometricAuth: InformaÃ§Ãµes do usuÃ¡rio salvas');
       }
     } catch (error) {
       console.error(
-        '🔒 BiometricAuth: Erro ao salvar informações do usuário:',
+        'ðŸ”’ BiometricAuth: Erro ao salvar informaÃ§Ãµes do usuÃ¡rio:',
         error
       );
     }
   }
 
-  // Carregar informações do usuário
+  // Carregar informaÃ§Ãµes do usuÃ¡rio
   loadUserInfo() {
     try {
       const saved = localStorage.getItem('biometric_user_info');
       return saved ? JSON.parse(saved) : null;
     } catch (error) {
       console.error(
-        '🔒 BiometricAuth: Erro ao carregar informações do usuário:',
+        'ðŸ”’ BiometricAuth: Erro ao carregar informaÃ§Ãµes do usuÃ¡rio:',
         error
       );
       return null;
@@ -242,12 +242,12 @@ export class BiometricAuth {
 
       return credentialData;
     } catch (error) {
-      console.error('🔒 BiometricAuth: Erro ao carregar credenciais:', error);
+      console.error('ðŸ”’ BiometricAuth: Erro ao carregar credenciais:', error);
       return null;
     }
   }
 
-  // Verificar se há credenciais salvas
+  // Verificar se hÃ¡ credenciais salvas
   hasSavedCredentials() {
     return localStorage.getItem('biometric_credentials') !== null;
   }
@@ -256,15 +256,15 @@ export class BiometricAuth {
   removeCredentials() {
     try {
       localStorage.removeItem('biometric_credentials');
-      console.log('🔒 BiometricAuth: Credenciais removidas');
+      console.log('ðŸ”’ BiometricAuth: Credenciais removidas');
       return true;
     } catch (error) {
-      console.error('🔒 BiometricAuth: Erro ao remover credenciais:', error);
+      console.error('ðŸ”’ BiometricAuth: Erro ao remover credenciais:', error);
       return false;
     }
   }
 
-  // Obter informações do dispositivo
+  // Obter informaÃ§Ãµes do dispositivo
   getDeviceInfo() {
     return {
       isSupported: this.isSupported,
@@ -276,10 +276,10 @@ export class BiometricAuth {
   }
 }
 
-// Instância global
+// InstÃ¢ncia global
 window.biometricAuth = new BiometricAuth();
 
-// Função para mostrar modal de configuração biométrica
+// FunÃ§Ã£o para mostrar modal de configuraÃ§Ã£o biomÃ©trica
 window.showBiometricSetup = async function () {
   try {
     // Verificar disponibilidade
@@ -287,7 +287,7 @@ window.showBiometricSetup = async function () {
 
     if (!isAvailable) {
       Snackbar({
-        message: 'Autenticação biométrica não disponível neste dispositivo.',
+        message: 'AutenticaÃ§Ã£o biomÃ©trica nÃ£o disponÃ­vel neste dispositivo.',
         type: 'warning'
       });
       return;
@@ -297,38 +297,38 @@ window.showBiometricSetup = async function () {
     if (!user) {
       Snackbar({
         message:
-          'Você precisa estar logado para configurar autenticação biométrica.',
+          'VocÃª precisa estar logado para configurar autenticaÃ§Ã£o biomÃ©trica.',
         type: 'error'
       });
       return;
     }
 
-    // Modal de configuração
+    // Modal de configuraÃ§Ã£o
     const modal = Modal({
-      title: '🔒 Configurar Autenticação Biométrica',
+      title: 'ðŸ”’ Configurar AutenticaÃ§Ã£o BiomÃ©trica',
       content: `
         <div class="space-y-4">
           <div class="text-center">
-            <div class="text-6xl mb-4">🔐</div>
-            <h3 class="text-lg font-semibold mb-2">Autenticação Biométrica</h3>
+            <div class="text-6xl mb-4">ðŸ”</div>
+            <h3 class="text-lg font-semibold mb-2">AutenticaÃ§Ã£o BiomÃ©trica</h3>
             <p class="text-gray-600 dark:text-gray-300">
-              Configure impressão digital ou reconhecimento facial para acessar o app rapidamente.
+              Configure impressÃ£o digital ou reconhecimento facial para acessar o app rapidamente.
             </p>
           </div>
           
           <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-            <h4 class="font-semibold text-blue-800 dark:text-blue-200 mb-2">📱 Como Funciona:</h4>
+            <h4 class="font-semibold text-blue-800 dark:text-blue-200 mb-2">ðŸ“± Como Funciona:</h4>
             <ul class="text-sm text-blue-700 dark:text-blue-300 space-y-1">
-              <li>• Use sua impressão digital ou face para fazer login</li>
-              <li>• Acesso rápido e seguro ao aplicativo</li>
-              <li>• Funciona offline, sem necessidade de senha</li>
-              <li>• Dados armazenados localmente no seu dispositivo</li>
+              <li>â€¢ Use sua impressÃ£o digital ou face para fazer login</li>
+              <li>â€¢ Acesso rÃ¡pido e seguro ao aplicativo</li>
+              <li>â€¢ Funciona offline, sem necessidade de senha</li>
+              <li>â€¢ Dados armazenados localmente no seu dispositivo</li>
             </ul>
           </div>
 
           <div class="flex flex-col gap-3">
             <button id="btn-setup-biometric" class="w-full bg-green-500 text-white py-3 rounded-lg font-semibold hover:bg-green-600 flex items-center justify-center gap-2">
-              <span>🔐</span> Configurar Agora
+              <span>ðŸ”</span> Configurar Agora
             </button>
             <button onclick="closeModal()" class="w-full bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600">
               Cancelar
@@ -341,59 +341,59 @@ window.showBiometricSetup = async function () {
 
     document.body.appendChild(modal);
 
-    // Event listener para configuração
+    // Event listener para configuraÃ§Ã£o
     setTimeout(() => {
       const setupBtn = document.getElementById('btn-setup-biometric');
       if (setupBtn) {
         setupBtn.addEventListener('click', async () => {
           try {
             setupBtn.disabled = true;
-            setupBtn.innerHTML = '<span>⏳</span> Configurando...';
+            setupBtn.innerHTML = '<span>â³</span> Configurando...';
 
             await window.biometricAuth.register(user.uid, user.email);
 
-            // Salvar informações do usuário após registro bem-sucedido
+            // Salvar informaÃ§Ãµes do usuÃ¡rio apÃ³s registro bem-sucedido
             window.biometricAuth.saveUserInfo(user.uid);
 
             Snackbar({
-              message: 'Autenticação biométrica configurada com sucesso!',
+              message: 'AutenticaÃ§Ã£o biomÃ©trica configurada com sucesso!',
               type: 'success'
             });
 
             modal.remove();
           } catch (error) {
-            console.error('Erro na configuração biométrica:', error);
+            console.error('Erro na configuraÃ§Ã£o biomÃ©trica:', error);
             Snackbar({
               message:
-                'Erro ao configurar autenticação biométrica: ' + error.message,
+                'Erro ao configurar autenticaÃ§Ã£o biomÃ©trica: ' + error.message,
               type: 'error'
             });
 
             setupBtn.disabled = false;
-            setupBtn.innerHTML = '<span>🔐</span> Configurar Agora';
+            setupBtn.innerHTML = '<span>ðŸ”</span> Configurar Agora';
           }
         });
       }
     }, 100);
   } catch (error) {
-    console.error('Erro ao mostrar configuração biométrica:', error);
+    console.error('Erro ao mostrar configuraÃ§Ã£o biomÃ©trica:', error);
     Snackbar({
-      message: 'Erro ao abrir configuração biométrica: ' + error.message,
+      message: 'Erro ao abrir configuraÃ§Ã£o biomÃ©trica: ' + error.message,
       type: 'error'
     });
   }
 };
 
-// Função para autenticação biométrica
+// FunÃ§Ã£o para autenticaÃ§Ã£o biomÃ©trica
 window.authenticateWithBiometric = async function () {
   try {
-    console.log('🔐 Iniciando autenticação biométrica...');
+    console.log('ðŸ” Iniciando autenticaÃ§Ã£o biomÃ©trica...');
 
     const isAvailable = await window.biometricAuth.checkAvailability();
 
     if (!isAvailable) {
       Snackbar({
-        message: 'Autenticação biométrica não disponível neste dispositivo.',
+        message: 'AutenticaÃ§Ã£o biomÃ©trica nÃ£o disponÃ­vel neste dispositivo.',
         type: 'warning'
       });
       return false;
@@ -402,7 +402,7 @@ window.authenticateWithBiometric = async function () {
     if (!window.biometricAuth.hasSavedCredentials()) {
       Snackbar({
         message:
-          'Configure a autenticação biométrica primeiro nas configurações.',
+          'Configure a autenticaÃ§Ã£o biomÃ©trica primeiro nas configuraÃ§Ãµes.',
         type: 'info'
       });
       return false;
@@ -413,33 +413,33 @@ window.authenticateWithBiometric = async function () {
     const result = await window.biometricAuth.authenticate();
 
     if (result.success) {
-      console.log('🔐 Autenticação biométrica bem-sucedida, fazendo login...');
+      console.log('ðŸ” AutenticaÃ§Ã£o biomÃ©trica bem-sucedida, fazendo login...');
 
-      // Carregar dados do usuário salvo
+      // Carregar dados do usuÃ¡rio salvo
       const savedCredentials = window.biometricAuth.loadCredentials();
       const userInfo = window.biometricAuth.loadUserInfo();
 
       if (savedCredentials && savedCredentials.userId && userInfo) {
         try {
-          // Verificar se já existe um usuário logado
+          // Verificar se jÃ¡ existe um usuÃ¡rio logado
           const currentUser = window.FirebaseAuth?.currentUser;
           if (currentUser && currentUser.uid === savedCredentials.userId) {
-            console.log('🔐 Usuário já está logado');
+            console.log('ðŸ” UsuÃ¡rio jÃ¡ estÃ¡ logado');
             Snackbar({
-              message: 'Login biométrico realizado com sucesso!',
+              message: 'Login biomÃ©trico realizado com sucesso!',
               type: 'success'
             });
             window.showLoading(false);
             return true;
           }
 
-          // Simular login bem-sucedido com as informações salvas
+          // Simular login bem-sucedido com as informaÃ§Ãµes salvas
           console.log(
-            '🔐 Fazendo login automático para usuário:',
+            'ðŸ” Fazendo login automÃ¡tico para usuÃ¡rio:',
             userInfo.email
           );
 
-          // Criar um objeto de usuário simulado
+          // Criar um objeto de usuÃ¡rio simulado
           const simulatedUser = {
             uid: userInfo.uid,
             email: userInfo.email,
@@ -467,7 +467,7 @@ window.authenticateWithBiometric = async function () {
           document.dispatchEvent(loginEvent);
 
           Snackbar({
-            message: 'Login biométrico realizado com sucesso!',
+            message: 'Login biomÃ©trico realizado com sucesso!',
             type: 'success'
           });
 
@@ -484,7 +484,7 @@ window.authenticateWithBiometric = async function () {
         }
       } else {
         Snackbar({
-          message: 'Credenciais biométricas inválidas ou incompletas.',
+          message: 'Credenciais biomÃ©tricas invÃ¡lidas ou incompletas.',
           type: 'error'
         });
         window.showLoading(false);
@@ -495,15 +495,15 @@ window.authenticateWithBiometric = async function () {
     window.showLoading(false);
     return false;
   } catch (error) {
-    console.error('Erro na autenticação biométrica:', error);
+    console.error('Erro na autenticaÃ§Ã£o biomÃ©trica:', error);
 
-    let errorMessage = 'Erro na autenticação biométrica.';
+    let errorMessage = 'Erro na autenticaÃ§Ã£o biomÃ©trica.';
     if (error.name === 'NotAllowedError') {
-      errorMessage = 'Autenticação biométrica cancelada pelo usuário.';
+      errorMessage = 'AutenticaÃ§Ã£o biomÃ©trica cancelada pelo usuÃ¡rio.';
     } else if (error.name === 'SecurityError') {
-      errorMessage = 'Erro de segurança na autenticação biométrica.';
+      errorMessage = 'Erro de seguranÃ§a na autenticaÃ§Ã£o biomÃ©trica.';
     } else if (error.name === 'NotSupportedError') {
-      errorMessage = 'Autenticação biométrica não suportada.';
+      errorMessage = 'AutenticaÃ§Ã£o biomÃ©trica nÃ£o suportada.';
     } else if (error.message) {
       errorMessage = error.message;
     }
@@ -518,30 +518,30 @@ window.authenticateWithBiometric = async function () {
   }
 };
 
-// Inicializar verificação de disponibilidade
+// Inicializar verificaÃ§Ã£o de disponibilidade
 document.addEventListener('DOMContentLoaded', async () => {
   try {
     const isAvailable = await window.biometricAuth.checkAvailability();
     console.log(
-      '🔒 BiometricAuth: Inicialização concluída, disponível:',
+      'ðŸ”’ BiometricAuth: InicializaÃ§Ã£o concluÃ­da, disponÃ­vel:',
       isAvailable
     );
 
-    // Se biometria estiver disponível e há credenciais salvas, mostrar botão
+    // Se biometria estiver disponÃ­vel e hÃ¡ credenciais salvas, mostrar botÃ£o
     if (isAvailable && window.biometricAuth.hasSavedCredentials()) {
       const biometricBtn = document.getElementById('biometric-login-btn');
       if (biometricBtn) {
         biometricBtn.style.display = 'block';
-        biometricBtn.innerHTML = '<span>🔐</span> Entrar com Biometria';
+        biometricBtn.innerHTML = '<span>ðŸ”</span> Entrar com Biometria';
       }
     } else {
-      // Ocultar botão se não disponível
+      // Ocultar botÃ£o se nÃ£o disponÃ­vel
       const biometricBtn = document.getElementById('biometric-login-btn');
       if (biometricBtn) {
         biometricBtn.style.display = 'none';
       }
     }
   } catch (error) {
-    console.error('🔒 BiometricAuth: Erro na inicialização:', error);
+    console.error('ðŸ”’ BiometricAuth: Erro na inicializaÃ§Ã£o:', error);
   }
 });

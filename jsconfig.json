@@ -1,11 +1,16 @@
 {
   "compilerOptions": {
-    "baseUrl": "./src/js",
+    "baseUrl": ".",
     "paths": {
-      "@js/*": ["./*"],
-      "@css/*": ["../css/*"],
-      "@assets/*": ["../assets/*"]
+      "@js/*": ["src/js/*"],
+      "@css/*": ["src/css/*"],
+      "@assets/*": ["src/assets/*"],
+      "@app/*": ["src/app/*"],
+      "@core/*": ["src/core/*"],
+      "@data/*": ["src/data/*"],
+      "@features/*": ["src/features/*"],
+      "@ui/*": ["src/ui/*"]
     }
   },
-  "include": ["src/js/**/*"]
-} 
+  "include": ["src/**/*"]
+}

@@ -1,4 +1,4 @@
-import { GoogleAuthProvider, signInWithPopup, getAuth } from 'firebase/auth';
+﻿import { GoogleAuthProvider, signInWithPopup, getAuth } from 'firebase/auth';
 import { auth } from './firebase.js';
 import { Snackbar } from './ui/Snackbar.js';
 
