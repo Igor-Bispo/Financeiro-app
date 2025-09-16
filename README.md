@@ -3,7 +3,7 @@
 > **Um aplicativo financeiro moderno, responsivo e completo para controle total das suas finanças pessoais**
 
 ![Status](https://img.shields.io/badge/Status-Produção%20Ativa-brightgreen)
-![Versão](https://img.shields.io/badge/Versão-4.36.0-blue)
+![Versão](https://img.shields.io/badge/Versão-4.37.0-blue)
 ![PWA](https://img.shields.io/badge/PWA-Ready-orange)
 ![Firebase](https://img.shields.io/badge/Firebase-Integrado-red)
 ![Voz](https://img.shields.io/badge/Reconhecimento%20de%20Voz-Ativo-green)
@@ -35,6 +35,10 @@ index.html (#app-content)
 - ✅ **Compartilhamento** - Orçamentos compartilhados entre usuários
 - ✅ **Perfil Personalizado** - Dados salvos no Firestore
 - ✅ **Autenticação Biométrica** - Login com impressão digital/face ID
+- ✅ **Interface de Login Premium** - Design glass morphism com animações avançadas
+- ✅ **Efeitos Visuais Avançados** - Gradientes dinâmicos, shimmer effects e micro-interações
+- ✅ **Animações Suaves** - Float, glow, pulse e hover effects
+- ✅ **Elementos Decorativos** - Círculos flutuantes com blur e transparência
 
 ### 💳 **Gestão Completa de Transações**
 - ✅ **CRUD Completo** - Criar, editar, excluir transações
@@ -107,6 +111,8 @@ index.html (#app-content)
 - ✅ **Touch Feedback** - Animações de toque
 - ✅ **Offline Support** - Funcionamento sem internet
 - ✅ **Bottom Navigation** - Navegação intuitiva
+- ✅ **Interface de Login Premium** - Design glass morphism com animações avançadas
+- ✅ **Efeitos Visuais Avançados** - Gradientes, shimmer effects e micro-interações
 - ✅ **Sistema de Notificações** - Notificações em tempo real
 - ✅ **Modal de Notificações** - Interface dedicada para notificações
 
@@ -412,7 +418,7 @@ Este projeto está sob a licença MIT. Veja o arquivo LICENSE para mais detalhes
 
 **Desenvolvido com ❤️ para controle financeiro eficiente e intuitivo.**
 
-**Versão atual: v4.36.0** 🚀
+**Versão atual: v4.37.0** 🚀
 
 **Status: ✅ APLICATIVO RODANDO 100%!** 🎉
 

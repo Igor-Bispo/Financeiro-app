@@ -1,0 +1,1 @@
+import{a as n,d as e,b as o,u as r,f}from"./main-tWUdnkzv.js";const c="userSettings";async function l(s){if(!s)return null;const a=n(e,c,s),t=await o(a);return t.exists()?{id:t.id,...t.data()}:null}async function g(s,a){if(!s)return!1;const t=n(e,c,s),i={notificationPrefs:a};return(await o(t)).exists()?await r(t,i):await f(t,i),!0}export{l as getByUser,g as setNotificationPrefs};

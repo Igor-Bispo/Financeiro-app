@@ -776,6 +776,16 @@ document.addEventListener('click', (ev) => {
     const t = ev.target;
   console.log('[DEBUG] Click detectado:', t.tagName, t.className, t.id, t.textContent?.substring(0, 30));
   
+  // Debug específico para logout
+  if (t.id === 'btn-logout' || t.textContent?.trim() === 'Sair') {
+    console.log('[DEBUG] BOTÃO LOGOUT DETECTADO!', {
+      id: t.id,
+      textContent: t.textContent,
+      className: t.className,
+      tagName: t.tagName
+    });
+  }
+  
   // Verificar se é um dos elementos que queremos tratar
   const isTargetElement = t.textContent?.includes('Backup completo') || 
                          t.textContent?.includes('Importar Dados') || 
@@ -785,6 +795,7 @@ document.addEventListener('click', (ev) => {
                          t.textContent?.includes('Remover tudo') ||
                          t.id === 'import-data-btn' ||
                          t.id === 'clear-data-btn' ||
+                         t.id === 'btn-logout' ||
                          t.id === 'limit-alerts-toggle' ||
                          t.id === 'recurring-reminders-toggle' ||
                          t.id === 'weekly-summary-toggle' ||
@@ -820,8 +831,67 @@ document.addEventListener('click', (ev) => {
                          t.textContent?.includes('Limpar Cache Offline') ||
                          t.textContent?.includes('O que mudou') ||
                          t.textContent?.includes('Instalar App') ||
-                         t.textContent?.trim() === 'Entrar';
+                         t.textContent?.trim() === 'Entrar' ||
+                         t.textContent?.trim() === 'Sair';
   
+  // Debug para verificar se isTargetElement está funcionando
+  if (t.id === 'btn-logout' || t.textContent?.trim() === 'Sair') {
+    console.log('[DEBUG] isTargetElement para logout:', isTargetElement);
+  }
+  
+  // Handler específico para logout - executar primeiro
+  if (t.id === 'btn-logout' || t.textContent?.trim() === 'Sair') {
+    console.log('[DEBUG] Handler logout executado!');
+    
+    ev.preventDefault();
+    ev.stopPropagation();
+    
+    // Confirmar logout
+    if (confirm('Tem certeza que deseja sair? Você será deslogado do aplicativo.')) {
+      console.log('[DEBUG] Logout confirmado pelo usuário');
+      
+      // Mostrar feedback
+      snk().info('Fazendo logout...');
+      
+      // Executar logout
+      if (typeof window.logout === 'function') {
+        console.log('[DEBUG] Executando window.logout()...');
+        window.logout();
+      } else {
+        console.warn('[DEBUG] window.logout não está disponível, tentando importar...');
+        
+        // Tentar importar e executar logout
+        import('@features/auth/AuthService.js').then(authService => {
+          console.log('[DEBUG] AuthService importado, executando logout...');
+          authService.logout();
+        }).catch(err => {
+          console.error('[DEBUG] Erro ao importar AuthService:', err);
+          
+          // Fallback: tentar logout direto do Firebase
+          if (window.firebase && window.firebase.auth) {
+            console.log('[DEBUG] Usando Firebase auth diretamente...');
+            window.firebase.auth().signOut().then(() => {
+              console.log('[DEBUG] Logout via Firebase realizado');
+              snk().success('Logout realizado com sucesso');
+              window.location.reload();
+            }).catch(error => {
+              console.error('[DEBUG] Erro no logout via Firebase:', error);
+              snk().error('Erro ao fazer logout');
+            });
+          } else {
+            console.error('[DEBUG] Firebase auth não disponível');
+            snk().error('Erro: Sistema de autenticação não disponível');
+          }
+        });
+      }
+    } else {
+      console.log('[DEBUG] Logout cancelado pelo usuário');
+      snk().info('Logout cancelado');
+    }
+    
+    return; // Sair da função após processar logout
+  }
+
   if (!isTargetElement) {
     return; // Silenciosamente ignora elementos não alvo
   }
@@ -1623,6 +1693,7 @@ ${events.slice(0, 10).map(e =>
     
     // Toggles são tratados pela função handleToggleChange após mudarem visualmente
     
+
     // Handler para botão de toggle de tema
     if (t.id === 'toggle-theme-btn') {
       // Alternar entre light e dark

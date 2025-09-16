@@ -2,7 +2,7 @@
 
 Este repositório contém um aplicativo PWA de controle financeiro com autenticação (Firebase), Firestore em tempo real, modo offline, relatórios e comandos de voz. É uma SPA roteada por hash (Vite) com organização por features.
 
-**Versão atual: v4.36.0** 🚀
+**Versão atual: v4.37.0** 🚀
 
 ## Como rodar localmente
 
@@ -36,6 +36,8 @@ Observação: o projeto já inclui emulators no firebase.json para dev.
 - Reconhecimento de voz (Web Speech API)
 - PWA completo: cache, offline, background sync e push
 - Arquitetura modular com EventBus
+- Interface de login premium com glass morphism
+- Efeitos visuais avançados e animações suaves
 - Widgets modernos inspirados no Mobills
 - Correção de bugs em parcelas de recorrentes
 
