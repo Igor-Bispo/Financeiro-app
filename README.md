@@ -3,7 +3,7 @@
 > **Um aplicativo financeiro moderno, responsivo e completo para controle total das suas finanças pessoais**
 
 ![Status](https://img.shields.io/badge/Status-Produção%20Ativa-brightgreen)
-![Versão](https://img.shields.io/badge/Versão-4.2.0-blue)
+![Versão](https://img.shields.io/badge/Versão-4.36.0-blue)
 ![PWA](https://img.shields.io/badge/PWA-Ready-orange)
 ![Firebase](https://img.shields.io/badge/Firebase-Integrado-red)
 ![Voz](https://img.shields.io/badge/Reconhecimento%20de%20Voz-Ativo-green)
@@ -55,6 +55,8 @@ index.html (#app-content)
 - ✅ **Aplicação Inteligente** - Evita duplicação automática
 - ✅ **Histórico Completo** - Visualização de todas as aplicações
 - ✅ **Status Dinâmico** - Indicação visual de status (aplicada/pendente)
+- ✅ **Dashboard Widget** - Top 5 recorrentes com progresso de parcelas
+- ✅ **Correção de Bugs** - Parcelas salvas corretamente em transações
 
 ### 📊 **Dashboard Inteligente e Analytics**
 - ✅ **Resumo Mensal** - Visão geral das finanças
@@ -62,10 +64,12 @@ index.html (#app-content)
 - ✅ **Progress Bars** - Visualização de gastos vs limite
 - ✅ **Alertas Inteligentes** - Notificações de limites excedidos
 - ✅ **Top 5 Categorias** - Gráfico das categorias mais utilizadas
+- ✅ **Top 5 Recorrentes** - Widget com progresso de parcelas
 - ✅ **Filtros Temporais** - Por mês/ano
 - ✅ **Atualização em Tempo Real** - Listeners Firestore
 - ✅ **Gráficos Interativos** - Visualização de dados financeiros
 - ✅ **Relatórios Detalhados** - Análise de gastos por categoria
+- ✅ **Widgets Modernos** - Interface inspirada no Mobills
 
 ### 🏷️ **Categorias com Progress Bar**
 - ✅ **Gestão Completa** - CRUD de categorias
@@ -103,6 +107,8 @@ index.html (#app-content)
 - ✅ **Touch Feedback** - Animações de toque
 - ✅ **Offline Support** - Funcionamento sem internet
 - ✅ **Bottom Navigation** - Navegação intuitiva
+- ✅ **Sistema de Notificações** - Notificações em tempo real
+- ✅ **Modal de Notificações** - Interface dedicada para notificações
 
 Para a lista completa de funcionalidades e notas de arquitetura, consulte [docs/ARCHITECTURE-OVERVIEW.md](./docs/ARCHITECTURE-OVERVIEW.md).
 
@@ -113,6 +119,8 @@ Para a lista completa de funcionalidades e notas de arquitetura, consulte [docs/
 - **HTML5** - Semântica e acessibilidade
 - **CSS3 + Tailwind CSS** - Estilos modernos e responsivos
 - **Vite** - Build tool rápido e eficiente
+- **Arquitetura Modular** - Organização por features
+- **EventBus** - Sistema de eventos centralizado
 
 ### **Backend & Serviços**
 - **Firebase Authentication** - Autenticação segura
@@ -125,6 +133,9 @@ Para a lista completa de funcionalidades e notas de arquitetura, consulte [docs/
 - **SheetJS** - Exportação Excel
 - **jsPDF** - Geração de PDFs
 - **Google Analytics** - Análise de uso
+- **Sistema de Notificações** - Notificações em tempo real
+- **Cache Inteligente** - Estratégias de cache otimizadas
+- **Backup Automático** - Sincronização automática
 
 ## 📱 **PWA Features**
 
@@ -401,7 +412,7 @@ Este projeto está sob a licença MIT. Veja o arquivo LICENSE para mais detalhes
 
 **Desenvolvido com ❤️ para controle financeiro eficiente e intuitivo.**
 
-**Versão atual: v4.2.0** 🚀
+**Versão atual: v4.36.0** 🚀
 
 **Status: ✅ APLICATIVO RODANDO 100%!** 🎉
 

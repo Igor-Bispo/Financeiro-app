@@ -2,6 +2,8 @@
 
 Este repositório contém um aplicativo PWA de controle financeiro com autenticação (Firebase), Firestore em tempo real, modo offline, relatórios e comandos de voz. É uma SPA roteada por hash (Vite) com organização por features.
 
+**Versão atual: v4.36.0** 🚀
+
 ## Como rodar localmente
 
 1) Requisitos: Node 18+ e npm
@@ -28,10 +30,14 @@ Observação: o projeto já inclui emulators no firebase.json para dev.
 - Recorrentes avançado (parcelas, dia do mês, logs, status)
 - Dashboard com resumo mensal e alertas
 - Analytics com gráficos e relatórios
-- Notificações e avisos de limite
+- Sistema de notificações em tempo real
+- Modal de notificações com ações
 - Backup/Export (JSON, Excel, PDF)
 - Reconhecimento de voz (Web Speech API)
 - PWA completo: cache, offline, background sync e push
+- Arquitetura modular com EventBus
+- Widgets modernos inspirados no Mobills
+- Correção de bugs em parcelas de recorrentes
 
 ## Novidades rápidas (Config, navegação e diagnóstico)
 
@@ -41,6 +47,9 @@ Observação: o projeto já inclui emulators no firebase.json para dev.
 - Botões de teste de notificação: enviar notificação de teste para Dono e para Usuário Compartilhado
 - Logout robusto com confirmação e telemetria local
 - Telemetria local de performance com exportação CSV (sem envio externo)
+- Sistema de notificações completo com filtros e ações
+- Dashboard com widgets modernos e progresso de parcelas
+- Correção de bugs em transações recorrentes
 
 ### Deep links e roteamento
 
@@ -60,8 +69,9 @@ Observação: o projeto já inclui emulators no firebase.json para dev.
 - app/: bootstrap e roteamento (entry → bootstrap → routes)
 - core/: utilitários, eventBus, store, config
 - data/: Firebase client e repositórios (CRUD/consultas)
-- features/: páginas, serviços e UI por domínio (transactions, categories, recorrentes, analytics, settings, etc.)
+- features/: páginas, serviços e UI por domínio (transactions, categories, recorrentes, analytics, settings, notifications, etc.)
 - ui/: componentes compartilhados (FAB, BottomNav, feedback)
+- utils/: utilitários gerais (cache, backup, etc.)
 
 Diagrama (alto nível):
 
