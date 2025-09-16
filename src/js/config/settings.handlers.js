@@ -632,56 +632,74 @@ window.clearOfflineCache = function () {
   }
 };
 
-window.showWhatsNew = function () {
+window.showWhatsNew = async function () {
   console.log('[DEBUG] showWhatsNew executada!');
   
-  const html = `
-    <div class="space-y-4">
-      <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-        <h3 class="font-semibold text-blue-800 dark:text-blue-200 mb-2">🆕 Novidades recentes</h3>
-        <ul class="text-sm text-blue-700 dark:text-blue-300 space-y-1 list-disc ml-4">
-          <li>Reestruturação dos handlers para maior estabilidade</li>
-          <li>Melhorias em notificações e preferências</li>
-          <li>Otimizações de performance em Settings</li>
-          <li>Correções na funcionalidade "O que mudou"</li>
-          <li>Atualização das informações de contato</li>
-        </ul>
+  try {
+    // Importar o changelog
+    const { getLatestChangeLog } = await import('@app/changelog.js');
+    const latestChangelog = getLatestChangeLog();
+    
+    if (!latestChangelog) {
+      console.warn('[DEBUG] Nenhum changelog encontrado');
+      fallbackAlert();
+      return;
+    }
+    
+    console.log('[DEBUG] Changelog carregado:', latestChangelog);
+    
+    // Gerar HTML do changelog
+    const html = `
+      <div class="space-y-4">
+        <div class="bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20 p-4 rounded-lg border border-violet-200 dark:border-violet-700">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="text-2xl">🚀</span>
+            <h3 class="font-bold text-violet-800 dark:text-violet-200 text-lg">${latestChangelog.title}</h3>
+          </div>
+          <p class="text-sm text-violet-600 dark:text-violet-400 mb-3">📅 ${latestChangelog.date}</p>
+          <ul class="text-sm text-violet-700 dark:text-violet-300 space-y-2">
+            ${latestChangelog.items.map(item => `<li class="flex items-start gap-2"><span class="text-violet-500 mt-1">•</span><span>${item}</span></li>`).join('')}
+          </ul>
+        </div>
+        <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+          <h4 class="font-semibold text-blue-800 dark:text-blue-200 mb-2">💡 Dica</h4>
+          <p class="text-sm text-blue-700 dark:text-blue-300">
+            Esta versão inclui melhorias significativas na interface de login e correções importantes. 
+            Recomendamos atualizar para a versão mais recente para uma melhor experiência.
+          </p>
+        </div>
       </div>
-      <div class="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
-        <h4 class="font-semibold text-green-800 dark:text-green-200 mb-2">✨ Melhorias técnicas</h4>
-        <ul class="text-sm text-green-700 dark:text-green-300 space-y-1 list-disc ml-4">
-          <li>Sistema de debug aprimorado</li>
-          <li>Handlers mais robustos e confiáveis</li>
-          <li>Melhor tratamento de erros</li>
-          <li>Interface mais responsiva</li>
-        </ul>
-      </div>
-    </div>`;
-  
-  console.log('[DEBUG] Verificando disponibilidade do Modal...');
-  console.log('[DEBUG] window.Modal disponível:', !!window.Modal);
-  
-  if (window.Modal && typeof window.Modal === 'function') {
-    console.log('[DEBUG] Abrindo modal com window.Modal...');
-    try {
-      const modal = window.Modal({ 
-        title: '🆕 O que mudou', 
-        content: html,
-        onClose: () => console.log('[DEBUG] Modal "O que mudou" fechado')
-      });
-      console.log('[DEBUG] Modal criado com sucesso:', modal);
-    } catch (error) {
-      console.error('[DEBUG] Erro ao criar modal:', error);
+    `;
+    
+    console.log('[DEBUG] Verificando disponibilidade do Modal...');
+    console.log('[DEBUG] window.Modal disponível:', !!window.Modal);
+    
+    if (window.Modal && typeof window.Modal === 'function') {
+      console.log('[DEBUG] Abrindo modal com window.Modal...');
+      try {
+        const modal = window.Modal({ 
+          title: '🆕 O que mudou', 
+          content: html,
+          onClose: () => console.log('[DEBUG] Modal "O que mudou" fechado')
+        });
+        console.log('[DEBUG] Modal criado com sucesso:', modal);
+      } catch (error) {
+        console.error('[DEBUG] Erro ao criar modal:', error);
+        fallbackAlert();
+      }
+    } else {
+      console.log('[DEBUG] Modal não disponível, usando fallback...');
       fallbackAlert();
     }
-  } else {
-    console.log('[DEBUG] Modal não disponível, usando fallback...');
+    
+  } catch (error) {
+    console.error('[DEBUG] Erro ao carregar changelog:', error);
     fallbackAlert();
   }
   
   function fallbackAlert() {
     console.log('[DEBUG] Executando fallback alert...');
-    alert('🆕 Novidades:\n\n- Reestruturação dos handlers\n- Melhorias em notificações\n- Otimizações de performance\n- Correções na funcionalidade "O que mudou"\n- Atualização das informações de contato');
+    alert('🆕 Novidades v4.37.0:\n\n🎨 Interface de Login Premium com Glass Morphism\n✨ Animações Avançadas (Float, Glow, Shimmer)\n🌈 Gradientes Dinâmicos Violet → Purple → Fuchsia\n🎯 Elementos Decorativos Flutuantes\n🔧 Correção do Botão de Logout\n💫 Efeitos Visuais Premium\n📱 Tipografia com Gradientes\n🛡️ Segurança Aprimorada\n🚀 Nome "Servo Tech Finanças"\n⚡ Performance Otimizada');
   }
 };
 
