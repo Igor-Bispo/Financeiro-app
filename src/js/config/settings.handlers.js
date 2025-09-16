@@ -664,8 +664,8 @@ window.showWhatsNew = async function () {
         <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
           <h4 class="font-semibold text-blue-800 dark:text-blue-200 mb-2">💡 Dica</h4>
           <p class="text-sm text-blue-700 dark:text-blue-300">
-            Esta versão inclui melhorias significativas na interface de login e correções importantes. 
-            Recomendamos atualizar para a versão mais recente para uma melhor experiência.
+            Esta versão inclui uma reorganização completa das abas com padrão compacto, melhorando significativamente a experiência mobile. 
+            Todas as 7 abas principais foram otimizadas para uma interface mais limpa e organizada.
           </p>
         </div>
       </div>
@@ -699,7 +699,7 @@ window.showWhatsNew = async function () {
   
   function fallbackAlert() {
     console.log('[DEBUG] Executando fallback alert...');
-    alert('🆕 Novidades v4.37.0:\n\n🎨 Interface de Login Premium com Glass Morphism\n✨ Animações Avançadas (Float, Glow, Shimmer)\n🌈 Gradientes Dinâmicos Violet → Purple → Fuchsia\n🎯 Elementos Decorativos Flutuantes\n🔧 Correção do Botão de Logout\n💫 Efeitos Visuais Premium\n📱 Tipografia com Gradientes\n🛡️ Segurança Aprimorada\n🚀 Nome "Servo Tech Finanças"\n⚡ Performance Otimizada');
+    alert('🆕 Novidades v4.38.0:\n\n📊 Dashboard: Resumo compacto com métricas essenciais\n💰 Transações: Interface otimizada com 3 métricas principais\n📂 Categorias: Cards compactos com resumo financeiro\n🔄 Recorrentes: Seções organizadas por status\n📈 Analytics: Gráficos em layout compacto\n🔔 Notificações: Filtros organizados em seções\n⚙️ Config: Seções lógicas com cards compactos\n🎯 Espaçamento Otimizado: Melhor aproveitamento do espaço\n📱 UX Mobile Aprimorada: Interface limpa e organizada\n⚡ Performance Melhorada: Carregamento mais rápido\n🎨 Design Consistente: Padrão visual unificado');
   }
 };
 

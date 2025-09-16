@@ -84,16 +84,23 @@ export function getChangeLog(version) {
 
 export function getLatestChangeLog() {
   const versions = Object.keys(CHANGELOG);
-  // Ordena versões semântico simples (assume mesmo major/minor, compara patch)
+  // Ordena versões semântico simples (major.minor.patch)
   versions.sort((a, b) => {
     const pa = a.split('.').map(Number);
     const pb = b.split('.').map(Number);
-    for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
-      const da = pa[i] || 0;
-      const db = pb[i] || 0;
-      if (da !== db) return db - da;
-    }
+    
+    // Compara major
+    if (pa[0] !== pb[0]) return pb[0] - pa[0];
+    // Compara minor
+    if (pa[1] !== pb[1]) return pb[1] - pa[1];
+    // Compara patch
+    if (pa[2] !== pb[2]) return pb[2] - pa[2];
+    
     return 0;
   });
+  
+  console.log('[DEBUG] Versões ordenadas:', versions);
+  console.log('[DEBUG] Versão mais recente:', versions[0]);
+  
   return CHANGELOG[versions[0]];
 }
