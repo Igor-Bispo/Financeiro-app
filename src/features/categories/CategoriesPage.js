@@ -252,86 +252,62 @@ export async function renderCategories() {
               <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">📊 Visão Geral</h2>
             </div>
             
-            <div class="bg-gradient-to-br from-purple-500 via-pink-500 to-indigo-600 rounded-2xl shadow-xl p-6 md:p-8 text-white mb-6">
-              <!-- Header do Card -->
-                <div class="flex items-center justify-between mb-6">
+            <div class="bg-gradient-to-br from-slate-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-600 p-6 mb-6">
+              <!-- Header Simplificado -->
+              <div class="flex items-center justify-between mb-4">
                 <div>
-                  <div class="flex items-center gap-2">
-                    <h3 class="text-xl md:text-2xl font-bold">Controle de Categorias</h3>
-                  </div>
-                  <p class="text-sm opacity-90">${totalCategorias} categorias cadastradas</p>
-                  <p class="text-xs opacity-90 mt-1">Período: ${String(selMonth).padStart(2,'0')}/${selYear}</p>
+                  <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">📊 Resumo das Categorias</h3>
+                  <p class="text-sm text-gray-600 dark:text-gray-400">${totalCategorias} categorias • ${String(selMonth).padStart(2,'0')}/${selYear}</p>
                 </div>
                 <div class="text-right">
-                  <div class="text-2xl md:text-3xl font-bold ${categoriasEmAlerta > 0 ? 'text-red-200' : 'text-green-200'}">
+                  <div class="text-lg font-semibold ${categoriasEmAlerta > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}">
                     ${categoriasEmAlerta}
                   </div>
-                  <p class="text-xs opacity-90">${categoriasEmAlerta > 0 ? '⚠️ Alertas' : '✅ Sem Alertas'}</p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">${categoriasEmAlerta > 0 ? 'Alertas' : 'OK'}</p>
                 </div>
               </div>
               
-              <!-- Grid de Métricas -->
-              <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div class="bg-white bg-opacity-15 backdrop-blur-sm rounded-xl p-4 text-center">
-                  <div class="text-2xl mb-2">📂</div>
-                  <div class="text-2xl md:text-3xl font-bold">${totalCategorias}</div>
-                  <div class="text-sm opacity-90">Total</div>
+              <!-- Métricas Essenciais -->
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center border border-gray-200 dark:border-gray-600">
+                  <div class="text-lg font-semibold text-gray-800 dark:text-gray-200">${totalCategorias}</div>
+                  <div class="text-xs text-gray-600 dark:text-gray-400">Total</div>
                 </div>
                 
-                <div class="bg-white bg-opacity-15 backdrop-blur-sm rounded-xl p-4 text-center">
-                  <div class="text-2xl mb-2">🎯</div>
-                  <div class="text-2xl md:text-3xl font-bold text-blue-200">${categoriasComLimite}</div>
-                  <div class="text-sm opacity-90">Com Limite</div>
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center border border-gray-200 dark:border-gray-600">
+                  <div class="text-lg font-semibold text-blue-600 dark:text-blue-400">${categoriasComLimite}</div>
+                  <div class="text-xs text-gray-600 dark:text-gray-400">Com Limite</div>
                 </div>
                 
-                <div class="bg-white bg-opacity-15 backdrop-blur-sm rounded-xl p-4 text-center">
-                  <div class="text-2xl mb-2">💚</div>
-                  <div class="text-2xl md:text-3xl font-bold text-green-200">${categoriasReceita}</div>
-                  <div class="text-sm opacity-90">Receitas</div>
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center border border-gray-200 dark:border-gray-600">
+                  <div class="text-lg font-semibold text-green-600 dark:text-green-400">${categoriasReceita}</div>
+                  <div class="text-xs text-gray-600 dark:text-gray-400">Receitas</div>
                 </div>
                 
-                <div class="bg-white bg-opacity-15 backdrop-blur-sm rounded-xl p-4 text-center">
-                  <div class="text-2xl mb-2">💸</div>
-                  <div class="text-2xl md:text-3xl font-bold text-red-200">${categoriasDespesa}</div>
-                  <div class="text-sm opacity-90">Despesas</div>
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center border border-gray-200 dark:border-gray-600">
+                  <div class="text-lg font-semibold text-red-600 dark:text-red-400">${categoriasDespesa}</div>
+                  <div class="text-xs text-gray-600 dark:text-gray-400">Despesas</div>
                 </div>
               </div>
 
-              <!-- Totais agregados de Despesas (Limite, Gasto do mês e Saldo) -->
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
-                <div class="bg-white bg-opacity-15 backdrop-blur-sm rounded-xl p-4 text-center">
-                  <div class="text-xs opacity-90">Limite Total (Despesas)</div>
-                  <div class="text-xl md:text-2xl font-bold">R$ ${totalLimiteDespesas.toFixed(2)}</div>
-                </div>
-                <div class="bg-white bg-opacity-15 backdrop-blur-sm rounded-xl p-4 text-center">
-                  <div class="text-xs opacity-90">Gasto do Mês</div>
-                  <div class="text-xl md:text-2xl font-bold text-red-200">R$ ${totalGastoDespesas.toFixed(2)}</div>
-                </div>
-                <div class="bg-white bg-opacity-15 backdrop-blur-sm rounded-xl p-4 text-center">
-                  <div class="flex items-center justify-center gap-2">
-                    <div class="text-xs opacity-90">Saldo</div>
-                    ${saldoDespesas < 0 ? '<span class="px-2 py-0.5 text-[10px] rounded-full bg-red-500/80 text-white">negativo</span>' : ''}
+              <!-- Resumo Financeiro Simplificado -->
+              <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div class="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-600">
+                    <div class="text-xs text-gray-600 dark:text-gray-400 mb-1">Limite de Despesas</div>
+                    <div class="text-lg font-semibold text-gray-800 dark:text-gray-200">R$ ${totalLimiteDespesas.toFixed(2)}</div>
+                    <div class="text-xs ${saldoDespesas < 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}">
+                      Saldo: R$ ${saldoDespesas.toFixed(2)}
+                    </div>
                   </div>
-                  <div class="text-xl md:text-2xl font-bold ${saldoDespesas < 0 ? 'text-red-200' : 'text-green-200'}">R$ ${saldoDespesas.toFixed(2)}</div>
-                </div>
-              </div>
-
-              <!-- Totais agregados de Receitas (Meta, Recebido do mês e Saldo) -->
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
-                <div class="bg-white bg-opacity-15 backdrop-blur-sm rounded-xl p-4 text-center">
-                  <div class="text-xs opacity-90">Meta Total (Receitas)</div>
-                  <div class="text-xl md:text-2xl font-bold">R$ ${totalMetaReceitas.toFixed(2)}</div>
-                </div>
-                <div class="bg-white bg-opacity-15 backdrop-blur-sm rounded-xl p-4 text-center">
-                  <div class="text-xs opacity-90">Recebido do Mês</div>
-                  <div class="text-xl md:text-2xl font-bold text-green-200">R$ ${totalRecebidoReceitas.toFixed(2)}</div>
-                </div>
-                <div class="bg-white bg-opacity-15 backdrop-blur-sm rounded-xl p-4 text-center">
-                  <div class="flex items-center justify-center gap-2">
-                    <div class="text-xs opacity-90">Saldo</div>
-                    ${saldoReceitas < 0 ? '<span class="px-2 py-0.5 text-[10px] rounded-full bg-red-500/80 text-white">negativo</span>' : ''}
+                  
+                  <div class="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-600">
+                    <div class="text-xs text-gray-600 dark:text-gray-400 mb-1">Meta de Receitas</div>
+                    <div class="text-lg font-semibold text-gray-800 dark:text-gray-200">R$ ${totalMetaReceitas.toFixed(2)}</div>
+                    <div class="text-xs ${saldoReceitas < 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}">
+                      Saldo: R$ ${saldoReceitas.toFixed(2)}
+                    </div>
                   </div>
-                  <div class="text-xl md:text-2xl font-bold ${saldoReceitas < 0 ? 'text-red-200' : 'text-green-200'}">R$ ${saldoReceitas.toFixed(2)}</div>
                 </div>
               </div>
             </div>
