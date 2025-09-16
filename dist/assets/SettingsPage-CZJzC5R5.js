@@ -1,210 +1,130 @@
-
-// Controle global de animações
-function setAnimationsEnabled(enabled) {
-    if (enabled) {
-        document.body.classList.remove('no-animations');
-        localStorage.setItem('animationsEnabled', '1');
-    } else {
-        document.body.classList.add('no-animations');
-        localStorage.setItem('animationsEnabled', '0');
-    }
-}
-
-// Restaurar estado ao carregar
-document.addEventListener('DOMContentLoaded', () => {
-    const saved = localStorage.getItem('animationsEnabled');
-    const enabled = saved === null ? true : saved === '1';
-    setAnimationsEnabled(enabled);
-    const toggle = document.getElementById('animations-toggle');
-    if (toggle) {
-        toggle.checked = enabled;
-        toggle.addEventListener('change', (e) => {
-            setAnimationsEnabled(e.target.checked);
-        });
-    }
-});
-
-function renderEmptyState(icon, title, description) {
-    return `
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/main-D08vCkb1.js","assets/main-CHJigVyv.css"])))=>i.map(i=>d[i]);
+import{_ as m,e as c}from"./main-D08vCkb1.js";import{loadBudgetInvitations as y,loadSentBudgetInvitations as x,fetchUsersInfo as f,fetchUserInfo as h}from"./settings.service-DIKD--c7.js";function b(r){r?(document.body.classList.remove("no-animations"),localStorage.setItem("animationsEnabled","1")):(document.body.classList.add("no-animations"),localStorage.setItem("animationsEnabled","0"))}document.addEventListener("DOMContentLoaded",()=>{const r=localStorage.getItem("animationsEnabled"),e=r===null?!0:r==="1";b(e);const s=document.getElementById("animations-toggle");s&&(s.checked=e,s.addEventListener("change",a=>{b(a.target.checked)}))});function u(r,e,s){return`
     <div class="empty-state">
-        <div class="empty-icon">${icon}</div>
-        <div class="empty-text">${title}</div>
-        <div class="empty-description">${description}</div>
+        <div class="empty-icon">${r}</div>
+        <div class="empty-text">${e}</div>
+        <div class="empty-description">${s}</div>
     </div>
-    `;
-}
-
-function renderSharedWithMe(budgets, currentUser, currentBudget) {
-    const me = currentUser?.uid;
-    const shared = (budgets || []).filter(b => b && (b.isOwner === false || (me && b.userId && b.userId !== me)));
-    if (!shared.length) {
-        return renderEmptyState('🤝', 'Nenhum orçamento compartilhado', 'Convites que você aceitar aparecerão aqui.');
-    }
-    return `
+    `}function k(r,e,s){const a=e?.uid,d=(r||[]).filter(t=>t&&(t.isOwner===!1||a&&t.userId&&t.userId!==a));return d.length?`
         <div class="space-y-4">
-            ${shared.map(budget => `
+            ${d.map(t=>`
                 <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
                     <div class="p-5">
                         <div class="flex justify-between items-start">
                             <div>
-                                <p class="font-bold text-lg text-gray-900 dark:text-gray-100">${budget.nome || 'Orçamento'}</p>
+                                <p class="font-bold text-lg text-gray-900 dark:text-gray-100">${t.nome||"Orçamento"}</p>
                                 <p class="text-xs text-green-600 dark:text-green-400 font-semibold bg-green-100 dark:bg-green-900/50 rounded-full px-2 py-0.5 inline-block mt-1">Compartilhado</p>
                             </div>
-                            ${budget.id !== currentBudget?.id ? `
-                                <button type="button" class="enter-budget-button u-btn u-btn--primary" data-budget-id="${budget.id}" data-budget-name="${(budget.nome || 'Orçamento').replace(/\"/g, '&quot;')}" title="Entrar neste orçamento">
+                            ${t.id!==s?.id?`
+                                <button type="button" class="enter-budget-button u-btn u-btn--primary" data-budget-id="${t.id}" data-budget-name="${(t.nome||"Orçamento").replace(/\"/g,"&quot;")}" title="Entrar neste orçamento">
                                     <span class="enter-icon">🚪</span><span class="enter-text">Entrar</span>
                                 </button>
-                            ` : `
+                            `:`
                                 <div class="current-budget-badge"><span class="current-icon">✅</span><span class="current-text">Ativo</span></div>
                             `}
                         </div>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-3 truncate">ID: ${budget.id}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-3 truncate">ID: ${t.id}</p>
                     </div>
                     <div class="bg-gray-50 dark:bg-gray-800/50 px-5 py-3 flex justify-end items-center gap-2">
-                        <button class="u-btn u-btn--ghost text-sm copy-budget-id-btn" data-budget-id="${budget.id}" title="Copiar ID do orçamento">📋 Copiar ID</button>
-                        <button class="u-btn u-btn--danger text-sm leave-budget-btn" data-budget-id="${budget.id}" data-budget-name="${(budget.nome || 'Orçamento').replace(/"/g, '&quot;')}" title="Sair deste orçamento">🚪 Sair</button>
+                        <button class="u-btn u-btn--ghost text-sm copy-budget-id-btn" data-budget-id="${t.id}" title="Copiar ID do orçamento">📋 Copiar ID</button>
+                        <button class="u-btn u-btn--danger text-sm leave-budget-btn" data-budget-id="${t.id}" data-budget-name="${(t.nome||"Orçamento").replace(/"/g,"&quot;")}" title="Sair deste orçamento">🚪 Sair</button>
                     </div>
                 </div>
-            `).join('')}
+            `).join("")}
         </div>
-    `;
-}
-
-function renderMyBudgets(budgets, currentUser, currentBudget) {
-    const me = currentUser?.uid;
-    const owned = (budgets || []).filter(b => b && (b.isOwner !== false) && (!me || b.userId === me));
-    if (!owned.length) {
-        return renderEmptyState('🗂️', 'Nenhum orçamento próprio', 'Crie um novo orçamento para começar.');
-    }
-    return `
+    `:u("🤝","Nenhum orçamento compartilhado","Convites que você aceitar aparecerão aqui.")}function w(r,e,s){const a=e?.uid,d=(r||[]).filter(t=>t&&t.isOwner!==!1&&(!a||t.userId===a));return d.length?`
         <div class="space-y-4">
-            ${owned.map(budget => `
-                <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border ${budget.id === currentBudget?.id ? 'border-blue-500' : 'border-gray-200 dark:border-gray-700'} overflow-hidden">
+            ${d.map(t=>`
+                <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border ${t.id===s?.id?"border-blue-500":"border-gray-200 dark:border-gray-700"} overflow-hidden">
                     <div class="p-5">
                         <div class="flex justify-between items-start">
                             <div>
-                                <p class="font-bold text-lg text-gray-900 dark:text-gray-100">${budget.nome}</p>
-                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Criado em ${budget.createdAt ? new Date(budget.createdAt.seconds * 1000).toLocaleDateString('pt-BR') : 'Data não disponível'}</p>
+                                <p class="font-bold text-lg text-gray-900 dark:text-gray-100">${t.nome}</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Criado em ${t.createdAt?new Date(t.createdAt.seconds*1e3).toLocaleDateString("pt-BR"):"Data não disponível"}</p>
                             </div>
-                            ${budget.id !== currentBudget?.id ? `
-                                <button type="button" class="enter-budget-button u-btn u-btn--primary" data-budget-id="${budget.id}" data-budget-name="${(budget.nome || 'Orçamento').replace(/"/g, '&quot;')}" title="Entrar neste orçamento">
+                            ${t.id!==s?.id?`
+                                <button type="button" class="enter-budget-button u-btn u-btn--primary" data-budget-id="${t.id}" data-budget-name="${(t.nome||"Orçamento").replace(/"/g,"&quot;")}" title="Entrar neste orçamento">
                                     <span class="enter-icon">🚪</span><span class="enter-text">Entrar</span>
                                 </button>
-                            ` : `
+                            `:`
                                 <div class="current-budget-badge"><span class="current-icon">✅</span><span class="current-text">Ativo</span></div>
                             `}
                         </div>
                     </div>
                     <div class="bg-gray-50 dark:bg-gray-800/50 px-5 py-3 flex justify-end items-center gap-2">
-                        <button class="u-btn u-btn--ghost text-sm copy-budget-id-btn" data-budget-id="${budget.id}" title="Copiar ID do orçamento">📋 Copiar ID</button>
-                        <button class="u-btn u-btn--danger text-sm delete-budget-btn" data-budget-id="${budget.id}" data-budget-name="${(budget.nome || 'Orçamento').replace(/"/g, '&quot;')}" title="Excluir orçamento">🗑️ Excluir</button>
+                        <button class="u-btn u-btn--ghost text-sm copy-budget-id-btn" data-budget-id="${t.id}" title="Copiar ID do orçamento">📋 Copiar ID</button>
+                        <button class="u-btn u-btn--danger text-sm delete-budget-btn" data-budget-id="${t.id}" data-budget-name="${(t.nome||"Orçamento").replace(/"/g,"&quot;")}" title="Excluir orçamento">🗑️ Excluir</button>
                     </div>
                 </div>
-            `).join('')}
+            `).join("")}
         </div>
-    `;
-}
-
-function renderUsersWithAccess(usersWithAccess) {
-    if (!usersWithAccess || usersWithAccess.length === 0) {
-        return `
+    `:u("🗂️","Nenhum orçamento próprio","Crie um novo orçamento para começar.")}function S(r){return!r||r.length===0?`
         <div class="text-center py-8">
             <div class="text-4xl mb-3">👥</div>
             <div class="text-gray-500 dark:text-gray-400">Nenhum usuário compartilhado</div>
             <div class="text-sm text-gray-400 dark:text-gray-500 mt-1">Compartilhe seu orçamento para colaborar</div>
         </div>
-        `;
-    }
-    return `
+        `:`
     <div class="space-y-3">
-        ${usersWithAccess.map(user => `
+        ${r.map(e=>`
             <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                 <div class="flex items-center gap-3">
                     <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
-                        ${user.email?.charAt(0).toUpperCase() || 'U'}
+                        ${e.email?.charAt(0).toUpperCase()||"U"}
                     </div>
                     <div>
-                        <div class="font-medium text-gray-900 dark:text-gray-100">${user.email || 'Usuário'}</div>
+                        <div class="font-medium text-gray-900 dark:text-gray-100">${e.email||"Usuário"}</div>
                         <div class="text-xs text-gray-500 dark:text-gray-400">Membro</div>
                     </div>
                 </div>
-                <button class="remove-user-btn u-btn u-btn--danger text-sm" data-uid="${user.uid}" data-email="${user.email}" title="Remover usuário">🗑️ Remover</button>
+                <button class="remove-user-btn u-btn u-btn--danger text-sm" data-uid="${e.uid}" data-email="${e.email}" title="Remover usuário">🗑️ Remover</button>
             </div>
-        `).join('')}
+        `).join("")}
     </div>
-    `;
-}
-
-function renderSentInvitations(sentInvitations) {
-    if (!sentInvitations || sentInvitations.length === 0) {
-        return `
+    `}function $(r){return!r||r.length===0?`
         <div class="text-center py-8">
             <div class="text-4xl mb-3">📤</div>
             <div class="text-gray-500 dark:text-gray-400">Nenhum convite pendente</div>
             <div class="text-sm text-gray-400 dark:text-gray-500 mt-1">Convites enviados aparecerão aqui</div>
-        </div>`;
-    }
-    return `
+        </div>`:`
     <div class="space-y-3">
-        ${sentInvitations.map(invite => `
-            <div class="flex items-center justify-between p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800" data-invite-id="${invite.id}">
+        ${r.map(e=>`
+            <div class="flex items-center justify-between p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800" data-invite-id="${e.id}">
                 <div class="flex items-center gap-3">
                     <div class="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-white text-sm font-medium">📤</div>
                     <div>
-                        <div class="font-medium text-gray-900 dark:text-gray-100">${invite.email}</div>
-                        <div class="text-xs text-orange-600 dark:text-orange-400">Enviado em ${invite.sentAt ? new Date(invite.sentAt.seconds * 1000).toLocaleDateString('pt-BR') : '—'}</div>
+                        <div class="font-medium text-gray-900 dark:text-gray-100">${e.email}</div>
+                        <div class="text-xs text-orange-600 dark:text-orange-400">Enviado em ${e.sentAt?new Date(e.sentAt.seconds*1e3).toLocaleDateString("pt-BR"):"—"}</div>
                     </div>
                 </div>
                 <div class="flex gap-2">
-                    <button class="cancel-invitation-btn u-btn u-btn--ghost text-sm" data-invite-id="${invite.id}" title="Cancelar convite">❌ Cancelar</button>
+                    <button class="cancel-invitation-btn u-btn u-btn--ghost text-sm" data-invite-id="${e.id}" title="Cancelar convite">❌ Cancelar</button>
                 </div>
             </div>
-        `).join('')}
-    </div>`;
-}
-
-function renderPendingInvitations(pendingInvitations) {
-    if (!pendingInvitations || pendingInvitations.length === 0) {
-        return `
+        `).join("")}
+    </div>`}function j(r){return!r||r.length===0?`
         <div class="text-center py-8">
             <div class="text-4xl mb-3">📬</div>
             <div class="text-gray-500 dark:text-gray-400">Nenhum convite pendente</div>
             <div class="text-sm text-gray-400 dark:text-gray-500 mt-1">Novos convites aparecerão aqui</div>
-        </div>`;
-    }
-    return `
+        </div>`:`
     <div class="space-y-3">
-        ${pendingInvitations.map(invite => `
-            <div class="flex items-center justify-between p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800" data-invite-id="${invite.id}" data-budget-id="${invite.budgetId}">
+        ${r.map(e=>`
+            <div class="flex items-center justify-between p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800" data-invite-id="${e.id}" data-budget-id="${e.budgetId}">
                 <div class="flex items-center gap-3">
                     <div class="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white text-sm font-medium">📬</div>
                     <div>
-                        <div class="font-medium text-gray-900 dark:text-gray-100">${invite.budgetName}</div>
-                        <div class="text-xs text-purple-600 dark:text-purple-400">Convite de ${invite.ownerEmail}</div>
+                        <div class="font-medium text-gray-900 dark:text-gray-100">${e.budgetName}</div>
+                        <div class="text-xs text-purple-600 dark:text-purple-400">Convite de ${e.ownerEmail}</div>
                     </div>
                 </div>
                 <div class="flex gap-2">
-                    <button class="accept-invitation-btn u-btn u-btn--primary text-sm" data-invite-id="${invite.id}" title="Aceitar convite">✅ Aceitar</button>
-                    <button class="decline-invitation-btn u-btn u-btn--danger text-sm" data-invite-id="${invite.id}" title="Recusar convite">❌ Recusar</button>
+                    <button class="accept-invitation-btn u-btn u-btn--primary text-sm" data-invite-id="${e.id}" title="Aceitar convite">✅ Aceitar</button>
+                    <button class="decline-invitation-btn u-btn u-btn--danger text-sm" data-invite-id="${e.id}" title="Recusar convite">❌ Recusar</button>
                 </div>
             </div>
-        `).join('')}
-    </div>`;
-}
-
-export function generateSettingsHTML(state) {
-    const {
-    currentUser,
-    currentBudget,
-    budgets,
-    usersWithAccess,
-    ownerDisplay,
-    pendingInvitations,
-    sentInvitations,
-    appVersion
-    } = state;
-
-    return `
+        `).join("")}
+    </div>`}function C(r){const{currentUser:e,currentBudget:s,budgets:a,usersWithAccess:d,ownerDisplay:t,pendingInvitations:o,sentInvitations:l,appVersion:n}=r;return`
     <div class="tab-container">
         <div class="tab-header">
             <h2 class="tab-title-highlight">⚙️ Configurações</h2>
@@ -215,21 +135,21 @@ export function generateSettingsHTML(state) {
                 <div class="content-spacing">
                     
                     <!-- Seção de Conta -->
-                    ${currentUser ? `
+                    ${e?`
                     <div class="mb-6">
                         <h2 class="section-title red-border">🔐 Conta</h2>
                         <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between">
                             <div class="min-w-0 mr-4">
                                 <div class="text-sm text-gray-600 dark:text-gray-400">Conectado como</div>
-                                <div class="font-medium text-gray-900 dark:text-gray-100 truncate" title="${currentUser.email || ''}">${currentUser.email || 'Usuário'}</div>
+                                <div class="font-medium text-gray-900 dark:text-gray-100 truncate" title="${e.email||""}">${e.email||"Usuário"}</div>
                             </div>
                             <button id="btn-logout" class="u-btn u-btn--danger">Sair</button>
                         </div>
                     </div>
-                    ` : ''}
+                    `:""}
 
                     <!-- Seção de Orçamento Atual -->
-                    ${currentBudget ? `
+                    ${s?`
                     <div class="mb-8">
                         <h2 class="section-title green-border">📋 Orçamento Atual</h2>
                         <div class="bg-gradient-to-br from-green-500 via-emerald-500 to-teal-600 rounded-2xl shadow-xl p-6 text-white">
@@ -237,26 +157,26 @@ export function generateSettingsHTML(state) {
                                 <div class="flex items-center gap-4">
                                     <div class="w-16 h-16 rounded-full bg-white bg-opacity-20 flex items-center justify-center text-3xl">📋</div>
                                     <div>
-                                        <h3 class="text-xl font-bold">${currentBudget.nome || 'Orçamento'}</h3>
+                                        <h3 class="text-xl font-bold">${s.nome||"Orçamento"}</h3>
                                         <p class="text-sm opacity-90">Orçamento Ativo</p>
                                     </div>
                                 </div>
                                 <button id="edit-budget-name-btn" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white p-3 rounded-xl">✏️</button>
                             </div>
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div class="bg-white bg-opacity-15 p-4 rounded-xl"><div class="text-lg font-bold">${currentBudget.createdAt ? new Date(currentBudget.createdAt.seconds * 1000).toLocaleDateString('pt-BR') : 'N/A'}</div><div class="text-sm opacity-90">Data de Criação</div></div>
-                                <div class="bg-white bg-opacity-15 p-4 rounded-xl"><div class="text-lg font-bold">${usersWithAccess.length + 1}</div><div class="text-sm opacity-90">Usuários</div></div>
-                                <div class="bg-white bg-opacity-15 p-4 rounded-xl"><div class="text-lg font-bold truncate" title="${ownerDisplay}">${ownerDisplay}</div><div class="text-sm opacity-90">Proprietário</div></div>
+                                <div class="bg-white bg-opacity-15 p-4 rounded-xl"><div class="text-lg font-bold">${s.createdAt?new Date(s.createdAt.seconds*1e3).toLocaleDateString("pt-BR"):"N/A"}</div><div class="text-sm opacity-90">Data de Criação</div></div>
+                                <div class="bg-white bg-opacity-15 p-4 rounded-xl"><div class="text-lg font-bold">${d.length+1}</div><div class="text-sm opacity-90">Usuários</div></div>
+                                <div class="bg-white bg-opacity-15 p-4 rounded-xl"><div class="text-lg font-bold truncate" title="${t}">${t}</div><div class="text-sm opacity-90">Proprietário</div></div>
                             </div>
                         </div>
                     </div>
-                    ` : ''}
+                    `:""}
 
                     <!-- Seção de Usuários e Compartilhamento -->
                     <div class="mb-8">
                         <h2 class="section-title blue-border">👥 Usuários & Compartilhamento</h2>
                         <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-4">
-                            ${renderUsersWithAccess(usersWithAccess)}
+                            ${S(d)}
                         </div>
                     </div>
 
@@ -264,7 +184,7 @@ export function generateSettingsHTML(state) {
                     <div class="mb-8">
                       <h2 class="section-title orange-border">📤 Convites Pendentes</h2>
                       <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-4">
-                        ${renderSentInvitations(sentInvitations)}
+                        ${$(l)}
                       </div>
                     </div>
 
@@ -272,7 +192,7 @@ export function generateSettingsHTML(state) {
                     <div class="mb-8">
                       <h2 class="section-title purple-border">📬 Convites Recebidos</h2>
                       <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-4">
-                        ${renderPendingInvitations(pendingInvitations)}
+                        ${j(o)}
                       </div>
                     </div>
 
@@ -280,7 +200,7 @@ export function generateSettingsHTML(state) {
                     <div class="mb-8">
                         <h2 class="section-title blue-border">🤝 Orçamentos Compartilhados com Você</h2>
                         <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-4">
-                        ${renderSharedWithMe(budgets, currentUser, currentBudget)}
+                        ${k(a,e,s)}
                         </div>
                     </div>
 
@@ -288,7 +208,7 @@ export function generateSettingsHTML(state) {
                     <div class="mb-8">
                         <h2 class="section-title green-border">🔗 Compartilhar Orçamento</h2>
                         <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-4">
-                            ${currentBudget ? `
+                            ${s?`
                                 <div class="space-y-4">
                                     <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
                                         <div class="flex items-center gap-2 mb-2">
@@ -307,7 +227,7 @@ export function generateSettingsHTML(state) {
                                                                             </button>
                                                                         </form>
                                 </div>
-                            ` : `
+                            `:`
                                 <div class="text-center py-8">
                                     <div class="text-4xl mb-3">🔗</div>
                                     <div class="text-gray-500 dark:text-gray-400">Nenhum orçamento selecionado</div>
@@ -321,7 +241,7 @@ export function generateSettingsHTML(state) {
                     <div class="mb-8">
                         <h2 class="section-title blue-border">📁 Meus Orçamentos</h2>
                         <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-4">
-                        ${renderMyBudgets(budgets, currentUser, currentBudget)}
+                        ${w(a,e,s)}
                         <button id="create-new-budget-btn" class="create-button u-btn u-btn--primary mt-5 w-full">➕ Criar Novo Orçamento</button>
                         </div>
                     </div>
@@ -660,7 +580,7 @@ export function generateSettingsHTML(state) {
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                                         <div class="flex justify-between">
                                             <span class="font-medium text-gray-700 dark:text-gray-300">Versão:</span>
-                                            <span class="text-gray-900 dark:text-gray-100">${appVersion}</span>
+                                            <span class="text-gray-900 dark:text-gray-100">${n}</span>
                                         </div>
                                         <div class="flex justify-between">
                                             <span class="font-medium text-gray-700 dark:text-gray-300">SW Versão:</span>
@@ -692,7 +612,7 @@ export function generateSettingsHTML(state) {
                                         </div>
                                         <div class="flex justify-between col-span-1 md:col-span-2">
                                             <span class="font-medium text-gray-700 dark:text-gray-300">Última verificação de update:</span>
-                                            <span class="text-gray-900 dark:text-gray-100">${new Date().toLocaleDateString('pt-BR')}, ${new Date().toLocaleTimeString('pt-BR')}</span>
+                                            <span class="text-gray-900 dark:text-gray-100">${new Date().toLocaleDateString("pt-BR")}, ${new Date().toLocaleTimeString("pt-BR")}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -736,5 +656,4 @@ export function generateSettingsHTML(state) {
             </div>
         </div>
     </div>
-    `;
-}
+    `}async function A(){const r=document.getElementById("app-content");if(!r){console.warn("⚠️ SettingsPage: elemento #app-content não encontrado");return}try{const e=document.getElementById("toggle-theme-btn");if(e){const i=e.cloneNode(!0);e.parentNode.replaceChild(i,e)}const{currentUser:s,currentBudget:a,budgets:d=[]}=window.appState||{},[t,o,l,n]=await Promise.all([s?y(s.uid):[],a?x(a.id):[],a?f([...new Set([a.userId,...a.usuariosPermitidos||[]])]):[],a?h(a.userId):null]),p=n?.email||n?.displayName||"Proprietário",v={currentUser:s,currentBudget:a,budgets:d,usersWithAccess:l.filter(i=>i.uid!==a?.userId),ownerDisplay:p,pendingInvitations:t,sentInvitations:o,appVersion:"v4.37.0",hasNewChangelog:!0,lastUpdateLabel:"16/09/2025",txChunkOverride:localStorage.getItem("txChunkSize")||"",perfEnabled:!1};r.innerHTML=C(v);try{console.log("[DEBUG] Verificando attachDynamicHandlers:",typeof window.attachDynamicHandlers),typeof window.attachDynamicHandlers=="function"?(console.log("[DEBUG] Chamando attachDynamicHandlers para content:",r),window.attachDynamicHandlers(r),console.log("[DEBUG] attachDynamicHandlers executado com sucesso")):console.warn("[SettingsPage] attachDynamicHandlers ausente; cliques delegados podem não funcionar")}catch(i){console.warn("[SettingsPage] Erro ao executar attachDynamicHandlers:",i)}try{console.log("[DEBUG] Verificando setupGlobalHandlers:",typeof window.setupGlobalHandlers),typeof window.setupGlobalHandlers=="function"?(console.log("[DEBUG] Chamando setupGlobalHandlers..."),window.setupGlobalHandlers(),console.log("[DEBUG] setupGlobalHandlers executado com sucesso")):console.warn("[SettingsPage] setupGlobalHandlers ausente; prosseguindo sem inicialização adicional")}catch(i){console.warn("[SettingsPage] Erro ao executar setupGlobalHandlers:",i)}D()}catch(e){console.error("☠️ Falha catastrófica ao renderizar SettingsPage:",e),r.innerHTML=`<div class="empty-state"><div class="empty-icon">☠️</div><div class="empty-text">Erro ao carregar configurações</div><div class="empty-description">${e.message}</div></div>`}}function D(){try{window.initializeTheme&&window.initializeTheme(),[{id:"check-updates-btn",fn:window.checkForUpdates},{id:"help-support-btn",fn:window.openHelp},{id:"rate-app-btn",fn:window.rateApp},{id:"copy-info-btn",fn:window.copyAppInfo},{id:"clear-cache-btn",fn:window.clearOfflineCache},{id:"whats-new-btn",fn:window.showWhatsNew},{id:"install-app-btn",fn:window.installApp}].forEach(({id:a,fn:d})=>{const t=document.getElementById(a);t&&typeof d=="function"&&(t.onclick=d)});let s=document.getElementById("toggle-theme-btn")||document.getElementById("theme-toggle-btn");if(s){s.id="theme-toggle-btn";const a=s.cloneNode(!0);s.parentNode.replaceChild(a,s),s=a}m(()=>import("./main-D08vCkb1.js").then(a=>a.aa),__vite__mapDeps([0,1])).then(a=>{typeof a.setupThemeToggle=="function"?(a.setupThemeToggle("theme-toggle-btn"),console.log("[DEBUG] setupThemeToggle conectado ao botão #theme-toggle-btn")):console.warn("[DEBUG] setupThemeToggle não encontrado no módulo global")})}catch(e){console.warn("Falha no setup pós-renderização",e)}[{id:"limit-alerts-toggle",key:"noti_limit_alerts",label:"Alertas de Limite"},{id:"recurring-reminders-toggle",key:"noti_recurring_reminders",label:"Lembretes de Recorrentes"},{id:"weekly-summary-toggle",key:"noti_weekly_summary",label:"Resumo Semanal"}].forEach(({id:e,key:s,label:a})=>{const d=document.getElementById(e);if(d){const t=localStorage.getItem(s);t!==null&&(d.checked=t==="true"),d.addEventListener("change",()=>{localStorage.setItem(s,d.checked),window.Snackbar?window.Snackbar.success(`${a} ${d.checked?"ativado":"desativado"}`):console.log(`[Notificações] ${a}:`,d.checked)})}})}c.on("auth:changed",()=>g());c.on("budget:changed",()=>g());c.on("invitation:changed",()=>g());function g(){window.location.hash.startsWith("#/settings")&&A()}export{A as renderSettings};
