@@ -1,0 +1,232 @@
+// tests/features/eventBus.test.js - Testes para o sistema de eventos
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { eventBus, on, off, emit } from '../../src/core/events/eventBus.js';
+
+describe('EventBus', () => {
+  beforeEach(() => {
+    // Limpar todos os listeners antes de cada teste
+    eventBus.clear();
+  });
+
+  describe('on()', () => {
+    it('deve registrar um listener para um evento', () => {
+      const listener = vi.fn();
+      on('test:event', listener);
+      
+      expect(eventBus.listeners['test:event']).toContain(listener);
+    });
+
+    it('deve registrar múltiplos listeners para o mesmo evento', () => {
+      const listener1 = vi.fn();
+      const listener2 = vi.fn();
+      
+      on('test:event', listener1);
+      on('test:event', listener2);
+      
+      expect(eventBus.listeners['test:event']).toHaveLength(2);
+      expect(eventBus.listeners['test:event']).toContain(listener1);
+      expect(eventBus.listeners['test:event']).toContain(listener2);
+    });
+
+    it('deve criar array de listeners se não existir', () => {
+      const listener = vi.fn();
+      on('new:event', listener);
+      
+      expect(eventBus.listeners['new:event']).toBeDefined();
+      expect(eventBus.listeners['new:event']).toContain(listener);
+    });
+  });
+
+  describe('off()', () => {
+    it('deve remover um listener específico', () => {
+      const listener = vi.fn();
+      on('test:event', listener);
+      
+      off('test:event', listener);
+      
+      expect(eventBus.listeners['test:event']).not.toContain(listener);
+    });
+
+    it('deve remover apenas o listener especificado', () => {
+      const listener1 = vi.fn();
+      const listener2 = vi.fn();
+      
+      on('test:event', listener1);
+      on('test:event', listener2);
+      
+      off('test:event', listener1);
+      
+      expect(eventBus.listeners['test:event']).not.toContain(listener1);
+      expect(eventBus.listeners['test:event']).toContain(listener2);
+    });
+
+    it('deve remover todos os listeners de um evento se não especificar listener', () => {
+      const listener1 = vi.fn();
+      const listener2 = vi.fn();
+      
+      on('test:event', listener1);
+      on('test:event', listener2);
+      
+      off('test:event');
+      
+      expect(eventBus.listeners['test:event']).toBeUndefined();
+    });
+
+    it('deve limpar todos os eventos se não especificar evento', () => {
+      const listener1 = vi.fn();
+      const listener2 = vi.fn();
+      
+      on('event1', listener1);
+      on('event2', listener2);
+      
+      off();
+      
+      expect(eventBus.listeners).toEqual({});
+    });
+  });
+
+  describe('emit()', () => {
+    it('deve chamar todos os listeners de um evento', () => {
+      const listener1 = vi.fn();
+      const listener2 = vi.fn();
+      
+      on('test:event', listener1);
+      on('test:event', listener2);
+      
+      const data = { message: 'test' };
+      emit('test:event', data);
+      
+      expect(listener1).toHaveBeenCalledWith(data);
+      expect(listener2).toHaveBeenCalledWith(data);
+    });
+
+    it('deve chamar listeners com múltiplos argumentos', () => {
+      const listener = vi.fn();
+      on('test:event', listener);
+      
+      emit('test:event', 'arg1', 'arg2', { data: 'test' });
+      
+      expect(listener).toHaveBeenCalledWith('arg1', 'arg2', { data: 'test' });
+    });
+
+    it('não deve falhar se não houver listeners para o evento', () => {
+      expect(() => {
+        emit('nonexistent:event', 'data');
+      }).not.toThrow();
+    });
+
+    it('deve chamar listeners na ordem de registro', () => {
+      const order = [];
+      const listener1 = () => order.push(1);
+      const listener2 = () => order.push(2);
+      const listener3 = () => order.push(3);
+      
+      on('test:event', listener1);
+      on('test:event', listener2);
+      on('test:event', listener3);
+      
+      emit('test:event');
+      
+      expect(order).toEqual([1, 2, 3]);
+    });
+  });
+
+  describe('clear()', () => {
+    it('deve limpar todos os listeners', () => {
+      const listener1 = vi.fn();
+      const listener2 = vi.fn();
+      
+      on('event1', listener1);
+      on('event2', listener2);
+      
+      eventBus.clear();
+      
+      expect(eventBus.listeners).toEqual({});
+    });
+  });
+
+  describe('getListenerCount()', () => {
+    it('deve retornar o número correto de listeners para um evento', () => {
+      const listener1 = vi.fn();
+      const listener2 = vi.fn();
+      
+      on('test:event', listener1);
+      on('test:event', listener2);
+      
+      expect(eventBus.getListenerCount('test:event')).toBe(2);
+    });
+
+    it('deve retornar 0 para evento sem listeners', () => {
+      expect(eventBus.getListenerCount('nonexistent:event')).toBe(0);
+    });
+  });
+
+  describe('hasListeners()', () => {
+    it('deve retornar true se evento tiver listeners', () => {
+      const listener = vi.fn();
+      on('test:event', listener);
+      
+      expect(eventBus.hasListeners('test:event')).toBe(true);
+    });
+
+    it('deve retornar false se evento não tiver listeners', () => {
+      expect(eventBus.hasListeners('nonexistent:event')).toBe(false);
+    });
+  });
+
+  describe('once()', () => {
+    it('deve chamar listener apenas uma vez', () => {
+      const listener = vi.fn();
+      eventBus.once('test:event', listener);
+      
+      emit('test:event');
+      emit('test:event');
+      emit('test:event');
+      
+      expect(listener).toHaveBeenCalledTimes(1);
+    });
+
+    it('deve remover listener após primeira chamada', () => {
+      const listener = vi.fn();
+      eventBus.once('test:event', listener);
+      
+      emit('test:event');
+      
+      expect(eventBus.getListenerCount('test:event')).toBe(0);
+    });
+  });
+
+  describe('Cenários de uso real', () => {
+    it('deve funcionar com eventos de transação', () => {
+      const transactionAdded = vi.fn();
+      const transactionUpdated = vi.fn();
+      
+      on('transaction:added', transactionAdded);
+      on('transaction:updated', transactionUpdated);
+      
+      const transaction = { id: '1', amount: 100 };
+      
+      emit('transaction:added', transaction);
+      emit('transaction:updated', transaction);
+      
+      expect(transactionAdded).toHaveBeenCalledWith(transaction);
+      expect(transactionUpdated).toHaveBeenCalledWith(transaction);
+    });
+
+    it('deve funcionar com eventos de categoria', () => {
+      const categoryCreated = vi.fn();
+      const categoryDeleted = vi.fn();
+      
+      on('category:created', categoryCreated);
+      on('category:deleted', categoryDeleted);
+      
+      const category = { id: '1', name: 'Alimentação' };
+      
+      emit('category:created', category);
+      emit('category:deleted', category.id);
+      
+      expect(categoryCreated).toHaveBeenCalledWith(category);
+      expect(categoryDeleted).toHaveBeenCalledWith(category.id);
+    });
+  });
+});

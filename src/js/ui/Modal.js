@@ -1,13 +1,17 @@
 export function Modal({ title = '', content = '', onClose = null }) {
   console.log('🔧 Modal sendo criado com:', { title, content: content.substring(0, 100) + '...' });
-  
+
   const overlay = document.createElement('div');
   overlay.id = 'app-modal';
   overlay.className =
     'modal fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50';
   overlay.onclick = e => {
-    if (e.target === overlay && onClose) {
-      onClose();
+    if (e.target === overlay) {
+      if (onClose) {
+        onClose();
+      } else {
+        overlay.remove();
+      }
     }
     if (window.toggleFABOnModal) {
       window.toggleFABOnModal();
@@ -29,6 +33,8 @@ export function Modal({ title = '', content = '', onClose = null }) {
     e.stopPropagation();
     if (onClose) {
       onClose();
+    } else {
+      overlay.remove();
     }
     if (window.toggleFABOnModal) {
       window.toggleFABOnModal();
@@ -38,9 +44,42 @@ export function Modal({ title = '', content = '', onClose = null }) {
   if (window.toggleFABOnModal) {
     window.toggleFABOnModal();
   }
-  
+
   console.log('🔧 Modal criado:', overlay);
   console.log('🔧 Modal HTML:', overlay.outerHTML.substring(0, 200) + '...');
-  
+
+  // Provide a safe global fallback for closeModal if not present
+  try {
+    if (typeof window !== 'undefined' && typeof window.closeModal !== 'function') {
+      window.closeModal = function() {
+        try {
+          const el = document.getElementById('app-modal') || overlay;
+          if (el && el.parentNode) el.parentNode.removeChild(el);
+        } catch {}
+        if (window.toggleFABOnModal) {
+          try { window.toggleFABOnModal(); } catch {}
+        }
+      };
+    }
+  } catch {}
+
   return overlay;
+}
+
+// Export the closeModal function for module imports
+export function closeModal() {
+  try {
+    const el = document.getElementById('app-modal');
+    if (el && el.parentNode) el.parentNode.removeChild(el);
+  } catch {}
+  if (window.toggleFABOnModal) {
+    try { window.toggleFABOnModal(); } catch {}
+  }
+}
+
+// Export showModal function for consistency
+export function showModal(options) {
+  const modal = Modal(options);
+  document.body.appendChild(modal);
+  return modal;
 }

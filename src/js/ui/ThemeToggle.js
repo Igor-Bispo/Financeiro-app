@@ -14,15 +14,15 @@ export function setupThemeToggle(buttonId = 'theme-toggle-btn') {
     // Remover listeners antigos para evitar duplicação
     const newBtn = btn.cloneNode(true);
     btn.parentNode.replaceChild(newBtn, btn);
-    
+
     // Adicionar novo listener
     newBtn.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      
+
       console.log('🔧 Clique no botão de tema detectado');
       console.log('🔧 Classes antes:', root.classList.toString());
-      
+
       const isDarkNow = root.classList.toggle('dark');
       localStorage.setItem('theme', isDarkNow ? 'dark' : 'light');
 
@@ -31,13 +31,13 @@ export function setupThemeToggle(buttonId = 'theme-toggle-btn') {
       console.log('🔧 localStorage theme:', localStorage.getItem('theme'));
 
       updateIcon();
-      
+
       // Forçar atualização de todas as abas para sincronizar o tema
       forceThemeUpdate();
-      
+
       console.log('🎨 Tema alterado para:', isDarkNow ? 'dark' : 'light');
     });
-    
+
     console.log('✅ Botão de tema configurado:', buttonId);
   } else {
     console.warn('⚠️ Botão de tema não encontrado:', buttonId);
@@ -47,7 +47,7 @@ export function setupThemeToggle(buttonId = 'theme-toggle-btn') {
     const icon = document.getElementById('theme-icon');
     console.log('🔧 updateIcon chamada, ícone encontrado:', !!icon);
     console.log('🔧 root.classList.contains("dark"):', root.classList.contains('dark'));
-    
+
     if (icon) {
       const newIcon = root.classList.contains('dark') ? '🌙' : '☀️';
       console.log('🔧 Novo ícone:', newIcon);
@@ -65,28 +65,28 @@ export function setupThemeToggle(buttonId = 'theme-toggle-btn') {
     updateThemeElements();
 
     setTimeout(() => {
-      requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
         switch (currentRoute) {
-          case '/dashboard':
-            if (window.renderDashboard) window.renderDashboard();
-            break;
-          case '/transactions':
-            if (window.renderTransactions) window.renderTransactions();
-            break;
-          case '/categories':
-            if (window.renderCategories) window.renderCategories();
-            break;
-          case '/recorrentes':
-            if (window.renderRecorrentes) window.renderRecorrentes();
-            break;
-          case '/notifications':
-            if (window.renderNotifications) window.renderNotifications();
-            break;
-          case '/settings':
-            if (window.renderSettings) window.renderSettings();
-            break;
-          default:
-            if (window.renderDashboard) window.renderDashboard();
+        case '/dashboard':
+          if (window.renderDashboard) window.renderDashboard();
+          break;
+        case '/transactions':
+          if (window.renderTransactions) window.renderTransactions();
+          break;
+        case '/categories':
+          if (window.renderCategories) window.renderCategories();
+          break;
+        case '/recorrentes':
+          if (window.renderRecorrentes) window.renderRecorrentes();
+          break;
+        case '/notifications':
+          if (window.renderNotifications) window.renderNotifications();
+          break;
+        case '/settings':
+          if (window.renderSettings) window.renderSettings();
+          break;
+        default:
+          if (window.renderDashboard) window.renderDashboard();
         }
         updateThemeElements();
         console.log('✅ Tema aplicado na aba atual');
@@ -101,21 +101,40 @@ export function setupThemeToggle(buttonId = 'theme-toggle-btn') {
       // Forçar reflow para garantir que as classes sejam aplicadas
       element.offsetHeight;
     });
-    
+
     // Forçar reflow no body e html
     document.body.offsetHeight;
     document.documentElement.offsetHeight;
-    
+
     // Atualizar elementos com classes específicas do tema
-    const themeElements = document.querySelectorAll('.card-resumo, .bottom-nav, .modal-content, .btn-secondary, .form-group input, .form-group select, .form-group textarea, .tab-container, .tab-header, .tab-content, .list-item, .card-standard');
+    // Incluir classes do design system (u-card, u-btn, u-input) além das legadas
+    const themeElements = document.querySelectorAll([
+      '.card-resumo',
+      '.bottom-nav',
+      '.modal-content',
+      '.btn-secondary', // legado
+      '.form-group input',
+      '.form-group select',
+      '.form-group textarea',
+      '.tab-container',
+      '.tab-header',
+      '.tab-content',
+      '.list-item',
+      '.card-standard', // legado
+      '.u-card',
+      '.u-btn',
+      'input.u-input',
+      'select.u-input',
+      'textarea.u-input'
+    ].join(', '));
     themeElements.forEach(element => {
       element.offsetHeight;
     });
-    
+
     // Forçar atualização de elementos específicos que podem não ter sido atualizados
     const root = document.documentElement;
     const isDark = root.classList.contains('dark');
-    
+
     // Aplicar tema diretamente em elementos que podem não estar respondendo
     const allElements = document.querySelectorAll('*');
     allElements.forEach(element => {
@@ -124,7 +143,7 @@ export function setupThemeToggle(buttonId = 'theme-toggle-btn') {
         element.offsetHeight; // Forçar reflow
       }
     });
-    
+
     console.log('🎨 Elementos de tema atualizados (isDark:', isDark, ')');
   }
 }

@@ -25,35 +25,37 @@ export class SwipeNavigation {
   }
 
   init() {
-    console.log('🔧 SwipeNavigation.init() chamado');
+    console.log('🔧 SwipeNavigation: Inicializando...');
     this.container = document.querySelector('#app-content');
     if (!this.container) {
-      console.warn('SwipeNavigation: Container #app-content não encontrado');
+      console.warn('⚠️ SwipeNavigation: Container #app-content não encontrado');
       return;
     }
-    console.log('✅ Container encontrado:', this.container);
 
     // Verificar se o usuário está logado antes de inicializar
     if (!window.appState?.currentUser) {
-      console.log('SwipeNavigation: Usuário não logado, aguardando...');
+      console.warn('⚠️ SwipeNavigation: Usuário não autenticado, aguardando...');
+      // Tentar novamente em 2 segundos
+      setTimeout(() => {
+        if (window.appState?.currentUser) {
+          console.log('🔄 SwipeNavigation: Usuário autenticado, reinicializando...');
+          this.init();
+        }
+      }, 2000);
       return;
     }
-    console.log('✅ Usuário logado:', window.appState.currentUser.uid);
 
+    console.log('✅ SwipeNavigation: Criando indicador e bindando eventos...');
     this.createSwipeIndicator();
     this.bindEvents();
     this.updateCurrentTabIndex();
+    console.log('✅ SwipeNavigation: Inicialização completa!');
 
-    console.log('SwipeNavigation: Inicializado com sucesso');
-    console.log('🔍 Estado final:', {
-      isEnabled: this.isEnabled,
-      container: this.container,
-      tabs: this.tabs,
-      currentTabIndex: this.currentTabIndex
-    });
   }
 
   createSwipeIndicator() {
+    console.log('🎨 SwipeNavigation: Criando indicador visual...');
+    
     // Criar indicador visual de swipe
     this.swipeIndicator = document.createElement('div');
     this.swipeIndicator.id = 'swipe-indicator';
@@ -148,25 +150,40 @@ export class SwipeNavigation {
     `;
     document.head.appendChild(style);
     document.body.appendChild(this.swipeIndicator);
+    console.log('✅ SwipeNavigation: Indicador visual adicionado ao DOM');
+    
+    // Mostrar o indicador por alguns segundos para o usuário ver
+    setTimeout(() => {
+      if (this.swipeIndicator) {
+        this.swipeIndicator.classList.add('show');
+        console.log('👁️ SwipeNavigation: Indicador visual mostrado');
+      }
+    }, 1000);
+    
+    // Esconder após 5 segundos
+    setTimeout(() => {
+      if (this.swipeIndicator) {
+        this.swipeIndicator.classList.remove('show');
+        console.log('👁️ SwipeNavigation: Indicador visual escondido');
+      }
+    }, 6000);
   }
 
   bindEvents() {
+    console.log('🔗 SwipeNavigation: Configurando eventos...');
+    
     // Verificar se não está na tela de login
     const loginPage = document.getElementById('login-page');
     if (loginPage && loginPage.style.display !== 'none') {
-      console.log(
-        'SwipeNavigation: Tela de login ativa, não inicializando eventos'
-      );
+      console.log('🚫 SwipeNavigation: Na tela de login, não configurando eventos');
       return;
     }
-
-    console.log('SwipeNavigation: Configurando eventos de navegação...');
 
     // Touch events
     this.container.addEventListener(
       'touchstart',
       this.handleTouchStart.bind(this),
-      { passive: false }
+      { passive: true }
     );
     this.container.addEventListener(
       'touchmove',
@@ -194,45 +211,32 @@ export class SwipeNavigation {
     document.addEventListener('keydown', this.handleKeydown.bind(this), {
       capture: true
     });
-    console.log('SwipeNavigation: Evento de teclado configurado no document');
-
-    // Teste adicional para verificar se o evento está funcionando
-    document.addEventListener(
-      'keydown',
-      e => {
-        console.log(
-          '🎹 SwipeNavigation - Evento de teclado capturado:',
-          e.key,
-          'Target:',
-          e.target.tagName
-        );
-      },
-      { capture: true }
-    );
-
-    // Observer para mudanças de rota
+    console.log('⌨️ SwipeNavigation: Eventos de teclado configurados');
+    
+    // Listener leve para mudanças de rota
     this.observeRouteChanges();
-
-    console.log('SwipeNavigation: Todos os eventos configurados com sucesso');
+    console.log('✅ SwipeNavigation: Todos os eventos configurados com sucesso!');
   }
 
   handleTouchStart(e) {
-    if (!this.isEnabled) {
-      console.log('👆 SwipeNavigation: Desabilitado, ignorando touch start');
-      return;
-    }
+    if (!this.isEnabled) {return;}
 
     this.touchStartX = e.touches[0].clientX;
     this.touchStartY = e.touches[0].clientY;
     this.isSwiping = false;
+    console.log('👆 SwipeNavigation: Touch start - X:', this.touchStartX, 'Y:', this.touchStartY);
 
-    console.log('👆 SwipeNavigation: Touch start em', this.touchStartX, this.touchStartY);
     // Não prevenir scroll por padrão - só se for swipe horizontal
   }
 
   handleTouchMove(e) {
-    if (!this.isEnabled || !this.touchStartX) {
-      if (!this.isEnabled) console.log('👆 SwipeNavigation: Desabilitado, ignorando touch move');
+    if (!this.isEnabled || !this.touchStartX) {return;}
+
+    // Se o alvo é um elemento interativo (botão, link, input), não interferir na rolagem/clique
+    const target = e.target;
+    const tag = target.tagName;
+    if (['BUTTON','A','INPUT','SELECT','TEXTAREA','LABEL'].includes(tag)) {
+      this.isSwiping = false;
       return;
     }
 
@@ -241,23 +245,17 @@ export class SwipeNavigation {
     const deltaX = Math.abs(currentX - this.touchStartX);
     const deltaY = Math.abs(currentY - this.touchStartY);
 
-    // Determinar se é um swipe horizontal
-    if (deltaX > deltaY && deltaX > 20) {
+    // Determinar se é um swipe horizontal (intenção clara) e só então prevenir scroll
+    if (deltaX > deltaY * 1.5 && deltaX > 24) {
       this.isSwiping = true;
       e.preventDefault();
-      console.log('👆 SwipeNavigation: Swipe horizontal detectado, deltaX:', deltaX);
-
       // Adicionar feedback visual durante o swipe
       this.showSwipeFeedback(deltaX);
     }
   }
 
   handleTouchEnd(e) {
-    if (!this.isEnabled || !this.isSwiping) {
-      if (!this.isEnabled) console.log('👆 SwipeNavigation: Desabilitado, ignorando touch end');
-      if (!this.isSwiping) console.log('👆 SwipeNavigation: Não estava fazendo swipe, ignorando touch end');
-      return;
-    }
+    if (!this.isEnabled || !this.isSwiping) {return;}
 
     this.touchEndX = e.changedTouches[0].clientX;
     this.touchEndY = e.changedTouches[0].clientY;
@@ -265,17 +263,13 @@ export class SwipeNavigation {
     const deltaX = this.touchEndX - this.touchStartX;
     const deltaY = this.touchEndY - this.touchStartY;
 
-    console.log('👆 SwipeNavigation: Touch end, deltaX:', deltaX, 'deltaY:', deltaY);
-
     // Verificar se é um swipe válido
     if (
       Math.abs(deltaX) > this.swipeThreshold &&
       Math.abs(deltaX) > Math.abs(deltaY)
     ) {
-      console.log('👆 SwipeNavigation: Swipe válido detectado, direção:', deltaX > 0 ? 'right' : 'left');
       this.handleSwipe(deltaX > 0 ? 'right' : 'left');
     } else {
-      console.log('👆 SwipeNavigation: Swipe inválido ou insuficiente');
     }
 
     this.resetSwipe();
@@ -320,59 +314,54 @@ export class SwipeNavigation {
   }
 
   handleKeydown(e) {
+    console.log('⌨️ SwipeNavigation: Tecla pressionada:', e.key);
+    
     // Verificar se não está em um input ou textarea
     if (
       e.target.tagName === 'INPUT' ||
       e.target.tagName === 'TEXTAREA' ||
       e.target.contentEditable === 'true'
     ) {
+      console.log('⌨️ SwipeNavigation: Ignorando tecla em input/textarea');
       return;
     }
 
     if (!this.isEnabled) {
-      console.log('SwipeNavigation: Desabilitado, ignorando tecla:', e.key);
+      console.log('⌨️ SwipeNavigation: Sistema desabilitado');
       return;
     }
 
-    console.log('🎹 SwipeNavigation: Tecla pressionada:', e.key, 'Target:', e.target.tagName);
-
     switch (e.key) {
     case 'ArrowLeft':
-      console.log('⬅️ SwipeNavigation: Seta esquerda - navegando para aba anterior');
+      console.log('⌨️ SwipeNavigation: Navegando para esquerda');
       e.preventDefault();
       e.stopPropagation();
       this.navigateToTab(this.currentTabIndex - 1);
       break;
     case 'ArrowRight':
-      console.log('➡️ SwipeNavigation: Seta direita - navegando para próxima aba');
+      console.log('⌨️ SwipeNavigation: Navegando para direita');
       e.preventDefault();
       e.stopPropagation();
       this.navigateToTab(this.currentTabIndex + 1);
       break;
-    case 'ArrowUp':
-      console.log('⬆️ SwipeNavigation: Seta cima - primeira aba');
-      e.preventDefault();
-      e.stopPropagation();
-      this.navigateToTab(0);
-      break;
-    case 'ArrowDown':
-      console.log('⬇️ SwipeNavigation: Seta baixo - última aba');
-      e.preventDefault();
-      e.stopPropagation();
-      this.navigateToTab(this.tabs.length - 1);
+    default:
+      // Não interceptar ArrowUp/ArrowDown para permitir rolagem natural
       break;
     }
   }
 
   handleSwipe(direction) {
+    console.log('👆 SwipeNavigation: Swipe detectado - Direção:', direction, 'Índice atual:', this.currentTabIndex);
     this.updateCurrentTabIndex();
 
     let newIndex = this.currentTabIndex;
 
     if (direction === 'left' && this.currentTabIndex < this.tabs.length - 1) {
       newIndex = this.currentTabIndex + 1;
+      console.log('👆 SwipeNavigation: Navegando para direita (índice:', newIndex, ')');
     } else if (direction === 'right' && this.currentTabIndex > 0) {
       newIndex = this.currentTabIndex - 1;
+      console.log('👆 SwipeNavigation: Navegando para esquerda (índice:', newIndex, ')');
     }
 
     if (newIndex !== this.currentTabIndex) {
@@ -384,21 +373,26 @@ export class SwipeNavigation {
   }
 
   navigateToTab(index) {
-    if (index < 0 || index >= this.tabs.length) {return;}
+    if (index < 0 || index >= this.tabs.length) {
+      console.log('🚫 SwipeNavigation: Índice inválido:', index);
+      return;
+    }
 
     const targetTab = this.tabs[index];
-    console.log(`SwipeNavigation: Navegando para ${targetTab}`);
+    console.log('🎯 SwipeNavigation: Navegando para aba:', targetTab, 'Índice:', index);
 
     // Animar transição
     this.animateTransition(index);
 
     // Navegar
     if (window.router) {
+      console.log('🎯 SwipeNavigation: Usando window.router');
       window.router(targetTab);
     } else {
+      console.log('🎯 SwipeNavigation: Usando window.location.hash');
       window.location.hash = targetTab;
     }
-    
+
     // Atualizar título da página
     if (window.updatePageTitle) {
       window.updatePageTitle(targetTab);
@@ -466,17 +460,11 @@ export class SwipeNavigation {
     if (activeTab) {
       const route = activeTab.getAttribute('data-route');
       const newIndex = this.tabs.indexOf(route);
+      console.log('🔍 SwipeNavigation - Aba ativa detectada:', route, 'Índice:', newIndex);
 
       // Só atualizar se o índice realmente mudou
       if (newIndex !== this.currentTabIndex) {
-        console.log('📍 Atualizando índice da aba atual:', {
-          activeTabRoute: route,
-          oldIndex: this.currentTabIndex,
-          newIndex: newIndex,
-          availableTabs: this.tabs
-        });
         this.currentTabIndex = newIndex;
-        console.log('✅ Índice atualizado:', this.currentTabIndex);
       }
     }
   }
@@ -501,34 +489,13 @@ export class SwipeNavigation {
   }
 
   observeRouteChanges() {
-    // Observer para mudanças de rota
-    let timeoutId = null;
-    let lastActiveTab = null;
-
-    const observer = new MutationObserver(() => {
-      // Debounce para evitar múltiplas chamadas
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-      timeoutId = setTimeout(() => {
-        const currentActiveTab = document.querySelector('.nav-btn.active');
-        const currentRoute = currentActiveTab?.getAttribute('data-route');
-
-        // Só atualizar se a aba realmente mudou
-        if (currentRoute !== lastActiveTab) {
-          lastActiveTab = currentRoute;
-          this.updateCurrentTabIndex();
-          this.updateSwipeIndicator();
-        }
-      }, 200); // Aumentado para 200ms
-    });
-
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ['class']
-    });
+    const handler = () => {
+      this.updateCurrentTabIndex();
+      this.updateSwipeIndicator();
+    };
+    window.addEventListener('hashchange', handler);
+    // Atualizar uma vez na inicialização
+    handler();
   }
 
   resetSwipe() {

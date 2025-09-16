@@ -5,23 +5,23 @@ export function RecorrenteForm({ onSubmit, initialData = {} }) {
     <div class="form-group">
       <label class="form-label modal-label">Nome da Despesa Recorrente</label>
       <input type="text" id="rec-desc" required
-             class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+        class="u-input w-full"
              placeholder="Ex: Aluguel, Netflix, Academia"
              value="${initialData.descricao || ''}"
              autocomplete="off"
              autocorrect="off"
              autocapitalize="words"
-             style="background-color: var(--select-bg, #ffffff); color: var(--select-text, #1f2937); font-weight: 500; font-size: 16px;">
+        style="font-weight: 500; font-size: 16px;">
     </div>
     <div class="form-group">
       <label class="form-label modal-label">Valor da Despesa (R$)</label>
       <input type="number" id="rec-valor" required step="0.01" min="0"
-             class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+        class="u-input w-full"
              placeholder="0,00"
              value="${initialData.valorTotal || initialData.valor || ''}"
              inputmode="decimal"
              autocomplete="off"
-             style="background-color: var(--select-bg, #ffffff); color: var(--select-text, #1f2937); font-weight: 500; font-size: 16px;">
+        style="font-weight: 500; font-size: 16px;">
     </div>
     <div>
       <label class="modal-label">Tipo do Valor Informado</label>
@@ -43,9 +43,9 @@ export function RecorrenteForm({ onSubmit, initialData = {} }) {
     <div>
       <label class="modal-label">Categoria da Despesa</label>
       <select id="rec-categoria" required
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              style="background-color: var(--select-bg, #ffffff); color: var(--select-text, #1f2937); font-weight: 500; font-size: 16px;">
-        <option value="" style="background-color: var(--option-bg, #ffffff); color: var(--option-text, #1f2937); font-weight: 500; padding: 12px; font-size: 14px;">Selecione uma categoria...</option>
+    class="u-input w-full"
+    style="font-weight: 500; font-size: 16px;">
+   <option value="" style="font-weight: 500; padding: 12px; font-size: 14px;">Selecione uma categoria...</option>
         ${(window.appState.categories || [])
     .sort((a, b) =>
       a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' })
@@ -97,7 +97,7 @@ export function RecorrenteForm({ onSubmit, initialData = {} }) {
         }
       }
 
-      return `<option value="${cat.id}" ${initialData.categoriaId === cat.id ? 'selected' : ''} style="background-color: var(--option-bg, #ffffff); color: var(--option-text, #1f2937); font-weight: 500; padding: 8px;">${textoOpcao}</option>`;
+      return `<option value="${cat.id}" ${initialData.categoriaId === cat.id ? 'selected' : ''} style="font-weight: 500; padding: 8px;">${textoOpcao}</option>`;
     })
     .join('')}
       </select>
@@ -105,17 +105,17 @@ export function RecorrenteForm({ onSubmit, initialData = {} }) {
     <div>
       <label class="modal-label">Data de Início da Recorrência</label>
       <input type="date" id="rec-data" required
-             class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+        class="u-input w-full"
              value="${initialData.dataInicio || new Date().toISOString().split('T')[0]}"
-             style="background-color: var(--select-bg, #ffffff); color: var(--select-text, #1f2937); font-weight: 500;">
+        style="font-weight: 500;">
     </div>
     <div>
       <label class="modal-label">Número de Parcelas (deixe vazio para infinito)</label>
       <input type="number" id="rec-parcelas" min="0"
-             class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+        class="u-input w-full"
              placeholder="Ex: 12 para 1 ano, 24 para 2 anos"
              value="${initialData.parcelasRestantes || ''}"
-             style="background-color: var(--select-bg, #ffffff); color: var(--select-text, #1f2937); font-weight: 500;">
+        style="font-weight: 500;">
     </div>
     <div id="recorrente-valores-info" class="text-xs text-gray-600 modal-info"></div>
     <div class="flex items-center gap-2">
@@ -125,8 +125,8 @@ export function RecorrenteForm({ onSubmit, initialData = {} }) {
       <label for="rec-efetivar" class="checkbox-label">Criar transação para este mês automaticamente</label>
     </div>
     <div class="flex justify-end space-x-3 pt-4">
-      <button type="button" onclick="closeModal()" class="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg">Cancelar</button>
-      <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Salvar</button>
+  <button type="button" onclick="(window.closeModal ? window.closeModal() : (document.getElementById('app-modal')?.remove()))" class="u-btn u-btn--ghost">Cancelar</button>
+  <button type="submit" class="u-btn u-btn--primary">Salvar</button>
     </div>
   `;
 
@@ -135,7 +135,7 @@ export function RecorrenteForm({ onSubmit, initialData = {} }) {
     const valorInput = document.getElementById('rec-valor');
     const parcelasInput = document.getElementById('rec-parcelas');
     const tipoValorRadio = form.querySelector('input[name="tipo-valor"]:checked');
-    
+
     const valor = valorInput ? parseFloat(valorInput.value) || 0 : 0;
     const parcelas = parcelasInput ? parseInt(parcelasInput.value) || 0 : 0;
     const tipoValor = tipoValorRadio ? tipoValorRadio.value : 'total';
@@ -164,11 +164,11 @@ export function RecorrenteForm({ onSubmit, initialData = {} }) {
   form.querySelectorAll('input[name="tipo-valor"]').forEach(radio => {
     radio.addEventListener('change', atualizarValoresInfo);
   });
-  
+
   // Garantir que os botões sejam inicializados corretamente
   setTimeout(() => {
     atualizarValoresInfo();
-    
+
     // Forçar a seleção correta dos botões de rádio
     const tipoValor = form.querySelector('input[name="tipo-valor"]:checked');
     if (!tipoValor) {
@@ -176,10 +176,15 @@ export function RecorrenteForm({ onSubmit, initialData = {} }) {
       const totalRadio = form.querySelector('input[name="tipo-valor"][value="total"]');
       if (totalRadio) {
         totalRadio.checked = true;
-        totalRadio.dispatchEvent(new Event('change'));
+        try {
+          const ev = (typeof document !== 'undefined' && typeof document.createEvent === 'function')
+            ? (() => { const e = document.createEvent('HTMLEvents'); e.initEvent('change', true, false); return e; })()
+            : null;
+          if (ev) totalRadio.dispatchEvent(ev);
+        } catch {}
       }
     }
-    
+
     // Configurar estado inicial do checkbox
     const checkbox = form.querySelector('#rec-efetivar');
     if (checkbox) {

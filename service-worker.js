@@ -1,5 +1,5 @@
 // Versão do Service Worker - atualize sempre que modificar este arquivo
-const VERSION = 'v4.2.0';
+const VERSION = 'v4.3.1';
 const STATIC_CACHE = `financeiro-static-${VERSION}`;
 const DYNAMIC_CACHE = `financeiro-dynamic-${VERSION}`;
 const FALLBACK_CACHE = `financeiro-fallback-${VERSION}`;
@@ -18,7 +18,8 @@ const ASSETS = [
   '/manifest.json',
   '/favicon.ico',
   '/icon-192.png',
-  '/icon-512.png'
+  '/icon-512.png',
+  '/offline.html'
 ];
 
 // Recursos externos para cache
@@ -70,24 +71,34 @@ self.addEventListener('install', (e) => {
   log('Instalando Service Worker');
 
   e.waitUntil(
-    caches.open(STATIC_CACHE)
-      .then(cache => {
+    Promise.all([
+      // Cache estático principal
+      caches.open(STATIC_CACHE).then(cache => {
         log('Adicionando assets ao cache estático');
-        // Adiciona apenas os arquivos que existem
         return Promise.allSettled(
           ASSETS.map(url => cache.add(url).catch(err => {
             log(`Falha ao cachear ${url}:`, err);
             return null;
           }))
         );
+      }),
+      // Cache de recursos externos úteis offline
+      caches.open(DYNAMIC_CACHE).then(cache => {
+        log('Adicionando recursos externos ao cache');
+        return Promise.allSettled(
+          EXTERNAL_RESOURCES.map(url => cache.add(url).catch(err => {
+            log(`Falha ao cachear recurso externo ${url}:`, err);
+            return null;
+          }))
+        );
       })
+    ])
       .then(() => {
         log('Pré-cache completo');
         return self.skipWaiting();
       })
       .catch(err => {
         log('Erro durante instalação:', err);
-        // Não falha a instalação por causa de arquivos ausentes
       })
   );
 });
@@ -107,9 +118,14 @@ self.addEventListener('activate', (e) => {
         })
       );
     })
-      .then(() => {
+      .then(async () => {
         log('Pronto para controlar clientes');
-        return self.clients.claim();
+        await self.clients.claim();
+        // Notificar páginas que o SW está pronto (permite limpezas/atualizações client-side)
+        try {
+          const clients = await self.clients.matchAll();
+          clients.forEach(client => client.postMessage({ type: 'READY', version: VERSION }));
+        } catch {}
       })
       .catch(err => {
         log('Erro durante ativação:', err);
@@ -151,115 +167,60 @@ function isStaleWhileRevalidate(pathname) {
 
 // Verificar se é uma rota que deve ignorar o cache
 function isNetworkOnly(url) {
-  return NETWORK_ONLY_ROUTES.some(route => url.pathname.includes(route)) ||
-         url.pathname.includes('/@vite/') ||
-         url.pathname.includes('/@fs/');
+  // Considera tanto pathname quanto href para cobrir absolutos
+  return (
+    NETWORK_ONLY_ROUTES.some(route => url.pathname.includes(route) || url.href.includes(route)) ||
+    url.pathname.includes('/@vite/') ||
+    url.pathname.includes('/@fs/')
+  );
 }
 
-// Verificar se deve usar apenas network
-function isNetworkOnly(url) {
-  return NETWORK_ONLY_ROUTES.some(route => url.href.includes(route));
-}
-
-// Estratégia: Network First com fallback para cache
-async function networkFirstWithFallback(request) {
+// Importar estratégias compartilhadas se disponíveis (Rollup/Vite irá inlining se suportado)
+// fallback silencioso caso falhe (ex: caminho diferente em produção)
+let strat = {};
+try {
+  strat = self.__PWA_STRATEGIES__ || {};
+} catch {}
+const networkFirstWithFallback = strat.networkFirstWithFallback || (async (req)=>{
+  // fallback para implementação local mínima (mantida simples)
   try {
-    // Tentar network primeiro
-    const networkResponse = await fetch(request, { cache: 'no-cache' });
-
-    // Se sucesso, cachear para uso futuro
-    if (networkResponse.ok) {
-      try {
-        await addToCache(DYNAMIC_CACHE, request, networkResponse.clone());
-      } catch (cacheError) {
-        log('Erro ao adicionar ao cache:', cacheError);
-      }
-    }
-    
-    return networkResponse;
-  } catch (error) {
-    log('Network falhou, tentando cache:', error);
-    
-    // Fallback para cache
-    const cachedResponse = await caches.match(request);
-    if (cachedResponse) {
-      return cachedResponse;
-    }
-    
-    // Fallback para página offline
-    if (request.destination === 'document') {
-      return caches.match('/offline.html');
-    }
-    
-    throw error;
-  }
-}
-
-// Estratégia: Cache First
-async function cacheFirst(request) {
-  try {
-    const cachedResponse = await caches.match(request);
-    
-    if (cachedResponse) {
-      return cachedResponse;
-    }
-
+    const resp = await fetch(req, { cache: 'no-cache' });
+    if (resp.ok) { try { await addToCache(DYNAMIC_CACHE, req, resp.clone()); } catch {} }
+    return resp;
+  } catch (e) {
+    // Limitar o fallback aos caches da versão atual para evitar servir assets antigos após atualização
+    let cached = null;
     try {
-      const networkResponse = await fetch(request, { cache: 'no-cache' });
-      if (networkResponse.ok) {
-        try {
-          await addToCache(STATIC_CACHE, request, networkResponse.clone());
-        } catch (cacheError) {
-          log('Erro ao adicionar ao cache estático:', cacheError);
-        }
+      const staticCache = await caches.open(STATIC_CACHE);
+      cached = await staticCache.match(req);
+      if (!cached) {
+        const dynCache = await caches.open(DYNAMIC_CACHE);
+        cached = await dynCache.match(req);
       }
-      return networkResponse;
-    } catch (error) {
-      log('Erro ao buscar recurso:', request.url, error);
-      throw error;
+    } catch {}
+    if (!cached && req.destination==='document') {
+      cached = await caches.match('/offline.html');
     }
-  } catch (error) {
-    log('Erro geral no cacheFirst:', error);
-    throw error;
+    if (cached) return cached; throw e;
   }
-}
-
-// Estratégia: Network Only
-async function networkOnly(request) {
-  return fetch(request);
-}
-
-// Estratégia: Stale While Revalidate
-async function staleWhileRevalidate(request) {
-  try {
-    // Tentar cache primeiro
-    const cache = await caches.open(DYNAMIC_CACHE);
-    const cachedResponse = await cache.match(request);
-    
-    // Iniciar atualização em background
-    const updatePromise = fetch(request, { cache: 'no-cache' })
-      .then(networkResponse => {
-        if (networkResponse.ok) {
-          try {
-            cache.put(request, networkResponse.clone());
-          } catch (cacheError) {
-            log('Erro ao atualizar cache:', cacheError);
-          }
-        }
-        return networkResponse;
-      })
-      .catch(error => {
-        log('Falha na atualização:', request.url, error);
-        throw error;
-      });
-    
-    // Retornar resposta do cache se disponível
-    return cachedResponse || updatePromise;
-  } catch (error) {
-    log('Erro em staleWhileRevalidate:', error);
-    throw error;
-  }
-}
+});
+const cacheFirst = strat.cacheFirst || (async (req) => {
+  const staticCache = await caches.open(STATIC_CACHE);
+  const cached = await staticCache.match(req);
+  if (cached) return cached;
+  const r = await fetch(req, { cache: 'no-cache' });
+  if (r.ok) { try { await addToCache(STATIC_CACHE, req, r.clone()); } catch {} }
+  return r;
+});
+const networkOnly = strat.networkOnly || ((req) => fetch(req));
+const staleWhileRevalidate = strat.staleWhileRevalidate || (async (req) => {
+  const cache = await caches.open(DYNAMIC_CACHE);
+  const cached = await cache.match(req);
+  fetch(req, { cache: 'no-cache' })
+    .then(r => { if (r.ok) { try { cache.put(req, r.clone()); } catch {} } })
+    .catch(() => {});
+  return cached || fetch(req, { cache: 'no-cache' });
+});
 
 // Adicionar ao cache
 async function addToCache(cacheName, request, response) {
@@ -279,10 +240,10 @@ async function addToCache(cacheName, request, response) {
 // Limpar cache antigo
 async function trimCache(cacheName) {
   try {
-  const cache = await caches.open(cacheName);
-  const keys = await cache.keys();
+    const cache = await caches.open(cacheName);
+    const keys = await cache.keys();
 
-  if (keys.length > MAX_CACHE_ITEMS) {
+    if (keys.length > MAX_CACHE_ITEMS) {
       const keysToDelete = keys.slice(0, keys.length - MAX_CACHE_ITEMS);
       await Promise.all(keysToDelete.map(key => cache.delete(key)));
       log(`Removidos ${keysToDelete.length} itens do cache ${cacheName}`);
@@ -369,8 +330,8 @@ self.addEventListener('push', (e) => {
   const data = e.data.json();
   const options = {
     body: data.body,
-    icon: '/icon-192.webp',
-    badge: '/badge.webp',
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
     vibrate: [100, 50, 100],
     data: { url: data.url }
   };
@@ -387,41 +348,7 @@ self.addEventListener('notificationclick', (e) => {
   );
 });
 
-// Cache de recursos externos na instalação
-self.addEventListener('install', (e) => {
-  log('Instalando Service Worker');
-
-  e.waitUntil(
-    Promise.all([
-      // Cache estático
-      caches.open(STATIC_CACHE).then(cache => {
-        log('Adicionando assets ao cache estático');
-        return Promise.allSettled(
-          ASSETS.map(url => cache.add(url).catch(err => {
-            log(`Falha ao cachear ${url}:`, err);
-            return null;
-          }))
-        );
-      }),
-
-      // Cache de recursos externos
-      caches.open(DYNAMIC_CACHE).then(cache => {
-        log('Adicionando recursos externos ao cache');
-        return Promise.allSettled(
-          EXTERNAL_RESOURCES.map(url => cache.add(url).catch(err => {
-            log(`Falha ao cachear recurso externo ${url}:`, err);
-            return null;
-          }))
-        );
-      })
-    ]).then(() => {
-      log('Pré-cache completo');
-      return self.skipWaiting();
-    }).catch(err => {
-      log('Erro durante instalação:', err);
-    })
-  );
-});
+// (instalação duplicada removida)
 
 // Log de eventos para debug
 self.addEventListener('error', (event) => {

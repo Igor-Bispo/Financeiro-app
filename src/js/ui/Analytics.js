@@ -1,18 +1,78 @@
 /**
  * Analytics.js - Módulo para análise de dados financeiros
- * 
+ *
  * Este módulo fornece funcionalidades para análise de dados financeiros,
  * incluindo gráficos, estatísticas e relatórios.
  */
 
 // Importar dependências
-import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase.js';
 
 /**
  * Classe Analytics para análise de dados financeiros
  */
 export class Analytics {
+  // Busca transações do Firestore para um período; tenta createdAt range e faz fallback para budgetId puro quando necessário
+  static async fetchTransactionsForPeriod(budgetId, startDate, endDate) {
+    try {
+      const transacoesRef = collection(db, 'transactions');
+      // Primeira tentativa: range por createdAt (eficiente quando os dados possuem esse campo)
+      try {
+        const qRange = query(
+          transacoesRef,
+          where('budgetId', '==', budgetId),
+          where('createdAt', '>=', startDate),
+          where('createdAt', '<=', endDate)
+        );
+        const snap = await getDocs(qRange);
+        const items = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        if (items.length > 0) {
+          return items;
+        }
+      } catch (e) {
+        // Ignorar erro e tentar fallback amplo
+        console.warn('Fallback to broad query (createdAt range unsupported or empty):', e?.message || e);
+      }
+
+      // Fallback: buscar por budgetId e filtrar por data efetiva no cliente
+      const qBudget = query(transacoesRef, where('budgetId', '==', budgetId));
+      const snapAll = await getDocs(qBudget);
+      const all = snapAll.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      return all.filter(t => {
+        const d = Analytics.txToDate(t);
+        return d && d >= startDate && d <= endDate;
+      });
+    } catch (err) {
+      console.error('Erro ao buscar transações do período:', err);
+      return [];
+    }
+  }
+  // Helper: resolve a transaction's effective date consistently (prefers explicit date fields)
+  static txToDate(t) {
+    try {
+      let v = t?.dataEfetivacao || t?.dataLancamento || t?.data || t?.date || t?.createdAt;
+      if (!v) return null;
+      if (v && typeof v.toDate === 'function') return v.toDate();
+      if (typeof v === 'string') {
+        const s = v.trim();
+        const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (m) return new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10));
+        const d = new Date(s);
+        return isNaN(d.getTime()) ? null : d;
+      }
+      if (typeof v === 'number') {
+        const ms = v < 1e12 ? v * 1000 : v;
+        const d = new Date(ms);
+        return isNaN(d.getTime()) ? null : d;
+      }
+      if (v instanceof Date) return v;
+      const d = new Date(v);
+      return isNaN(d.getTime()) ? null : d;
+    } catch {
+      return null;
+    }
+  }
   /**
    * Gera um relatório de gastos por categoria para um período específico
    * @param {string} budgetId - ID do orçamento
@@ -23,74 +83,67 @@ export class Analytics {
   static async getGastosPorCategoria(budgetId, startDate, endDate) {
     try {
       console.log('📊 Gerando relatório de gastos por categoria...');
-      
+
       // Validar parâmetros
       if (!budgetId) {
         throw new Error('ID do orçamento não fornecido');
       }
-      
+
       if (!startDate || !endDate) {
         // Usar mês atual como padrão
         const now = new Date();
         startDate = new Date(now.getFullYear(), now.getMonth(), 1);
         endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
       }
-      
+
       // Usar dados já carregados na aplicação se disponíveis
       let transacoes = [];
       let categorias = [];
-      
+
       if (window.appState?.transactions && window.appState?.categories) {
         console.log('📊 Usando dados já carregados na aplicação');
-        
+
         // Filtrar transações do orçamento e período
         transacoes = window.appState.transactions.filter(t => {
           if (t.budgetId !== budgetId) return false;
-          
-          const transacaoDate = t.createdAt?.toDate ? t.createdAt.toDate() : new Date(t.createdAt);
-          return transacaoDate >= startDate && transacaoDate <= endDate;
+          const d = Analytics.txToDate(t);
+          return d && d >= startDate && d <= endDate;
         });
-        
+
         // Filtrar categorias do orçamento
         categorias = window.appState.categories.filter(c => c.budgetId === budgetId);
-        
+        // Fallback: se não houver transações locais para o período, tentar buscar do Firestore
+        if (!transacoes || transacoes.length === 0) {
+          const fetched = await Analytics.fetchTransactionsForPeriod(budgetId, startDate, endDate);
+          if (fetched.length > 0) {
+            transacoes = fetched;
+          }
+        }
       } else {
         console.log('📊 Buscando dados do Firestore...');
-        
-        // Buscar transações no período
-        const transacoesRef = collection(db, 'transactions');
-        const q = query(
-          transacoesRef,
-          where('budgetId', '==', budgetId),
-          where('createdAt', '>=', startDate),
-          where('createdAt', '<=', endDate)
-        );
-        
-        const querySnapshot = await getDocs(q);
-        transacoes = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        
+
+        // Buscar transações no período (com fallback interno)
+        transacoes = await Analytics.fetchTransactionsForPeriod(budgetId, startDate, endDate);
+
         // Buscar categorias
         const categoriasRef = collection(db, 'categories');
         const qCategorias = query(
           categoriasRef,
           where('budgetId', '==', budgetId)
         );
-        
+
         const categoriasSnapshot = await getDocs(qCategorias);
         categorias = categoriasSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         }));
       }
-      
+
       // Agrupar transações por categoria
       const gastosPorCategoria = categorias.map(categoria => {
         const transacoesCategoria = transacoes.filter(t => t.categoriaId === categoria.id);
         const totalGasto = transacoesCategoria.reduce((sum, t) => sum + parseFloat(t.valor), 0);
-        
+
         return {
           categoria,
           totalGasto,
@@ -98,16 +151,16 @@ export class Analytics {
           percentual: 0 // Será calculado depois
         };
       });
-      
+
       // Calcular percentuais
       const totalGeral = gastosPorCategoria.reduce((sum, item) => sum + item.totalGasto, 0);
       gastosPorCategoria.forEach(item => {
         item.percentual = totalGeral > 0 ? (item.totalGasto / totalGeral) * 100 : 0;
       });
-      
+
       // Ordenar por valor (maior para menor)
       gastosPorCategoria.sort((a, b) => b.totalGasto - a.totalGasto);
-      
+
       console.log('✅ Relatório gerado com sucesso:', gastosPorCategoria);
       return gastosPorCategoria;
     } catch (error) {
@@ -115,7 +168,7 @@ export class Analytics {
       throw error;
     }
   }
-  
+
   /**
    * Gera um relatório de evolução de saldo ao longo do tempo
    * @param {string} budgetId - ID do orçamento
@@ -125,24 +178,24 @@ export class Analytics {
   static async getEvolucaoSaldo(budgetId, meses = 6) {
     try {
       console.log('📊 Gerando relatório de evolução de saldo...');
-      
+
       // Validar parâmetros
       if (!budgetId) {
         throw new Error('ID do orçamento não fornecido');
       }
-      
+
       // Calcular período de análise
       const now = new Date();
       const periodos = [];
-      
+
       for (let i = 0; i < meses; i++) {
         const mes = now.getMonth() - i;
         const ano = now.getFullYear() + Math.floor(mes / 12);
         const mesAjustado = ((mes % 12) + 12) % 12;
-        
+
         const startDate = new Date(ano, mesAjustado, 1);
         const endDate = new Date(ano, mesAjustado + 1, 0);
-        
+
         periodos.push({
           ano,
           mes: mesAjustado + 1,
@@ -154,18 +207,17 @@ export class Analytics {
           saldo: 0
         });
       }
-      
+
       // Buscar transações para cada período
       for (const periodo of periodos) {
         let transacoes = [];
-        
+
         if (window.appState?.transactions) {
           // Usar dados já carregados
           transacoes = window.appState.transactions.filter(t => {
             if (t.budgetId !== budgetId) return false;
-            
-            const transacaoDate = t.createdAt?.toDate ? t.createdAt.toDate() : new Date(t.createdAt);
-            return transacaoDate >= periodo.startDate && transacaoDate <= periodo.endDate;
+            const d = Analytics.txToDate(t);
+            return d && d >= periodo.startDate && d <= periodo.endDate;
           });
         } else {
           // Buscar do Firestore
@@ -176,14 +228,14 @@ export class Analytics {
             where('createdAt', '>=', periodo.startDate),
             where('createdAt', '<=', periodo.endDate)
           );
-          
+
           const querySnapshot = await getDocs(q);
           transacoes = querySnapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
           }));
         }
-        
+
         // Calcular receitas e despesas
         for (const transacao of transacoes) {
           const valor = parseFloat(transacao.valor);
@@ -193,17 +245,17 @@ export class Analytics {
             periodo.despesas += valor;
           }
         }
-        
+
         // Calcular saldo
         periodo.saldo = periodo.receitas - periodo.despesas;
       }
-      
+
       // Ordenar por data (mais recente primeiro)
       periodos.sort((a, b) => {
         if (a.ano !== b.ano) return b.ano - a.ano;
         return b.mes - a.mes;
       });
-      
+
       console.log('✅ Relatório de evolução de saldo gerado com sucesso:', periodos);
       return periodos;
     } catch (error) {
@@ -211,7 +263,7 @@ export class Analytics {
       throw error;
     }
   }
-  
+
   /**
    * Gera um relatório de previsão de gastos para os próximos meses
    * @param {string} budgetId - ID do orçamento
@@ -222,33 +274,33 @@ export class Analytics {
   static async getPrevisaoGastos(budgetId, mesesHistorico = 3, mesesPrevisao = 3) {
     try {
       console.log('📊 Gerando previsão de gastos...');
-      
+
       // Validar parâmetros
       if (!budgetId) {
         throw new Error('ID do orçamento não fornecido');
       }
-      
+
       // Obter dados históricos
       const historicoSaldo = await this.getEvolucaoSaldo(budgetId, mesesHistorico);
-      
+
       // Calcular médias
       const mediaReceitas = historicoSaldo.reduce((sum, periodo) => sum + periodo.receitas, 0) / historicoSaldo.length;
       const mediaDespesas = historicoSaldo.reduce((sum, periodo) => sum + periodo.despesas, 0) / historicoSaldo.length;
-      
+
       // Gerar previsão
       const now = new Date();
       const previsao = [];
-      
+
       for (let i = 1; i <= mesesPrevisao; i++) {
         const mes = now.getMonth() + i;
         const ano = now.getFullYear() + Math.floor(mes / 12);
         const mesAjustado = mes % 12;
-        
+
         const startDate = new Date(ano, mesAjustado, 1);
-        
+
         // Aplicar tendência (pequeno aumento mensal)
         const fatorTendencia = 1 + (i * 0.01); // 1% de aumento por mês
-        
+
         previsao.push({
           ano,
           mes: mesAjustado + 1,
@@ -259,7 +311,7 @@ export class Analytics {
           isPrevisto: true
         });
       }
-      
+
       console.log('✅ Previsão de gastos gerada com sucesso:', previsao);
       return previsao;
     } catch (error) {
@@ -267,7 +319,7 @@ export class Analytics {
       throw error;
     }
   }
-  
+
   /**
    * Renderiza um gráfico de gastos por categoria
    * @param {string} elementId - ID do elemento HTML para renderizar o gráfico
@@ -276,15 +328,15 @@ export class Analytics {
   static renderizarGraficoCategorias(elementId, dados) {
     try {
       console.log('📊 Renderizando gráfico de categorias...');
-      
+
       const container = document.getElementById(elementId);
       if (!container) {
         throw new Error(`Elemento com ID ${elementId} não encontrado`);
       }
-      
+
       // Limpar conteúdo anterior
       container.innerHTML = '';
-      
+
       // Verificar se há dados
       if (!dados || dados.length === 0) {
         container.innerHTML = `
@@ -294,7 +346,7 @@ export class Analytics {
         `;
         return;
       }
-      
+
       // Criar gráfico de barras simples com HTML/CSS
       const html = `
         <div class="analytics-chart">
@@ -319,7 +371,7 @@ export class Analytics {
           </div>
         </div>
       `;
-      
+
       container.innerHTML = html;
       console.log('✅ Gráfico renderizado com sucesso');
     } catch (error) {
@@ -327,7 +379,7 @@ export class Analytics {
       throw error;
     }
   }
-  
+
   /**
    * Renderiza um gráfico de evolução de saldo
    * @param {string} elementId - ID do elemento HTML para renderizar o gráfico
@@ -336,15 +388,15 @@ export class Analytics {
   static renderizarGraficoEvolucao(elementId, dados) {
     try {
       console.log('📊 Renderizando gráfico de evolução...');
-      
+
       const container = document.getElementById(elementId);
       if (!container) {
         throw new Error(`Elemento com ID ${elementId} não encontrado`);
       }
-      
+
       // Limpar conteúdo anterior
       container.innerHTML = '';
-      
+
       // Verificar se há dados
       if (!dados || dados.length === 0) {
         container.innerHTML = `
@@ -354,59 +406,58 @@ export class Analytics {
         `;
         return;
       }
-      
+
       // Encontrar valores máximos para escala
       const maxReceita = Math.max(...dados.map(d => d.receitas));
       const maxDespesa = Math.max(...dados.map(d => d.despesas));
       const maxValor = Math.max(maxReceita, maxDespesa) * 1.1; // 10% a mais para margem
-      
+
       // Criar gráfico de linhas simples com HTML/CSS
       const html = `
         <div class="analytics-chart">
           <h3 class="text-lg font-medium mb-4">Evolução Financeira</h3>
           
-          <div class="relative h-64 mt-4">
+          <div class="relative h-64 mt-4 pl-12 pr-4">
             <!-- Linhas de grade -->
             <div class="absolute inset-0 grid grid-rows-4 w-full h-full">
               ${[0, 1, 2, 3].map(i => `
                 <div class="border-t border-gray-200 dark:border-gray-700 relative">
-                  <span class="absolute -top-3 -left-12 text-xs text-gray-500 dark:text-gray-400">
+                  <span class="absolute -top-3 -left-16 text-xs text-gray-500 dark:text-gray-400">
                     R$ ${((maxValor / 4) * (4 - i)).toFixed(0)}
                   </span>
                 </div>
               `).join('')}
             </div>
             
-            <!-- Gráfico de linhas -->
-            <div class="absolute inset-0 flex items-end justify-between">
-              ${dados.map((periodo, index) => {
-                const alturaReceita = (periodo.receitas / maxValor) * 100;
-                const alturaDespesa = (periodo.despesas / maxValor) * 100;
-                const corSaldo = periodo.saldo >= 0 ? 'bg-green-500' : 'bg-red-500';
-                const isPrevisto = periodo.isPrevisto;
-                
-                return `
-                  <div class="flex flex-col items-center justify-end w-full max-w-[${100 / dados.length}%] px-1">
+            <!-- Gráfico de barras -->
+            <div class="absolute inset-0 flex items-end justify-between gap-1">
+              ${dados.map((periodo, _index) => {
+    const alturaReceita = Math.max((periodo.receitas / maxValor) * 100, 2);
+    const alturaDespesa = Math.max((periodo.despesas / maxValor) * 100, 2);
+    const isPrevisto = periodo.isPrevisto;
+
+    return `
+                  <div class="flex flex-col items-center justify-end flex-1 min-w-0">
                     <!-- Barra de receita -->
                     <div class="w-full flex justify-center mb-1">
-                      <div class="w-4 ${isPrevisto ? 'bg-green-300/50' : 'bg-green-500'} rounded-t" 
+                      <div class="w-3 ${isPrevisto ? 'bg-green-300/50' : 'bg-green-500'} rounded-t transition-all duration-300 hover:w-4" 
                            style="height: ${alturaReceita}%"></div>
                     </div>
                     
                     <!-- Barra de despesa -->
                     <div class="w-full flex justify-center mb-1">
-                      <div class="w-4 ${isPrevisto ? 'bg-red-300/50' : 'bg-red-500'} rounded-t" 
+                      <div class="w-3 ${isPrevisto ? 'bg-red-300/50' : 'bg-red-500'} rounded-t transition-all duration-300 hover:w-4" 
                            style="height: ${alturaDespesa}%"></div>
                     </div>
                     
                     <!-- Rótulo do mês -->
-                    <div class="text-xs text-gray-600 dark:text-gray-400 mt-1 ${isPrevisto ? 'italic' : ''}">
+                    <div class="text-xs text-gray-600 dark:text-gray-400 mt-1 ${isPrevisto ? 'italic' : ''} text-center truncate w-full">
                       ${periodo.nome.substring(0, 3)}
                       ${isPrevisto ? '*' : ''}
                     </div>
                   </div>
                 `;
-              }).join('')}
+  }).join('')}
             </div>
           </div>
           
@@ -428,7 +479,7 @@ export class Analytics {
           </div>
         </div>
       `;
-      
+
       container.innerHTML = html;
       console.log('✅ Gráfico de evolução renderizado com sucesso');
     } catch (error) {
@@ -436,55 +487,75 @@ export class Analytics {
       throw error;
     }
   }
-  
+
   /**
    * Gera um relatório completo com todos os dados financeiros
    * @param {string} budgetId - ID do orçamento
    * @returns {Promise<Object>} - Objeto com todos os dados do relatório
    */
-  static async gerarRelatorioCompleto(budgetId) {
+  static async gerarRelatorioCompleto(budgetId, startDate, endDate) {
     try {
       console.log('📊 Gerando relatório completo...');
-      
+
       // Validar parâmetros
       if (!budgetId) {
         throw new Error('ID do orçamento não fornecido');
       }
-      
+
       // Verificar se o usuário está autenticado
       if (!window.appState?.currentUser) {
         throw new Error('Usuário não autenticado');
       }
-      
+
       console.log('🔍 Gerando relatório para orçamento:', budgetId);
-      
+
       // Obter dados de diferentes fontes
       const [gastosPorCategoria, evolucaoSaldo, previsaoGastos] = await Promise.all([
-        this.getGastosPorCategoria(budgetId),
+        this.getGastosPorCategoria(budgetId, startDate, endDate),
         this.getEvolucaoSaldo(budgetId, 6),
         this.getPrevisaoGastos(budgetId, 3, 3)
       ]);
-      
+
       console.log('📊 Dados obtidos:', {
         gastosPorCategoria: gastosPorCategoria.length,
         evolucaoSaldo: evolucaoSaldo.length,
         previsaoGastos: previsaoGastos.length
       });
-      
+
       // Combinar dados em um único relatório
+      // Calcular resumo do mês selecionado (sem usar fallback de outros meses)
+      let receitasMes = 0;
+      let despesasMes = 0;
+      if (startDate && endDate) {
+        let tx = [];
+        if (window.appState?.transactions) {
+          tx = window.appState.transactions.filter(t => {
+            if (t.budgetId !== budgetId) return false;
+            const d = Analytics.txToDate(t);
+            return d && d >= startDate && d <= endDate;
+          });
+        }
+        // Fallback para Firestore caso local esteja vazio
+        if (!tx || tx.length === 0) {
+          tx = await Analytics.fetchTransactionsForPeriod(budgetId, startDate, endDate);
+        }
+        receitasMes = tx.filter(t => t.tipo === 'receita').reduce((s, t) => s + parseFloat(t.valor || 0), 0);
+        despesasMes = tx.filter(t => t.tipo === 'despesa').reduce((s, t) => s + parseFloat(t.valor || 0), 0);
+      }
+
       const relatorio = {
         gastosPorCategoria,
         evolucaoSaldo,
         previsaoGastos,
         resumo: {
-          saldoAtual: evolucaoSaldo[0]?.saldo || 0,
-          receitasMes: evolucaoSaldo[0]?.receitas || 0,
-          despesasMes: evolucaoSaldo[0]?.despesas || 0,
+          saldoAtual: (receitasMes - despesasMes),
+          receitasMes: receitasMes,
+          despesasMes: despesasMes,
           tendencia: previsaoGastos[0]?.saldo >= 0 ? 'positiva' : 'negativa',
           categoriasMaioresGastos: gastosPorCategoria.slice(0, 3)
         }
       };
-      
+
       console.log('✅ Relatório completo gerado com sucesso');
       return relatorio;
     } catch (error) {

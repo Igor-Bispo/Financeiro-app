@@ -14,15 +14,15 @@ class VoiceSystem {
     this.maxRetries = 3;
     this.microphonePermissionChecked = false; // Cache de permissão para evitar delays
     this.hasReceivedSpeech = false; // Flag para controlar se já recebeu fala
-    
+
     console.log('🎤 VoiceSystem inicializado');
   }
 
   // ===== INICIALIZAÇÃO =====
-  
+
   init() {
     console.log('🎤 Inicializando VoiceSystem...');
-    
+
     // Verificar suporte do navegador
     if (!this.checkBrowserSupport()) {
       console.error('❌ Navegador não suporta reconhecimento de voz');
@@ -45,7 +45,7 @@ class VoiceSystem {
       console.error('❌ Erro ao configurar reconhecimento:', error);
       return false;
     }
-    
+
     // Configurar eventos globais
     try {
       this.setupGlobalEvents();
@@ -53,13 +53,13 @@ class VoiceSystem {
     } catch (error) {
       console.error('❌ Erro ao configurar eventos:', error);
     }
-    
+
     console.log('✅ VoiceSystem inicializado com sucesso');
     return true;
   }
 
   // ===== VERIFICAÇÕES =====
-  
+
   checkBrowserSupport() {
     const hasSupport = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
     console.log('🔍 Suporte ao reconhecimento de voz:', hasSupport);
@@ -73,24 +73,24 @@ class VoiceSystem {
   }
 
   // ===== CONFIGURAÇÃO DO RECONHECIMENTO =====
-  
+
   setupRecognition() {
     try {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       this.recognition = new SpeechRecognition();
-      
+
       // Configurações otimizadas para evitar cortes
       this.recognition.lang = 'pt-BR';
       this.recognition.continuous = true;  // Manter continuous para captura contínua
       this.recognition.interimResults = true;  // Resultados intermediários para feedback
       this.recognition.maxAlternatives = 1;  // Reduzido para 1 para melhor performance
-      
+
       // Configurações adicionais para estabilidade
       if (this.recognition.serviceURI !== undefined) {
         // Configurações específicas do Chrome
         this.recognition.serviceURI = 'wss://www.google.com/speech-api/v2/recognize';
       }
-      
+
       // Event listeners
       this.recognition.onstart = () => this.handleRecognitionStart();
       this.recognition.onresult = (event) => this.handleRecognitionResult(event);
@@ -100,7 +100,7 @@ class VoiceSystem {
       this.recognition.onspeechend = () => this.handleSpeechEnd();
       this.recognition.onsoundstart = () => this.handleSoundStart();
       this.recognition.onsoundend = () => this.handleSoundEnd();
-      
+
       console.log('✅ Reconhecimento configurado com eventos adicionais');
     } catch (error) {
       console.error('❌ Erro ao configurar reconhecimento:', error);
@@ -109,7 +109,7 @@ class VoiceSystem {
   }
 
   // ===== EVENTOS DO RECONHECIMENTO =====
-  
+
   handleRecognitionStart() {
     console.log('🎤 Reconhecimento iniciado');
     this.isListening = true;
@@ -139,21 +139,21 @@ class VoiceSystem {
 
   handleRecognitionResult(event) {
     console.log('🎤 Resultado recebido:', event);
-    
+
     const lastResult = event.results[event.results.length - 1];
     const transcript = lastResult[0].transcript;
     const confidence = lastResult[0].confidence;
     const isFinal = lastResult.isFinal;
-    
+
     console.log('🎤 Transcrição:', transcript);
     console.log('🎤 Confiança:', confidence);
     console.log('🎤 Final:', isFinal);
-    
+
     if (isFinal) {
       // Resultado final - aguardar um pouco antes de processar para evitar cortes
       console.log('✅ Resultado final recebido, aguardando antes de processar...');
       this.updateModalStatus('', `Você disse: "${transcript}"`, 'processing');
-      
+
       // Aguardar 200ms antes de processar para permitir que o áudio termine naturalmente
       setTimeout(() => {
         if (!this.isProcessingCommand) {
@@ -170,21 +170,21 @@ class VoiceSystem {
     console.error('🎤 Erro no reconhecimento:', event);
     this.isListening = false;
     this.isStarting = false;
-    
+
     const errorMessage = this.getErrorMessage(event.error);
-    
+
     // Marcar que houve erro para evitar reinicialização automática
     this.hasError = true;
-    
+
     // Limpar flag de erro após um tempo
     setTimeout(() => {
       this.hasError = false;
     }, 5000);
-    
+
     // Tratamento especial para 'no-speech'
     if (event.error === 'no-speech') {
       console.log('⚠️ Nenhuma fala detectada');
-      
+
       // Se já recebeu fala antes, não reiniciar imediatamente
       if (this.hasReceivedSpeech) {
         console.log('ℹ️ Já havia recebido fala, aguardando mais tempo...');
@@ -205,14 +205,14 @@ class VoiceSystem {
       }
       return;
     }
-    
+
     this.updateModalStatus('', errorMessage, 'error');
-    
+
     // Tentar novamente se for erro de rede ou serviço
     if (this.shouldRetry(event.error) && this.retryCount < this.maxRetries) {
       this.retryCount++;
       console.log(`🔄 Tentativa ${this.retryCount} de ${this.maxRetries}`);
-      
+
       setTimeout(() => {
         if (this.isModalOpen) {
           this.hasError = false;
@@ -231,10 +231,10 @@ class VoiceSystem {
     console.log('🎤 Reconhecimento finalizado');
     this.isListening = false;
     this.isStarting = false;
-    
+
     // Se recebeu fala mas não processou comando, aguardar mais tempo antes de reiniciar
     const restartDelay = this.hasReceivedSpeech && !this.isProcessingCommand ? 1000 : 500;
-    
+
     // Só reiniciar se modal estiver aberto, não houve erro e não está processando comando
     if (this.isModalOpen && !this.isListening && !this.hasError && !this.isProcessingCommand) {
       console.log(`🔄 Reiniciando reconhecimento em ${restartDelay}ms...`);
@@ -257,20 +257,20 @@ class VoiceSystem {
   }
 
   // ===== PROCESSAMENTO DE COMANDOS =====
-  
-  async processCommand(transcript, confidence) {
+
+  async processCommand(transcript, _confidence) {
     try {
       this.isProcessingCommand = true;
       console.log('🎤 Processando comando:', transcript);
-      
+
       // Normalizar texto
       const normalizedText = this.normalizeText(transcript);
       console.log('🎤 Texto normalizado:', normalizedText);
-      
+
       // Determinar tipo de comando
       const commandType = this.determineCommandType(normalizedText);
       console.log('🎤 Tipo de comando:', commandType);
-      
+
       // Parar reconhecimento de forma suave APÓS determinar o comando
       if (this.recognition && this.isListening) {
         // Aguardar um pouco antes de parar para evitar corte abrupto
@@ -280,22 +280,22 @@ class VoiceSystem {
           }
         }, 100);
       }
-      
+
       // Processar comando
       const result = await this.executeCommand(normalizedText, commandType);
-      
+
       // Mostrar resultado
       this.showSuccess(result);
-      
+
       // Fechar modal
       setTimeout(() => {
         this.closeModal();
       }, 2000);
-      
+
     } catch (error) {
       console.error('❌ Erro ao processar comando:', error);
       this.showError(`Erro ao processar comando: ${error.message}`);
-      
+
       setTimeout(() => {
         this.closeModal();
       }, 3000);
@@ -314,30 +314,30 @@ class VoiceSystem {
 
   determineCommandType(text) {
     console.log('🔍 Determinando tipo de comando para:', text);
-    
+
     // Comandos de consulta explícitos
     if (/\b(saldo|qual.*saldo|saldo atual|quanto.*tenho|meu saldo)\b/.test(text)) {
       console.log('✅ Comando de consulta detectado');
       return 'query';
     }
-    
+
     // Comandos de navegação explícitos
     if (/\b(ir para|va para|mostrar|abrir|navegar).*(dashboard|transacoes|categorias|recorrentes)\b/.test(text)) {
       console.log('✅ Comando de navegação detectado');
       return 'navigation';
     }
-    
+
     // Comandos explícitos de categoria
     if (/\b(adicionar|nova|criar|inserir).*(categoria)\b/.test(text) ||
         /\b(categoria).*(nova|adicionar|criar)\b/.test(text)) {
       console.log('✅ Comando de categoria detectado (explícito)');
       return 'category';
     }
-    
+
     // NOVA LÓGICA: Detecção inteligente baseada na quantidade de itens
     const items = this.extractCommandItems(text);
     console.log('🔍 Itens extraídos do comando:', items);
-    
+
     if (items.length === 3) {
       console.log('✅ 3 itens detectados → Comando de CATEGORIA');
       return 'category';
@@ -345,7 +345,7 @@ class VoiceSystem {
       console.log('✅ 4 itens detectados → Comando de TRANSAÇÃO');
       return 'transaction';
     }
-    
+
     // Fallback: Comandos de transação - padrões tradicionais
     if (/\b(adicionar|nova|criar|inserir|registrar|lancamento|lancar).*(despesa|receita|transacao|gasto|entrada|compra|pagamento)\b/.test(text) ||
         /\b(despesa|receita|gasto|entrada|compra|pagamento).*(de|por|valor|no valor)\b/.test(text) ||
@@ -356,19 +356,19 @@ class VoiceSystem {
       console.log('✅ Comando de transação detectado (padrão tradicional)');
       return 'transaction';
     }
-    
+
     // Se contém números e palavras relacionadas a dinheiro, provavelmente é transação
     if (/\b\d+\b/.test(text) && /\b(reais?|real|r\$|dinheiro|valor)\b/.test(text)) {
       console.log('✅ Comando de transação detectado (padrão numérico)');
       return 'transaction';
     }
-    
+
     // Se contém números por extenso e contexto financeiro
     if (/\b(cem|mil|duzentos|trezentos|quatrocentos|quinhentos|seiscentos|setecentos|oitocentos|novecentos|vinte|trinta|quarenta|cinquenta|sessenta|setenta|oitenta|noventa)\b/.test(text)) {
       console.log('✅ Comando de transação detectado (número por extenso)');
       return 'transaction';
     }
-    
+
     // Comando padrão
     console.log('⚠️ Usando tipo padrão:', this.currentType || 'transaction');
     return this.currentType || 'transaction';
@@ -376,44 +376,44 @@ class VoiceSystem {
 
   extractCommandItems(text) {
     console.log('🔍 Extraindo itens do comando:', text);
-    
+
     // Normalizar texto
     const normalizedText = text.toLowerCase()
       .normalize('NFD')
       .replace(/\p{Diacritic}/gu, '')
       .trim();
-    
+
     // Palavras a ignorar na contagem de itens
     const wordsToIgnore = [
-      'adicionar', 'nova', 'novo', 'criar', 'inserir', 'registrar', 
-      'lancamento', 'lancar', 'de', 'da', 'do', 'na', 'no', 'em', 
+      'adicionar', 'nova', 'novo', 'criar', 'inserir', 'registrar',
+      'lancamento', 'lancar', 'de', 'da', 'do', 'na', 'no', 'em',
       'para', 'por', 'com', 'valor', 'reais', 'real', 'r$', 'dinheiro',
       'categoria', 'transacao', 'e', 'a', 'o', 'as', 'os'
     ];
-    
+
     // Dividir em palavras e filtrar
     const words = normalizedText.split(/\s+/)
       .filter(word => word.length > 1)
       .filter(word => !wordsToIgnore.includes(word));
-    
+
     console.log('🔍 Palavras filtradas:', words);
-    
+
     // Identificar itens significativos
     const items = [];
-    
+
     for (const word of words) {
       // Verificar se é um número (valor)
       if (/^\d+([.,]\d+)?$/.test(word)) {
         items.push({ type: 'valor', value: word });
         continue;
       }
-      
+
       // Verificar se é tipo (despesa/receita)
       if (/^(despesa|receita|gasto|entrada)s?$/.test(word)) {
         items.push({ type: 'tipo', value: word });
         continue;
       }
-      
+
       // Verificar se é uma categoria conhecida
       let isKnownCategory = false;
       if (window.appState?.categories) {
@@ -425,72 +425,72 @@ class VoiceSystem {
           }
         }
       }
-      
+
       // Se não é categoria conhecida, pode ser descrição ou nova categoria
       if (!isKnownCategory && word.length > 2) {
         items.push({ type: 'descricao', value: word });
       }
     }
-    
+
     console.log('🔍 Itens identificados:', items);
     return items;
   }
 
   async executeCommand(text, type) {
     console.log('🎤 Executando comando:', type, text);
-    
+
     switch (type) {
-      case 'query':
-        return await this.handleQueryCommand(text);
-      case 'transaction':
-        return await this.handleTransactionCommand(text);
-      case 'category':
-        return await this.handleCategoryCommand(text);
-      case 'navigation':
-        return await this.handleNavigationCommand(text);
-      default:
-        throw new Error('Tipo de comando não reconhecido');
+    case 'query':
+      return await this.handleQueryCommand(text);
+    case 'transaction':
+      return await this.handleTransactionCommand(text);
+    case 'category':
+      return await this.handleCategoryCommand(text);
+    case 'navigation':
+      return await this.handleNavigationCommand(text);
+    default:
+      throw new Error('Tipo de comando não reconhecido');
     }
   }
 
   // ===== HANDLERS DE COMANDOS =====
-  
+
   async handleQueryCommand(text) {
     console.log('🔍 Processando comando de consulta:', text);
-    
+
     if (/\b(saldo|qual.*saldo|saldo atual)\b/.test(text)) {
       const saldo = this.calculateBalance();
       return `Saldo atual: R$ ${saldo.toFixed(2)}`;
     }
-    
+
     if (/\b(despesas|gastos)\b/.test(text)) {
       const despesas = this.calculateExpenses();
       return `Total de despesas: R$ ${despesas.toFixed(2)}`;
     }
-    
+
     if (/\b(receitas|entradas)\b/.test(text)) {
       const receitas = this.calculateIncome();
       return `Total de receitas: R$ ${receitas.toFixed(2)}`;
     }
-    
+
     return 'Comando de consulta não reconhecido';
   }
 
   async handleTransactionCommand(text) {
     console.log('💰 Processando comando de transação:', text);
-    
+
     // Extrair informações da transação
     const transactionData = this.parseTransactionCommand(text);
-    
+
     if (!transactionData) {
       throw new Error('Não foi possível entender os dados da transação');
     }
-    
+
     // Preparar mensagem sobre categoria
-    const categoriaInfo = transactionData.categoriaExistente 
-      ? `categoria existente "${transactionData.categoria}"` 
+    const categoriaInfo = transactionData.categoriaExistente
+      ? `categoria existente "${transactionData.categoria}"`
       : `nova categoria "${transactionData.categoria}"`;
-    
+
     // Abrir modal de transação para edição
     if (window.showAddTransactionModal) {
       // Preparar dados para o modal
@@ -501,12 +501,12 @@ class VoiceSystem {
         categoriaId: transactionData.categoriaId,
         data: new Date().toISOString().split('T')[0] // formato YYYY-MM-DD
       };
-      
+
       console.log('🎤 Abrindo modal de transação com dados:', modalData);
-      
+
       // Abrir modal para edição (passar apenas os dados como primeiro parâmetro)
       window.showAddTransactionModal(modalData);
-      
+
       const valorText = transactionData.valor !== null ? `de R$ ${transactionData.valor.toFixed(2)}` : '(valor a definir)';
       return `✅ Modal aberto com: ${transactionData.tipo} ${valorText} na ${categoriaInfo}. Você pode editar e salvar.`;
     } else {
@@ -525,14 +525,14 @@ class VoiceSystem {
 
   async handleCategoryCommand(text) {
     console.log('📂 Processando comando de categoria:', text);
-    
+
     // Extrair dados da categoria
     const categoryData = this.parseCategoryCommand(text);
-    
+
     if (!categoryData || !categoryData.nome) {
       throw new Error('Nome da categoria não foi entendido');
     }
-    
+
     // Abrir modal de categoria para edição
     if (window.showAddCategoryModal) {
       // Preparar dados para o modal
@@ -541,12 +541,12 @@ class VoiceSystem {
         tipo: categoryData.tipo,
         limite: categoryData.limite || 0
       };
-      
+
       console.log('🎤 Abrindo modal de categoria com dados:', modalData);
-      
+
       // Abrir modal para edição
       window.showAddCategoryModal(modalData);
-      
+
       const limiteText = categoryData.limite > 0 ? ` com limite de R$ ${categoryData.limite.toFixed(2)}` : '';
       return `✅ Modal aberto com: categoria "${categoryData.nome}" (${categoryData.tipo})${limiteText}. Você pode editar e salvar.`;
     } else {
@@ -563,35 +563,35 @@ class VoiceSystem {
 
   async handleNavigationCommand(text) {
     console.log('🧭 Processando comando de navegação:', text);
-    
+
     if (/\b(dashboard|início|principal)\b/.test(text)) {
       window.location.hash = '#/dashboard';
       return 'Navegando para o Dashboard';
     }
-    
+
     if (/\b(transações|transação)\b/.test(text)) {
       window.location.hash = '#/transactions';
       return 'Navegando para Transações';
     }
-    
+
     if (/\b(categorias|categoria)\b/.test(text)) {
-      window.location.hash = '#/categories';
-      return 'Navegando para Categorias';
+      window.location.hash = '#/dashboard';
+      return 'Navegando para Dashboard';
     }
-    
+
     if (/\b(recorrentes|recorrente)\b/.test(text)) {
       window.location.hash = '#/recorrentes';
       return 'Navegando para Recorrentes';
     }
-    
+
     return 'Comando de navegação não reconhecido';
   }
 
   // ===== PARSERS =====
-  
+
   parseTransactionCommand(text) {
     console.log('🔍 Analisando comando de transação:', text);
-    
+
     // Padrões para extrair informações
     const patterns = {
       tipo: {
@@ -615,19 +615,19 @@ class VoiceSystem {
         /([a-záàâãéèêíìîóòôõúùûç]+)\s*$/, // última palavra
       ]
     };
-    
+
     // Determinar tipo
     let tipo = 'despesa'; // padrão
     if (patterns.tipo.receita.test(text)) {
       tipo = 'receita';
     }
-    
+
     // Extrair valor - tentar múltiplos padrões
     let valor = null;
     let valorMatch = null;
-    
+
     console.log('🔍 Tentando extrair valor do texto:', text);
-    
+
     // Mapa de números por extenso
     const numerosExtenso = {
       'zero': 0, 'um': 1, 'uma': 1, 'dois': 2, 'duas': 2, 'três': 3, 'tres': 3,
@@ -640,17 +640,17 @@ class VoiceSystem {
       'seiscentos': 600, 'setecentos': 700, 'oitocentos': 800, 'novecentos': 900,
       'mil': 1000
     };
-    
+
     for (let i = 0; i < patterns.valor.length; i++) {
       const pattern = patterns.valor[i];
       console.log(`🔍 Testando padrão ${i + 1}:`, pattern);
-      
+
       valorMatch = text.match(pattern);
       if (valorMatch) {
         console.log('✅ Match encontrado:', valorMatch);
         const valorCapturado = valorMatch[1];
         console.log('📝 Valor capturado:', valorCapturado);
-        
+
         // Verificar se é um número por extenso
         if (numerosExtenso[valorCapturado.toLowerCase()]) {
           valor = numerosExtenso[valorCapturado.toLowerCase()];
@@ -660,7 +660,7 @@ class VoiceSystem {
           valor = parseFloat(valorCapturado.replace(',', '.'));
           console.log('🔢 Número convertido:', valor);
         }
-        
+
         if (valor && valor > 0) {
           console.log('✅ Valor válido encontrado:', valor);
           break;
@@ -673,7 +673,7 @@ class VoiceSystem {
         console.log('❌ Nenhum match para este padrão');
       }
     }
-    
+
     // Se não encontrou valor numérico, tentar números por extenso
     if (!valor) {
       const numerosExtenso = {
@@ -687,10 +687,10 @@ class VoiceSystem {
         'seiscentos': 600, 'setecentos': 700, 'oitocentos': 800, 'novecentos': 900,
         'mil': 1000
       };
-      
+
       // Primeiro, tentar encontrar padrões específicos para números por extenso
       const numeroPorExtensoPattern = /\b(zero|uma?|dois|duas|três|tres|quatro|cinco|seis|sete|oito|nove|dez|onze|doze|treze|quatorze|catorze|quinze|dezesseis|dezessete|dezoito|dezenove|vinte|trinta|quarenta|cinquenta|sessenta|setenta|oitenta|noventa|cem|cento|duzentos|trezentos|quatrocentos|quinhentos|seiscentos|setecentos|oitocentos|novecentos|mil)\b/i;
-      
+
       const numeroMatch = text.match(numeroPorExtensoPattern);
       if (numeroMatch) {
         const numeroEncontrado = numeroMatch[1].toLowerCase();
@@ -698,7 +698,7 @@ class VoiceSystem {
           valor = numerosExtenso[numeroEncontrado];
         }
       }
-      
+
       // Se ainda não encontrou, tentar palavra por palavra (fallback)
       if (!valor) {
         const words = text.split(' ');
@@ -710,27 +710,27 @@ class VoiceSystem {
         }
       }
     }
-    
+
     // Se não encontrou valor, definir como null para permitir preenchimento manual
     if (!valor) {
       console.log('⚠️ Valor não encontrado, será preenchido manualmente no modal');
       valor = null;
     }
-    
+
     // Extrair categoria - tentar múltiplos padrões
     let categoria = 'Outros'; // padrão
     let categoriaMatch = null;
     let categoriaEncontrada = null;
-    
+
     // Primeiro, tentar encontrar categorias existentes no texto completo
     if (window.appState?.categories) {
       console.log('🔍 Procurando categorias existentes no texto:', text);
-      
+
       // Buscar por correspondência exata ou parcial
       for (const cat of window.appState.categories) {
         const nomeCategoria = cat.nome.toLowerCase();
         const textoNormalizado = text.toLowerCase();
-        
+
         // Verificar correspondência exata
         if (textoNormalizado.includes(nomeCategoria)) {
           categoriaEncontrada = cat;
@@ -738,18 +738,18 @@ class VoiceSystem {
           console.log('✅ Categoria encontrada (exata):', categoria);
           break;
         }
-        
+
         // Verificar correspondência parcial (palavras-chave)
         const palavrasCategoria = nomeCategoria.split(' ');
         const palavrasTexto = textoNormalizado.split(' ');
-        
+
         let correspondencias = 0;
         for (const palavra of palavrasCategoria) {
           if (palavra.length > 2 && palavrasTexto.some(p => p.includes(palavra) || palavra.includes(p))) {
             correspondencias++;
           }
         }
-        
+
         // Se encontrou pelo menos 50% das palavras da categoria
         if (correspondencias > 0 && correspondencias >= palavrasCategoria.length * 0.5) {
           categoriaEncontrada = cat;
@@ -759,7 +759,7 @@ class VoiceSystem {
         }
       }
     }
-    
+
     // Se não encontrou categoria existente, tentar extrair do texto
     if (!categoriaEncontrada) {
       for (const pattern of patterns.categoria) {
@@ -768,7 +768,7 @@ class VoiceSystem {
           let categoriaExtraida = categoriaMatch[1].trim();
           // Limpar palavras comuns que não são categorias
           categoriaExtraida = categoriaExtraida.replace(/\b(de|por|valor|reais?|r\$|real|dinheiro|custou|custa)\b/gi, '').trim();
-          
+
           if (categoriaExtraida.length > 2) { // só aceitar se tiver pelo menos 3 caracteres
             categoria = categoriaExtraida;
             console.log('📝 Categoria extraída do texto:', categoria);
@@ -777,13 +777,13 @@ class VoiceSystem {
         }
       }
     }
-    
+
     // PRIMEIRO: Extrair a primeira palavra significativa ANTES de qualquer limpeza
     console.log('🔍 Texto original para descrição:', text);
-    
+
     const palavras = text.toLowerCase().split(' ');
     const palavrasIgnorar = ['adicionar', 'nova', 'criar', 'inserir', 'despesa', 'receita', 'transação', 'gasto', 'entrada', 'gastei', 'comprei', 'paguei', 'com', 'para', 'em', 'de', 'categoria', 'na', 'da', 'tipo', 'reais', 'real', 'dinheiro', 'valor', 'custou', 'custa', 'custando'];
-    
+
     // Encontrar a primeira palavra significativa
     let palavraSignificativa = null;
     for (const palavra of palavras) {
@@ -799,9 +799,9 @@ class VoiceSystem {
         break;
       }
     }
-    
+
     console.log('🔍 Primeira palavra significativa encontrada:', palavraSignificativa);
-    
+
     let descricao;
     if (palavraSignificativa) {
       // Usar a primeira palavra significativa como descrição
@@ -810,19 +810,19 @@ class VoiceSystem {
     } else {
       // Fallback: tentar extrair descrição do texto limpo
       descricao = text;
-      
+
       // Remover valor encontrado
       if (valorMatch) {
         console.log('🔍 Removendo valor encontrado:', valorMatch[0]);
         descricao = descricao.replace(valorMatch[0], '');
       }
-      
+
       // Remover categoria encontrada (se foi extraída por padrão)
       if (categoriaMatch) {
         console.log('🔍 Removendo categoria extraída:', categoriaMatch[0]);
         descricao = descricao.replace(categoriaMatch[0], '');
       }
-      
+
       // Se categoria foi encontrada no sistema, remover do texto também
       if (categoriaEncontrada) {
         const nomeCategoria = categoriaEncontrada.nome.toLowerCase();
@@ -830,7 +830,7 @@ class VoiceSystem {
         console.log('🔍 Removendo categoria do sistema:', nomeCategoria);
         descricao = descricao.replace(regex, '');
       }
-      
+
       // Limpar descrição de palavras comuns
       descricao = descricao
         .replace(/\b(adicionar|nova?|criar|inserir|transação|gasto|entrada|gastei|comprei|paguei)\b/gi, '')
@@ -839,9 +839,9 @@ class VoiceSystem {
         .replace(/\b(despesa|receita)\b(?=.*\w)/gi, '')
         .replace(/\s+/g, ' ')
         .trim();
-      
+
       console.log('🔍 Descrição após limpeza (fallback):', descricao);
-      
+
       // Se ainda ficou vazia, usar descrição padrão
       if (!descricao || descricao.length < 3) {
         if (valor !== null) {
@@ -852,7 +852,7 @@ class VoiceSystem {
         console.log('🔍 Usando descrição padrão (fallback final):', descricao);
       }
     }
-    
+
     return {
       tipo,
       valor,
@@ -866,56 +866,56 @@ class VoiceSystem {
 
   parseCategoryCommand(text) {
     console.log('🔍 Analisando comando de categoria:', text);
-    
+
     // Verificar se é um comando de 3 itens
     const items = this.extractCommandItems(text);
     if (items.length === 3) {
       console.log('🔍 Processando comando de categoria com 3 itens');
       return this.parseCategoryCommandFromItems(items, text);
     }
-    
+
     // Fallback para padrões tradicionais
     return this.parseCategoryCommandTraditional(text);
   }
 
   parseCategoryCommandFromItems(items, originalText) {
     console.log('🔍 Analisando comando de categoria com 3 itens:', items);
-    
+
     let nome = null;
     let tipo = 'despesa'; // padrão
     let limite = 0;
-    
+
     // Analisar cada item
     for (const item of items) {
       switch (item.type) {
-        case 'valor':
-          limite = parseFloat(item.value.replace(',', '.'));
-          console.log('💰 Limite extraído:', limite);
-          break;
-          
-        case 'tipo':
-          if (/^(receita|entrada)s?$/.test(item.value)) {
-            tipo = 'receita';
-          } else {
-            tipo = 'despesa';
-          }
-          console.log('📊 Tipo extraído:', tipo);
-          break;
-          
-        case 'descricao':
-          if (!nome) { // usar a primeira descrição como nome
-            nome = item.value.charAt(0).toUpperCase() + item.value.slice(1);
-            console.log('📝 Nome da categoria extraído:', nome);
-          }
-          break;
+      case 'valor':
+        limite = parseFloat(item.value.replace(',', '.'));
+        console.log('💰 Limite extraído:', limite);
+        break;
+
+      case 'tipo':
+        if (/^(receita|entrada)s?$/.test(item.value)) {
+          tipo = 'receita';
+        } else {
+          tipo = 'despesa';
+        }
+        console.log('📊 Tipo extraído:', tipo);
+        break;
+
+      case 'descricao':
+        if (!nome) { // usar a primeira descrição como nome
+          nome = item.value.charAt(0).toUpperCase() + item.value.slice(1);
+          console.log('📝 Nome da categoria extraído:', nome);
+        }
+        break;
       }
     }
-    
+
     // Se não encontrou nome, tentar extrair do texto original
     if (!nome) {
       const words = originalText.toLowerCase().split(' ');
       const wordsToIgnore = ['adicionar', 'nova', 'novo', 'criar', 'inserir', 'categoria', 'despesa', 'receita', 'de', 'da', 'do', 'na', 'no', 'em', 'para', 'por', 'com', 'valor', 'reais', 'real', 'r$', 'dinheiro'];
-      
+
       for (const word of words) {
         if (word.length > 2 && !wordsToIgnore.includes(word) && !/^\d+([.,]\d+)?$/.test(word)) {
           nome = word.charAt(0).toUpperCase() + word.slice(1);
@@ -924,13 +924,13 @@ class VoiceSystem {
         }
       }
     }
-    
+
     if (!nome) {
       throw new Error('Nome da categoria não foi entendido no comando de 3 itens');
     }
-    
+
     console.log('✅ Categoria processada:', { nome, tipo, limite });
-    
+
     return {
       nome,
       tipo,
@@ -941,7 +941,7 @@ class VoiceSystem {
 
   parseCategoryCommandTraditional(text) {
     console.log('🔍 Analisando comando de categoria (método tradicional):', text);
-    
+
     // Padrões para extrair informações da categoria
     const patterns = {
       nome: [
@@ -960,7 +960,7 @@ class VoiceSystem {
         /(\d+(?:[.,]\d{1,2})?)/
       ]
     };
-    
+
     // Extrair nome da categoria
     let nome = null;
     for (const pattern of patterns.nome) {
@@ -974,17 +974,17 @@ class VoiceSystem {
         }
       }
     }
-    
+
     if (!nome) {
       throw new Error('Nome da categoria não foi entendido. Diga algo como "nova categoria chamada transporte"');
     }
-    
+
     // Determinar tipo
     let tipo = 'despesa'; // padrão
     if (patterns.tipo.receita.test(text)) {
       tipo = 'receita';
     }
-    
+
     // Extrair limite (opcional)
     let limite = 0;
     for (const pattern of patterns.limite) {
@@ -994,7 +994,7 @@ class VoiceSystem {
         break;
       }
     }
-    
+
     // Se não encontrou limite numérico, tentar números por extenso
     if (!limite) {
       const numerosExtenso = {
@@ -1008,10 +1008,10 @@ class VoiceSystem {
         'seiscentos': 600, 'setecentos': 700, 'oitocentos': 800, 'novecentos': 900,
         'mil': 1000
       };
-      
+
       // Primeiro, tentar encontrar padrões específicos para números por extenso
       const numeroPorExtensoPattern = /\b(zero|uma?|dois|duas|três|tres|quatro|cinco|seis|sete|oito|nove|dez|onze|doze|treze|quatorze|catorze|quinze|dezesseis|dezessete|dezoito|dezenove|vinte|trinta|quarenta|cinquenta|sessenta|setenta|oitenta|noventa|cem|cento|duzentos|trezentos|quatrocentos|quinhentos|seiscentos|setecentos|oitocentos|novecentos|mil)\b/i;
-      
+
       const numeroMatch = text.match(numeroPorExtensoPattern);
       if (numeroMatch) {
         const numeroEncontrado = numeroMatch[1].toLowerCase();
@@ -1019,7 +1019,7 @@ class VoiceSystem {
           limite = numerosExtenso[numeroEncontrado];
         }
       }
-      
+
       // Se ainda não encontrou, tentar palavra por palavra (fallback)
       if (!limite) {
         const words = text.split(' ');
@@ -1031,7 +1031,7 @@ class VoiceSystem {
         }
       }
     }
-    
+
     return {
       nome,
       tipo,
@@ -1050,20 +1050,20 @@ class VoiceSystem {
   }
 
   // ===== CÁLCULOS =====
-  
+
   calculateBalance() {
     if (!window.appState?.transactions) {
       return 0;
     }
-    
+
     const receitas = window.appState.transactions
       .filter(t => t.tipo === 'receita')
       .reduce((sum, t) => sum + parseFloat(t.valor), 0);
-      
+
     const despesas = window.appState.transactions
       .filter(t => t.tipo === 'despesa')
       .reduce((sum, t) => sum + parseFloat(t.valor), 0);
-      
+
     return receitas - despesas;
   }
 
@@ -1071,7 +1071,7 @@ class VoiceSystem {
     if (!window.appState?.transactions) {
       return 0;
     }
-    
+
     return window.appState.transactions
       .filter(t => t.tipo === 'despesa')
       .reduce((sum, t) => sum + parseFloat(t.valor), 0);
@@ -1081,14 +1081,14 @@ class VoiceSystem {
     if (!window.appState?.transactions) {
       return 0;
     }
-    
+
     return window.appState.transactions
       .filter(t => t.tipo === 'receita')
       .reduce((sum, t) => sum + parseFloat(t.valor), 0);
   }
 
   // ===== UTILITÁRIOS =====
-  
+
   getErrorMessage(error) {
     const errorMessages = {
       'not-allowed': 'Permissão do microfone negada. Clique no ícone do microfone na barra de endereços e permita o acesso.',
@@ -1101,7 +1101,7 @@ class VoiceSystem {
       'audio-capture-device-not-found': 'Microfone não encontrado.',
       'audio-capture-device-in-use': 'Microfone em uso por outro aplicativo.'
     };
-    
+
     return errorMessages[error] || `Erro desconhecido: ${error}`;
   }
 
@@ -1116,36 +1116,36 @@ class VoiceSystem {
   }
 
   // ===== CONTROLE DO MODAL =====
-  
+
   openModal(type = 'transaction') {
     console.log('🎤 Abrindo modal de voz:', type);
-    
+
     this.currentType = type;
     this.isModalOpen = true;
     this.retryCount = 0;
-    
+
     const modal = document.getElementById('voice-modal');
     const content = modal?.querySelector('.voice-content');
-    
+
     if (modal && content) {
       // Mostrar modal
       modal.style.display = 'flex';
       modal.style.pointerEvents = 'auto';
       modal.style.background = 'rgba(0, 0, 0, 0.95)';
       modal.style.backdropFilter = 'blur(30px)';
-      
+
       // Animar conteúdo
       content.style.transform = 'scale(1)';
       content.style.opacity = '1';
-      
+
       // Adicionar classe ao body
       document.body.classList.add('voice-modal-open');
-      
+
       // Iniciar reconhecimento
       setTimeout(() => {
         this.startListening(type);
       }, 500);
-      
+
       console.log('✅ Modal de voz aberto');
     } else {
       console.error('❌ Modal de voz não encontrado');
@@ -1157,9 +1157,9 @@ class VoiceSystem {
     if (!this.isModalOpen) {
       return;
     }
-    
+
     console.log('🎤 Fechando modal de voz');
-    
+
     // Limpar todos os estados
     this.isModalOpen = false;
     this.isListening = false;
@@ -1167,30 +1167,30 @@ class VoiceSystem {
     this.hasError = false;
     this.isProcessingCommand = false;
     this.retryCount = 0;
-    
+
     const modal = document.getElementById('voice-modal');
     const content = modal?.querySelector('.voice-content');
-    
+
     if (modal && content) {
       // Parar reconhecimento de forma robusta
       if (this.recognition) {
         try {
           this.recognition.stop();
           console.log('🛑 Reconhecimento parado');
-        } catch (error) {
+        } catch {
           console.log('ℹ️ Reconhecimento já estava parado');
         }
       }
-      
+
       // Animar fechamento
       content.style.transform = 'scale(0.95)';
       content.style.opacity = '0';
       modal.style.background = 'rgba(0, 0, 0, 0)';
       modal.style.backdropFilter = 'blur(0px)';
-      
+
       // Remover classe do body
       document.body.classList.remove('voice-modal-open');
-      
+
       setTimeout(() => {
         modal.style.pointerEvents = 'none';
         modal.style.display = 'none';
@@ -1202,138 +1202,138 @@ class VoiceSystem {
   updateModalStatus(title, description, status) {
     const modal = document.getElementById('voice-modal');
     if (!modal) return;
-    
+
     const titleEl = modal.querySelector('h3');
     const descEl = modal.querySelector('p');
     const iconEl = modal.querySelector('.voice-icon div');
     const statusEl = modal.querySelector('.voice-status');
     const statusTextEl = statusEl?.querySelector('p');
-    
+
     // Atualizar textos com mensagens mais amigáveis
     if (titleEl) {
       switch (status) {
-        case 'listening':
-          titleEl.textContent = '🎤 Estou te ouvindo!';
-          break;
-        case 'processing':
-          titleEl.textContent = '🧠 Processando...';
-          break;
-        case 'error':
-          titleEl.textContent = '❌ Ops! Algo deu errado';
-          break;
-        case 'success':
-          titleEl.textContent = '✅ Perfeito!';
-          break;
-        default:
-          titleEl.textContent = title || '🎤 Estou te ouvindo!';
+      case 'listening':
+        titleEl.textContent = '🎤 Estou te ouvindo!';
+        break;
+      case 'processing':
+        titleEl.textContent = '🧠 Processando...';
+        break;
+      case 'error':
+        titleEl.textContent = '❌ Ops! Algo deu errado';
+        break;
+      case 'success':
+        titleEl.textContent = '✅ Perfeito!';
+        break;
+      default:
+        titleEl.textContent = title || '🎤 Estou te ouvindo!';
       }
     }
-    
+
     if (descEl) {
       switch (status) {
-        case 'listening':
-          descEl.textContent = 'Fale naturalmente como você gastou ou recebeu dinheiro';
-          break;
-        case 'processing':
-          descEl.textContent = 'Entendendo o que você disse...';
-          break;
-        case 'error':
-          descEl.textContent = description || 'Tente falar novamente de forma mais clara';
-          break;
-        case 'success':
-          descEl.textContent = description || 'Transação adicionada com sucesso!';
-          break;
-        default:
-          descEl.textContent = description || 'Fale naturalmente como você gastou ou recebeu dinheiro';
+      case 'listening':
+        descEl.textContent = 'Fale naturalmente como você gastou ou recebeu dinheiro';
+        break;
+      case 'processing':
+        descEl.textContent = 'Entendendo o que você disse...';
+        break;
+      case 'error':
+        descEl.textContent = description || 'Tente falar novamente de forma mais clara';
+        break;
+      case 'success':
+        descEl.textContent = description || 'Transação adicionada com sucesso!';
+        break;
+      default:
+        descEl.textContent = description || 'Fale naturalmente como você gastou ou recebeu dinheiro';
       }
     }
-    
+
     // Atualizar ícone baseado no status
     if (iconEl) {
       iconEl.className = 'w-16 h-16 rounded-full flex items-center justify-center mx-auto shadow-lg';
-      
+
       switch (status) {
-        case 'listening':
-          iconEl.classList.add('bg-gradient-to-r', 'from-green-400', 'to-blue-500', 'animate-pulse');
-          break;
-        case 'processing':
-          iconEl.classList.add('bg-gradient-to-r', 'from-yellow-400', 'to-orange-500', 'animate-spin');
-          break;
-        case 'error':
-          iconEl.classList.add('bg-gradient-to-r', 'from-red-400', 'to-pink-500');
-          break;
-        case 'success':
-          iconEl.classList.add('bg-gradient-to-r', 'from-green-400', 'to-emerald-500');
-          break;
-        default:
-          iconEl.classList.add('bg-gradient-to-r', 'from-green-400', 'to-blue-500', 'animate-pulse');
+      case 'listening':
+        iconEl.classList.add('bg-gradient-to-r', 'from-green-400', 'to-blue-500', 'animate-pulse');
+        break;
+      case 'processing':
+        iconEl.classList.add('bg-gradient-to-r', 'from-yellow-400', 'to-orange-500', 'animate-spin');
+        break;
+      case 'error':
+        iconEl.classList.add('bg-gradient-to-r', 'from-red-400', 'to-pink-500');
+        break;
+      case 'success':
+        iconEl.classList.add('bg-gradient-to-r', 'from-green-400', 'to-emerald-500');
+        break;
+      default:
+        iconEl.classList.add('bg-gradient-to-r', 'from-green-400', 'to-blue-500', 'animate-pulse');
       }
     }
-    
+
     // Atualizar indicadores de status e texto
     if (statusEl) {
       const dots = statusEl.querySelectorAll('div');
-      
+
       // Atualizar animação dos pontos
       dots.forEach((dot, index) => {
         // Remover classes antigas
         dot.classList.remove('animate-bounce', 'animate-pulse', 'bg-green-500', 'bg-blue-500', 'bg-yellow-500', 'bg-red-500');
-        
+
         switch (status) {
-          case 'listening':
-            dot.classList.add('animate-bounce', 'bg-green-500');
-            dot.style.animationDelay = `${index * 0.1}s`;
-            break;
-          case 'processing':
-            dot.classList.add('animate-pulse', 'bg-yellow-500');
-            dot.style.animationDelay = `${index * 0.2}s`;
-            break;
-          case 'error':
-            dot.classList.add('bg-red-500');
-            dot.style.animationDelay = '';
-            break;
-          case 'success':
-            dot.classList.add('bg-green-500');
-            dot.style.animationDelay = '';
-            break;
-          default:
-            dot.classList.add('animate-bounce', 'bg-green-500');
-            dot.style.animationDelay = `${index * 0.1}s`;
+        case 'listening':
+          dot.classList.add('animate-bounce', 'bg-green-500');
+          dot.style.animationDelay = `${index * 0.1}s`;
+          break;
+        case 'processing':
+          dot.classList.add('animate-pulse', 'bg-yellow-500');
+          dot.style.animationDelay = `${index * 0.2}s`;
+          break;
+        case 'error':
+          dot.classList.add('bg-red-500');
+          dot.style.animationDelay = '';
+          break;
+        case 'success':
+          dot.classList.add('bg-green-500');
+          dot.style.animationDelay = '';
+          break;
+        default:
+          dot.classList.add('animate-bounce', 'bg-green-500');
+          dot.style.animationDelay = `${index * 0.1}s`;
         }
       });
-      
+
       // Atualizar texto do status
       if (statusTextEl) {
         switch (status) {
-          case 'listening':
-            statusTextEl.textContent = 'Microfone ativo';
-            statusTextEl.className = 'text-xs text-green-600 dark:text-green-400 font-medium';
-            break;
-          case 'processing':
-            statusTextEl.textContent = 'Processando comando...';
-            statusTextEl.className = 'text-xs text-yellow-600 dark:text-yellow-400 font-medium';
-            break;
-          case 'error':
-            statusTextEl.textContent = 'Erro no reconhecimento';
-            statusTextEl.className = 'text-xs text-red-600 dark:text-red-400 font-medium';
-            break;
-          case 'success':
-            statusTextEl.textContent = 'Comando executado!';
-            statusTextEl.className = 'text-xs text-green-600 dark:text-green-400 font-medium';
-            break;
-          default:
-            statusTextEl.textContent = 'Microfone ativo';
-            statusTextEl.className = 'text-xs text-green-600 dark:text-green-400 font-medium';
+        case 'listening':
+          statusTextEl.textContent = 'Microfone ativo';
+          statusTextEl.className = 'text-xs text-green-600 dark:text-green-400 font-medium';
+          break;
+        case 'processing':
+          statusTextEl.textContent = 'Processando comando...';
+          statusTextEl.className = 'text-xs text-yellow-600 dark:text-yellow-400 font-medium';
+          break;
+        case 'error':
+          statusTextEl.textContent = 'Erro no reconhecimento';
+          statusTextEl.className = 'text-xs text-red-600 dark:text-red-400 font-medium';
+          break;
+        case 'success':
+          statusTextEl.textContent = 'Comando executado!';
+          statusTextEl.className = 'text-xs text-green-600 dark:text-green-400 font-medium';
+          break;
+        default:
+          statusTextEl.textContent = 'Microfone ativo';
+          statusTextEl.className = 'text-xs text-green-600 dark:text-green-400 font-medium';
         }
       }
     }
   }
 
   // ===== CONTROLE DO RECONHECIMENTO =====
-  
+
   async startListening(type = 'transaction') {
     console.log('🎤 Iniciando reconhecimento de voz...', { type, isListening: this.isListening });
-    
+
     try {
       // Verificar se o reconhecimento está configurado
       if (!this.recognition) {
@@ -1350,10 +1350,10 @@ class VoiceSystem {
       // Definir tipo atual imediatamente
       this.currentType = type;
       console.log('✅ Tipo de comando definido:', this.currentType);
-      
+
       // Atualizar status do modal
       this.updateModalStatus('', 'Iniciando...', 'processing');
-      
+
       // Verificação rápida de permissão (sem aguardar stream completo)
       if (!this.microphonePermissionChecked) {
         console.log('🔍 Verificação rápida de permissão...');
@@ -1364,36 +1364,36 @@ class VoiceSystem {
         }
         this.microphonePermissionChecked = true;
       }
-      
+
       // Parada rápida do reconhecimento anterior (sem delay)
       try {
         this.recognition.stop();
         console.log('🛑 Parando reconhecimento anterior (sem delay)...');
-      } catch (stopError) {
+      } catch {
         console.log('ℹ️ Nenhum reconhecimento anterior para parar');
       }
-      
+
       // Marcar como iniciando para evitar múltiplas tentativas
       this.isStarting = true;
-      
+
       // Iniciar reconhecimento IMEDIATAMENTE (sem delays)
       console.log('🚀 Iniciando reconhecimento IMEDIATAMENTE...');
       this.recognition.start();
       console.log('✅ Reconhecimento iniciado com sucesso');
-      
+
       // Limpar flag de iniciando após um tempo menor
       setTimeout(() => {
         this.isStarting = false;
       }, 500);
-      
+
       return true;
-      
+
     } catch (error) {
       console.error('❌ Erro ao iniciar reconhecimento:', error);
       this.isStarting = false;
-      
+
       let errorMessage = 'Erro ao iniciar reconhecimento de voz';
-      
+
       if (error.name === 'InvalidStateError') {
         console.log('🔄 Reconhecimento já ativo, aguardando...');
         // Aguardar um pouco e tentar novamente
@@ -1408,7 +1408,7 @@ class VoiceSystem {
       } else if (error.name === 'NetworkError') {
         errorMessage = 'Erro de conexão. Verifique sua internet e tente novamente.';
       }
-      
+
       this.showError(errorMessage);
       return false;
     }
@@ -1417,7 +1417,7 @@ class VoiceSystem {
   // Verificação rápida de permissão (sem aguardar stream completo)
   async quickPermissionCheck() {
     console.log('⚡ Verificação rápida de permissão...');
-    
+
     try {
       // Verificar se a API está disponível
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -1431,7 +1431,7 @@ class VoiceSystem {
         try {
           const permission = await navigator.permissions.query({ name: 'microphone' });
           console.log('🔍 Status da permissão:', permission.state);
-          
+
           if (permission.state === 'granted') {
             console.log('✅ Permissão já concedida');
             return true;
@@ -1441,30 +1441,30 @@ class VoiceSystem {
             return false;
           }
           // Se 'prompt', continuar com verificação completa
-        } catch (permError) {
+        } catch {
           console.log('ℹ️ API de permissões não disponível, usando método alternativo');
         }
       }
 
       // Verificação rápida com timeout
-      const timeoutPromise = new Promise((_, reject) => 
+      const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Timeout')), 1000)
       );
-      
-      const streamPromise = navigator.mediaDevices.getUserMedia({ 
+
+      const streamPromise = navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true
-        } 
+        }
       });
-      
+
       try {
         const stream = await Promise.race([streamPromise, timeoutPromise]);
-        
+
         // Parar o stream imediatamente (apenas para verificar permissão)
         stream.getTracks().forEach(track => track.stop());
-        
+
         console.log('✅ Permissão do microfone concedida (verificação rápida)');
         return true;
       } catch (raceError) {
@@ -1477,7 +1477,7 @@ class VoiceSystem {
 
     } catch (error) {
       console.warn('⚠️ Erro na verificação rápida:', error.name);
-      
+
       // Para erros de permissão, mostrar mensagem específica
       if (error.name === 'NotAllowedError') {
         this.showError('Permissão do microfone negada. Permita o acesso ao microfone nas configurações do navegador.');
@@ -1486,7 +1486,7 @@ class VoiceSystem {
         this.showError('Nenhum microfone encontrado. Verifique se há um microfone conectado.');
         return false;
       }
-      
+
       // Para outros erros, assumir que está OK para não bloquear
       console.log('ℹ️ Assumindo permissão OK para não bloquear o sistema');
       return true;
@@ -1495,7 +1495,7 @@ class VoiceSystem {
 
   async requestMicrophonePermission() {
     console.log('🎤 Solicitando permissão do microfone...');
-    
+
     try {
       // Verificar se a API está disponível
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -1505,31 +1505,31 @@ class VoiceSystem {
 
       // Tentar solicitar permissão primeiro (pode revelar dispositivos)
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ 
+        const stream = await navigator.mediaDevices.getUserMedia({
           audio: {
             echoCancellation: true,
             noiseSuppression: true,
             autoGainControl: true
-          } 
+          }
         });
-        
+
         // Parar o stream imediatamente (apenas para verificar permissão)
         stream.getTracks().forEach(track => track.stop());
-        
+
         console.log('✅ Permissão do microfone concedida');
         return true;
-        
+
       } catch (permissionError) {
         console.warn('⚠️ Erro de permissão:', permissionError.name);
-        
+
         // Se for erro de permissão, tentar enumerar dispositivos
         try {
           const devices = await navigator.mediaDevices.enumerateDevices();
           const audioDevices = devices.filter(device => device.kind === 'audioinput');
-          
+
           console.log('🔍 Dispositivos encontrados:', devices.length);
           console.log('🎤 Dispositivos de áudio:', audioDevices.length);
-          
+
           if (audioDevices.length === 0) {
             console.warn('⚠️ Nenhum dispositivo de áudio encontrado');
             this.showError('Nenhum microfone encontrado. Verifique se há um microfone conectado.');
@@ -1546,13 +1546,13 @@ class VoiceSystem {
           return false;
         }
       }
-      
+
     } catch (error) {
       console.error('❌ Erro ao solicitar permissão:', error);
-      
+
       // Tratar erros específicos
       let errorMessage = 'Erro ao acessar microfone';
-      
+
       if (error.name === 'NotFoundError') {
         errorMessage = 'Nenhum microfone encontrado. Verifique se há um microfone conectado.';
       } else if (error.name === 'NotAllowedError') {
@@ -1564,18 +1564,18 @@ class VoiceSystem {
       } else if (error.name === 'TypeError') {
         errorMessage = 'Navegador não suporta acesso ao microfone. Use Chrome, Edge ou Firefox.';
       }
-      
+
       this.showError(errorMessage);
       return false;
     }
   }
 
   // ===== NOTIFICAÇÕES =====
-  
+
   showSuccess(message) {
     console.log('✅ Sucesso:', message);
     this.updateModalStatus('', message, 'success');
-    
+
     // Usar nova API do Snackbar
     if (window.Snackbar && typeof window.Snackbar.success === 'function') {
       window.Snackbar.success(message);
@@ -1591,7 +1591,7 @@ class VoiceSystem {
   showError(message) {
     console.error('❌ Erro:', message);
     this.updateModalStatus('', message, 'error');
-    
+
     // Usar nova API do Snackbar com fallbacks
     if (window.Snackbar && typeof window.Snackbar.error === 'function') {
       window.Snackbar.error(message);
@@ -1607,11 +1607,11 @@ class VoiceSystem {
   }
 
   // ===== EVENTOS GLOBAIS =====
-  
+
   setupGlobalEvents() {
     // Remover event listeners existentes para evitar duplicação
     this.removeGlobalEvents();
-    
+
     // Fechar modal com ESC
     this.escapeHandler = (e) => {
       if (e.key === 'Escape' && this.isModalOpen) {
@@ -1619,7 +1619,7 @@ class VoiceSystem {
       }
     };
     document.addEventListener('keydown', this.escapeHandler);
-    
+
     // Fechar modal ao clicar fora
     this.outsideClickHandler = (e) => {
       const modal = document.getElementById('voice-modal');
@@ -1628,14 +1628,14 @@ class VoiceSystem {
       }
     };
     document.addEventListener('click', this.outsideClickHandler);
-    
+
     // Botão de fechar modal
     const closeBtn = document.getElementById('close-voice-modal');
     if (closeBtn) {
       // Remover event listeners existentes do botão
       const newCloseBtn = closeBtn.cloneNode(true);
       closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
-      
+
       this.closeBtnHandler = (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -1652,12 +1652,12 @@ class VoiceSystem {
       document.removeEventListener('keydown', this.escapeHandler);
       this.escapeHandler = null;
     }
-    
+
     if (this.outsideClickHandler) {
       document.removeEventListener('click', this.outsideClickHandler);
       this.outsideClickHandler = null;
     }
-    
+
     if (this.closeBtnHandler) {
       const closeBtn = document.getElementById('close-voice-modal');
       if (closeBtn) {
@@ -1668,10 +1668,10 @@ class VoiceSystem {
   }
 
   // ===== FUNÇÕES PÚBLICAS =====
-  
+
   start(type = 'transaction') {
     console.log('🎤 VoiceSystem.start chamado:', type);
-    
+
     try {
       // Verificar se já está inicializado
       if (!this.recognition) {
@@ -1681,7 +1681,7 @@ class VoiceSystem {
           return false;
         }
       }
-      
+
       // Verificar se o modal existe
       const modal = document.getElementById('voice-modal');
       if (!modal) {
@@ -1689,15 +1689,15 @@ class VoiceSystem {
         this.showError('Interface de voz não disponível');
         return false;
       }
-      
+
       // Definir tipo atual
       this.currentType = type;
       console.log('✅ Tipo de comando definido:', this.currentType);
-      
+
       // Abrir modal
       this.openModal(type);
       return true;
-      
+
     } catch (error) {
       console.error('❌ Erro ao iniciar VoiceSystem:', error);
       this.showError(`Erro ao iniciar reconhecimento de voz: ${error.message}`);
@@ -1711,29 +1711,29 @@ class VoiceSystem {
   }
 
   // ===== DESTRUTOR =====
-  
+
   destroy() {
     console.log('🎤 Destruindo VoiceSystem...');
-    
+
     // Parar reconhecimento
     if (this.recognition) {
       this.recognition.stop();
       this.recognition = null;
     }
-    
+
     // Remover event listeners
     this.removeGlobalEvents();
-    
+
     // Fechar modal se estiver aberto
     if (this.isModalOpen) {
       this.closeModal();
     }
-    
+
     // Resetar estado
     this.isListening = false;
     this.isModalOpen = false;
     this.retryCount = 0;
-    
+
     console.log('✅ VoiceSystem destruído');
   }
 }
@@ -1744,17 +1744,17 @@ let voiceSystem = null;
 // ===== FUNÇÕES GLOBAIS =====
 window.openVoiceModal = function(type = 'transaction') {
   console.log('🎤 openVoiceModal chamado:', type);
-  
+
   if (!voiceSystem) {
     voiceSystem = new VoiceSystem();
   }
-  
+
   return voiceSystem.start(type);
 };
 
 window.closeVoiceModal = function() {
   console.log('🎤 closeVoiceModal chamado');
-  
+
   if (voiceSystem) {
     voiceSystem.stop();
   }
@@ -1762,11 +1762,11 @@ window.closeVoiceModal = function() {
 
 window.startVoiceRecognition = function(type = 'transaction') {
   console.log('🎤 startVoiceRecognition chamado:', type);
-  
+
   if (!voiceSystem) {
     voiceSystem = new VoiceSystem();
   }
-  
+
   return voiceSystem.start(type);
 };
 

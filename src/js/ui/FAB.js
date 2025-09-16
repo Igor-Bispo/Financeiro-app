@@ -4,6 +4,24 @@
 export function FAB() {
   console.log('🔧 Criando FAB corrigido...');
 
+  // Idempotência: garantir apenas uma instância do FAB no DOM
+  const existing = document.getElementById('fab-container-main');
+  if (existing) {
+    try {
+      if (typeof existing.cleanup === 'function') {
+        existing.cleanup();
+      }
+    } catch (e) {
+      console.warn('⚠️ Erro ao limpar FAB existente:', e);
+    }
+    try {
+      existing.remove();
+      console.log('♻️ FAB existente removido antes de criar novo.');
+    } catch (e) {
+      console.warn('⚠️ Erro ao remover FAB existente:', e);
+    }
+  }
+
   // Estado interno do FAB
   let isOpen = false;
   let isAnimating = false;
@@ -12,13 +30,13 @@ export function FAB() {
 
   // Container principal
   const fabContainer = createFabContainer();
-  
+
   // Botão principal
   const mainButton = createMainButton();
-  
+
   // Container de ações
   const actionsContainer = createActionsContainer();
-  
+
   // Botões de ação usando variáveis CSS do tema
   const transactionButton = createActionButton({
     id: 'fab-transaction',
@@ -73,7 +91,7 @@ export function FAB() {
     const container = document.createElement('div');
     container.id = 'fab-container-main';
     container.className = 'fab-container-refactored';
-    
+
     // Estilos inline para evitar conflitos
     container.style.cssText = `
       position: fixed !important;
@@ -102,7 +120,7 @@ export function FAB() {
     button.innerHTML = '+';
     button.type = 'button';
     button.setAttribute('aria-label', 'Abrir menu de ações');
-    
+
     // Estilos inline para evitar conflitos, usando variáveis CSS do tema
     button.style.cssText = `
       width: 64px !important;
@@ -164,7 +182,7 @@ export function FAB() {
   function createActionsContainer() {
     const container = document.createElement('div');
     container.id = 'fab-actions';
-    
+
     // Estilos inline para evitar conflitos
     container.style.cssText = `
       display: none !important;
@@ -192,7 +210,7 @@ export function FAB() {
     button.innerHTML = `${icon} ${text}`;
     button.type = 'button';
     button.setAttribute('aria-label', text);
-    
+
     // Estilos inline para evitar conflitos, usando variáveis CSS do tema
     button.style.cssText = `
       background: linear-gradient(135deg, ${color}, ${adjustColor(color, -20)}) !important;
@@ -248,7 +266,7 @@ export function FAB() {
       e.preventDefault();
       e.stopPropagation();
       console.log(`🔧 Botão ${id} clicado!`);
-      
+
       // Verificar se a função está disponível antes de fechar o FAB
       let functionAvailable = false;
       try {
@@ -260,7 +278,7 @@ export function FAB() {
         console.error(`❌ Erro ao executar ação do botão ${id}:`, error);
         showError(`Erro ao executar ${text}`);
       }
-      
+
       // Fechar FAB apenas se a função foi executada com sucesso
       if (functionAvailable) {
         closeFAB();
@@ -316,7 +334,7 @@ export function FAB() {
     fabContainer.addEventListener('click', (e) => {
       e.stopPropagation();
     });
-    
+
     eventListeners.push({ element: fabContainer, type: 'click', handler: (e) => e.stopPropagation() });
   }
 
@@ -325,10 +343,10 @@ export function FAB() {
       console.log('⚠️ FAB está animando, ignorando clique');
       return;
     }
-    
+
     isAnimating = true;
     console.log('🔧 Alternando FAB:', isOpen ? 'Fechando' : 'Abrindo');
-    
+
     if (!isOpen) {
       openFAB();
     } else {
@@ -338,14 +356,14 @@ export function FAB() {
 
   function openFAB() {
     console.log('🔧 Abrindo FAB...');
-    
+
     // Mostrar container de ações
     actionsContainer.style.display = 'flex';
     actionsContainer.style.visibility = 'visible';
     actionsContainer.style.pointerEvents = 'auto';
     actionsContainer.style.opacity = '0';
     actionsContainer.style.transform = 'translateY(20px)';
-    
+
     // Animar entrada dos botões
     requestAnimationFrame(() => {
       actionsContainer.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
@@ -355,9 +373,9 @@ export function FAB() {
 
     // Rotacionar botão principal
     mainButton.style.transform = 'rotate(45deg)';
-    
+
     isOpen = true;
-    
+
     setTimeout(() => {
       isAnimating = false;
     }, 300);
@@ -365,18 +383,18 @@ export function FAB() {
 
   function closeFAB() {
     console.log('🔧 Fechando FAB...');
-    
+
     // Animar saída dos botões
     actionsContainer.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
     actionsContainer.style.opacity = '0';
     actionsContainer.style.transform = 'translateY(20px)';
     actionsContainer.style.pointerEvents = 'none';
-    
+
     // Rotacionar botão principal de volta
     mainButton.style.transform = 'rotate(0deg)';
-    
+
     isOpen = false;
-    
+
     setTimeout(() => {
       actionsContainer.style.display = 'none';
       actionsContainer.style.visibility = 'hidden';
@@ -395,11 +413,11 @@ export function FAB() {
       }
     });
     eventListeners = [];
-    
+
     // Resetar estado
     isOpen = false;
     isAnimating = false;
-    
+
     console.log('✅ Event listeners do FAB limpos');
   }
 
@@ -425,7 +443,7 @@ function adjustColor(color, amount) {
     // Para outras variáveis, retornamos a mesma
     return color;
   }
-  
+
   // Para cores hexadecimais, usamos o método original
   const hex = color.replace('#', '');
   const r = Math.max(0, Math.min(255, parseInt(hex.substr(0, 2), 16) + amount));
@@ -438,7 +456,7 @@ function adjustColor(color, amount) {
 
 function handleTransactionClick() {
   console.log('🔧 Executando ação: Nova Transação');
-  
+
   // Verificar se a função está disponível
   if (typeof window.showAddTransactionModal === 'function') {
     console.log('✅ Função showAddTransactionModal encontrada');
@@ -459,7 +477,7 @@ function handleTransactionClick() {
 
 function handleRecorrenteClick() {
   console.log('🔧 Executando ação: Nova Recorrente');
-  
+
   // Verificar se a função está disponível
   if (typeof window.showAddRecorrenteModal === 'function') {
     console.log('✅ Função showAddRecorrenteModal encontrada');
@@ -480,28 +498,60 @@ function handleRecorrenteClick() {
 
 function handleVoiceClick() {
   console.log('🔧 Executando ação: Voz');
-  
-  // Verificar se a função está disponível
-  if (typeof window.openVoiceModal === 'function') {
-    console.log('✅ Função openVoiceModal encontrada');
-    try {
-      window.openVoiceModal();
-      return true; // Indica sucesso
-    } catch (error) {
-      console.error('❌ Erro ao executar openVoiceModal:', error);
-      showError('Erro ao abrir modal de voz');
-      return false;
+
+  // Verificar se a função está disponível; caso não esteja, carregar dinamicamente o serviço de voz
+  const invoke = async () => {
+    if (typeof window.openVoiceModal === 'function') {
+      console.log('✅ Função openVoiceModal encontrada');
+      await window.openVoiceModal();
+      return true;
     }
-  } else {
-    console.warn('⚠️ Função openVoiceModal não disponível');
-    showError('Funcionalidade de voz não disponível. Tente recarregar a página.');
+    // Tentar carregar do novo serviço de voz
+    try {
+      console.log('ℹ️ Carregando serviço de voz sob demanda...');
+      const mod = await import('@features/voice/VoiceService.js');
+      if (typeof mod.openVoiceModal === 'function') {
+        // Cachear globalmente para próximas chamadas
+        window.openVoiceModal = mod.openVoiceModal;
+        await mod.openVoiceModal();
+        return true;
+      }
+    } catch (e) {
+      console.warn('⚠️ Falha ao carregar VoiceService:', e);
+    }
+    // Tentativa alternativa: VoiceSystem legado
+    try {
+      const vs = await import('./VoiceSystem.js');
+      if (typeof window.openVoiceModal === 'function') {
+        await window.openVoiceModal();
+        return true;
+      }
+      if (vs && typeof vs.VoiceSystem === 'function') {
+        // Inicializar e abrir rapidamente
+        const sys = new vs.VoiceSystem();
+        await sys.start('transaction');
+        return true;
+      }
+    } catch {}
     return false;
-  }
+  };
+
+  return invoke().then((ok) => {
+    if (!ok) {
+      console.warn('⚠️ Função openVoiceModal não disponível');
+      showError('Funcionalidade de voz não disponível. Tente recarregar a página.');
+    }
+    return ok;
+  }).catch((error) => {
+    console.error('❌ Erro ao abrir modal de voz:', error);
+    showError('Erro ao abrir modal de voz');
+    return false;
+  });
 }
 
 function showError(message) {
   console.error('❌ Erro no FAB:', message);
-  
+
   // Tentar usar Snackbar primeiro
   if (window.Snackbar && typeof window.Snackbar.show === 'function') {
     try {
@@ -511,7 +561,7 @@ function showError(message) {
       console.warn('⚠️ Erro ao usar Snackbar:', error);
     }
   }
-  
+
   // Fallback para alert
   if (window.alert) {
     alert(message);
@@ -539,7 +589,7 @@ window.closeFAB = function() {
   if (fabContainer) {
     const actionsContainer = fabContainer.querySelector('#fab-actions');
     const mainButton = fabContainer.querySelector('#fab-main');
-    
+
     if (actionsContainer && mainButton) {
       actionsContainer.style.display = 'none';
       actionsContainer.style.opacity = '0';
@@ -555,7 +605,7 @@ window.openFAB = function() {
   if (fabContainer) {
     const actionsContainer = fabContainer.querySelector('#fab-actions');
     const mainButton = fabContainer.querySelector('#fab-main');
-    
+
     if (actionsContainer && mainButton) {
       actionsContainer.style.display = 'flex';
       actionsContainer.style.visibility = 'visible';
@@ -579,18 +629,18 @@ window.checkFABState = function() {
   const fabContainer = document.getElementById('fab-container-main');
   const fabActions = document.getElementById('fab-actions');
   const fabMain = document.getElementById('fab-main');
-  
+
   console.log('🔍 Estado do FAB:');
   console.log('  - Container:', !!fabContainer);
   console.log('  - Actions:', !!fabActions);
   console.log('  - Main button:', !!fabMain);
-  
+
   if (fabContainer && fabActions && fabMain) {
     const actionsDisplay = fabActions.style.display;
     const mainTransform = fabMain.style.transform;
     console.log('  - Actions display:', actionsDisplay);
     console.log('  - Main transform:', mainTransform);
   }
-  
+
   return { fabContainer, fabActions, fabMain };
 };

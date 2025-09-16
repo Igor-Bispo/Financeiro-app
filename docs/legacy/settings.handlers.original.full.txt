@@ -1,0 +1,3 @@
+// Archived legacy original settings handlers (for reference only)
+// (Content truncated in workspace to avoid bundler parsing issues.)
+// Retrieve from version control history if full diff is needed.

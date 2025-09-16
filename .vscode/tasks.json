@@ -1,0 +1,226 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "npm: dev",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"dev"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "test:run",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"test:run"
+			],
+			"problemMatcher": [
+				"$eslint-stylish"
+			],
+			"group": "build"
+		},
+		{
+			"label": "build",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"build"
+			],
+			"group": "build"
+		},
+		{
+			"label": "build",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"build"
+			],
+			"group": "build"
+		},
+		{
+			"label": "npm: build",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"build"
+			],
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "npm: deploy",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"deploy"
+			],
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "deploy",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"deploy"
+			],
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "npm: lint",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"lint"
+			],
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "build+deploy: force sw update",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"deploy"
+			],
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "npm: build (force sw)",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"build"
+			],
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "audit:lint",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"lint:quiet"
+			],
+			"group": "build"
+		},
+		{
+			"label": "lint",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"lint"
+			]
+		},
+		{
+			"label": "lint",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"lint"
+			]
+		},
+		{
+			"label": "eslint-single",
+			"type": "shell",
+			"command": "npx",
+			"args": [
+				"eslint",
+				"src/js/ui/Snackbar.js"
+			]
+		},
+		{
+			"label": "build",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"build"
+			]
+		},
+		{
+			"label": "deploy",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"deploy"
+			]
+		},
+		{
+			"label": "firebase-deploy",
+			"type": "shell",
+			"command": "firebase",
+			"args": [
+				"deploy"
+			]
+		},
+		{
+			"label": "build:prod",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"build"
+			],
+			"problemMatcher": [
+				"$eslint-stylish"
+			],
+			"group": "build"
+		},
+		{
+			"label": "build:prod",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"build"
+			],
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "deploy",
+			"type": "shell",
+			"command": "npx",
+			"args": [
+				"firebase",
+				"deploy"
+			],
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "test:run",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"test:run"
+			],
+			"group": "build"
+		}
+	]
+}

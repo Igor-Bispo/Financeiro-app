@@ -1,0 +1,178 @@
+import { db } from '@data/firebase/client.js';
+import {
+  collection,
+  addDoc,
+  getDoc,
+  getDocs,
+  updateDoc,
+  deleteDoc,
+  doc,
+  query,
+  where,
+  serverTimestamp,
+  Timestamp,
+  onSnapshot,
+  writeBatch
+} from 'firebase/firestore';
+
+const COL = 'transactions';
+
+// Map Firestore doc to plain object with id
+function mapDoc(d) {
+  return { id: d.id, ...d.data() };
+}
+
+// Safely convert Firestore Timestamp/Date/epoch/ISO to Date
+function toDate(v) {
+  try {
+    // Firestore Timestamp
+    if (v && typeof v.toDate === 'function') return v.toDate();
+    // Firestore Timestamp-like { seconds }
+    if (v && typeof v === 'object' && 'seconds' in v) return new Date(v.seconds * 1000);
+    // JS Date
+    if (v instanceof Date) return v;
+    // ISO string or millis
+    if (typeof v === 'string' || typeof v === 'number') return new Date(v);
+  } catch {}
+  return new Date(0);
+}
+
+// List transactions with optional filters. Common usage: list({ budgetId })
+export async function list({ budgetId, userId } = {}) {
+  const colRef = collection(db, COL);
+  const clauses = [];
+  if (budgetId) clauses.push(where('budgetId', '==', budgetId));
+  if (userId) clauses.push(where('userId', '==', userId));
+  const q = clauses.length ? query(colRef, ...clauses) : query(colRef);
+  const snap = await getDocs(q);
+  const items = snap.docs.map(mapDoc);
+  // Sort by createdAt desc client-side to avoid index requirements
+  items.sort((a, b) => toDate(b.createdAt) - toDate(a.createdAt));
+  return items;
+}
+
+// List by time period (inclusive). Filters client-side to avoid composite index requirements.
+// Params: { budgetId?, userId?, startDate: Date|string|number|Timestamp, endDate: Date|string|number|Timestamp }
+export async function listByPeriod({ budgetId, userId, startDate, endDate } = {}) {
+  const all = await list({ budgetId, userId });
+  if (!startDate && !endDate) return all;
+  const start = startDate ? toDate(startDate) : new Date(0);
+  const end = endDate ? toDate(endDate) : new Date(8640000000000000); // Max Date
+  const filtered = all.filter((t) => {
+    const d = toDate(t.createdAt);
+    return d >= start && d <= end;
+  });
+  filtered.sort((a, b) => toDate(b.createdAt) - toDate(a.createdAt));
+  return filtered;
+}
+
+export async function getById(id) {
+  const ref = doc(db, COL, id);
+  const snap = await getDoc(ref);
+  return snap.exists() ? mapDoc(snap) : null;
+}
+
+export async function create(dto) {
+  const now = serverTimestamp();
+  const payload = { ...dto };
+  if (payload.valor !== undefined && payload.valor !== null) payload.valor = Number(payload.valor);
+  if (!payload.createdAt) payload.createdAt = now;
+  if (!payload.updatedAt) payload.updatedAt = now;
+  const ref = await addDoc(collection(db, COL), payload);
+  return { id: ref.id };
+}
+
+export async function update(id, dto) {
+  const ref = doc(db, COL, id);
+  const data = { ...dto, updatedAt: serverTimestamp() };
+  if (data.valor !== undefined && data.valor !== null) data.valor = Number(data.valor);
+  await updateDoc(ref, data);
+}
+
+export async function remove(id) {
+  const ref = doc(db, COL, id);
+  await deleteDoc(ref);
+}
+
+// Create many transactions efficiently with batched writes (chunks of 450 for safety)
+export async function createMany(dtos = []) {
+  if (!Array.isArray(dtos) || dtos.length === 0) return [];
+  const MAX_BATCH = 450; // Firestore limit is 500 ops; reserve headroom
+  const ids = [];
+  for (let i = 0; i < dtos.length; i += MAX_BATCH) {
+    const batch = writeBatch(db);
+    const slice = dtos.slice(i, i + MAX_BATCH);
+    slice.forEach((dto) => {
+      const ref = doc(collection(db, COL));
+      const now = serverTimestamp();
+      const payload = { ...dto };
+      if (payload.valor !== undefined && payload.valor !== null) payload.valor = Number(payload.valor);
+      if (!payload.createdAt) payload.createdAt = now;
+      if (!payload.updatedAt) payload.updatedAt = now;
+      batch.set(ref, payload);
+      ids.push(ref.id);
+    });
+    await batch.commit();
+  }
+  return ids;
+}
+
+// Existing helper to create a transaction from a recurring record
+export async function createFromRecurring({ userId, budgetId, rec, createdDate, parcelaAtual }) {
+  // Debug: verificar dados recebidos
+  console.log('🔧 [CreateFromRecurring] Dados recebidos:', {
+    recId: rec.id,
+    recDescricao: rec.descricao,
+    recParcelasTotal: rec.parcelasTotal,
+    recParcelasRestantes: rec.parcelasRestantes,
+    parcelaAtualRecebida: parcelaAtual,
+    createdDate: createdDate.toISOString()
+  });
+  
+  const data = {
+    userId,
+    budgetId,
+    descricao: rec.descricao,
+    valor: Number(rec.valor ?? 0),
+    categoriaId: rec.categoriaId,
+    tipo: 'despesa',
+    createdAt: Timestamp.fromDate(createdDate),
+    recorrenteId: rec.id,
+    recorrenteNome: rec.descricao,
+    parcelaAtual: parcelaAtual ?? null,
+    parcelasTotal: rec.parcelasTotal ?? null,
+  };
+  
+  // Debug: verificar dados que serão salvos
+  console.log('🔧 [CreateFromRecurring] Dados que serão salvos:', {
+    parcelaAtual: data.parcelaAtual,
+    parcelasTotal: data.parcelasTotal,
+    descricao: data.descricao,
+    valor: data.valor
+  });
+  
+  const ref = await addDoc(collection(db, COL), data);
+  console.log('✅ [CreateFromRecurring] Transação criada com ID:', ref.id);
+  return { id: ref.id };
+}
+
+// Listener em tempo real para mudanças
+// userId é aceito para compatibilidade, mas ignorado no listener realtime de orçamentos compartilhados
+// eslint-disable-next-line no-unused-vars
+export function listenToChanges({ budgetId, userId }, callback) {
+  const colRef = collection(db, COL);
+  const clauses = [];
+  if (budgetId) clauses.push(where('budgetId', '==', budgetId));
+  // Importante: não filtrar por userId aqui.
+  // Em orçamentos compartilhados, queremos ouvir mudanças de todos os usuários do mesmo orçamento.
+  // O filtro por usuário fica para consultas pontuais (ex.: histórico pessoal), não para realtime.
+  // Sem orderBy para evitar necessidade de índices compostos; ordenar no cliente
+  const q = clauses.length ? query(colRef, ...clauses) : query(colRef);
+
+  return onSnapshot(q, (snapshot) => {
+    const transactions = snapshot.docs
+      .map(mapDoc)
+      .sort((a, b) => toDate(b.createdAt) - toDate(a.createdAt));
+    callback(transactions);
+  });
+}

@@ -84,27 +84,83 @@ window.showAddRecorrenteModal = function (dados = {}) {
             console.log('🔍 Já existe transação neste mês?', jaExiste);
 
             if (!jaExiste) {
-              // Criar transação para o mês atual
-              const transacaoData = {
-                userId: user.uid,
-                budgetId: budget.id,
-                descricao: dadosForm.descricao,
-                valor: dadosForm.valor,
-                categoriaId: dadosForm.categoriaId,
-                tipo: 'despesa',
-                createdAt: now,
-                recorrenteId: recorrenteId,
-                recorrenteNome: dadosForm.descricao
-              };
+              // Declarar variáveis no escopo correto
+              let transacaoId = null;
+              let parcelaAtualFinal = 1;
+              
+              // Criar transação para o mês atual usando a função correta
+              try {
+                const { createFromRecurring } = await import('@data/repositories/transactionsRepo.js');
+                const { calcularParcelaRecorrente } = await import('@features/recorrentes/service.js');
+                
+                // Preparar dados do recorrente para a função
+                const recData = {
+                  id: recorrenteId,
+                  descricao: dadosForm.descricao,
+                  valor: dadosForm.valor,
+                  categoriaId: dadosForm.categoriaId,
+                  parcelasTotal: dadosForm.parcelasTotal,
+                  parcelasRestantes: dadosForm.parcelasRestantes,
+                  dataInicio: dadosForm.dataInicio || now.toISOString().split('T')[0] // Usar data atual se não especificada
+                };
+                
+                // Calcular parcela atual
+                const parcelaAtual = calcularParcelaRecorrente(recData, anoAtual, mesAtual);
+                
+                // Se a função retornar null ou NaN, usar 1 como fallback
+                parcelaAtualFinal = (parcelaAtual && !isNaN(parcelaAtual)) ? parcelaAtual : 1;
+                
+                // Criar transação usando a função correta
+                const { id } = await createFromRecurring({
+                  userId: user.uid,
+                  budgetId: budget.id,
+                  rec: recData,
+                  createdDate: now,
+                  parcelaAtual: parcelaAtualFinal
+                });
+                
+                transacaoId = id;
+                console.log('✅ Transação criada para mês atual:', transacaoId);
+              } catch (error) {
+                console.error('❌ Erro ao criar transação usando createFromRecurring:', error);
+                // Fallback para o método antigo
+                const transacaoData = {
+                  userId: user.uid,
+                  budgetId: budget.id,
+                  descricao: dadosForm.descricao,
+                  valor: dadosForm.valor,
+                  categoriaId: dadosForm.categoriaId,
+                  tipo: 'despesa',
+                  createdAt: now,
+                  recorrenteId: recorrenteId,
+                  recorrenteNome: dadosForm.descricao
+                };
 
-              const transacaoRef = await addDoc(
-                collection(db, 'transactions'),
-                transacaoData
-              );
-              console.log(
-                '✅ Transação criada para mês atual:',
-                transacaoRef.id
-              );
+                const transacaoRef = await addDoc(
+                  collection(db, 'transactions'),
+                  transacaoData
+                );
+                transacaoId = transacaoRef.id;
+                console.log('✅ Transação criada para mês atual (fallback):', transacaoId);
+              }
+
+              // Enviar notificação para membros do orçamento (recorrente aplicada imediatamente)
+              try {
+                const { sendTransactionNotification } = await import('@features/notifications/NotificationService.js');
+                const txNotify = {
+                  id: transacaoId,
+                  descricao: dadosForm.descricao,
+                  valor: dadosForm.valor,
+                  categoriaId: dadosForm.categoriaId,
+                  tipo: 'despesa',
+                  recorrenteId: recorrenteId,
+                  recorrenteParcelaAtual: parcelaAtualFinal ?? null,
+                  recorrenteParcelasTotal: dadosForm.parcelasTotal ?? null,
+                };
+                await sendTransactionNotification(budget.id, user.uid, txNotify);
+              } catch (notifyErr) {
+                console.warn('Falha ao enviar notificação de recorrente imediata:', notifyErr);
+              }
 
               // NÃO decrementar parcelas para aplicação imediata
               // As parcelas só devem ser decrementadas quando aplicadas via "Aplicar Recorrentes"
@@ -118,7 +174,7 @@ window.showAddRecorrenteModal = function (dados = {}) {
                   descricao: dadosForm.descricao,
                   valor: dadosForm.valor,
                   dataAplicacao: now,
-                  transacaoId: transacaoRef.id,
+                  transacaoId: transacaoId,
                   aplicacaoImediata: true
                 });
                 console.log('📝 Aplicação imediata registrada no log');
@@ -134,7 +190,16 @@ window.showAddRecorrenteModal = function (dados = {}) {
           }
         }
         await new Promise(res => setTimeout(res, 200));
-        await window.loadRecorrentes();
+        try {
+          const { loadRecorrentes } = await import('@features/recorrentes/service.js');
+          await loadRecorrentes();
+        } catch (e) {
+          if (typeof window.loadRecorrentes === 'function') {
+            await window.loadRecorrentes();
+          } else {
+            console.warn('loadRecorrentes indisponível:', e);
+          }
+        }
 
         // Fechar modal e mostrar feedback
         modal.remove();
@@ -148,27 +213,63 @@ window.showAddRecorrenteModal = function (dados = {}) {
         // Sincronização completa de todos os dados
         setTimeout(async () => {
           document.querySelector('.fab')?.classList.remove('hidden');
-          
-          // Se for edição, recalcular transações aplicadas
-          if (isEdicao && dados.id) {
-            console.log('🔄 Recalculando transações da recorrente editada:', dados.id);
-            await window.recalcularTransacoesRecorrente(dados.id, dadosForm);
+
+          // Se for edição, recalcular transações aplicadas (se função existir)
+          if (isEdicao && dados.id && typeof window.recalcularTransacoesRecorrente === 'function') {
+            try {
+              console.log('🔄 Recalculando transações da recorrente editada:', dados.id);
+              await window.recalcularTransacoesRecorrente(dados.id, dadosForm);
+            } catch (err) {
+              console.warn('Falha ao recalcular transações da recorrente:', err);
+            }
           }
-          
-          // Recarregar todos os dados
-          await window.loadRecorrentes();
-          await window.loadTransactions();
-          await window.loadCategories();
-          
+
+          // Recarregar todos os dados usando services diretamente (com fallback)
+          try {
+            const { loadRecorrentes } = await import('@features/recorrentes/service.js');
+            await loadRecorrentes();
+          } catch (err) {
+            if (typeof window.loadRecorrentes === 'function') {
+              await window.loadRecorrentes();
+            } else {
+              console.warn('Falha ao recarregar recorrentes:', err);
+            }
+          }
+
+          try {
+            const { loadTransactions } = await import('@features/transactions/service.js');
+            const budgetId = window.appState?.currentBudget?.id;
+            const userId = window.appState?.currentUser?.uid;
+            await loadTransactions(budgetId, userId);
+          } catch (err) {
+            if (typeof window.loadTransactions === 'function') {
+              await window.loadTransactions();
+            } else {
+              console.warn('Falha ao recarregar transações:', err);
+            }
+          }
+
+          try {
+            const { loadCategories } = await import('@features/categories/service.js');
+            const budgetId = window.appState?.currentBudget?.id;
+            await loadCategories(budgetId);
+          } catch (err) {
+            if (typeof window.loadCategories === 'function') {
+              await window.loadCategories();
+            } else {
+              console.warn('Falha ao recarregar categorias:', err);
+            }
+          }
+
           // Atualizar todas as abas
-          if (window.location.hash.includes('recorrentes')) {
-            window._renderRecorrentes();
-          } else if (window.location.hash.includes('dashboard')) {
-            window.renderDashboard();
-          } else if (window.location.hash.includes('transacoes')) {
-            window.renderTransactions();
+          if (window.location.hash.includes('/recorrentes')) {
+            try { typeof window._renderRecorrentes === 'function' && window._renderRecorrentes(); } catch {}
+          } else if (window.location.hash.includes('/dashboard')) {
+            try { typeof window.renderDashboard === 'function' && window.renderDashboard(); } catch {}
+          } else if (window.location.hash.includes('/transactions')) {
+            try { typeof window.renderTransactions === 'function' && window.renderTransactions(); } catch {}
           }
-          
+
           // Disparar evento para sincronização
           document.dispatchEvent(new CustomEvent('recorrente-adicionada'));
           document.dispatchEvent(new CustomEvent('dados-atualizados'));

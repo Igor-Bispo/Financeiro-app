@@ -4,58 +4,58 @@ export function CardResumo({ titulo, valor, cor = '', icone = '', progresso = nu
 
   // Calcular cor baseada no status
   let corFundo, corTexto, corBarra, emojiStatus;
-  
+
   switch (cor) {
-    case 'card-resumo receita':
+  case 'card-resumo receita':
+    corFundo = 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)';
+    corTexto = '#fff';
+    corBarra = '#ffffff';
+    emojiStatus = '📈';
+    break;
+  case 'card-resumo despesa':
+    corFundo = 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)';
+    corTexto = '#fff';
+    corBarra = '#ffffff';
+    emojiStatus = '📉';
+    break;
+  case 'card-resumo saldo':
+    // Cor baseada no valor (positivo/negativo)
+    const valorNumerico = parseFloat(valor.replace('R$ ', '').replace(',', '.'));
+    if (valorNumerico >= 0) {
       corFundo = 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)';
-      corTexto = '#fff';
-      corBarra = '#ffffff';
-      emojiStatus = '📈';
-      break;
-    case 'card-resumo despesa':
+      emojiStatus = '✅';
+    } else {
       corFundo = 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)';
-      corTexto = '#fff';
-      corBarra = '#ffffff';
-      emojiStatus = '📉';
-      break;
-    case 'card-resumo saldo':
-      // Cor baseada no valor (positivo/negativo)
-      const valorNumerico = parseFloat(valor.replace('R$ ', '').replace(',', '.'));
-      if (valorNumerico >= 0) {
+      emojiStatus = '❌';
+    }
+    corTexto = '#fff';
+    corBarra = '#ffffff';
+    break;
+  case 'card-resumo orcado':
+    // Cor baseada no progresso do orçado
+    if (progresso !== null) {
+      if (progresso <= 0.7) {
         corFundo = 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)';
         emojiStatus = '✅';
+      } else if (progresso <= 1.0) {
+        corFundo = 'linear-gradient(135deg, #eab308 0%, #f59e42 100%)';
+        emojiStatus = '⚠️';
       } else {
         corFundo = 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)';
-        emojiStatus = '❌';
+        emojiStatus = '🚨';
       }
-      corTexto = '#fff';
-      corBarra = '#ffffff';
-      break;
-    case 'card-resumo orcado':
-      // Cor baseada no progresso do orçado
-      if (progresso !== null) {
-        if (progresso <= 0.7) {
-          corFundo = 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)';
-          emojiStatus = '✅';
-        } else if (progresso <= 1.0) {
-          corFundo = 'linear-gradient(135deg, #eab308 0%, #f59e42 100%)';
-          emojiStatus = '⚠️';
-        } else {
-          corFundo = 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)';
-          emojiStatus = '🚨';
-        }
-      } else {
-        corFundo = 'linear-gradient(135deg, #eab308 0%, #f59e42 100%)';
-        emojiStatus = '📋';
-      }
-      corTexto = '#fff';
-      corBarra = '#ffffff';
-      break;
-    default:
-      corFundo = '#fff';
-      corTexto = '#222';
-      corBarra = '#3b82f6';
-      emojiStatus = '';
+    } else {
+      corFundo = 'linear-gradient(135deg, #eab308 0%, #f59e42 100%)';
+      emojiStatus = '📋';
+    }
+    corTexto = '#fff';
+    corBarra = '#ffffff';
+    break;
+  default:
+    corFundo = '#fff';
+    corTexto = '#222';
+    corBarra = '#3b82f6';
+    emojiStatus = '';
   }
 
   card.style.background = corFundo;

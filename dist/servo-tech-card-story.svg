@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920" role="img" aria-labelledby="title desc">
+  <title id="title">Servo Tech Story</title>
+  <desc id="desc">Formato vertical 1080x1920 para stories e reels da Servo Tech.</desc>
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#05192b"/>
+      <stop offset="55%" stop-color="#0a2f49"/>
+      <stop offset="100%" stop-color="#05192b"/>
+    </linearGradient>
+    <linearGradient id="cta2" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#16a34a"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+    <style>
+      .sans { font-family: system-ui,-apple-system,'Segoe UI',Roboto,Ubuntu,sans-serif; }
+      .title { font-size:82px; font-weight:700; letter-spacing:-1px; }
+      .sub { font-size:40px; font-weight:400; }
+      .list { font-size:44px; font-weight:600; }
+      .meta { font-size:34px; font-weight:500; fill:#94a3b8; }
+    </style>
+    <filter id="shadow2" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="10" stdDeviation="20" flood-color="#000" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+  <rect width="1080" height="1920" fill="url(#g)" />
+  <circle cx="150" cy="170" r="250" fill="#0891b2" opacity="0.16" />
+  <circle cx="980" cy="1800" r="340" fill="#facc15" opacity="0.14" />
+
+  <!-- Branding Top -->
+  <g transform="translate(110 140)">
+    <rect width="180" height="180" rx="40" fill="#0891b2" filter="url(#shadow2)"/>
+    <path d="M60 115 L95 80 L130 102 L130 150 A7 7 0 0 1 123 157 L103 157 L103 122 L87 122 L87 157 L67 157 A7 7 0 0 1 60 150 Z" fill="#fff" opacity="0.9" />
+    <text x="220" y="78" class="sans" font-size="90" font-weight="700" fill="#fff">Servo <tspan fill="#22d3ee">Tech</tspan></text>
+    <text x="220" y="132" class="sans" font-size="38" fill="#7dd3fc">Proteja seu lar, simplifique sua vida.</text>
+  </g>
+
+  <!-- Headline -->
+  <g transform="translate(110 400)">
+    <text class="sans title" fill="#fff">Manutenção</text>
+    <text class="sans title" y="96" fill="#fff">Profissional de</text>
+    <text class="sans title" y="192" fill="#facc15">Eletrodomésticos</text>
+    <text class="sans sub" y="260" fill="#cbd5e1">Diagnóstico rápido • Peças originais</text>
+    <text class="sans sub" y="310" fill="#cbd5e1">Garantia formal • Atendimento ágil</text>
+  </g>
+
+  <!-- Lista -->
+  <g transform="translate(110 860)" class="sans list" fill="#22d3ee">
+    <text y="0">✔ Lava e seca</text>
+    <text y="72">✔ Geladeira</text>
+    <text y="144">✔ Micro-ondas</text>
+    <text y="216">✔ Freezer</text>
+    <text y="288">✔ Cooktop</text>
+    <text y="360">✔ Purificador</text>
+  </g>
+
+  <!-- Aparelhos (placeholder colunas) -->
+  <g transform="translate(620 820)">
+    <rect x="0" y="0" width="330" height="480" rx="40" fill="#0c2538" stroke="#13364f" />
+    <circle cx="165" cy="170" r="95" fill="#102b3d" stroke="#2a566e" stroke-width="10" />
+    <text x="165" y="400" text-anchor="middle" font-size="44" class="sans" fill="#94a3b8">Lava</text>
+  </g>
+  <g transform="translate(620 1340)">
+    <rect x="0" y="0" width="330" height="480" rx="40" fill="#0c2538" stroke="#13364f" />
+    <rect x="55" y="90" width="220" height="300" rx="18" fill="#18384d" />
+    <text x="165" y="410" text-anchor="middle" font-size="44" class="sans" fill="#94a3b8">Gel</text>
+  </g>
+
+  <!-- CTA principal -->
+  <g transform="translate(110 1480)">
+    <rect width="620" height="140" rx="40" fill="url(#cta2)" filter="url(#shadow2)" />
+    <text x="70" y="92" font-size="60" class="sans" fill="#fff">💬 WhatsApp agora</text>
+  </g>
+  <!-- Telefone -->
+  <g transform="translate(110 1650)">
+    <rect width="520" height="100" rx="30" fill="#0f2c45" stroke="#1e4970" />
+    <text x="60" y="66" font-size="52" class="sans" fill="#e2e8f0">(71) 99200‑3106</text>
+  </g>
+
+  <!-- Prova social -->
+  <g transform="translate(110 1780)" class="sans meta">
+    <text y="0" font-size="40"><tspan fill="#facc15">★</tspan> +400 reparos</text>
+    <text y="60" font-size="40"><tspan fill="#facc15">★</tspan> 98% aprovação • Garantia real</text>
+  </g>
+
+  <!-- Linha resumida de aparelhos -->
+  <g transform="translate(110 1730)">
+    <text class="sans" font-size="40" fill="#facc15">Lava e seca - Forno elétrico - Geladeira - Micro-ondas</text>
+  </g>
+
+  <!-- Barra inferior opcional -->
+  <g transform="translate(0 1840)">
+    <rect width="1080" height="80" fill="#facc15" />
+    <text x="540" y="54" text-anchor="middle" font-size="46" class="sans" font-weight="700" fill="#05192b">Servo Tech • Assistência Técnica</text>
+  </g>
+</svg>

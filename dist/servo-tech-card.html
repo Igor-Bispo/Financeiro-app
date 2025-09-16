@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Servo Tech – Card Preview</title>
+  <!-- Assume tailwind is already included globally via main build; fallback basic styles: -->
+  <link rel="icon" href="/favicon.ico" />
+  <script>
+    // Fallback minimal classes if Tailwind not injected (manual quick style shim)
+  </script>
+  <style>
+    body {margin:0; font-family: system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,sans-serif; background:#020b17;}
+    .gradient-bg {background:linear-gradient(to bottom,#020b17,#041d33 45%,#020b17);}    
+  </style>
+</head>
+<body class="h-full text-white">
+  <main class="min-h-full flex flex-col items-center py-10 px-4 gradient-bg">
+    <h1 class="text-sm tracking-wider text-cyan-400/70 mb-4 font-medium">Pré-visualização do Card</h1>
+
+    <!-- CARD INÍCIO -->
+    <article class="relative overflow-hidden rounded-3xl w-full max-w-5xl bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white p-8 md:p-12 shadow-2xl ring-1 ring-white/5">
+      <!-- Decor -->
+      <div class="pointer-events-none select-none absolute -top-28 -left-20 w-80 h-80 rounded-full bg-cyan-500/15 blur-3xl"></div>
+      <div class="pointer-events-none select-none absolute -bottom-40 -right-28 w-[32rem] h-[32rem] rounded-full bg-yellow-500/10 blur-3xl"></div>
+
+      <div class="relative flex flex-col lg:flex-row gap-10">
+        <!-- Branding / Mensagem -->
+        <div class="flex-1 space-y-6 min-w-[260px]">
+          <div class="inline-flex items-center gap-2 text-[11px] font-semibold tracking-widest text-cyan-300 uppercase">
+            <span class="h-2 w-2 rounded-full bg-cyan-400 animate-pulse"></span>
+            Assistência Técnica Premium
+          </div>
+
+            <div class="flex items-center gap-4">
+              <div class="p-4 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-500 shadow-lg shadow-cyan-500/30">
+                <svg class="w-10 h-10 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 10.5 12 4l9 6.5V20a1 1 0 0 1-1 1h-5.5v-6h-5v6H4a1 1 0 0 1-1-1v-9.5Z" />
+                </svg>
+              </div>
+              <div>
+                <h2 class="text-4xl font-bold tracking-tight">Servo <span class="text-cyan-400">Tech</span></h2>
+                <p class="text-cyan-200 text-sm mt-1">Proteja seu lar, simplifique sua vida.</p>
+              </div>
+            </div>
+
+            <header class="space-y-3">
+              <h3 class="text-2xl md:text-3xl font-extrabold leading-tight max-w-xl">Manutenção Profissional de <span class="text-yellow-400">Eletrodomésticos</span></h3>
+              <p class="text-slate-300 text-base max-w-lg">Diagnóstico rápido. Peças originais. Garantia formal. Resposta no mesmo dia em Salvador e região.</p>
+            </header>
+
+            <ul class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm" aria-label="Serviços atendidos">
+              <li class="flex items-center gap-2"><span class="text-cyan-400">✔</span>Lava e seca</li>
+              <li class="flex items-center gap-2"><span class="text-cyan-400">✔</span>Geladeira</li>
+              <li class="flex items-center gap-2"><span class="text-cyan-400">✔</span>Micro-ondas</li>
+              <li class="flex items-center gap-2"><span class="text-cyan-400">✔</span>Freezer</li>
+              <li class="flex items-center gap-2"><span class="text-cyan-400">✔</span>Cooktop</li>
+              <li class="flex items-center gap-2"><span class="text-cyan-400">✔</span>Purificador</li>
+            </ul>
+
+            <div class="flex flex-wrap items-center gap-4 pt-2">
+              <a href="https://wa.me/5571992003106" target="_blank" rel="noopener" class="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 px-5 py-3 text-sm font-semibold shadow-lg shadow-green-600/30 hover:scale-[1.02] active:scale-[.98] transition focus:outline-none focus:ring-2 focus:ring-green-400/60">
+                <span class="text-lg" aria-hidden="true">💬</span>
+                <span>Falar no WhatsApp</span>
+                <span class="transition-transform group-hover:translate-x-0.5" aria-hidden="true">→</span>
+              </a>
+              <div class="flex items-center gap-2 text-sm text-slate-300">
+                <span class="px-2 py-1 rounded bg-slate-800/60 font-mono tracking-wide">(71) 99200‑3106</span>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-4 text-[12px] text-slate-400 pt-4" aria-label="Prova social e garantias">
+              <span class="inline-flex items-center gap-1"><span class="text-yellow-400">★</span>+400 reparos</span>
+              <span class="inline-flex items-center gap-1"><span class="text-yellow-400">★</span>98% aprovação</span>
+              <span class="inline-flex items-center gap-1">Garantia real</span>
+              <span class="inline-flex items-center gap-1">Seg–Sáb 08h–19h</span>
+            </div>
+
+            <div class="mt-4 text-sm font-medium text-yellow-400" aria-label="Principais aparelhos atendidos">
+              Lava e seca - Forno elétrico - Geladeira - Micro-ondas
+            </div>
+        </div>
+
+        <!-- Visual dos aparelhos -->
+        <div class="flex-1 relative flex items-end justify-center">
+          <div class="relative grid grid-cols-3 gap-6 max-w-md">
+            <div class="col-span-1 flex flex-col items-center gap-2">
+              <div class="relative aspect-[3/4] w-28 rounded-xl bg-gradient-to-b from-slate-800 to-slate-950 border border-slate-700 flex items-center justify-center shadow-inner">
+                <img src="https://via.placeholder.com/90x120?text=Lava" alt="Lava e Seca" class="object-contain w-20 h-20 opacity-90" loading="lazy" />
+              </div>
+              <span class="text-[11px] text-slate-400">Lava & Seca</span>
+            </div>
+            <div class="col-span-1 flex flex-col items-center gap-2">
+              <div class="relative aspect-[3/4] w-32 rounded-xl bg-gradient-to-b from-slate-800 to-slate-950 border border-slate-700 flex items-center justify-center shadow-inner">
+                <img src="https://via.placeholder.com/110x140?text=Gel" alt="Geladeira" class="object-contain w-24 h-24 opacity-90" loading="lazy" />
+              </div>
+              <span class="text-[11px] text-slate-400">Geladeira</span>
+            </div>
+            <div class="col-span-1 flex flex-col items-center gap-2">
+              <div class="relative aspect-[3/4] w-28 rounded-xl bg-gradient-to-b from-slate-800 to-slate-950 border border-slate-700 flex items-center justify-center shadow-inner">
+                <img src="https://via.placeholder.com/90x120?text=Micro" alt="Micro-ondas" class="object-contain w-20 h-20 opacity-90" loading="lazy" />
+              </div>
+              <span class="text-[11px] text-slate-400">Micro-ondas</span>
+            </div>
+          </div>
+          <div class="absolute inset-x-6 bottom-0 h-24 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent pointer-events-none"></div>
+        </div>
+      </div>
+    </article>
+    <!-- CARD FIM -->
+
+    <p class="mt-8 text-center text-[11px] text-slate-500 max-w-xl leading-relaxed">
+      Este arquivo é apenas um preview isolado. Substitua as imagens de placeholder pelos assets reais e incorpore o bloco no fluxo desejado (landing, modal, dashboard, etc.).
+    </p>
+  </main>
+</body>
+</html>

@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1600" viewBox="0 0 1080 1600" role="img" aria-labelledby="title desc">
+  <title id="title">Card Promocional Servo Tech</title>
+  <desc id="desc">Arte promocional destacando a marca Servo Tech e serviços de manutenção de eletrodomésticos.</desc>
+  <defs>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#031426" />
+      <stop offset="55%" stop-color="#062539" />
+      <stop offset="100%" stop-color="#031426" />
+    </linearGradient>
+    <linearGradient id="brandGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#06b6d4" />
+      <stop offset="100%" stop-color="#0284c7" />
+    </linearGradient>
+    <linearGradient id="btnGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#16a34a" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+    <filter id="shadowSoft" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#000" flood-opacity="0.35" />
+    </filter>
+    <style>
+      .font-sans { font-family: system-ui,-apple-system,'Segoe UI',Roboto,Ubuntu,sans-serif; }
+      .heading { font-weight:700; letter-spacing:-0.5px; }
+      .badge { font-size:26px; font-weight:600; }
+      .small { font-size:30px; font-weight:500; }
+      .micro { font-size:24px; font-weight:500; }
+      .list { font-size:30px; }
+      .mono { font-family: 'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace; }
+      .muted { fill:#cbd5e1; }
+      .cyan { fill:#22d3ee; }
+      .yellow { fill:#facc15; }
+      .white { fill:#fff; }
+    </style>
+  </defs>
+  <rect width="1080" height="1600" fill="url(#bgGrad)" />
+
+  <!-- Glows -->
+  <circle cx="160" cy="140" r="230" fill="#06b6d4" opacity="0.12" />
+  <circle cx="960" cy="1480" r="300" fill="#facc15" opacity="0.12" />
+
+  <!-- Logo container -->
+  <g transform="translate(160 140)">
+    <rect x="0" y="0" rx="40" width="760" height="1320" fill="#051a2c" stroke="#0b304d" stroke-width="2" filter="url(#shadowSoft)" />
+
+    <!-- Marca -->
+    <g transform="translate(80 80)">
+      <rect x="0" y="0" width="140" height="140" rx="32" fill="url(#brandGrad)" />
+      <!-- Ícone casa estilizado -->
+      <path d="M40 85 L70 55 L100 75 L100 115 A5 5 0 0 1 95 120 L75 120 L75 95 L63 95 L63 120 L45 120 A5 5 0 0 1 40 115 Z" fill="#fff" opacity="0.9" />
+      <text x="180" y="70" class="font-sans heading" font-size="78" fill="#fff">Servo <tspan fill="#22d3ee">Tech</tspan></text>
+      <text x="180" y="118" class="font-sans" font-size="30" fill="#7dd3fc">Proteja seu lar, simplifique sua vida.</text>
+    </g>
+
+    <!-- Headline -->
+    <g transform="translate(80 300)">
+      <text class="font-sans heading" font-size="72" fill="#fff">Manutenção Profissional de</text>
+      <text class="font-sans heading" font-size="72" fill="#facc15" y="90">Eletrodomésticos</text>
+      <text class="font-sans" font-size="34" fill="#cbd5e1" y="150">Diagnóstico rápido. Peças originais. Garantia formal.</text>
+      <text class="font-sans" font-size="34" fill="#cbd5e1" y="198">Resposta no mesmo dia – Salvador e região.</text>
+    </g>
+
+    <!-- Lista de serviços -->
+    <g transform="translate(80 560)" class="font-sans list" fill="#22d3ee">
+      <text y="0" class="white" fill="#22d3ee">✔ Lava e seca</text>
+      <text y="60" class="white" fill="#22d3ee">✔ Geladeira</text>
+      <text y="120" class="white" fill="#22d3ee">✔ Micro-ondas</text>
+      <text y="180" class="white" fill="#22d3ee">✔ Freezer</text>
+      <text y="240" class="white" fill="#22d3ee">✔ Cooktop</text>
+      <text y="300" class="white" fill="#22d3ee">✔ Purificador</text>
+    </g>
+
+    <!-- CTA WhatsApp -->
+    <g transform="translate(80 930)">
+      <rect width="430" height="110" rx="26" fill="url(#btnGrad)" filter="url(#shadowSoft)" />
+      <text x="60" y="70" font-size="42" class="font-sans" fill="#fff">💬 Falar no WhatsApp →</text>
+    </g>
+
+    <!-- Telefone -->
+    <g transform="translate(80 1070)">
+      <rect width="330" height="70" rx="14" fill="#0f2c45" stroke="#1e4970" />
+      <text x="24" y="46" font-size="34" class="font-sans mono" fill="#e2e8f0">(71) 99200‑3106</text>
+    </g>
+
+    <!-- Prova social -->
+    <g transform="translate(80 1180)" class="font-sans micro" fill="#94a3b8">
+      <text y="0"><tspan fill="#facc15">★</tspan> +400 reparos</text>
+      <text y="50"><tspan fill="#facc15">★</tspan> 98% aprovação</text>
+      <text y="100">Garantia real • Seg–Sáb 08h–19h</text>
+    </g>
+
+    <!-- Aparelhos (placeholders estilizados) -->
+    <g transform="translate(620 560)">
+      <rect x="0" y="0" width="300" height="420" rx="32" fill="#0c2538" stroke="#13364f" />
+      <rect x="30" y="40" width="240" height="240" rx="12" fill="#18384d" />
+      <circle cx="150" cy="160" r="80" fill="#0f2739" stroke="#2a566e" stroke-width="8" />
+      <text x="150" y="370" text-anchor="middle" font-size="34" class="font-sans" fill="#94a3b8">Lava & Seca</text>
+    </g>
+    <g transform="translate(620 1010)">
+      <rect x="0" y="0" width="300" height="420" rx="32" fill="#0c2538" stroke="#13364f" />
+      <rect x="40" y="60" width="220" height="300" rx="12" fill="#18384d" />
+      <text x="150" y="380" text-anchor="middle" font-size="34" class="font-sans" fill="#94a3b8">Geladeira</text>
+    </g>
+  </g>
+
+  <!-- Rodapé inferior -->
+  <!-- Linha resumida de aparelhos -->
+  <g transform="translate(160 1420)">
+    <text class="font-sans" font-size="40" fill="#facc15">Lava e seca - Forno elétrico - Geladeira - Micro-ondas</text>
+  </g>
+  
+  <!-- Rodapé inferior -->
+  <g transform="translate(0 1500)">
+    <rect width="1080" height="100" fill="#facc15" />
+    <text x="540" y="65" text-anchor="middle" font-size="46" class="font-sans heading" fill="#031426">Fale com a ServoTech (71) 99200‑3106</text>
+  </g>
+</svg>

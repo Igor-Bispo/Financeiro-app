@@ -1,0 +1,206 @@
+/* Estilos para modo compacto - Garantir funcionamento */
+
+/* Modo compacto base */
+body.compact-mode {
+  --spacing-xs: 2px;
+  --spacing-sm: 4px;
+  --spacing-md: 6px;
+  --spacing-lg: 8px;
+  --spacing-xl: 12px;
+}
+
+/* Aplicar espaçamentos reduzidos */
+body.compact-mode * {
+  line-height: 1.2 !important;
+}
+
+/* Containers principais */
+body.compact-mode .settings-container,
+body.compact-mode .tab-container,
+body.compact-mode .content-container {
+  padding: 0.25rem !important;
+  margin: 0 !important;
+}
+
+/* Títulos */
+body.compact-mode .page-title,
+body.compact-mode .tab-title,
+body.compact-mode h1 {
+  font-size: 1rem !important;
+  margin-bottom: 0.125rem !important;
+  padding: 0.125rem 0 !important;
+}
+
+body.compact-mode .page-subtitle,
+body.compact-mode .tab-subtitle {
+  font-size: 0.75rem !important;
+  margin-bottom: 0.25rem !important;
+  opacity: 0.7;
+}
+
+body.compact-mode .section-title,
+body.compact-mode h2 {
+  font-size: 0.875rem !important;
+  margin-bottom: 0.125rem !important;
+  padding: 0.125rem 0 !important;
+}
+
+/* Seções e conteúdo */
+body.compact-mode .content-section,
+body.compact-mode .tab-content,
+body.compact-mode section {
+  margin-bottom: 0.25rem !important;
+  padding: 0.25rem !important;
+  border-radius: 4px;
+}
+
+/* Itens de configuração */
+body.compact-mode .setting-item,
+body.compact-mode .list-item,
+body.compact-mode .card {
+  padding: 0.125rem 0 !important;
+  margin-bottom: 0.125rem !important;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Labels e descrições */
+body.compact-mode .setting-label,
+body.compact-mode .item-label,
+body.compact-mode .card-title {
+  font-size: 0.75rem !important;
+  font-weight: 500;
+  margin-bottom: 0.0625rem !important;
+}
+
+body.compact-mode .setting-description,
+body.compact-mode .item-description,
+body.compact-mode .card-description {
+  font-size: 0.625rem !important;
+  opacity: 0.6;
+  line-height: 1.1;
+}
+
+/* Botões */
+body.compact-mode .btn,
+body.compact-mode button {
+  padding: 0.25rem 0.5rem !important;
+  font-size: 0.75rem !important;
+  border-radius: 4px !important;
+}
+
+/* Toggles */
+body.compact-mode .toggle-switch {
+  transform: scale(0.8) !important;
+  margin-left: 0.25rem !important;
+}
+
+/* Formulários */
+body.compact-mode .form-input,
+body.compact-mode input,
+body.compact-mode select,
+body.compact-mode textarea {
+  padding: 0.25rem !important;
+  font-size: 0.75rem !important;
+  border-radius: 3px;
+}
+
+/* Modo Micro - Mais compacto */
+body.micro-mode {
+  --spacing-xs: 1px;
+  --spacing-sm: 2px;
+  --spacing-md: 3px;
+  --spacing-lg: 4px;
+  --spacing-xl: 6px;
+}
+
+body.micro-mode .setting-item,
+body.micro-mode .list-item,
+body.micro-mode .card {
+  padding: 0.0625rem 0 !important;
+  margin-bottom: 0.0625rem !important;
+}
+
+body.micro-mode .setting-label,
+body.micro-mode .item-label,
+body.micro-mode .card-title {
+  font-size: 0.6875rem !important;
+}
+
+body.micro-mode .setting-description,
+body.micro-mode .item-description,
+body.micro-mode .card-description {
+  font-size: 0.5625rem !important;
+}
+
+/* Modo Nano - Máxima compactação */
+body.nano-mode {
+  --spacing-xs: 0.5px;
+  --spacing-sm: 1px;
+  --spacing-md: 1.5px;
+  --spacing-lg: 2px;
+  --spacing-xl: 3px;
+}
+
+body.nano-mode .setting-item,
+body.nano-mode .list-item,
+body.nano-mode .card {
+  padding: 0.03125rem 0 !important;
+  margin-bottom: 0.03125rem !important;
+}
+
+body.nano-mode .setting-label,
+body.nano-mode .item-label,
+body.nano-mode .card-title {
+  font-size: 0.625rem !important;
+}
+
+body.nano-mode .setting-description,
+body.nano-mode .item-description,
+body.nano-mode .card-description {
+  font-size: 0.5rem !important;
+}
+
+/* Ajustes específicos para elementos comuns */
+body.compact-mode .space-y-4 > * + * {
+  margin-top: 0.25rem !important;
+}
+
+body.compact-mode .gap-4 {
+  gap: 0.25rem !important;
+}
+
+body.compact-mode .p-4 {
+  padding: 0.25rem !important;
+}
+
+body.compact-mode .m-4 {
+  margin: 0.25rem !important;
+}
+
+body.compact-mode .mb-4 {
+  margin-bottom: 0.25rem !important;
+}
+
+body.compact-mode .mt-4 {
+  margin-top: 0.25rem !important;
+}
+
+body.compact-mode .py-4 {
+  padding-top: 0.25rem !important;
+  padding-bottom: 0.25rem !important;
+}
+
+/* Garantir que os estilos sejam aplicados */
+body[data-compact-mode="enabled"] {
+  /* Forçar aplicação dos estilos compactos */
+}
+
+body[data-compact-size="micro"] {
+  /* Forçar aplicação dos estilos micro */
+}
+
+body[data-compact-size="nano"] {
+  /* Forçar aplicação dos estilos nano */
+}
