@@ -45,7 +45,7 @@ export async function renderSettings() {
             ownerDisplay,
             pendingInvitations,
             sentInvitations,
-            appVersion: 'v4.37.0', // Versão atual
+            appVersion: 'v4.38.0', // Versão atual
             hasNewChangelog: true, // Exemplo
             lastUpdateLabel: '16/09/2025', // Data da última atualização
             txChunkOverride: localStorage.getItem('txChunkSize') || '',

@@ -1,6 +1,23 @@
 // Changelog simples para exibir no modal de "O que mudou"
 // Adicione entradas conforme releases forem saindo
 export const CHANGELOG = {
+  '4.38.0': {
+    date: '2025-09-16',
+    title: '4.38.0 — Organização Completa das Abas com Padrão Compacto',
+    items: [
+      '📊 Dashboard: Resumo compacto com métricas essenciais e widgets organizados',
+      '💰 Transações: Interface otimizada com 3 métricas principais e filtros organizados',
+      '📂 Categorias: Cards compactos com resumo financeiro detalhado',
+      '🔄 Recorrentes: Seções organizadas por status com resumo financeiro',
+      '📈 Analytics: Gráficos em layout compacto e análises otimizadas',
+      '🔔 Notificações: Filtros organizados em seções e lista otimizada',
+      '⚙️ Config: Seções lógicas com cards compactos e interface unificada',
+      '🎯 Espaçamento Otimizado: Padding reduzido (p-4) para melhor aproveitamento do espaço',
+      '📱 UX Mobile Aprimorada: Interface limpa, organizada e fácil de navegar',
+      '⚡ Performance Melhorada: Menos elementos DOM, carregamento mais rápido',
+      '🎨 Design Consistente: Padrão visual unificado em todas as 7 abas principais'
+    ]
+  },
   '4.37.0': {
     date: '2025-09-16',
     title: '4.37.0 — Interface de Login Premium com Glass Morphism',
