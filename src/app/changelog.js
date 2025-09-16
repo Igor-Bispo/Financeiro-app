@@ -1,11 +1,27 @@
 // Changelog simples para exibir no modal de "O que mudou"
 // Adicione entradas conforme releases forem saindo
 export const CHANGELOG = {
+  '4.37.0': {
+    date: '2025-09-16',
+    title: '4.37.0 — Interface de Login Premium com Glass Morphism',
+    items: [
+      '🎨 Interface de Login Completamente Redesenhada: Design glass morphism com transparência e blur avançados',
+      '✨ Animações Avançadas: Float, glow, shimmer effects e micro-interações suaves',
+      '🌈 Gradientes Dinâmicos: Paleta violet → purple → fuchsia com efeitos visuais premium',
+      '🎯 Elementos Decorativos: Círculos flutuantes com blur e transparência animados',
+      '🔧 Correção do Botão de Logout: Handler específico implementado com debug melhorado',
+      '💫 Efeitos Visuais: Shimmer effects, hover transformations e partículas animadas',
+      '📱 Tipografia Premium: Gradientes no texto e hierarquia visual aprimorada',
+      '🛡️ Segurança Aprimorada: Mensagens de criptografia e conformidade LGPD',
+      '🚀 Nome Atualizado: "Servo Tech Finanças" com identidade visual moderna',
+      '⚡ Performance: Animações otimizadas e transições suaves de 500ms'
+    ]
+  },
   '4.2.8': {
     date: '2025-09-08',
     title: '4.2.8 — Atualização instantânea e Recorrentes',
     items: [
-      'PWA: “Verificar atualizações” aplica imediatamente a nova versão (skipWaiting + recarregamento seguro) e caches limitados à versão atual',
+      'PWA: "Verificar atualizações" aplica imediatamente a nova versão (skipWaiting + recarregamento seguro) e caches limitados à versão atual',
       'Service Worker: escopo de cache restrito à versão corrente para evitar conteúdo desatualizado após deploy',
       'Recorrentes (1 parcela): ao efetivar, cria transação no mês correto (dia ajustado) e conta nas métricas do mês mesmo inativa após aplicar',
       'Listas de Recorrentes: itens com início futuro não aparecem em meses anteriores',
