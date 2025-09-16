@@ -119,47 +119,73 @@ export async function renderRecorrentes() {
         </div>
         <div class="tab-content">
           <div class="content-spacing">
-            <!-- ========== SEÇÃO 1: RESUMO ========== -->
+            <!-- ========== SEÇÃO 1: RESUMO COMPACTO ========== -->
             <div class="mb-8">
               <div class="flex items-center gap-2 mb-4">
                 <div class="w-1 h-6 bg-gradient-to-b from-purple-500 to-green-500 rounded-full"></div>
-                <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">💡 Resumo</h2>
+                <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">♻️ Resumo</h2>
               </div>
-              <div class="bg-gradient-to-br from-purple-500 via-green-500 to-teal-600 rounded-2xl shadow-xl p-6 md:p-8 text-white mb-6 summary-card">
-                <div class="flex items-center justify-between mb-6">
+              
+              <div class="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 rounded-2xl shadow-lg border border-blue-200 dark:border-gray-600 p-4 mb-6">
+                <!-- Header Compacto -->
+                <div class="flex items-center justify-between mb-4">
                   <div>
-                    <h3 class="text-xl md:text-2xl font-bold">Visão Geral</h3>
-                    <p class="text-xs opacity-90 mt-1">Período: ${String(selMonth).padStart(2,'0')}/${selYear}</p>
-                    <button id="rec-summary-toggle" class="text-[11px] underline opacity-90 mt-1 hover:opacity-100 focus:outline-none">Mostrar detalhes</button>
+                    <h3 class="text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                      <span class="text-xl">♻️</span>
+                      Controle de Recorrentes
+                    </h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">${total} recorrentes • ${String(selMonth).padStart(2,'0')}/${selYear}</p>
                   </div>
                   <div class="text-right">
-                    <div class="text-2xl md:text-3xl font-bold summary-value">R$ ${valorPotencialMes.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
-                    <p class="text-xs opacity-90">Valor mensal potencial (ativas)</p>
+                    <div class="text-lg font-bold text-purple-600 dark:text-purple-400">
+                      R$ ${valorPotencialMes.toFixed(2)}
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Potencial</p>
                   </div>
                 </div>
-                <div id="rec-summary-details" class="hidden text-[12px] md:text-xs opacity-90 bg-white bg-opacity-10 rounded-lg p-3 mb-4">
-                  <div class="flex flex-col gap-1">
-                    <div>Total de recorrentes cadastradas: <strong>${total}</strong></div>
-                    <div class="opacity-90">Dica: use as setas no topo para navegar entre meses.</div>
+                
+                <!-- Métricas Compactas -->
+                <div class="grid grid-cols-3 gap-3 mb-4">
+                  <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm border border-gray-200 dark:border-gray-600">
+                    <div class="text-lg mb-1">✅</div>
+                    <div class="text-lg font-bold text-green-600 dark:text-green-400">${aplicadasMes}</div>
+                    <div class="text-xs text-gray-600 dark:text-gray-400">Aplicadas</div>
+                  </div>
+                  
+                  <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm border border-gray-200 dark:border-gray-600">
+                    <div class="text-lg mb-1">⏳</div>
+                    <div class="text-lg font-bold text-orange-600 dark:text-orange-400">${pendentesMes}</div>
+                    <div class="text-xs text-gray-600 dark:text-gray-400">Pendentes</div>
+                  </div>
+                  
+                  <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm border border-gray-200 dark:border-gray-600">
+                    <div class="text-lg mb-1">🟢</div>
+                    <div class="text-lg font-bold text-blue-600 dark:text-blue-400">${ativasPeriodo}</div>
+                    <div class="text-xs text-gray-600 dark:text-gray-400">Ativas</div>
                   </div>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div class="bg-white bg-opacity-15 backdrop-blur-sm rounded-xl p-4 text-center">
-                    <div class="text-2xl mb-2">✅</div>
-                    <div class="text-2xl md:text-3xl font-bold summary-value">${aplicadasMes}</div>
-                    <div class="text-sm opacity-90">Aplicadas no mês</div>
-                    <div class="text-xs opacity-90 mt-1">R$ ${valorAplicadoMes.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
-                  </div>
-                  <div class="bg-white bg-opacity-15 backdrop-blur-sm rounded-xl p-4 text-center">
-                    <div class="text-2xl mb-2">⏳</div>
-                    <div class="text-2xl md:text-3xl font-bold summary-value">${pendentesMes}</div>
-                    <div class="text-sm opacity-90">Pendentes neste mês</div>
-                    <div class="text-xs opacity-90 mt-1">R$ ${valorPendenteMes.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
-                  </div>
-                  <div class="bg-white bg-opacity-15 backdrop-blur-sm rounded-xl p-4 text-center">
-                    <div class="text-2xl mb-2">🟢</div>
-                    <div class="text-2xl md:text-3xl font-bold summary-value">${ativasPeriodo}</div>
-                    <div class="text-sm opacity-90">Ativas neste mês</div>
+
+                <!-- Resumo Financeiro Compacto -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm border border-gray-200 dark:border-gray-600">
+                  <h5 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-1">
+                    <span>💰</span>
+                    Resumo Financeiro
+                  </h5>
+                  <div class="space-y-1">
+                    <div class="flex justify-between text-xs">
+                      <span class="text-gray-600 dark:text-gray-400">Aplicado:</span>
+                      <span class="font-medium text-green-600 dark:text-green-400">R$ ${valorAplicadoMes.toFixed(2)}</span>
+                    </div>
+                    <div class="flex justify-between text-xs">
+                      <span class="text-gray-600 dark:text-gray-400">Pendente:</span>
+                      <span class="font-medium text-orange-600 dark:text-orange-400">R$ ${valorPendenteMes.toFixed(2)}</span>
+                    </div>
+                    <div class="flex justify-between text-xs border-t border-gray-200 dark:border-gray-600 pt-1">
+                      <span class="text-gray-600 dark:text-gray-400">Total:</span>
+                      <span class="font-bold text-purple-600 dark:text-purple-400">
+                        R$ ${valorPotencialMes.toFixed(2)}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>

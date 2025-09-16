@@ -17,6 +17,35 @@
   --fab-radius: 20px;
   --container-max-width: 768px;
   
+  /* Sistema de Tipografia Unificado */
+  --font-family-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-family-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
+  
+  /* Tamanhos de fonte padronizados */
+  --text-xs: 0.75rem;     /* 12px */
+  --text-sm: 0.875rem;    /* 14px */
+  --text-base: 1rem;      /* 16px */
+  --text-lg: 1.125rem;    /* 18px */
+  --text-xl: 1.25rem;     /* 20px */
+  --text-2xl: 1.5rem;     /* 24px */
+  --text-3xl: 1.875rem;   /* 30px */
+  --text-4xl: 2.25rem;    /* 36px */
+  
+  /* Pesos de fonte */
+  --font-light: 300;
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+  --font-extrabold: 800;
+  
+  /* Alturas de linha */
+  --leading-tight: 1.25;
+  --leading-snug: 1.375;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.625;
+  --leading-loose: 2;
+  
   /* Cores do sistema atualizadas para design moderno */
   --primary: var(--primary-600);
   --primary-light: var(--primary-500);
@@ -26,6 +55,201 @@
   --warning: var(--warning-600);
   --error: var(--error-600);
   --info: var(--info-600);
+}
+
+/* === SISTEMA DE TIPOGRAFIA UNIFICADO === */
+body {
+  font-family: var(--font-family-primary);
+  font-size: var(--text-base);
+  font-weight: var(--font-normal);
+  line-height: var(--leading-normal);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Títulos de seção (h1, h2) */
+.tab-title-highlight,
+h1, h2 {
+  font-family: var(--font-family-primary);
+  font-weight: var(--font-bold);
+  line-height: var(--leading-tight);
+  letter-spacing: -0.025em;
+}
+
+/* Títulos de seção específicos */
+.text-xl, .text-2xl, .text-3xl, .text-4xl {
+  font-family: var(--font-family-primary);
+  font-weight: var(--font-bold);
+  line-height: var(--leading-tight);
+  letter-spacing: -0.025em;
+}
+
+/* Subtítulos e cabeçalhos de card */
+.text-lg {
+  font-family: var(--font-family-primary);
+  font-weight: var(--font-semibold);
+  line-height: var(--leading-snug);
+}
+
+/* Texto de corpo */
+.text-base, .text-sm {
+  font-family: var(--font-family-primary);
+  font-weight: var(--font-normal);
+  line-height: var(--leading-normal);
+}
+
+/* Texto pequeno */
+.text-xs {
+  font-family: var(--font-family-primary);
+  font-weight: var(--font-normal);
+  line-height: var(--leading-normal);
+}
+
+/* Botões */
+.u-btn {
+  font-family: var(--font-family-primary);
+  font-weight: var(--font-medium);
+  font-size: var(--text-sm);
+  line-height: var(--leading-tight);
+  letter-spacing: 0.025em;
+}
+
+/* Botões pequenos */
+.u-btn.text-xs {
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+}
+
+/* Labels e descrições */
+.font-semibold {
+  font-family: var(--font-family-primary);
+  font-weight: var(--font-semibold);
+}
+
+.font-bold {
+  font-family: var(--font-family-primary);
+  font-weight: var(--font-bold);
+}
+
+.font-medium {
+  font-family: var(--font-family-primary);
+  font-weight: var(--font-medium);
+}
+
+/* Código e monospace */
+code, pre, .font-mono {
+  font-family: var(--font-family-mono);
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+}
+
+/* === PADRÕES ESPECÍFICOS PARA CARDS COMPACTOS === */
+
+/* Headers de seção compactos */
+.text-xl.md\\:text-2xl {
+  font-size: var(--text-xl);
+  font-weight: var(--font-bold);
+  line-height: var(--leading-tight);
+}
+
+@media (min-width: 768px) {
+  .text-xl.md\\:text-2xl {
+    font-size: var(--text-2xl);
+  }
+}
+
+/* Títulos de card compactos */
+.text-lg.font-bold {
+  font-size: var(--text-lg);
+  font-weight: var(--font-bold);
+  line-height: var(--leading-snug);
+}
+
+/* Descrições de card */
+.text-sm.text-gray-600 {
+  font-size: var(--text-sm);
+  font-weight: var(--font-normal);
+  line-height: var(--leading-normal);
+}
+
+/* Métricas compactas */
+.text-lg.font-bold.text-gray-800,
+.text-lg.font-bold.text-green-600,
+.text-lg.font-bold.text-red-600,
+.text-lg.font-bold.text-blue-600,
+.text-lg.font-bold.text-purple-600,
+.text-lg.font-bold.text-orange-600 {
+  font-size: var(--text-lg);
+  font-weight: var(--font-bold);
+  line-height: var(--leading-tight);
+}
+
+/* Labels pequenos */
+.text-xs.text-gray-600,
+.text-xs.text-gray-400,
+.text-xs.text-gray-500 {
+  font-size: var(--text-xs);
+  font-weight: var(--font-normal);
+  line-height: var(--leading-normal);
+}
+
+/* Títulos de resumo financeiro */
+.text-sm.font-semibold {
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  line-height: var(--leading-snug);
+}
+
+/* Valores monetários */
+.font-medium,
+.font-bold {
+  font-weight: var(--font-medium);
+}
+
+.font-bold {
+  font-weight: var(--font-bold);
+}
+
+/* Botões mobile */
+.mobile-btn {
+  font-family: var(--font-family-primary);
+  font-weight: var(--font-medium);
+  font-size: var(--text-sm);
+  line-height: var(--leading-tight);
+  letter-spacing: 0.025em;
+}
+
+/* Botões pequenos */
+.mobile-btn.text-xs {
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+}
+
+/* === RESPONSIVIDADE DE TIPOGRAFIA === */
+@media (max-width: 640px) {
+  /* Reduzir tamanhos em mobile */
+  .text-xl.md\\:text-2xl {
+    font-size: var(--text-lg);
+  }
+  
+  .text-lg.font-bold {
+    font-size: var(--text-base);
+  }
+  
+  .text-sm {
+    font-size: var(--text-xs);
+  }
+}
+
+@media (min-width: 1024px) {
+  /* Aumentar tamanhos em desktop */
+  .text-xl.md\\:text-2xl {
+    font-size: var(--text-3xl);
+  }
+  
+  .text-lg.font-bold {
+    font-size: var(--text-xl);
+  }
 }
 
 /* Login buttons styling - Design moderno 2024 */

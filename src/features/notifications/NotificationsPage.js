@@ -444,41 +444,71 @@ export async function renderNotifications(force = false) {
           <div class="mb-8">
             <div class="flex items-center gap-2 mb-4">
               <div class="w-1 h-6 bg-gradient-to-b from-blue-500 to-indigo-500 rounded-full"></div>
-              <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">📊 Visão Geral</h2>
+              <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">🔔 Resumo</h2>
             </div>
-            <div class="bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 rounded-2xl shadow-xl p-6 md:p-8 text-white">
-              <div class="flex items-center justify-between mb-6">
+            
+            <div class="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 rounded-2xl shadow-lg border border-blue-200 dark:border-gray-600 p-4 mb-6">
+              <!-- Header Compacto -->
+              <div class="flex items-center justify-between mb-4">
                 <div>
-                  <h3 class="text-xl md:text-2xl font-bold">Centro de Notificações</h3>
-                  <p class="text-sm opacity-90">${totalNotificacoes} notificações no total</p>
-                  <p class="text-xs mt-1 opacity-90">Período: <span class="font-semibold">${monthName} / ${selYear}</span></p>
-                  <p class="text-xs mt-1 opacity-90 text-yellow-200">📬 Modo: Mostrando apenas notificações não lidas</p>
+                  <h3 class="text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                    <span class="text-xl">🔔</span>
+                    Centro de Notificações
+                  </h3>
+                  <p class="text-sm text-gray-600 dark:text-gray-400">${totalNotificacoes} notificações • ${monthName}/${selYear}</p>
                 </div>
                 <div class="text-right">
-                  <div class="text-2xl md:text-3xl font-bold ${unreadColorClass}">${notificacoesNaoLidas}</div>
-                  <p class="text-xs opacity-90">${notificacoesNaoLidas > 0 ? '📬 Não lidas' : '✅ Todas lidas'}</p>
+                  <div class="text-lg font-bold ${unreadColorClass}">${notificacoesNaoLidas}</div>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">${notificacoesNaoLidas > 0 ? 'Não lidas' : 'Todas lidas'}</p>
                 </div>
               </div>
-              <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div class="bg-white bg-opacity-15 backdrop-blur-sm rounded-xl p-4 text-center">
-                  <div class="text-2xl mb-2">📧</div>
-                  <div class="text-2xl md:text-3xl font-bold">${totalNotificacoes}</div>
-                  <div class="text-sm opacity-90">Total</div>
+              
+              <!-- Métricas Compactas -->
+              <div class="grid grid-cols-4 gap-3 mb-4">
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm border border-gray-200 dark:border-gray-600">
+                  <div class="text-lg mb-1">📧</div>
+                  <div class="text-lg font-bold text-gray-800 dark:text-gray-200">${totalNotificacoes}</div>
+                  <div class="text-xs text-gray-600 dark:text-gray-400">Total</div>
                 </div>
-                <div class="bg-white bg-opacity-15 backdrop-blur-sm rounded-xl p-4 text-center">
-                  <div class="text-2xl mb-2">📬</div>
-                  <div class="text-2xl md:text-3xl font-bold text-yellow-200">${notificacoesNaoLidas}</div>
-                  <div class="text-sm opacity-90">Não lidas</div>
+                
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm border border-gray-200 dark:border-gray-600">
+                  <div class="text-lg mb-1">📬</div>
+                  <div class="text-lg font-bold text-orange-600 dark:text-orange-400">${notificacoesNaoLidas}</div>
+                  <div class="text-xs text-gray-600 dark:text-gray-400">Não lidas</div>
                 </div>
-                <div class="bg-white bg-opacity-15 backdrop-blur-sm rounded-xl p-4 text-center">
-                  <div class="text-2xl mb-2">✅</div>
-                  <div class="text-2xl md:text-3xl font-bold text-green-200">${notificacoesLidas}</div>
-                  <div class="text-sm opacity-90">Lidas</div>
+                
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm border border-gray-200 dark:border-gray-600">
+                  <div class="text-lg mb-1">✅</div>
+                  <div class="text-lg font-bold text-green-600 dark:text-green-400">${notificacoesLidas}</div>
+                  <div class="text-xs text-gray-600 dark:text-gray-400">Lidas</div>
                 </div>
-                <div class="bg-white bg-opacity-15 backdrop-blur-sm rounded-xl p-4 text-center">
-                  <div class="text-2xl mb-2">📅</div>
-                  <div class="text-2xl md:text-3xl font-bold">${notificacoesHoje}</div>
-                  <div class="text-sm opacity-90">Hoje</div>
+                
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm border border-gray-200 dark:border-gray-600">
+                  <div class="text-lg mb-1">📅</div>
+                  <div class="text-lg font-bold text-blue-600 dark:text-blue-400">${notificacoesHoje}</div>
+                  <div class="text-xs text-gray-600 dark:text-gray-400">Hoje</div>
+                </div>
+              </div>
+
+              <!-- Resumo de Status Compacto -->
+              <div class="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm border border-gray-200 dark:border-gray-600">
+                <h5 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-1">
+                  <span>📊</span>
+                  Status das Notificações
+                </h5>
+                <div class="space-y-1">
+                  <div class="flex justify-between text-xs">
+                    <span class="text-gray-600 dark:text-gray-400">Total:</span>
+                    <span class="font-medium text-gray-800 dark:text-gray-200">${totalNotificacoes}</span>
+                  </div>
+                  <div class="flex justify-between text-xs">
+                    <span class="text-gray-600 dark:text-gray-400">Não lidas:</span>
+                    <span class="font-medium text-orange-600 dark:text-orange-400">${notificacoesNaoLidas}</span>
+                  </div>
+                  <div class="flex justify-between text-xs border-t border-gray-200 dark:border-gray-600 pt-1">
+                    <span class="text-gray-600 dark:text-gray-400">Lidas:</span>
+                    <span class="font-bold text-green-600 dark:text-green-400">${notificacoesLidas}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -489,46 +519,83 @@ export async function renderNotifications(force = false) {
               <div class="w-1 h-6 bg-gradient-to-b from-green-500 to-teal-500 rounded-full"></div>
               <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">🔧 Ações & Controles</h2>
             </div>
-      <div class="u-card bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-              <div class="bg-gradient-to-r from-green-50 to-teal-50 dark:from-gray-800 dark:to-gray-800 p-4 border-b border-gray-200 dark:border-gray-700">
-              <div class="flex flex-wrap justify-between items-center gap-2">
-                  <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Gerenciar Notificações</h3>
-                  <div class="flex gap-2 flex-wrap">
-        <button onclick="window.showConfirmationModal({ title: 'Marcar como Lidas', message: 'Deseja marcar todas as notificações como lidas?', confirmText: 'Sim, Marcar', confirmColor: 'bg-blue-500 hover:bg-blue-600', onConfirmFn: 'markAllNotificationsAsRead' })" class="u-btn u-btn--primary mobile-btn">✅ Marcar todas como lidas</button>
-        <button onclick="window.showConfirmationModal({ title: 'Arquivar notificações lidas', message: 'Deseja arquivar todas as notificações lidas? Você poderá restaurá-las depois.', confirmText: 'Sim, Arquivar', confirmColor: 'bg-indigo-500 hover:bg-indigo-600', onConfirmFn: 'archiveAllReadNotifications' })" class="u-btn u-btn--outline mobile-btn">🗃️ Arquivar lidas</button>
-        <button onclick="window.showConfirmationModal({ title: 'Apagar notificações lidas', message: 'Deseja apagar todas as notificações lidas? Esta ação não pode ser desfeita.', confirmText: 'Sim, Apagar', confirmColor: 'bg-red-500 hover:bg-red-600', onConfirmFn: 'deleteAllReadNotifications' })" class="u-btn u-btn--danger mobile-btn">🗑️ Apagar lidas</button>
-        <button onclick="window.renderNotifications()" class="u-btn u-btn--outline mobile-btn">🔄 Atualizar</button>
-        <button onclick="window.__sendTestToOwner && window.__sendTestToOwner()" class="u-btn u-btn--outline mobile-btn">📣 Teste → Dono</button>
-        <button onclick="window.__sendTestToShared && window.__sendTestToShared()" class="u-btn u-btn--outline mobile-btn">📣 Teste → Compartilhados</button>
-        <button onclick="window.__testNotificationModal && window.__testNotificationModal()" class="u-btn u-btn--outline mobile-btn">📱 Testar Modal</button>
-        <button onclick="window.debugNotificationSystem && window.debugNotificationSystem()" class="u-btn u-btn--outline mobile-btn">🔍 Debug Sistema</button>
-        <button onclick="window.debugSharedNotificationTest && window.debugSharedNotificationTest()" class="u-btn u-btn--outline mobile-btn">🧪 Debug Compartilhados</button>
-        <button onclick="window.debugCheckOtherUserNotifications && window.debugCheckOtherUserNotifications()" class="u-btn u-btn--outline mobile-btn">👥 Ver Outros Usuários</button>
-        <button onclick="window.debugTestModal && window.debugTestModal()" class="u-btn u-btn--outline mobile-btn">📱 Testar Modal</button>
-                  </div>
+            
+            <div class="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 rounded-2xl shadow-lg border border-blue-200 dark:border-gray-600 p-4 mb-6">
+              <!-- Header Compacto -->
+              <div class="flex items-center justify-between mb-4">
+                <div>
+                  <h3 class="text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                    <span class="text-xl">🔧</span>
+                    Gerenciar Notificações
+                  </h3>
+                  <p class="text-sm text-gray-600 dark:text-gray-400">Ações rápidas e filtros</p>
                 </div>
-                <div class="mt-3 flex flex-col gap-3">
+                <div class="text-right">
+                  <div class="text-lg font-bold text-blue-600 dark:text-blue-400">${totalNotificacoes}</div>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">Total</p>
+                </div>
+              </div>
+              
+              <!-- Ações Principais -->
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                <button onclick="window.showConfirmationModal({ title: 'Marcar como Lidas', message: 'Deseja marcar todas as notificações como lidas?', confirmText: 'Sim, Marcar', confirmColor: 'bg-blue-500 hover:bg-blue-600', onConfirmFn: 'markAllNotificationsAsRead' })" class="u-btn u-btn--primary mobile-btn text-sm">✅ Marcar lidas</button>
+                <button onclick="window.showConfirmationModal({ title: 'Arquivar notificações lidas', message: 'Deseja arquivar todas as notificações lidas? Você poderá restaurá-las depois.', confirmText: 'Sim, Arquivar', confirmColor: 'bg-indigo-500 hover:bg-indigo-600', onConfirmFn: 'archiveAllReadNotifications' })" class="u-btn u-btn--outline mobile-btn text-sm">🗃️ Arquivar</button>
+                <button onclick="window.showConfirmationModal({ title: 'Apagar notificações lidas', message: 'Deseja apagar todas as notificações lidas? Esta ação não pode ser desfeita.', confirmText: 'Sim, Apagar', confirmColor: 'bg-red-500 hover:bg-red-600', onConfirmFn: 'deleteAllReadNotifications' })" class="u-btn u-btn--danger mobile-btn text-sm">🗑️ Apagar</button>
+                <button onclick="window.renderNotifications()" class="u-btn u-btn--outline mobile-btn text-sm">🔄 Atualizar</button>
+              </div>
+
+              <!-- Filtros -->
+              <div class="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm border border-gray-200 dark:border-gray-600 mb-4">
+                <h5 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-1">
+                  <span>🔍</span>
+                  Filtros
+                </h5>
+                <div class="space-y-3">
                   <div class="flex flex-wrap gap-2 items-center">
-                    <span class="text-sm text-gray-700 dark:text-gray-300 mr-1">Tipos:</span>
+                    <span class="text-xs text-gray-600 dark:text-gray-400 mr-1">Tipos:</span>
                     ${typeButtonsHtml}
                   </div>
                   <div class="flex flex-wrap gap-2 items-center">
-                    <span class="text-sm text-gray-700 dark:text-gray-300 mr-1">Período:</span>
+                    <span class="text-xs text-gray-600 dark:text-gray-400 mr-1">Período:</span>
                     ${periodButtonsHtml}
                   </div>
-                  <div class="flex items-center gap-2">
-                    <label class="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300" title="Atalho: U">
+                  <div class="flex items-center justify-between">
+                    <label class="inline-flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400" title="Atalho: U">
                       <input type="checkbox" ${filters.unreadOnly ? 'checked' : ''} onchange="window.toggleUnreadOnly && window.toggleUnreadOnly()" />
-                      Apenas não lidas <span class="text-xs text-gray-500 dark:text-gray-400">(Atalho: U)</span>
+                      Apenas não lidas
                     </label>
-        <button onclick="window.resetNotificationFilters && window.resetNotificationFilters()" class="ml-2 u-btn u-btn--ghost text-xs">♻️ Redefinir filtros</button>
-        <button onclick="window.loadUnreadNotifications && window.loadUnreadNotifications()" class="ml-2 u-btn u-btn--primary text-xs">📬 Focar não lidas</button>
-                  </div>
-                  <div class="mt-2 p-3 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-                    <div class="text-xs text-gray-600 dark:text-gray-300">As preferências de notificações (toasts, retenção e por orçamento/tipo) foram movidas para <strong>Configurações</strong> para manter esta aba focada em consultar notificações.</div>
-                    <div class="mt-2"><a href="#/settings" class="inline-flex items-center gap-2 text-xs px-3 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">Abrir Configurações</a></div>
+                    <div class="flex gap-2">
+                      <button onclick="window.resetNotificationFilters && window.resetNotificationFilters()" class="u-btn u-btn--ghost text-xs">♻️ Reset</button>
+                      <button onclick="window.loadUnreadNotifications && window.loadUnreadNotifications()" class="u-btn u-btn--primary text-xs">📬 Não lidas</button>
+                    </div>
                   </div>
                 </div>
+              </div>
+
+              <!-- Ferramentas de Desenvolvimento (colapsável) -->
+              <details class="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm border border-gray-200 dark:border-gray-600">
+                <summary class="text-sm font-semibold text-gray-700 dark:text-gray-300 cursor-pointer flex items-center gap-1">
+                  <span>🛠️</span>
+                  Ferramentas de Desenvolvimento
+                </summary>
+                <div class="mt-3 grid grid-cols-2 md:grid-cols-3 gap-2">
+                  <button onclick="window.__sendTestToOwner && window.__sendTestToOwner()" class="u-btn u-btn--outline mobile-btn text-xs">📣 Teste Dono</button>
+                  <button onclick="window.__sendTestToShared && window.__sendTestToShared()" class="u-btn u-btn--outline mobile-btn text-xs">📣 Teste Compartilhados</button>
+                  <button onclick="window.__testNotificationModal && window.__testNotificationModal()" class="u-btn u-btn--outline mobile-btn text-xs">📱 Testar Modal</button>
+                  <button onclick="window.debugNotificationSystem && window.debugNotificationSystem()" class="u-btn u-btn--outline mobile-btn text-xs">🔍 Debug Sistema</button>
+                  <button onclick="window.debugSharedNotificationTest && window.debugSharedNotificationTest()" class="u-btn u-btn--outline mobile-btn text-xs">🧪 Debug Compartilhados</button>
+                  <button onclick="window.debugCheckOtherUserNotifications && window.debugCheckOtherUserNotifications()" class="u-btn u-btn--outline mobile-btn text-xs">👥 Ver Outros</button>
+                </div>
+              </details>
+
+              <!-- Link para Configurações -->
+              <div class="mt-4 p-3 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600">
+                <div class="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                  💡 <strong>Dica:</strong> As preferências de notificações foram movidas para <strong>Configurações</strong> para manter esta aba focada em consultar notificações.
+                </div>
+                <a href="#/settings" class="inline-flex items-center gap-2 text-xs px-3 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                  ⚙️ Abrir Configurações
+                </a>
               </div>
             </div>
           </div>

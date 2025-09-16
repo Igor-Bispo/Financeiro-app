@@ -245,47 +245,73 @@ export function renderTransactions() {
         <div class="content-spacing">
           
           
-          <!-- ========== SEÇÃO 1: RESUMO ANALÍTICO ========== -->
-      <div class="mb-8">
+          <!-- ========== SEÇÃO 1: RESUMO COMPACTO ========== -->
+          <div class="mb-8">
             <div class="flex items-center gap-2 mb-4">
               <div class="w-1 h-6 bg-gradient-to-b from-blue-500 to-green-500 rounded-full"></div>
-  <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">💰 Resumo</h2>
+              <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">💰 Resumo</h2>
             </div>
             
-            <div class="bg-gradient-to-br from-blue-500 via-green-500 to-teal-600 rounded-2xl shadow-xl p-6 md:p-8 text-white mb-6">
-              <!-- Header do Card -->
-        <div class="flex items-center justify-between mb-6">
+            <div class="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 rounded-2xl shadow-lg border border-blue-200 dark:border-gray-600 p-4 mb-6">
+              <!-- Header Compacto -->
+              <div class="flex items-center justify-between mb-4">
                 <div>
-                  <h3 class="text-xl md:text-2xl font-bold">Visão Geral</h3>
-          <p class="text-sm opacity-90">${totalTransacoes} transações registradas</p>
-          <p class="text-xs opacity-90 mt-1">Período: ${String(selMonth).padStart(2,'0')}/${selYear}</p>
+                  <h3 class="text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                    <span class="text-xl">💸</span>
+                    Controle de Transações
+                  </h3>
+                  <p class="text-sm text-gray-600 dark:text-gray-400">${totalTransacoes} transações • ${String(selMonth).padStart(2,'0')}/${selYear}</p>
                 </div>
                 <div class="text-right">
-                  <div class="text-2xl md:text-3xl font-bold ${saldo >= 0 ? 'text-green-200' : 'text-red-200'}">
+                  <div class="text-lg font-bold ${saldo >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}">
                     R$ ${saldo.toFixed(2)}
                   </div>
-                  <p class="text-xs opacity-90">${saldo >= 0 ? '✓ Saldo Positivo' : '⚠️ Saldo Negativo'}</p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">${saldo >= 0 ? 'Positivo' : 'Negativo'}</p>
                 </div>
               </div>
               
-              <!-- Grid de Métricas -->
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="bg-white bg-opacity-15 backdrop-blur-sm rounded-xl p-4 text-center">
-                  <div class="text-2xl mb-2">💚</div>
-                  <div class="text-2xl md:text-3xl font-bold text-green-200">R$ ${receitas.toFixed(2)}</div>
-                  <div class="text-sm opacity-90">Receitas</div>
+              <!-- Métricas Compactas -->
+              <div class="grid grid-cols-3 gap-3 mb-4">
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm border border-gray-200 dark:border-gray-600">
+                  <div class="text-lg mb-1">💚</div>
+                  <div class="text-lg font-bold text-green-600 dark:text-green-400">R$ ${receitas.toFixed(2)}</div>
+                  <div class="text-xs text-gray-600 dark:text-gray-400">Receitas</div>
                 </div>
                 
-                <div class="bg-white bg-opacity-15 backdrop-blur-sm rounded-xl p-4 text-center">
-                  <div class="text-2xl mb-2">💸</div>
-                  <div class="text-2xl md:text-3xl font-bold text-red-200">R$ ${despesas.toFixed(2)}</div>
-                  <div class="text-sm opacity-90">Despesas</div>
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm border border-gray-200 dark:border-gray-600">
+                  <div class="text-lg mb-1">💸</div>
+                  <div class="text-lg font-bold text-red-600 dark:text-red-400">R$ ${despesas.toFixed(2)}</div>
+                  <div class="text-xs text-gray-600 dark:text-gray-400">Despesas</div>
                 </div>
                 
-                <div class="bg-white bg-opacity-15 backdrop-blur-sm rounded-xl p-4 text-center">
-                  <div class="text-2xl mb-2">📊</div>
-                  <div class="text-2xl md:text-3xl font-bold">${totalTransacoes}</div>
-                  <div class="text-sm opacity-90">Transações</div>
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm border border-gray-200 dark:border-gray-600">
+                  <div class="text-lg mb-1">📊</div>
+                  <div class="text-lg font-bold text-gray-800 dark:text-gray-200">${totalTransacoes}</div>
+                  <div class="text-xs text-gray-600 dark:text-gray-400">Total</div>
+                </div>
+              </div>
+
+              <!-- Resumo Financeiro Compacto -->
+              <div class="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm border border-gray-200 dark:border-gray-600">
+                <h5 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-1">
+                  <span>📈</span>
+                  Resumo Financeiro
+                </h5>
+                <div class="space-y-1">
+                  <div class="flex justify-between text-xs">
+                    <span class="text-gray-600 dark:text-gray-400">Receitas:</span>
+                    <span class="font-medium text-green-600 dark:text-green-400">R$ ${receitas.toFixed(2)}</span>
+                  </div>
+                  <div class="flex justify-between text-xs">
+                    <span class="text-gray-600 dark:text-gray-400">Despesas:</span>
+                    <span class="font-medium text-red-600 dark:text-red-400">R$ ${despesas.toFixed(2)}</span>
+                  </div>
+                  <div class="flex justify-between text-xs border-t border-gray-200 dark:border-gray-600 pt-1">
+                    <span class="text-gray-600 dark:text-gray-400">Saldo:</span>
+                    <span class="font-bold ${saldo >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}">
+                      R$ ${saldo.toFixed(2)}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>

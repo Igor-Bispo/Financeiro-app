@@ -153,11 +153,19 @@ export function renderDashboard(container) {
     if (limv > 0) {
       var gasto = gastoPorCategoria[cc.id] || 0;
       var perc = limv > 0 ? (gasto / limv) : 0;
-      // Só conta alerta se preferência estiver ativada
-      var limitAlertsEnabled = localStorage.getItem('noti_limit_alerts') === 'true';
-      if (limitAlertsEnabled && perc >= 0.7) totalAlertas++;
+      // Contar alerta se categoria ultrapassou 70% do limite
+      if (perc >= 0.7) {
+        totalAlertas++;
+        console.log('🚨 [Dashboard] Categoria em alerta:', {
+          nome: cc.nome,
+          gasto: gasto,
+          limite: limv,
+          percentual: (perc * 100).toFixed(1) + '%'
+        });
+      }
     }
   }
+  console.log('🔍 [Dashboard] Total de alertas calculado:', totalAlertas);
   var progressoOrcado = (orcado > 0) ? Math.min(Math.max(despesas / orcado, 0), 1) : 0;
 
   // Top categorias (despesas)
@@ -191,48 +199,76 @@ export function renderDashboard(container) {
   html += '  <div class="tab-content">';
   html += '    <div class="content-spacing">';
 
-  // Resumo
+  // Resumo Compacto
   html += '      <div class="mb-8">';
   html += '        <div class="flex items-center gap-2 mb-4">';
   html += '          <div class="w-1 h-6 bg-gradient-to-b from-blue-500 to-green-500 rounded-full"></div>';
-  html += '          <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">📈 Resumo Financeiro</h2>';
+  html += '          <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">📊 Resumo</h2>';
   html += '        </div>';
-  html += '        <div class="bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 rounded-2xl shadow-xl p-6 md:p-8 text-white">';
-  html += '          <div class="flex items-center justify-between mb-6">';
-  html += '            <div><h3 class="text-xl md:text-2xl font-bold">Visão Geral</h3>';
-  html += '            <p class="text-sm opacity-90">' + monthName + ' ' + year + ' • ' + String(totalTransacoes) + ' transações</p></div>';
+  html += '        <div class="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 rounded-2xl shadow-lg border border-blue-200 dark:border-gray-600 p-4 mb-6">';
+  html += '          <!-- Header Compacto -->';
+  html += '          <div class="flex items-center justify-between mb-4">';
+  html += '            <div>';
+  html += '              <h3 class="text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">';
+  html += '                <span class="text-xl">📊</span>';
+  html += '                Dashboard Financeiro';
+  html += '              </h3>';
+  html += '              <p class="text-sm text-gray-600 dark:text-gray-400">' + String(totalTransacoes) + ' transações • ' + monthName + '/' + year + '</p>';
+  html += '            </div>';
   html += '            <div class="text-right">';
-  html += '              <div class="text-2xl md:text-3xl font-bold ' + (saldo >= 0 ? 'text-green-200' : 'text-red-200') + '">R$ ' + formatBR(saldo) + '</div>';
-  html += '              <p class="text-xs opacity-90">' + (saldo >= 0 ? '✓ Saldo Positivo' : '⚠️ Saldo Negativo') + '</p>';
+  html += '              <div class="text-lg font-bold ' + (saldo >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400') + '">R$ ' + formatBR(saldo) + '</div>';
+  html += '              <p class="text-xs text-gray-500 dark:text-gray-400">' + (saldo >= 0 ? 'Positivo' : 'Negativo') + '</p>';
   html += '            </div>';
   html += '          </div>';
-  html += '          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">';
-  html += '            <div class="rounded-xl p-5 bg-white/15 backdrop-blur-sm flex items-center justify-between">';
-  html += '              <div class="flex items-center gap-3"><span class="text-2xl">💚</span><span class="text-sm opacity-90">Receitas</span></div>';
-  html += '              <div class="text-2xl md:text-3xl font-bold text-green-200">R$ ' + formatBR(receitas) + '</div>';
+  html += '          <!-- Métricas Compactas -->';
+  html += '          <div class="grid grid-cols-3 gap-3 mb-4">';
+  html += '            <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm border border-gray-200 dark:border-gray-600">';
+  html += '              <div class="text-lg mb-1">💚</div>';
+  html += '              <div class="text-lg font-bold text-green-600 dark:text-green-400">R$ ' + formatBR(receitas) + '</div>';
+  html += '              <div class="text-xs text-gray-600 dark:text-gray-400">Receitas</div>';
   html += '            </div>';
-  html += '            <div class="rounded-xl p-5 bg-white/15 backdrop-blur-sm flex items-center justify-between">';
-  html += '              <div class="flex items-center gap-3"><span class="text-2xl">💸</span><span class="text-sm opacity-90">Despesas</span></div>';
-  html += '              <div class="text-2xl md:text-3xl font-bold text-red-200">R$ ' + formatBR(despesas) + '</div>';
+  html += '            <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm border border-gray-200 dark:border-gray-600">';
+  html += '              <div class="text-lg mb-1">💸</div>';
+  html += '              <div class="text-lg font-bold text-red-600 dark:text-red-400">R$ ' + formatBR(despesas) + '</div>';
+  html += '              <div class="text-xs text-gray-600 dark:text-gray-400">Despesas</div>';
+  html += '            </div>';
+  html += '            <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm border border-gray-200 dark:border-gray-600">';
+  html += '              <div class="text-lg mb-1">📊</div>';
+  html += '              <div class="text-lg font-bold text-gray-800 dark:text-gray-200">' + String(totalTransacoes) + '</div>';
+  html += '              <div class="text-xs text-gray-600 dark:text-gray-400">Total</div>';
   html += '            </div>';
   html += '          </div>';
-  // Orçado + progresso
-  html += '          <div class="mt-4 rounded-xl p-4 bg-white/10 backdrop-blur-sm">';
-  html += '            <div class="flex items-center justify-between mb-2">';
-  html += '              <div class="text-sm font-medium">Progresso do Orçamento</div>';
-  html += '              <div class="text-sm font-bold">' + (progressoOrcado*100).toFixed(1) + '%</div>';
-  html += '            </div>';
-  html += '            <div class="w-full bg-white/20 rounded-full h-3 overflow-hidden">';
-  html += '              <div class="bg-white h-3 rounded-full transition-all" style="width:' + Math.min(progressoOrcado*100, 100).toFixed(1) + '%"></div>';
-  html += '            </div>';
-  // Detalhes: valores de Despesas e Orçado
-  html += '            <div class="flex items-center justify-between text-xs opacity-90 mt-2">';
-  html += '              <span>Despesas: R$ ' + formatBR(despesas) + '</span>';
-  html += '              <span>Orçado: R$ ' + formatBR(orcado) + '</span>';
-  html += '            </div>';
-  html += '            <div class="flex items-center justify-between text-xs opacity-90 mt-2">';
-  html += '              <span class="' + (totalAlertas>0 ? 'cursor-pointer hover:underline bg-red-500/20 px-2 py-0.5 rounded-full' : '') + '" ' + (totalAlertas>0 ? 'onclick="window.showCategoriasAlertaModal && window.showCategoriasAlertaModal()"' : '') + '>' + (totalAlertas>0 ? ('⚠️ ' + totalAlertas + ' alerta(s)') : '✅ Tudo OK') + '</span>';
-  html += '              <span>' + (saldo >= 0 ? '📈 Meta alcançada' : '📉 Revisar gastos') + '</span>';
+  html += '          <!-- Resumo Financeiro Compacto -->';
+  html += '          <div class="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm border border-gray-200 dark:border-gray-600">';
+  html += '            <h5 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-1">';
+  html += '              <span>📈</span>';
+  html += '              Resumo Financeiro';
+  html += '            </h5>';
+  html += '            <div class="space-y-1">';
+  html += '              <div class="flex justify-between text-xs">';
+  html += '                <span class="text-gray-600 dark:text-gray-400">Receitas:</span>';
+  html += '                <span class="font-medium text-green-600 dark:text-green-400">R$ ' + formatBR(receitas) + '</span>';
+  html += '              </div>';
+  html += '              <div class="flex justify-between text-xs">';
+  html += '                <span class="text-gray-600 dark:text-gray-400">Despesas:</span>';
+  html += '                <span class="font-medium text-red-600 dark:text-red-400">R$ ' + formatBR(despesas) + '</span>';
+  html += '              </div>';
+  html += '              <div class="flex justify-between text-xs border-t border-gray-200 dark:border-gray-600 pt-1">';
+  html += '                <span class="text-gray-600 dark:text-gray-400">Saldo:</span>';
+  html += '                <span class="font-bold ' + (saldo >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400') + '">R$ ' + formatBR(saldo) + '</span>';
+  html += '              </div>';
+  html += '              <div class="flex justify-between text-xs border-t border-gray-200 dark:border-gray-600 pt-1">';
+  html += '                <span class="text-gray-600 dark:text-gray-400">Orçado:</span>';
+  html += '                <span class="font-medium text-blue-600 dark:text-blue-400">R$ ' + formatBR(orcado) + '</span>';
+  html += '              </div>';
+  html += '              <div class="flex justify-between text-xs">';
+  html += '                <span class="text-gray-600 dark:text-gray-400">Progresso:</span>';
+  html += '                <span class="font-medium ' + (progressoOrcado > 0.7 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400') + '">' + (progressoOrcado*100).toFixed(1) + '%</span>';
+  html += '              </div>';
+  html += '              <div class="flex justify-between text-xs">';
+  html += '                <span class="text-gray-600 dark:text-gray-400">Alertas:</span>';
+  html += '                <span class="font-medium ' + (totalAlertas > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400') + '">' + (totalAlertas > 0 ? totalAlertas + ' categoria(s)' : 'Nenhum') + '</span>';
+  html += '              </div>';
   html += '            </div>';
   html += '          </div>';
   html += '        </div>';

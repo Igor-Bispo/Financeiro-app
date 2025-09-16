@@ -252,60 +252,97 @@ export async function renderCategories() {
               <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">📊 Visão Geral</h2>
             </div>
             
-            <div class="bg-gradient-to-br from-slate-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-600 p-6 mb-6">
-              <!-- Header Simplificado -->
+            <div class="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 rounded-2xl shadow-lg border border-blue-200 dark:border-gray-600 p-4 mb-6">
+              <!-- Header Compacto -->
               <div class="flex items-center justify-between mb-4">
                 <div>
-                  <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">📊 Resumo das Categorias</h3>
+                  <h3 class="text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                    <span class="text-xl">📊</span>
+                    Controle de Categorias
+                  </h3>
                   <p class="text-sm text-gray-600 dark:text-gray-400">${totalCategorias} categorias • ${String(selMonth).padStart(2,'0')}/${selYear}</p>
                 </div>
                 <div class="text-right">
-                  <div class="text-lg font-semibold ${categoriasEmAlerta > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}">
+                  <div class="text-lg font-bold ${categoriasEmAlerta > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}">
                     ${categoriasEmAlerta}
                   </div>
                   <p class="text-xs text-gray-500 dark:text-gray-400">${categoriasEmAlerta > 0 ? 'Alertas' : 'OK'}</p>
                 </div>
               </div>
               
-              <!-- Métricas Essenciais -->
-              <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center border border-gray-200 dark:border-gray-600">
-                  <div class="text-lg font-semibold text-gray-800 dark:text-gray-200">${totalCategorias}</div>
+              <!-- Métricas Compactas -->
+              <div class="grid grid-cols-4 gap-3 mb-4">
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm border border-gray-200 dark:border-gray-600">
+                  <div class="text-lg mb-1">📂</div>
+                  <div class="text-lg font-bold text-gray-800 dark:text-gray-200">${totalCategorias}</div>
                   <div class="text-xs text-gray-600 dark:text-gray-400">Total</div>
                 </div>
                 
-                <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center border border-gray-200 dark:border-gray-600">
-                  <div class="text-lg font-semibold text-blue-600 dark:text-blue-400">${categoriasComLimite}</div>
-                  <div class="text-xs text-gray-600 dark:text-gray-400">Com Limite</div>
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm border border-gray-200 dark:border-gray-600">
+                  <div class="text-lg mb-1">🎯</div>
+                  <div class="text-lg font-bold text-blue-600 dark:text-blue-400">${categoriasComLimite}</div>
+                  <div class="text-xs text-gray-600 dark:text-gray-400">Limite</div>
                 </div>
                 
-                <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center border border-gray-200 dark:border-gray-600">
-                  <div class="text-lg font-semibold text-green-600 dark:text-green-400">${categoriasReceita}</div>
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm border border-gray-200 dark:border-gray-600">
+                  <div class="text-lg mb-1">💚</div>
+                  <div class="text-lg font-bold text-green-600 dark:text-green-400">${categoriasReceita}</div>
                   <div class="text-xs text-gray-600 dark:text-gray-400">Receitas</div>
                 </div>
                 
-                <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center border border-gray-200 dark:border-gray-600">
-                  <div class="text-lg font-semibold text-red-600 dark:text-red-400">${categoriasDespesa}</div>
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm border border-gray-200 dark:border-gray-600">
+                  <div class="text-lg mb-1">💸</div>
+                  <div class="text-lg font-bold text-red-600 dark:text-red-400">${categoriasDespesa}</div>
                   <div class="text-xs text-gray-600 dark:text-gray-400">Despesas</div>
                 </div>
               </div>
 
-              <!-- Resumo Financeiro Simplificado -->
-              <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div class="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-600">
-                    <div class="text-xs text-gray-600 dark:text-gray-400 mb-1">Limite de Despesas</div>
-                    <div class="text-lg font-semibold text-gray-800 dark:text-gray-200">R$ ${totalLimiteDespesas.toFixed(2)}</div>
-                    <div class="text-xs ${saldoDespesas < 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}">
-                      Saldo: R$ ${saldoDespesas.toFixed(2)}
+              <!-- Resumo Financeiro Compacto -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Despesas -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm border border-gray-200 dark:border-gray-600">
+                  <h5 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-1">
+                    <span>💸</span>
+                    Despesas
+                  </h5>
+                  <div class="space-y-1">
+                    <div class="flex justify-between text-xs">
+                      <span class="text-gray-600 dark:text-gray-400">Limite:</span>
+                      <span class="font-medium text-gray-800 dark:text-gray-200">R$ ${totalLimiteDespesas.toFixed(2)}</span>
+                    </div>
+                    <div class="flex justify-between text-xs">
+                      <span class="text-gray-600 dark:text-gray-400">Gasto:</span>
+                      <span class="font-medium text-red-600 dark:text-red-400">R$ ${totalGastoDespesas.toFixed(2)}</span>
+                    </div>
+                    <div class="flex justify-between text-xs border-t border-gray-200 dark:border-gray-600 pt-1">
+                      <span class="text-gray-600 dark:text-gray-400">Saldo:</span>
+                      <span class="font-bold ${saldoDespesas < 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}">
+                        R$ ${saldoDespesas.toFixed(2)}
+                      </span>
                     </div>
                   </div>
-                  
-                  <div class="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-600">
-                    <div class="text-xs text-gray-600 dark:text-gray-400 mb-1">Meta de Receitas</div>
-                    <div class="text-lg font-semibold text-gray-800 dark:text-gray-200">R$ ${totalMetaReceitas.toFixed(2)}</div>
-                    <div class="text-xs ${saldoReceitas < 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}">
-                      Saldo: R$ ${saldoReceitas.toFixed(2)}
+                </div>
+                
+                <!-- Receitas -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm border border-gray-200 dark:border-gray-600">
+                  <h5 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-1">
+                    <span>💚</span>
+                    Receitas
+                  </h5>
+                  <div class="space-y-1">
+                    <div class="flex justify-between text-xs">
+                      <span class="text-gray-600 dark:text-gray-400">Meta:</span>
+                      <span class="font-medium text-gray-800 dark:text-gray-200">R$ ${totalMetaReceitas.toFixed(2)}</span>
+                    </div>
+                    <div class="flex justify-between text-xs">
+                      <span class="text-gray-600 dark:text-gray-400">Recebido:</span>
+                      <span class="font-medium text-green-600 dark:text-green-400">R$ ${totalRecebidoReceitas.toFixed(2)}</span>
+                    </div>
+                    <div class="flex justify-between text-xs border-t border-gray-200 dark:border-gray-600 pt-1">
+                      <span class="text-gray-600 dark:text-gray-400">Saldo:</span>
+                      <span class="font-bold ${saldoReceitas < 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}">
+                        R$ ${saldoReceitas.toFixed(2)}
+                      </span>
                     </div>
                   </div>
                 </div>
