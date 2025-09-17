@@ -1761,6 +1761,13 @@ ${events.slice(0, 10).map(e =>
       ev.preventDefault();
       ev.stopPropagation();
       
+      // Limpar modal existente se houver
+      const existingModal = document.getElementById('update-modal');
+      if (existingModal) {
+        console.log('🔍 [DEBUG] Removendo modal existente...');
+        existingModal.remove();
+      }
+      
       // Mostrar modal diretamente
       const modalHTML = `
         <div id="update-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -1816,7 +1823,17 @@ ${events.slice(0, 10).map(e =>
       const cancelBtn = document.getElementById('cancel-update-btn');
       
       function closeModal() {
-        if (modal) modal.remove();
+        console.log('🔍 [DEBUG] Fechando modal...');
+        if (modal) {
+          modal.remove();
+          console.log('🔍 [DEBUG] Modal removido com sucesso');
+        }
+        // Garantir que não há modais órfãos
+        const anyModal = document.getElementById('update-modal');
+        if (anyModal) {
+          anyModal.remove();
+          console.log('🔍 [DEBUG] Modal órfão removido');
+        }
       }
       
       if (normalBtn) {
