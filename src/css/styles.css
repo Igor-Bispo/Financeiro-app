@@ -453,9 +453,9 @@ small, .text-muted { color: var(--text-secondary); }
   overflow-y: auto;
 }
 
-/* === ELIMINAÇÃO DOS ESPAÇOS LATERAIS NO MOBILE === */
+/* === OTIMIZAÇÃO INTELIGENTE DE ESPAÇOS NO MOBILE === */
 @media (max-width: 768px) {
-  /* Containers principais - ZERO padding lateral, mínimo vertical */
+  /* Containers principais - Zero lateral, respiração vertical */
   .app-container,
   .content-area,
   .tab-container,
@@ -463,16 +463,16 @@ small, .text-muted { color: var(--text-secondary); }
     max-width: 100% !important;
     width: 100% !important;
     margin: 0 !important;
-    /* ZERO padding lateral - máximo aproveitamento das bordas */
+    /* ZERO padding lateral - máximo aproveitamento */
     padding-left: 0 !important;
     padding-right: 0 !important;
-    /* Padding vertical mínimo */
-    padding-top: 4px !important;
-    padding-bottom: 4px !important;
+    /* Respiração vertical para hierarquia */
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
     box-sizing: border-box !important;
   }
   
-  /* Cards e elementos internos - padding ultra mínimo */
+  /* Cards e elementos internos - Padding inteligente */
   .u-card,
   .tab-content,
   .content-spacing,
@@ -482,66 +482,66 @@ small, .text-muted { color: var(--text-secondary); }
     width: 100% !important;
     margin-left: 0 !important;
     margin-right: 0 !important;
-    /* Padding lateral ultra mínimo */
-    padding-left: 2px !important;
-    padding-right: 2px !important;
-    /* Padding vertical compacto */
-    padding-top: 6px !important;
-    padding-bottom: 6px !important;
+    /* Padding lateral mínimo mas funcional */
+    padding-left: 6px !important;
+    padding-right: 6px !important;
+    /* Padding vertical balanceado */
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
     box-sizing: border-box !important;
   }
   
-  /* Header principal ultra compacto */
+  /* Headers com hierarquia clara */
   .tab-header {
-    padding: 2px 4px !important;
-    margin-bottom: 1px !important;
+    padding: 6px 8px !important;
+    margin-bottom: 8px !important;
   }
 
   .tab-title-highlight {
-    margin-bottom: 1px !important;
-    padding: 1px 3px !important;
-    font-size: 0.85rem !important;
-    line-height: 1.1 !important;
+    margin-bottom: 6px !important;
+    padding: 4px 8px !important;
+    font-size: 0.9rem !important;
+    line-height: 1.2 !important;
   }
   
-  /* Elementos específicos ultra compactos */
-  .p-2 { padding: 4px 1px !important; }
-  .p-3 { padding: 6px 2px !important; }
-  .p-4 { padding: 8px 3px !important; }
-  .p-6 { padding: 10px 4px !important; }
+  /* Elementos específicos balanceados */
+  .p-2 { padding: 6px 4px !important; }
+  .p-3 { padding: 8px 6px !important; }
+  .p-4 { padding: 12px 8px !important; }
+  .p-6 { padding: 16px 10px !important; }
   
-  .py-2 { padding-top: 2px !important; padding-bottom: 2px !important; }
-  .py-3 { padding-top: 3px !important; padding-bottom: 3px !important; }
-  .py-4 { padding-top: 4px !important; padding-bottom: 4px !important; }
+  .py-2 { padding-top: 4px !important; padding-bottom: 4px !important; }
+  .py-3 { padding-top: 6px !important; padding-bottom: 6px !important; }
+  .py-4 { padding-top: 8px !important; padding-bottom: 8px !important; }
   
-  .px-2 { padding-left: 1px !important; padding-right: 1px !important; }
-  .px-3 { padding-left: 2px !important; padding-right: 2px !important; }
-  .px-4 { padding-left: 3px !important; padding-right: 3px !important; }
+  .px-2 { padding-left: 4px !important; padding-right: 4px !important; }
+  .px-3 { padding-left: 6px !important; padding-right: 6px !important; }
+  .px-4 { padding-left: 8px !important; padding-right: 8px !important; }
   
-  /* Gaps ultra mínimos */
-  .gap-2 { gap: 1px !important; }
-  .gap-3 { gap: 2px !important; }
-  .gap-4 { gap: 3px !important; }
+  /* Gaps funcionais */
+  .gap-2 { gap: 4px !important; }
+  .gap-3 { gap: 6px !important; }
+  .gap-4 { gap: 8px !important; }
   
-  /* Espaçamentos entre elementos */
-  .space-y-3 > * + * { margin-top: 3px !important; }
-  .space-y-4 > * + * { margin-top: 4px !important; }
-  .space-y-6 > * + * { margin-top: 6px !important; }
+  /* Espaçamentos entre elementos organizados */
+  .space-y-3 > * + * { margin-top: 6px !important; }
+  .space-y-4 > * + * { margin-top: 8px !important; }
+  .space-y-6 > * + * { margin-top: 12px !important; }
   
-  /* Espaçamentos verticais ultra compactos */
-  .mb-8 { margin-bottom: 8px !important; }
-  .mb-6 { margin-bottom: 6px !important; }
-  .mb-4 { margin-bottom: 4px !important; }
-  .mb-3 { margin-bottom: 3px !important; }
-  .mb-2 { margin-bottom: 2px !important; }
+  /* Hierarquia visual inteligente - Espaçamentos progressivos */
+  .mb-8 { margin-bottom: 12px !important; }  /* Seções principais */
+  .mb-6 { margin-bottom: 10px !important; }  /* Subseções */
+  .mb-4 { margin-bottom: 8px !important; }   /* Cards */
+  .mb-3 { margin-bottom: 6px !important; }   /* Elementos relacionados */
+  .mb-2 { margin-bottom: 4px !important; }   /* Elementos próximos */
 
-  .mt-8 { margin-top: 8px !important; }
-  .mt-6 { margin-top: 6px !important; }
-  .mt-4 { margin-top: 4px !important; }
-  .mt-3 { margin-top: 3px !important; }
-  .mt-2 { margin-top: 2px !important; }
+  .mt-8 { margin-top: 12px !important; }
+  .mt-6 { margin-top: 10px !important; }
+  .mt-4 { margin-top: 8px !important; }
+  .mt-3 { margin-top: 6px !important; }
+  .mt-2 { margin-top: 4px !important; }
   
-  /* Cards com padding ultra compacto */
+  /* Cards com design inteligente */
   .u-card,
   .bg-white,
   .bg-gradient-to-br,
@@ -551,11 +551,11 @@ small, .text-muted { color: var(--text-secondary); }
     /* Eliminar margens laterais */
     margin-left: 0 !important;
     margin-right: 0 !important;
-    /* Margens verticais ultra compactas */
-    margin-bottom: 6px !important;
-    /* Padding ultra mínimo */
-    padding: 6px 3px !important;
-    border-radius: 6px !important;
+    /* Respiração entre cards */
+    margin-bottom: 10px !important;
+    /* Padding balanceado para legibilidade */
+    padding: 12px 8px !important;
+    border-radius: 8px !important;
   }
   
   /* Títulos de seções ultra compactos */
