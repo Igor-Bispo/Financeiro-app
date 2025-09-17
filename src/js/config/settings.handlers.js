@@ -1751,7 +1751,7 @@ ${events.slice(0, 10).map(e =>
     }
     
     // TESTE DIRETO: Handler para botão de verificar atualizações
-    if (t.id === 'check-updates-btn' || (t.textContent && t.textContent.includes('Atualizações'))) {
+    if (t.id === 'check-updates-btn' || (t.textContent && t.textContent.includes('Atualizações')) || t.closest('#check-updates-btn')) {
       console.log('🚀 [TESTE DIRETO] Botão de atualizações detectado!');
       console.log('🔍 [DEBUG] Elemento clicado:', t);
       console.log('🔍 [DEBUG] ID do elemento:', t.id);
