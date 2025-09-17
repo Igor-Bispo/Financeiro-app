@@ -444,7 +444,7 @@ export function renderDashboard(container) {
     html += '      </div>';
   } catch {}
 
-  // Categorias & Limites (Top 5 + Controle de Limites)
+  // Categorias Inteligentes (Unificado: Limites + Top Gastos)
   try {
     // Construir matriz com gasto por categoria (despesas) e dados de limite
     var categoriasComDados = [];
@@ -472,132 +472,124 @@ export function renderDashboard(container) {
       });
     }
 
-    var categoriasComGasto = categoriasComDados.filter(function(x){ return x.gasto > 0 && (x.tipo || 'despesa') === 'despesa'; });
-    categoriasComGasto.sort(function(a,b){ return b.gasto - a.gasto; });
-
+    // Lógica inteligente: priorizar categorias com limites, depois top gastos
     var categoriasComLimite = categoriasComDados.filter(function(x){ return (x.limite || 0) > 0 && (x.tipo || 'despesa') === 'despesa'; })
       .map(function(cat){
         var limite = Number(cat.limite || 0);
         var porcent = limite > 0 ? (cat.gasto / limite) * 100 : 0;
-        return { ...cat, porcentagem: porcent };
+        return { ...cat, porcentagem: porcent, temLimite: true };
       })
       .sort(function(a,b){
         var aEx = a.gasto > a.limite; var bEx = b.gasto > b.limite;
-        if (aEx && !bEx) return -1; if (!aEx && bEx) return 1; return b.gasto - a.gasto;
+        if (aEx && !bEx) return -1; if (!aEx && bEx) return 1; return b.porcentagem - a.porcentagem;
       });
+
+    var categoriasComGasto = categoriasComDados.filter(function(x){ return x.gasto > 0 && (x.tipo || 'despesa') === 'despesa'; })
+      .map(function(cat){ return { ...cat, temLimite: false }; })
+      .sort(function(a,b){ return b.gasto - a.gasto; });
+
+    // Unificar: pegar categorias com limite primeiro, depois completar com top gastos (evitando duplicatas)
+    var categoriasUnificadas = [];
+    var idsJaAdicionados = new Set();
+
+    // Adicionar categorias com limite (máximo 4)
+    for (var i = 0; i < Math.min(4, categoriasComLimite.length); i++) {
+      categoriasUnificadas.push(categoriasComLimite[i]);
+      idsJaAdicionados.add(categoriasComLimite[i].id);
+    }
+
+    // Completar com top gastos (evitando duplicatas)
+    for (var j = 0; j < categoriasComGasto.length && categoriasUnificadas.length < 6; j++) {
+      if (!idsJaAdicionados.has(categoriasComGasto[j].id)) {
+        categoriasUnificadas.push(categoriasComGasto[j]);
+        idsJaAdicionados.add(categoriasComGasto[j].id);
+      }
+    }
 
     html += '      <div class="mb-8">';
     html += '        <div class="flex items-center gap-2 mb-4">';
     html += '          <div class="w-1 h-6 bg-gradient-to-b from-purple-500 to-pink-500 rounded-full"></div>';
-    html += '          <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">📊 Categorias & Limites</h2>';
+    html += '          <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">📊 Categorias Inteligentes</h2>';
     html += '        </div>';
-    html += '        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">';
 
-    // Coluna 1: Top 5 Categorias
-    html += '          <div class="u-card overflow-hidden">';
-    html += '            <div class="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-gray-800 dark:to-gray-800 p-4 border-b border-gray-200 dark:border-gray-700">';
-    html += '              <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">🏆 Top 5 Categorias</h3>';
-    html += '              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Categorias com maiores gastos</p>';
-    html += '            </div>';
-    html += '            <div class="p-4">';
-    if (categoriasComGasto.length === 0) {
-      html += '              <div class="empty-state">\n                <div class="empty-icon">📂</div>\n                <div class="empty-text">Nenhuma categoria com gastos</div>\n                <div class="empty-description">Suas categorias com despesas aparecerão aqui</div>\n              </div>';
-    } else {
-      var medalhas = ['🥇','🥈','🥉','4️⃣','5️⃣'];
-      var top5 = categoriasComGasto.slice(0,5);
-      for (var idx=0; idx<top5.length; idx++) {
-        var catTop = top5[idx];
-        var limiteTop = Number(catTop.limite || 0);
-        var pctTop = limiteTop > 0 ? Math.min((catTop.gasto / limiteTop) * 100, 100) : 0;
-        var corBarra = 'bg-green-500';
-        if (pctTop >= 100) corBarra = 'bg-red-500';
-        else if (pctTop >= 90) corBarra = 'bg-red-400';
-        else if (pctTop >= 75) corBarra = 'bg-yellow-500';
-        else if (pctTop >= 50) corBarra = 'bg-orange-500';
-        html += '              <div class="bg-gray-50 dark:bg-gray-800 rounded-xl p-3 border border-gray-200 dark:border-gray-700 mb-3">';
-        html += '                <div class="flex items-center justify-between mb-2">';
-        html += '                  <div class="flex items-center gap-2">';
-        html += '                    <span class="text-lg">' + medalhas[idx] + '</span>';
-        html += '                    <div class="w-3 h-3 rounded-full" style="background-color: ' + catTop.cor + '"></div>';
-        html += '                    <span class="font-medium text-sm text-gray-900 dark:text-gray-100">' + catTop.nome + '</span>';
-        html += '                  </div>';
-        html += '                  <span class="font-bold text-sm ' + (limiteTop>0 && catTop.gasto>limiteTop ? 'text-red-600' : 'text-gray-900 dark:text-gray-100') + '">R$ ' + formatBR(catTop.gasto) + '</span>';
-        html += '                </div>';
-        if (limiteTop > 0) {
-          html += '                <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">';
-          html += '                  <span>Limite: R$ ' + formatBR(limiteTop) + '</span>';
-          html += '                  <span>' + pctTop.toFixed(1) + '%</span>';
-          html += '                </div>';
-          html += '                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">';
-          html += '                  <div class="' + corBarra + ' h-2 rounded-full transition-all duration-300" style="width: ' + pctTop + '%"></div>';
-          html += '                </div>';
-        } else {
-          html += '                <p class="text-xs text-gray-500 dark:text-gray-400">Sem limite definido</p>';
-        }
-        html += '              </div>';
-      }
-    }
-    html += '            </div>';
-    html += '          </div>';
-
-    // Coluna 2: Controle de Limites
-    html += '          <div class="u-card overflow-hidden">';
-    html += '            <div class="bg-gradient-to-r from-red-50 to-orange-50 dark:from-gray-800 dark:to-gray-800 p-4 border-b border-gray-200 dark:border-gray-700">';
-    html += '              <div class="flex justify-between items-center">';
-    html += '                <div>';
-    html += '                  <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">⚠️ Controle de Limites</h3>';
-    html += '                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Categorias com limites definidos</p>';
-    html += '                </div>';
-    html += '                <button onclick="window.showAddCategoryModal && window.showAddCategoryModal()" class="u-btn u-btn--primary mobile-btn">+ Nova</button>';
+    // Seção Unificada
+    html += '        <div class="u-card overflow-hidden">';
+    html += '          <div class="bg-gradient-to-r from-purple-50 via-blue-50 to-orange-50 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 p-4 border-b border-gray-200 dark:border-gray-700">';
+    html += '            <div class="flex justify-between items-center">';
+    html += '              <div>';
+    html += '                <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">🎯 Visão Inteligente</h3>';
+    html += '                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Limites prioritários + maiores gastos</p>';
     html += '              </div>';
-    html += '            </div>';
-    html += '            <div class="p-4">';
-    var catsLimite = categoriasComLimite;
-    if (!catsLimite.length) {
-      html += '              <div class="text-center py-6">';
-      html += '                <div class="text-3xl mb-2">🎯</div>';
-      html += '                <p class="text-gray-500 dark:text-gray-400 text-sm">Nenhuma categoria com limite definido</p>';
-      html += '                <button onclick="window.showAddCategoryModal && window.showAddCategoryModal()" class="u-btn u-btn--outline mt-2">+ Definir primeiro limite</button>';
-      html += '              </div>';
-    } else {
-      var maxItems = Math.min(6, catsLimite.length);
-      for (var li=0; li<maxItems; li++) {
-        var catL = catsLimite[li];
-        var limiteL = Number(catL.limite || 0);
-        var porcentL = limiteL > 0 ? (catL.gasto / limiteL) * 100 : 0;
-        var corBarraL = 'bg-green-500';
-        var icone = '✅';
-        if (porcentL >= 100) { corBarraL = 'bg-red-500'; icone = '🚨'; }
-        else if (porcentL >= 90) { corBarraL = 'bg-red-400'; icone = '⚠️'; }
-        else if (porcentL >= 75) { corBarraL = 'bg-yellow-500'; icone = '⚡'; }
-        else if (porcentL >= 50) { corBarraL = 'bg-orange-500'; icone = '📊'; }
-        var ringCls = porcentL >= 90 ? ' ring-2 ring-red-200 dark:ring-red-800' : '';
-        html += '              <div class="bg-gray-50 dark:bg-gray-800 rounded-xl p-3 border border-gray-200 dark:border-gray-700' + ringCls + ' mb-3">';
-        html += '                <div class="flex items-center justify-between mb-2">';
-        html += '                  <div class="flex items-center gap-2">';
-        html += '                    <span class="text-sm">' + icone + '</span>';
-        html += '                    <div class="w-3 h-3 rounded-full" style="background-color: ' + catL.cor + '"></div>';
-        html += '                    <span class="font-medium text-sm text-gray-900 dark:text-gray-100">' + catL.nome + '</span>';
-        html += '                  </div>';
-        html += '                  <span class="font-bold text-sm ' + (catL.gasto > limiteL ? 'text-red-600' : 'text-gray-900 dark:text-gray-100') + '">R$ ' + formatBR(catL.gasto) + '</span>';
-        html += '                </div>';
-        html += '                <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">';
-        html += '                  <span>Limite: R$ ' + formatBR(limiteL) + '</span>';
-        var percClass = porcentL >= 100 ? 'text-red-600 font-bold' : (porcentL >= 90 ? 'text-orange-600 font-medium' : '');
-        html += '                  <span class="' + percClass + '">' + porcentL.toFixed(1) + '%</span>';
-        html += '                </div>';
-        html += '                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">';
-        html += '                  <div class="' + corBarraL + ' h-2 rounded-full transition-all duration-300" style="width: ' + Math.min(porcentL, 100) + '%"></div>';
-        html += '                </div>';
-        if (porcentL >= 100) {
-          html += '                <div class="mt-2 text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900 dark:bg-opacity-20 px-2 py-1 rounded">Excedeu em R$ ' + formatBR(catL.gasto - limiteL) + '</div>';
-        }
-        html += '              </div>';
-      }
-    }
+    html += '              <button onclick="window.showAddCategoryModal && window.showAddCategoryModal()" class="u-btn u-btn--primary mobile-btn">+ Nova</button>';
     html += '            </div>';
     html += '          </div>';
+    html += '          <div class="p-4">';
 
+    if (categoriasUnificadas.length === 0) {
+      html += '            <div class="empty-state">';
+      html += '              <div class="empty-icon">📂</div>';
+      html += '              <div class="empty-text">Nenhuma categoria encontrada</div>';
+      html += '              <div class="empty-description">Crie categorias e adicione gastos para ver o resumo</div>';
+      html += '            </div>';
+    } else {
+      for (var u = 0; u < categoriasUnificadas.length; u++) {
+        var catU = categoriasUnificadas[u];
+        var limiteU = Number(catU.limite || 0);
+        var porcentU = limiteU > 0 ? (catU.gasto / limiteU) * 100 : 0;
+        
+        // Determinar ícone e cor baseado no tipo e status
+        var icone, corBarra, tagInfo;
+        if (catU.temLimite) {
+          // Categoria com limite - usar lógica de controle
+          if (porcentU >= 100) { icone = '🚨'; corBarra = 'bg-red-500'; tagInfo = 'EXCEDEU'; }
+          else if (porcentU >= 90) { icone = '⚠️'; corBarra = 'bg-red-400'; tagInfo = 'CRÍTICO'; }
+          else if (porcentU >= 75) { icone = '⚡'; corBarra = 'bg-yellow-500'; tagInfo = 'ALERTA'; }
+          else if (porcentU >= 50) { icone = '📊'; corBarra = 'bg-orange-500'; tagInfo = 'ATENÇÃO'; }
+          else { icone = '✅'; corBarra = 'bg-green-500'; tagInfo = 'OK'; }
+        } else {
+          // Categoria sem limite - usar ranking
+          var posicao = u + 1;
+          if (posicao === 1) { icone = '🥇'; tagInfo = '1º LUGAR'; }
+          else if (posicao === 2) { icone = '🥈'; tagInfo = '2º LUGAR'; }
+          else if (posicao === 3) { icone = '🥉'; tagInfo = '3º LUGAR'; }
+          else { icone = '📈'; tagInfo = 'TOP ' + posicao; }
+          corBarra = 'bg-blue-500';
+        }
+
+        var ringCls = catU.temLimite && porcentU >= 90 ? ' ring-2 ring-red-200 dark:ring-red-800' : '';
+        html += '            <div class="bg-gray-50 dark:bg-gray-800 rounded-xl p-3 border border-gray-200 dark:border-gray-700' + ringCls + ' mb-3">';
+        html += '              <div class="flex items-center justify-between mb-2">';
+        html += '                <div class="flex items-center gap-2">';
+        html += '                  <span class="text-lg">' + icone + '</span>';
+        html += '                  <div class="w-3 h-3 rounded-full" style="background-color: ' + catU.cor + '"></div>';
+        html += '                  <span class="font-medium text-sm text-gray-900 dark:text-gray-100">' + catU.nome + '</span>';
+        if (tagInfo) {
+          var tagColor = catU.temLimite && porcentU >= 90 ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300';
+          html += '                  <span class="text-xs px-2 py-1 rounded-full font-medium ' + tagColor + '">' + tagInfo + '</span>';
+        }
+        html += '                </div>';
+        html += '                <span class="font-bold text-sm ' + (catU.temLimite && catU.gasto > limiteU ? 'text-red-600' : 'text-gray-900 dark:text-gray-100') + '">R$ ' + formatBR(catU.gasto) + '</span>';
+        html += '              </div>';
+        
+        if (catU.temLimite) {
+          html += '              <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">';
+          html += '                <span>Limite: R$ ' + formatBR(limiteU) + '</span>';
+          var percClass = porcentU >= 100 ? 'text-red-600 font-bold' : (porcentU >= 90 ? 'text-orange-600 font-medium' : '');
+          html += '                <span class="' + percClass + '">' + porcentU.toFixed(1) + '%</span>';
+          html += '              </div>';
+          html += '              <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">';
+          html += '                <div class="' + corBarra + ' h-2 rounded-full transition-all duration-300" style="width: ' + Math.min(porcentU, 100) + '%"></div>';
+          html += '              </div>';
+          if (porcentU >= 100) {
+            html += '              <div class="mt-2 text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900 dark:bg-opacity-20 px-2 py-1 rounded">Excedeu em R$ ' + formatBR(catU.gasto - limiteU) + '</div>';
+          }
+        } else {
+          html += '              <p class="text-xs text-gray-500 dark:text-gray-400">Sem limite definido • Posição por gasto</p>';
+        }
+        html += '            </div>';
+      }
+    }
+    html += '          </div>';
     html += '        </div>';
     html += '      </div>';
   } catch {}

@@ -1512,7 +1512,7 @@ document.addEventListener('click', (ev) => {
     }
     
     // Handlers específicos para botões
-    if (t.id === 'export-data-btn') {
+    if (t.id === 'export-data-btn' || t.closest('#export-data-btn')) {
       console.log('[DEBUG] export-data-btn clicado!');
       
       // Mostrar feedback imediato
@@ -1565,7 +1565,7 @@ document.addEventListener('click', (ev) => {
       return;
     }
     
-    if (t.id === 'import-data-btn') {
+    if (t.id === 'import-data-btn' || t.closest('#import-data-btn')) {
       console.log('[DEBUG] import-data-btn clicado!');
       
       // Criar input file para seleção de arquivo
@@ -1659,7 +1659,7 @@ document.addEventListener('click', (ev) => {
       return;
     }
     
-    if (t.id === 'clear-data-btn') {
+    if (t.id === 'clear-data-btn' || t.closest('#clear-data-btn')) {
       console.log('[DEBUG] clear-data-btn clicado!');
       
       // Criar modal de confirmação personalizado
