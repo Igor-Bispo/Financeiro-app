@@ -2115,14 +2115,24 @@ ${events.slice(0, 10).map(e =>
     if (t.id === 'toggle-theme-btn' || t.classList?.contains('theme-toggle-btn') || t.closest('.theme-toggle-btn')) {
       // Alternar entre light e dark
       const isDark = document.documentElement.classList.contains('dark');
+      const button = t.closest('.theme-toggle-btn') || t;
+      
       if (isDark) {
         document.documentElement.classList.remove('dark');
         localStorage.setItem('theme', 'light');
-        t.textContent = '🌙 Modo Escuro';
+        // Atualizar o ícone no span interno
+        const iconSpan = button.querySelector('span');
+        if (iconSpan) {
+          iconSpan.textContent = '🌙';
+        }
       } else {
         document.documentElement.classList.add('dark');
         localStorage.setItem('theme', 'dark');
-        t.textContent = '☀️ Modo Claro';
+        // Atualizar o ícone no span interno
+        const iconSpan = button.querySelector('span');
+        if (iconSpan) {
+          iconSpan.textContent = '☀️';
+        }
       }
       snk().success(`Tema alterado para ${isDark ? 'claro' : 'escuro'}`);
       return;
