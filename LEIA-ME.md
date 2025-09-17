@@ -2,7 +2,7 @@
 
 Este repositório contém um aplicativo PWA de controle financeiro com autenticação (Firebase), Firestore em tempo real, modo offline, relatórios e comandos de voz. É uma SPA roteada por hash (Vite) com organização por features.
 
-**Versão atual: v4.37.0** 🚀
+**Versão atual: v4.43.0** 🚀
 
 ## Como rodar localmente
 
@@ -41,17 +41,45 @@ Observação: o projeto já inclui emulators no firebase.json para dev.
 - Widgets modernos inspirados no Mobills
 - Correção de bugs em parcelas de recorrentes
 
-## Novidades rápidas (Config, navegação e diagnóstico)
+## Novidades rápidas (v4.43.0)
 
-- Aba Config com ações PWA: Verificar atualização do app e Limpar caches do aplicativo
-- Status em tempo real: Service Worker (registrado/atualizando) e Conectividade (online/offline)
-- Acesso rápido: botão "Abrir feed de Notificações" e atalho para copiar informações de diagnóstico
-- Botões de teste de notificação: enviar notificação de teste para Dono e para Usuário Compartilhado
-- Logout robusto com confirmação e telemetria local
-- Telemetria local de performance com exportação CSV (sem envio externo)
-- Sistema de notificações completo com filtros e ações
-- Dashboard com widgets modernos e progresso de parcelas
-- Correção de bugs em transações recorrentes
+### 🎨 Melhorias de Interface
+- Headers harmonizados em todas as abas com design unificado
+- Seletor de período minimalista e compacto
+- Otimização mobile com espaçamentos melhorados
+- Card proprietário com layout vertical mais claro
+
+### 🚨 Sistema de Alertas Aprimorado
+- Modal de alertas clicável no Dashboard
+- Informações detalhadas sobre categorias em alerta
+- Interface moderna com barras de progresso animadas
+- Estados visuais diferenciados (próximo vs ultrapassado)
+
+### 🔧 Otimizações e Correções
+- Eliminação de redundâncias na aba Configurações
+- Event handlers precisos para evitar falsos positivos
+- Seção Resumo otimizada com layout mais limpo
+- Performance melhorada com otimizações de cache
+
+## Funcionalidades principais
+
+- Autenticação com Google (Firebase Auth) e biometria
+- Orçamentos múltiplos e compartilhados entre usuários
+- Transações (receitas e despesas), filtros, busca e histórico
+- Categorias com limites e barras de progresso
+- Recorrentes avançado (parcelas, dia do mês, logs, status)
+- Dashboard com resumo mensal e alertas clicáveis
+- Analytics com gráficos e relatórios
+- Sistema de notificações em tempo real
+- Modal de notificações com ações
+- Backup/Export (JSON, Excel, PDF)
+- Reconhecimento de voz (Web Speech API)
+- PWA completo: cache, offline, background sync e push
+- Arquitetura modular com EventBus
+- Interface de login premium com glass morphism
+- Efeitos visuais avançados e animações suaves
+- Widgets modernos inspirados no Mobills
+- Correção de bugs em parcelas de recorrentes
 
 ### Deep links e roteamento
 

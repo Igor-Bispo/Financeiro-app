@@ -3,7 +3,7 @@
 > **Um aplicativo financeiro moderno, responsivo e completo para controle total das suas finanças pessoais**
 
 ![Status](https://img.shields.io/badge/Status-Produção%20Ativa-brightgreen)
-![Versão](https://img.shields.io/badge/Versão-4.37.0-blue)
+![Versão](https://img.shields.io/badge/Versão-4.43.0-blue)
 ![PWA](https://img.shields.io/badge/PWA-Ready-orange)
 ![Firebase](https://img.shields.io/badge/Firebase-Integrado-red)
 ![Voz](https://img.shields.io/badge/Reconhecimento%20de%20Voz-Ativo-green)
@@ -67,6 +67,7 @@ index.html (#app-content)
 - ✅ **Cards Informativos** - Saldo, receitas, despesas, orçado
 - ✅ **Progress Bars** - Visualização de gastos vs limite
 - ✅ **Alertas Inteligentes** - Notificações de limites excedidos
+- ✅ **Modal de Alertas Clicável** - Clique em "Alertas" para ver categorias em alerta
 - ✅ **Top 5 Categorias** - Gráfico das categorias mais utilizadas
 - ✅ **Top 5 Recorrentes** - Widget com progresso de parcelas
 - ✅ **Filtros Temporais** - Por mês/ano
@@ -74,6 +75,8 @@ index.html (#app-content)
 - ✅ **Gráficos Interativos** - Visualização de dados financeiros
 - ✅ **Relatórios Detalhados** - Análise de gastos por categoria
 - ✅ **Widgets Modernos** - Interface inspirada no Mobills
+- ✅ **Headers Harmonizados** - Design unificado em todas as abas
+- ✅ **Seletor de Período Minimalista** - Interface clean e compacta
 
 ### 🏷️ **Categorias com Progress Bar**
 - ✅ **Gestão Completa** - CRUD de categorias
@@ -115,6 +118,10 @@ index.html (#app-content)
 - ✅ **Efeitos Visuais Avançados** - Gradientes, shimmer effects e micro-interações
 - ✅ **Sistema de Notificações** - Notificações em tempo real
 - ✅ **Modal de Notificações** - Interface dedicada para notificações
+- ✅ **Headers Harmonizados** - Design unificado em todas as abas
+- ✅ **Seletor de Período Minimalista** - Interface clean e compacta
+- ✅ **Otimização Mobile** - Espaçamentos otimizados para mobile
+- ✅ **Modal de Alertas Interativo** - Interface moderna para categorias em alerta
 
 Para a lista completa de funcionalidades e notas de arquitetura, consulte [docs/ARCHITECTURE-OVERVIEW.md](./docs/ARCHITECTURE-OVERVIEW.md).
 
@@ -274,12 +281,36 @@ npm run format       # Formatação de código
 npm run clean        # Limpeza de build
 ```
 
+## 🆕 **Novidades da Versão 4.43.0**
+
+### **🎨 Melhorias de Interface**
+- ✅ **Headers Harmonizados** - Design unificado em todas as abas (Dashboard, Transações, Categorias, Recorrentes, Notificações, Analytics, Configurações)
+- ✅ **Seletor de Período Minimalista** - Interface clean e compacta com design moderno
+- ✅ **Otimização Mobile** - Espaçamentos otimizados para melhor aproveitamento da tela
+- ✅ **Card Proprietário Melhorado** - Layout vertical mais claro na seção Resumo
+
+### **🚨 Sistema de Alertas Aprimorado**
+- ✅ **Modal de Alertas Clicável** - Clique em "Alertas" no Dashboard para ver categorias em alerta
+- ✅ **Informações Detalhadas** - Gasto, limite, percentual e diferença por categoria
+- ✅ **Interface Moderna** - Design responsivo com barras de progresso animadas
+- ✅ **Estados Visuais** - Diferenciação entre categorias próximas do limite vs ultrapassadas
+- ✅ **Dicas Explicativas** - Orientações sobre o sistema de alertas
+
+### **🔧 Otimizações e Correções**
+- ✅ **Eliminação de Redundâncias** - Removidas informações duplicadas na aba Configurações
+- ✅ **Event Handlers Precisos** - Corrigidos handlers de clique para evitar falsos positivos
+- ✅ **Seção Resumo Otimizada** - Layout mais limpo e organizado
+- ✅ **Performance Melhorada** - Otimizações de renderização e cache
+
 ## 🎯 **Funcionalidades Avançadas**
 
 ### **Sistema de Alertas**
 - **Alertas de Limite** - Notificações quando categoria excede 70%
 - **Alertas Gerais** - Notificações de orçamento excedido
 - **Cores Dinâmicas** - Verde (ok) / Amarelo (atenção) / Vermelho (crítico)
+- **Modal de Alertas Clicável** - Clique em "Alertas" no Dashboard para ver detalhes
+- **Informações Detalhadas** - Gasto, limite, percentual e diferença por categoria
+- **Interface Moderna** - Design responsivo com barras de progresso animadas
 
 ### **Sistema de Recorrentes**
 - **Aplicação Manual** - Controle total sobre quando aplicar
@@ -418,7 +449,7 @@ Este projeto está sob a licença MIT. Veja o arquivo LICENSE para mais detalhes
 
 **Desenvolvido com ❤️ para controle financeiro eficiente e intuitivo.**
 
-**Versão atual: v4.37.0** 🚀
+**Versão atual: v4.43.0** 🚀
 
 **Status: ✅ APLICATIVO RODANDO 100%!** 🎉
 
