@@ -349,8 +349,8 @@ class SnackbarSystem {
         <span class="flex-1 text-sm">${safeMsg}</span>
         <span class="snackbar-count hidden text-xs font-medium px-1.5 py-0.5 rounded bg-white/20">×1</span>
         ${actionHtml}
-        <button class="snackbar-close" aria-label="Fechar notificação" title="Fechar">
-          <span class="text-lg">×</span>
+        <button class="snackbar-close" aria-label="Fechar notificação" title="Fechar (ou pressione Esc)">
+          <span class="text-base font-medium">×</span>
         </button>
       </div>
     `;
