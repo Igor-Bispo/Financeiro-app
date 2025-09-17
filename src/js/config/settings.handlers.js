@@ -1756,6 +1756,7 @@ ${events.slice(0, 10).map(e =>
       console.log('🔍 [DEBUG] Elemento clicado:', t);
       console.log('🔍 [DEBUG] ID do elemento:', t.id);
       console.log('🔍 [DEBUG] Texto do elemento:', t.textContent);
+      console.log('🔍 [DEBUG] Closest check-updates-btn:', t.closest('#check-updates-btn'));
       ev.preventDefault();
       ev.stopPropagation();
       
