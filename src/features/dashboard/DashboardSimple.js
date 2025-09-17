@@ -1,6 +1,7 @@
 // Minimal, safe dashboard that calculates and renders summary using plain strings
 import { eventBus } from '@core/events/eventBus.js';
 import { mountPeriodIndicator } from '../../ui/PeriodIndicator.js';
+import { setupDashboardHandlers } from './DashboardHandlers.js';
 
 let listenersAttached = false;
 // lastContainer era usado para re-render local; removido com mountPeriodIndicator
@@ -146,6 +147,7 @@ export function renderDashboard(container) {
     gastoPorCategoria[cidg] = (gastoPorCategoria[cidg] || 0) + vv;
   }
   var totalAlertas = 0;
+  var categoriasEmAlerta = [];
   for (var ca=0; ca<cats.length; ca++) {
     var cc = cats[ca];
     if (!cc) continue;
@@ -156,6 +158,14 @@ export function renderDashboard(container) {
       // Contar alerta se categoria ultrapassou 70% do limite
       if (perc >= 0.7) {
         totalAlertas++;
+        categoriasEmAlerta.push({
+          id: cc.id,
+          nome: cc.nome,
+          gasto: gasto,
+          limite: limv,
+          percentual: perc,
+          percentualFormatado: (perc * 100).toFixed(1) + '%'
+        });
         console.log('🚨 [Dashboard] Categoria em alerta:', {
           nome: cc.nome,
           gasto: gasto,
@@ -165,6 +175,9 @@ export function renderDashboard(container) {
       }
     }
   }
+  
+  // Armazenar categorias em alerta globalmente para uso no modal
+  window.categoriasEmAlerta = categoriasEmAlerta;
   console.log('🔍 [Dashboard] Total de alertas calculado:', totalAlertas);
   var progressoOrcado = (orcado > 0) ? Math.min(Math.max(despesas / orcado, 0), 1) : 0;
 
@@ -284,7 +297,7 @@ export function renderDashboard(container) {
   html += '                <span class="text-gray-600 dark:text-gray-400">Progresso:</span>';
   html += '                <span class="font-medium ' + (progressoOrcado > 0.7 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400') + '">' + (progressoOrcado*100).toFixed(1) + '%</span>';
   html += '              </div>';
-  html += '              <div class="flex justify-between text-xs">';
+  html += '              <div class="flex justify-between text-xs cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-1 rounded transition-colors" id="alertas-categorias-btn" title="Clique para ver categorias em alerta">';
   html += '                <span class="text-gray-600 dark:text-gray-400">Alertas:</span>';
   html += '                <span class="font-medium ' + (totalAlertas > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400') + '">' + (totalAlertas > 0 ? totalAlertas + ' categoria(s)' : 'Nenhum') + '</span>';
   html += '              </div>';
@@ -765,4 +778,7 @@ export function renderDashboard(container) {
       }
     };
   } catch {}
+  
+  // Inicializar handlers do Dashboard
+  setupDashboardHandlers();
 }
