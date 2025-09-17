@@ -300,10 +300,10 @@ class SnackbarSystem {
       'left-1/2',
       'transform',
       '-translate-x-1/2',
-      'px-6',
+      'px-4',
       'py-3',
-      'rounded-lg',
-      'shadow-lg',
+      'rounded-xl',
+      'shadow-xl',
       'max-w-sm',
       'w-full',
       'mx-4',
@@ -311,7 +311,8 @@ class SnackbarSystem {
       'translate-y-4',
       'transition-all',
       'duration-300',
-      'ease-out'
+      'ease-out',
+      'backdrop-blur-md'
     ];
 
     // Não adicionar classes de cor - serão aplicadas via estilos inline
@@ -321,11 +322,11 @@ class SnackbarSystem {
   // Obter conteúdo HTML do snackbar
   getSnackbarContent(message, type, action) {
     const icons = {
-      success: '✅',
-      error: '❌',
-      warning: '⚠️',
-      info: 'ℹ️',
-      default: '💬'
+      success: '✓',
+      error: '✕',
+      warning: '!',
+      info: 'i',
+      default: '•'
     };
 
     const escapeHTML = (str) => {
@@ -341,15 +342,15 @@ class SnackbarSystem {
 
     const safeMsg = escapeHTML(message);
     const safeLabel = action && action.label ? escapeHTML(action.label) : '';
-    const actionHtml = action && action.label ? `<button class="snackbar-action ml-2 underline font-semibold" aria-label="${safeLabel}">${safeLabel}</button>` : '';
+    const actionHtml = action && action.label ? `<button class="snackbar-action ml-2 text-xs underline opacity-80 hover:opacity-100 transition-opacity" aria-label="${safeLabel}">${safeLabel}</button>` : '';
     return `
-      <div class="flex items-center gap-3">
-        <span class="text-lg">${icons[type] || icons.default}</span>
-        <span class="flex-1 text-sm font-medium">${safeMsg}</span>
-        <span class="snackbar-count hidden text-xs font-bold px-2 py-0.5 rounded bg-black/20">×1</span>
+      <div class="flex items-center gap-2">
+        <span class="text-sm font-medium opacity-80">${icons[type] || icons.default}</span>
+        <span class="flex-1 text-sm">${safeMsg}</span>
+        <span class="snackbar-count hidden text-xs font-medium px-1.5 py-0.5 rounded bg-white/20">×1</span>
         ${actionHtml}
-        <button class="snackbar-close text-white" aria-label="Fechar notificação" title="Fechar">
-          <span class="text-lg font-bold">×</span>
+        <button class="snackbar-close" aria-label="Fechar notificação" title="Fechar">
+          <span class="text-lg">×</span>
         </button>
       </div>
     `;
