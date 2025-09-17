@@ -422,13 +422,13 @@ small, .text-muted { color: var(--text-secondary); }
   padding: var(--spacing-md);
 }
 
-/* Sobrescrever para mobile - ocupação balanceada */
+/* Sobrescrever para mobile - maximizar espaço */
 @media (max-width: 768px) {
   .app-container {
     max-width: 100% !important;
     width: 100% !important;
-    margin: 0 auto !important;
-    padding: 12px !important;
+    margin: 0 !important;
+    padding: 4px !important;
     box-sizing: border-box !important;
   }
 }
@@ -453,22 +453,21 @@ small, .text-muted { color: var(--text-secondary); }
   overflow-y: auto;
 }
 
-/* === OCUPAÇÃO BALANCEADA DA TELA NO MOBILE === */
+/* === MAXIMIZAÇÃO DO ESPAÇO DISPONÍVEL NO MOBILE === */
 @media (max-width: 768px) {
-  /* Ocupar largura total mas com padding balanceado */
+  /* Containers principais ocupam toda a área */
   .app-container,
   .content-area,
   .tab-container,
   .settings-container {
     max-width: 100% !important;
     width: 100% !important;
-    margin: 0 auto !important;
-    padding-left: 12px !important;
-    padding-right: 12px !important;
+    margin: 0 !important;
+    padding: 4px !important;
     box-sizing: border-box !important;
   }
   
-  /* Garantir que cards e elementos internos ocupem largura disponível */
+  /* Cards e elementos internos ocupam toda largura disponível */
   .u-card,
   .tab-content,
   .content-spacing,
@@ -476,31 +475,60 @@ small, .text-muted { color: var(--text-secondary); }
   .grid-container {
     max-width: 100% !important;
     width: 100% !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
+    margin: 0 !important;
+    padding: 8px !important;
     box-sizing: border-box !important;
   }
   
-  /* Ajustar padding interno para melhor uso do espaço */
-  .tab-container {
+  /* Seções principais sem margens desperdiçadas */
+  .mb-8 {
+    margin-bottom: 8px !important;
+  }
+  
+  /* Cards com padding mínimo mas usável */
+  .u-card,
+  .bg-white,
+  .bg-gradient-to-br {
+    margin-bottom: 8px !important;
     padding: 12px !important;
   }
   
-  .content-spacing {
-    padding: 8px !important;
+  /* Headers de seções mais compactos */
+  .tab-title-highlight {
+    margin-bottom: 8px !important;
+    padding: 8px 12px !important;
+  }
+  
+  /* Eliminar espaços desnecessários entre elementos */
+  .space-y-3 > * + * {
+    margin-top: 8px !important;
+  }
+  
+  .space-y-6 > * + * {
+    margin-top: 12px !important;
   }
 }
 
-/* === Mobile muito pequeno - padding mínimo === */
+/* === Mobile muito pequeno - padding ultra mínimo === */
 @media (max-width: 480px) {
   .app-container,
   .content-area,
   .tab-container,
   .settings-container {
-    padding-left: 8px !important;
-    padding-right: 8px !important;
-    padding-top: 8px !important;
-    padding-bottom: 8px !important;
+    padding: 2px !important;
+  }
+  
+  /* Cards ainda menores para maximizar conteúdo */
+  .u-card,
+  .bg-white,
+  .bg-gradient-to-br {
+    padding: 8px !important;
+    margin-bottom: 4px !important;
+  }
+  
+  /* Espaçamentos ainda menores */
+  .mb-8 {
+    margin-bottom: 4px !important;
   }
 }
 
