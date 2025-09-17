@@ -118,7 +118,7 @@ export async function renderRecorrentes() {
             <div class="flex items-center gap-2">
               <h2 class="tab-title-highlight">♻️ Recorrentes</h2>
               <div class="hidden md:flex items-center gap-1 text-xs bg-indigo-100 dark:bg-indigo-900/30 px-2 py-1 rounded-md">
-                <span class="text-indigo-700 dark:text-indigo-300">${recorrentes.length} ativos</span>
+                <span class="text-indigo-700 dark:text-indigo-300">${items.length} ativos</span>
               </div>
             </div>
             <div class="flex items-center gap-2">
