@@ -1753,6 +1753,9 @@ ${events.slice(0, 10).map(e =>
     // TESTE DIRETO: Handler para botão de verificar atualizações
     if (t.id === 'check-updates-btn' || (t.textContent && t.textContent.includes('Atualizações'))) {
       console.log('🚀 [TESTE DIRETO] Botão de atualizações detectado!');
+      console.log('🔍 [DEBUG] Elemento clicado:', t);
+      console.log('🔍 [DEBUG] ID do elemento:', t.id);
+      console.log('🔍 [DEBUG] Texto do elemento:', t.textContent);
       ev.preventDefault();
       ev.stopPropagation();
       
@@ -1799,10 +1802,13 @@ ${events.slice(0, 10).map(e =>
       `;
       
       // Adicionar modal ao DOM
+      console.log('🔍 [DEBUG] Adicionando modal ao DOM...');
       document.body.insertAdjacentHTML('beforeend', modalHTML);
+      console.log('🔍 [DEBUG] Modal adicionado ao DOM');
       
       // Event listeners
       const modal = document.getElementById('update-modal');
+      console.log('🔍 [DEBUG] Modal encontrado:', modal);
       const normalBtn = document.getElementById('normal-update-btn');
       const hardBtn = document.getElementById('hard-refresh-btn');
       const cancelBtn = document.getElementById('cancel-update-btn');
