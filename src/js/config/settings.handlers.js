@@ -1756,17 +1756,106 @@ ${events.slice(0, 10).map(e =>
       ev.preventDefault();
       ev.stopPropagation();
       
-      // Dar opção ao usuário entre verificação normal e hard refresh
-      const choice = confirm(
-        '🔄 Escolha o tipo de atualização:\n\n' +
-        '• OK = Verificação normal (recomendado)\n' +
-        '• Cancelar = Hard refresh completo (limpa cache e dados)\n\n' +
-        'Hard refresh é útil quando há problemas persistentes.'
-      );
+      // Criar modal personalizado para escolha
+      const modalContent = `
+        <div class="space-y-4">
+          <div class="text-center">
+            <div class="text-4xl mb-3">🔄</div>
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
+              Escolha o tipo de atualização
+            </h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              Selecione como deseja verificar atualizações
+            </p>
+          </div>
+          
+          <div class="space-y-3">
+            <button id="normal-update-btn" class="w-full p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors">
+              <div class="flex items-center gap-3">
+                <div class="text-2xl">✅</div>
+                <div class="text-left">
+                  <div class="font-medium text-blue-800 dark:text-blue-200">Verificação Normal</div>
+                  <div class="text-xs text-blue-600 dark:text-blue-400">Recomendado - Verifica atualizações do app</div>
+                </div>
+              </div>
+            </button>
+            
+            <button id="hard-refresh-btn" class="w-full p-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors">
+              <div class="flex items-center gap-3">
+                <div class="text-2xl">🧹</div>
+                <div class="text-left">
+                  <div class="font-medium text-orange-800 dark:text-orange-200">Hard Refresh Completo</div>
+                  <div class="text-xs text-orange-600 dark:text-orange-400">Limpa cache e dados - Para problemas persistentes</div>
+                </div>
+              </div>
+            </button>
+          </div>
+          
+          <div class="text-center">
+            <button id="cancel-update-btn" class="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
+              Cancelar
+            </button>
+          </div>
+        </div>
+      `;
       
-      try {
+      // Criar modal
+      if (window.Modal && typeof window.Modal === 'function') {
+        const modal = window.Modal({
+          title: '🔄 Verificar Atualizações',
+          content: modalContent,
+          onClose: () => console.log('[DEBUG] Modal de atualização fechado')
+        });
+        
+        // Adicionar event listeners aos botões
+        setTimeout(() => {
+          const normalBtn = document.getElementById('normal-update-btn');
+          const hardBtn = document.getElementById('hard-refresh-btn');
+          const cancelBtn = document.getElementById('cancel-update-btn');
+          
+          if (normalBtn) {
+            normalBtn.addEventListener('click', () => {
+              console.log('[DEBUG] Verificação normal escolhida');
+              modal.close();
+              executeNormalUpdate();
+            });
+          }
+          
+          if (hardBtn) {
+            hardBtn.addEventListener('click', () => {
+              console.log('[DEBUG] Hard refresh escolhido');
+              modal.close();
+              executeHardRefresh();
+            });
+          }
+          
+          if (cancelBtn) {
+            cancelBtn.addEventListener('click', () => {
+              console.log('[DEBUG] Atualização cancelada');
+              modal.close();
+            });
+          }
+        }, 100);
+        
+      } else {
+        // Fallback para confirm se modal não estiver disponível
+        const choice = confirm(
+          '🔄 Escolha o tipo de atualização:\n\n' +
+          '• OK = Verificação normal (recomendado)\n' +
+          '• Cancelar = Hard refresh completo (limpa cache e dados)\n\n' +
+          'Hard refresh é útil quando há problemas persistentes.'
+        );
+        
         if (choice) {
-          // Verificação normal
+          executeNormalUpdate();
+        } else {
+          executeHardRefresh();
+        }
+      }
+      
+      // Funções para executar as atualizações
+      function executeNormalUpdate() {
+        try {
           console.log('[DEBUG] Executando verificação normal...');
           if (typeof window.checkForUpdates === 'function') {
             window.checkForUpdates(false);
@@ -1778,8 +1867,14 @@ ${events.slice(0, 10).map(e =>
               snk().error('Erro ao verificar atualizações');
             });
           }
-        } else {
-          // Hard refresh
+        } catch (error) {
+          console.error('[DEBUG] Erro ao executar verificação normal:', error);
+          snk().error('Erro ao verificar atualizações');
+        }
+      }
+      
+      function executeHardRefresh() {
+        try {
           console.log('[DEBUG] Executando hard refresh...');
           if (typeof window.performHardRefresh === 'function') {
             window.performHardRefresh();
@@ -1791,10 +1886,10 @@ ${events.slice(0, 10).map(e =>
               snk().error('Erro ao executar hard refresh');
             });
           }
+        } catch (error) {
+          console.error('[DEBUG] Erro ao executar hard refresh:', error);
+          snk().error('Erro ao executar hard refresh');
         }
-      } catch (error) {
-        console.error('[DEBUG] Erro ao executar verificação de atualizações:', error);
-        snk().error('Erro ao verificar atualizações');
       }
       
       return;
