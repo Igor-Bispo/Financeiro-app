@@ -891,6 +891,7 @@ document.addEventListener('click', (ev) => {
                          t.textContent?.includes('Exportar Dados') ||
                          t.textContent?.includes('Restaurar backup') ||
                          t.textContent?.includes('Remover tudo') ||
+                         t.id === 'export-data-btn' ||
                          t.id === 'import-data-btn' ||
                          t.id === 'clear-data-btn' ||
                          t.id === 'btn-logout' ||
@@ -1511,19 +1512,221 @@ document.addEventListener('click', (ev) => {
     }
     
     // Handlers específicos para botões
+    if (t.id === 'export-data-btn') {
+      console.log('[DEBUG] export-data-btn clicado!');
+      
+      // Mostrar feedback imediato
+      snk().info('Preparando exportação de dados...');
+      
+      try {
+        // Coletar todos os dados do usuário
+        const { currentUser, currentBudget } = window.appState || {};
+        
+        if (!currentUser || !currentBudget) {
+          snk().error('Usuário ou orçamento não encontrado');
+          return;
+        }
+        
+        const exportData = {
+          metadata: {
+            exportedAt: new Date().toISOString(),
+            version: 'v4.40.0',
+            userId: currentUser.uid,
+            budgetId: currentBudget.id,
+            budgetName: currentBudget.nome
+          },
+          budget: currentBudget,
+          transactions: window.appState?.transactions || [],
+          categories: window.appState?.categories || [],
+          recorrentes: window.appState?.recorrentes || []
+        };
+        
+        // Criar arquivo para download
+        const dataStr = JSON.stringify(exportData, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        
+        // Criar link de download
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(dataBlob);
+        link.download = `backup-${currentBudget.nome}-${new Date().toISOString().split('T')[0]}.json`;
+        
+        // Fazer download
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        snk().success('Backup exportado com sucesso!');
+        
+      } catch (error) {
+        console.error('[DEBUG] Erro ao exportar dados:', error);
+        snk().error('Erro ao exportar dados');
+      }
+      
+      return;
+    }
+    
     if (t.id === 'import-data-btn') {
       console.log('[DEBUG] import-data-btn clicado!');
-      snk().info('Funcionalidade de importação em desenvolvimento');
+      
+      // Criar input file para seleção de arquivo
+      const fileInput = document.createElement('input');
+      fileInput.type = 'file';
+      fileInput.accept = '.json';
+      
+      fileInput.onchange = async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        try {
+          snk().info('Lendo arquivo de backup...');
+          
+          const text = await file.text();
+          const data = JSON.parse(text);
+          
+          // Validar estrutura do backup
+          if (!data.metadata || !data.budget || !data.transactions || !data.categories) {
+            snk().error('Arquivo de backup inválido');
+            return;
+          }
+          
+          // Mostrar modal de confirmação
+          const confirmModal = `
+            <div id="import-confirm-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl">
+                <div class="text-center mb-6">
+                  <div class="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                    <span class="text-3xl text-white">📥</span>
+                  </div>
+                  <h2 class="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">Confirmar Importação</h2>
+                  <p class="text-gray-600 dark:text-gray-400">Deseja importar os dados do backup?</p>
+                </div>
+                <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg mb-6">
+                  <h3 class="font-semibold text-blue-800 dark:text-blue-200 mb-2">📊 Dados encontrados:</h3>
+                  <ul class="text-sm text-blue-700 dark:text-blue-300 space-y-1">
+                    <li>• <strong>Orçamento:</strong> ${data.budget.nome}</li>
+                    <li>• <strong>Transações:</strong> ${data.transactions.length} itens</li>
+                    <li>• <strong>Categorias:</strong> ${data.categories.length} itens</li>
+                    <li>• <strong>Recorrentes:</strong> ${data.recorrentes.length} itens</li>
+                    <li>• <strong>Data do backup:</strong> ${new Date(data.metadata.exportedAt).toLocaleDateString('pt-BR')}</li>
+                  </ul>
+                </div>
+                <div class="flex gap-3">
+                  <button id="cancel-import" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-medium py-2 rounded-lg transition-all duration-200">
+                    Cancelar
+                  </button>
+                  <button id="confirm-import" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-medium py-2 rounded-lg transition-all duration-200">
+                    Importar
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+          
+          document.body.insertAdjacentHTML('beforeend', confirmModal);
+          
+          const modal = document.getElementById('import-confirm-modal');
+          const cancelBtn = document.getElementById('cancel-import');
+          const confirmBtn = document.getElementById('confirm-import');
+          
+          function closeImportModal() {
+            if (modal) modal.remove();
+          }
+          
+          if (cancelBtn) {
+            cancelBtn.addEventListener('click', closeImportModal);
+          }
+          
+          if (confirmBtn) {
+            confirmBtn.addEventListener('click', () => {
+              closeImportModal();
+              snk().warning('Funcionalidade de importação em desenvolvimento');
+            });
+          }
+          
+          if (modal) {
+            modal.addEventListener('click', (e) => {
+              if (e.target === modal) closeImportModal();
+            });
+          }
+          
+        } catch (error) {
+          console.error('[DEBUG] Erro ao ler arquivo:', error);
+          snk().error('Erro ao ler arquivo de backup');
+        }
+      };
+      
+      fileInput.click();
       return;
     }
     
     if (t.id === 'clear-data-btn') {
       console.log('[DEBUG] clear-data-btn clicado!');
-      if (confirm('⚠️ ATENÇÃO: Isso irá apagar TODOS os dados do orçamento atual. Esta ação não pode ser desfeita. Continuar?')) {
-        if (confirm('🚨 CONFIRMAÇÃO FINAL: Todos os dados serão perdidos permanentemente. Tem certeza?')) {
-          snk().warning('Funcionalidade de limpeza de dados em desenvolvimento');
-        }
+      
+      // Criar modal de confirmação personalizado
+      const confirmModal = `
+        <div id="clear-data-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl">
+            <div class="text-center mb-6">
+              <div class="w-16 h-16 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <span class="text-3xl text-white">⚠️</span>
+              </div>
+              <h2 class="text-xl font-bold text-red-800 dark:text-red-200 mb-2">Limpar Todos os Dados</h2>
+              <p class="text-gray-600 dark:text-gray-400">Esta ação é irreversível!</p>
+            </div>
+            <div class="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg mb-6 border border-red-200 dark:border-red-700">
+              <h3 class="font-semibold text-red-800 dark:text-red-200 mb-2">🚨 Dados que serão removidos:</h3>
+              <ul class="text-sm text-red-700 dark:text-red-300 space-y-1">
+                <li>• Todas as transações</li>
+                <li>• Todas as categorias</li>
+                <li>• Todas as despesas recorrentes</li>
+                <li>• Configurações do orçamento</li>
+                <li>• Dados de compartilhamento</li>
+              </ul>
+            </div>
+            <div class="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg mb-6 border border-yellow-200 dark:border-yellow-700">
+              <p class="text-xs text-yellow-700 dark:text-yellow-300">
+                <strong>💡 Dica:</strong> Faça um backup usando "Exportar Dados" antes de limpar.
+              </p>
+            </div>
+            <div class="flex gap-3">
+              <button id="cancel-clear" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-medium py-2 rounded-lg transition-all duration-200">
+                Cancelar
+              </button>
+              <button id="confirm-clear" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-medium py-2 rounded-lg transition-all duration-200">
+                Limpar Tudo
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      document.body.insertAdjacentHTML('beforeend', confirmModal);
+      
+      const modal = document.getElementById('clear-data-modal');
+      const cancelBtn = document.getElementById('cancel-clear');
+      const confirmBtn = document.getElementById('confirm-clear');
+      
+      function closeClearModal() {
+        if (modal) modal.remove();
       }
+      
+      if (cancelBtn) {
+        cancelBtn.addEventListener('click', closeClearModal);
+      }
+      
+      if (confirmBtn) {
+        confirmBtn.addEventListener('click', () => {
+          closeClearModal();
+          snk().warning('Funcionalidade de limpeza de dados em desenvolvimento');
+        });
+      }
+      
+      if (modal) {
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) closeClearModal();
+        });
+      }
+      
       return;
     }
     
