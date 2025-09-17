@@ -422,6 +422,16 @@ small, .text-muted { color: var(--text-secondary); }
   padding: var(--spacing-md);
 }
 
+/* Sobrescrever para mobile - ocupar toda a tela */
+@media (max-width: 768px) {
+  .app-container {
+    max-width: 100vw !important;
+    width: 100vw !important;
+    margin: 0 !important;
+    padding: 8px !important;
+  }
+}
+
 /* Cabeçalho fixo com blur e safe-area */
 .app-header {
   position: sticky;
@@ -442,26 +452,53 @@ small, .text-muted { color: var(--text-secondary); }
   overflow-y: auto;
 }
 
-/* === Edge-to-edge em mobile com respeito às safe areas === */
+/* === OCUPAÇÃO TOTAL DA TELA NO MOBILE === */
+@media (max-width: 768px) {
+  /* Forçar ocupação total da largura */
+  .app-container,
+  .content-area,
+  .tab-container,
+  .settings-container {
+    max-width: 100vw !important;
+    width: 100vw !important;
+    margin: 0 !important;
+    padding-left: max(env(safe-area-inset-left), 8px) !important;
+    padding-right: max(env(safe-area-inset-right), 8px) !important;
+    box-sizing: border-box !important;
+  }
+  
+  /* Garantir que cards e elementos internos ocupem toda largura */
+  .u-card,
+  .tab-content,
+  .content-spacing,
+  .settings-grid,
+  .grid-container {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+  
+  /* Ajustar padding interno para melhor uso do espaço */
+  .tab-container {
+    padding: 8px !important;
+  }
+  
+  .content-spacing {
+    padding: 4px !important;
+  }
+}
+
+/* === Edge-to-edge específico para mobile muito pequeno === */
 @media (max-width: 480px) {
   body.mobile-ui .app-container {
-    max-width: 100%;
-    margin: 0;
-    padding-left: max(env(safe-area-inset-left), var(--spacing-sm));
-    padding-right: max(env(safe-area-inset-right), var(--spacing-sm));
-    padding-top: var(--spacing-sm);
-    padding-bottom: var(--spacing-sm);
-  }
-  body.mobile-ui .content-area {
-    padding-left: max(env(safe-area-inset-left), var(--spacing-sm));
-    padding-right: max(env(safe-area-inset-right), var(--spacing-sm));
-    padding-top: var(--spacing-sm);
-    /* manter o padding-bottom para a bottom-nav e safe-area */
-  }
-  /* Preservar conforto de leitura na aba Config (evitar "duplo-compacto") */
-  body.mobile-ui .settings-container {
-    padding-left: var(--spacing-md);
-    padding-right: var(--spacing-md);
+    max-width: 100vw !important;
+    width: 100vw !important;
+    margin: 0 !important;
+    padding-left: max(env(safe-area-inset-left), 4px) !important;
+    padding-right: max(env(safe-area-inset-right), 4px) !important;
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
   }
 }
 
