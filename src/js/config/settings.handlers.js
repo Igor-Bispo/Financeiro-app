@@ -1756,10 +1756,30 @@ ${events.slice(0, 10).map(e =>
       ev.preventDefault();
       ev.stopPropagation();
       
+      // Executar função async
+      handleUpdateButtonClick();
+      return;
+    }
+    
+    // Função async para lidar com o botão de atualização
+    async function handleUpdateButtonClick() {
+      
       // Verificar se Modal está disponível
       console.log('[DEBUG] Verificando disponibilidade do Modal...');
       console.log('[DEBUG] window.Modal disponível:', !!window.Modal);
       console.log('[DEBUG] typeof window.Modal:', typeof window.Modal);
+      
+      // Se Modal não estiver disponível, importar
+      if (!window.Modal) {
+        console.log('[DEBUG] Modal não disponível, importando...');
+        try {
+          const { Modal } = await import('@js/ui/Modal.js');
+          window.Modal = Modal;
+          console.log('[DEBUG] Modal importado e disponível:', !!window.Modal);
+        } catch (error) {
+          console.error('[DEBUG] Erro ao importar Modal:', error);
+        }
+      }
       
       // Criar modal personalizado para escolha
       const modalContent = `
