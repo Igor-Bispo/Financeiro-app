@@ -150,7 +150,7 @@ import * as categoriesService from '@features/categories/service.js';
 import { startNotificationsFor } from '@features/notifications/notificationsController.js';
 import { navigateTo } from '@core/utils/globalUtils.js';
 import { registerServiceWorker, listenForControllerChange } from '@core/pwa/swUpdates.js';
-import { checkForUpdates, clearAppCaches } from '@js/config/pwa.js';
+import { checkForUpdates, clearAppCaches, performHardRefresh } from '@js/config/pwa.js';
 
 // Estado global da aplicação (temporário durante transição)
 export const appState = {
@@ -171,6 +171,7 @@ export async function initializeApp() {
     // Disponibilizar funções PWA globalmente
     window.checkForUpdates = checkForUpdates;
     window.clearAppCaches = clearAppCaches;
+    window.performHardRefresh = performHardRefresh;
 
     // Registrar SW update flow cedo (não bloqueia restante)
     try {

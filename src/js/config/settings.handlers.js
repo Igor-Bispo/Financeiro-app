@@ -1756,21 +1756,41 @@ ${events.slice(0, 10).map(e =>
       ev.preventDefault();
       ev.stopPropagation();
       
+      // Dar opção ao usuário entre verificação normal e hard refresh
+      const choice = confirm(
+        '🔄 Escolha o tipo de atualização:\n\n' +
+        '• OK = Verificação normal (recomendado)\n' +
+        '• Cancelar = Hard refresh completo (limpa cache e dados)\n\n' +
+        'Hard refresh é útil quando há problemas persistentes.'
+      );
+      
       try {
-        // Executar a função de verificação de atualizações
-        if (typeof window.checkForUpdates === 'function') {
-          console.log('[DEBUG] Executando window.checkForUpdates...');
-          window.checkForUpdates();
+        if (choice) {
+          // Verificação normal
+          console.log('[DEBUG] Executando verificação normal...');
+          if (typeof window.checkForUpdates === 'function') {
+            window.checkForUpdates(false);
+          } else {
+            import('@js/config/pwa.js').then(pwa => {
+              pwa.checkForUpdates(false);
+            }).catch(err => {
+              console.error('[DEBUG] Erro ao importar PWA module:', err);
+              snk().error('Erro ao verificar atualizações');
+            });
+          }
         } else {
-          console.log('[DEBUG] window.checkForUpdates não encontrado, tentando importar...');
-          // Tentar importar e executar
-          import('@js/config/pwa.js').then(pwa => {
-            console.log('[DEBUG] PWA module importado, executando checkForUpdates...');
-            pwa.checkForUpdates();
-          }).catch(err => {
-            console.error('[DEBUG] Erro ao importar PWA module:', err);
-            snk().error('Erro ao verificar atualizações');
-          });
+          // Hard refresh
+          console.log('[DEBUG] Executando hard refresh...');
+          if (typeof window.performHardRefresh === 'function') {
+            window.performHardRefresh();
+          } else {
+            import('@js/config/pwa.js').then(pwa => {
+              pwa.performHardRefresh();
+            }).catch(err => {
+              console.error('[DEBUG] Erro ao importar PWA module:', err);
+              snk().error('Erro ao executar hard refresh');
+            });
+          }
         }
       } catch (error) {
         console.error('[DEBUG] Erro ao executar verificação de atualizações:', error);
