@@ -1752,7 +1752,31 @@ ${events.slice(0, 10).map(e =>
     
     // Handler para botão de verificar atualizações
     if (t.id === 'check-updates-btn') {
-      snk().info('Verificação de atualizações em desenvolvimento');
+      console.log('[DEBUG] Botão de verificar atualizações clicado');
+      ev.preventDefault();
+      ev.stopPropagation();
+      
+      try {
+        // Executar a função de verificação de atualizações
+        if (typeof window.checkForUpdates === 'function') {
+          console.log('[DEBUG] Executando window.checkForUpdates...');
+          window.checkForUpdates();
+        } else {
+          console.log('[DEBUG] window.checkForUpdates não encontrado, tentando importar...');
+          // Tentar importar e executar
+          import('@js/config/pwa.js').then(pwa => {
+            console.log('[DEBUG] PWA module importado, executando checkForUpdates...');
+            pwa.checkForUpdates();
+          }).catch(err => {
+            console.error('[DEBUG] Erro ao importar PWA module:', err);
+            snk().error('Erro ao verificar atualizações');
+          });
+        }
+      } catch (error) {
+        console.error('[DEBUG] Erro ao executar verificação de atualizações:', error);
+        snk().error('Erro ao verificar atualizações');
+      }
+      
       return;
     }
     
