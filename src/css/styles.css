@@ -453,9 +453,9 @@ small, .text-muted { color: var(--text-secondary); }
   overflow-y: auto;
 }
 
-/* === OTIMIZAÇÃO INTELIGENTE DE ESPAÇOS NO MOBILE === */
+/* === OTIMIZAÇÃO MÁXIMA DE ESPAÇOS NO MOBILE === */
 @media (max-width: 768px) {
-  /* Containers principais - Zero lateral, respiração vertical */
+  /* Containers principais - ZERO padding para máxima densidade */
   .app-container,
   .content-area,
   .tab-container,
@@ -463,16 +463,12 @@ small, .text-muted { color: var(--text-secondary); }
     max-width: 100% !important;
     width: 100% !important;
     margin: 0 !important;
-    /* ZERO padding lateral - máximo aproveitamento */
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-    /* Respiração vertical para hierarquia */
-    padding-top: 8px !important;
-    padding-bottom: 8px !important;
+    /* ZERO padding em todas as direções */
+    padding: 0 !important;
     box-sizing: border-box !important;
   }
   
-  /* Cards e elementos internos - Padding inteligente */
+  /* Cards e elementos internos - Padding ultra mínimo */
   .u-card,
   .tab-content,
   .content-spacing,
@@ -480,14 +476,9 @@ small, .text-muted { color: var(--text-secondary); }
   .grid-container {
     max-width: 100% !important;
     width: 100% !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-    /* Padding lateral mínimo mas funcional */
-    padding-left: 6px !important;
-    padding-right: 6px !important;
-    /* Padding vertical balanceado */
-    padding-top: 10px !important;
-    padding-bottom: 10px !important;
+    margin: 0 !important;
+    /* Padding ultra mínimo */
+    padding: 4px !important;
     box-sizing: border-box !important;
   }
   
@@ -528,34 +519,31 @@ small, .text-muted { color: var(--text-secondary); }
   .space-y-4 > * + * { margin-top: 8px !important; }
   .space-y-6 > * + * { margin-top: 12px !important; }
   
-  /* Hierarquia visual inteligente - Espaçamentos progressivos */
-  .mb-8 { margin-bottom: 12px !important; }  /* Seções principais */
-  .mb-6 { margin-bottom: 10px !important; }  /* Subseções */
-  .mb-4 { margin-bottom: 8px !important; }   /* Cards */
-  .mb-3 { margin-bottom: 6px !important; }   /* Elementos relacionados */
-  .mb-2 { margin-bottom: 4px !important; }   /* Elementos próximos */
+  /* Espaçamentos ultra compactos */
+  .mb-8 { margin-bottom: 4px !important; }
+  .mb-6 { margin-bottom: 3px !important; }
+  .mb-4 { margin-bottom: 2px !important; }
+  .mb-3 { margin-bottom: 2px !important; }
+  .mb-2 { margin-bottom: 1px !important; }
 
-  .mt-8 { margin-top: 12px !important; }
-  .mt-6 { margin-top: 10px !important; }
-  .mt-4 { margin-top: 8px !important; }
-  .mt-3 { margin-top: 6px !important; }
-  .mt-2 { margin-top: 4px !important; }
+  .mt-8 { margin-top: 4px !important; }
+  .mt-6 { margin-top: 3px !important; }
+  .mt-4 { margin-top: 2px !important; }
+  .mt-3 { margin-top: 2px !important; }
+  .mt-2 { margin-top: 1px !important; }
   
-  /* Cards com design inteligente */
+  /* Cards ultra compactos */
   .u-card,
   .bg-white,
   .bg-gradient-to-br,
   .rounded-2xl,
   .rounded-xl,
   .rounded-lg {
-    /* Eliminar margens laterais */
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-    /* Respiração entre cards */
-    margin-bottom: 10px !important;
-    /* Padding balanceado para legibilidade */
-    padding: 12px 8px !important;
-    border-radius: 8px !important;
+    /* Eliminar todas as margens */
+    margin: 0 !important;
+    /* Padding ultra mínimo */
+    padding: 2px !important;
+    border-radius: 4px !important;
   }
   
   /* Títulos de seções ultra compactos */

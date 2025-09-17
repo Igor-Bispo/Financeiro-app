@@ -1,7 +1,7 @@
 // Service Worker avançado para PWA (produção)
 // Versão do Service Worker - atualize sempre que modificar este arquivo
 // 4.26.0: melhorias para evitar loops infinitos
-const VERSION = 'v4.40.0';
+const VERSION = 'v4.41.0';
 const STATIC_CACHE = `financeiro-static-${VERSION}`;
 const DYNAMIC_CACHE = `financeiro-dynamic-${VERSION}`;
 const FALLBACK_CACHE = `financeiro-fallback-${VERSION}`;
