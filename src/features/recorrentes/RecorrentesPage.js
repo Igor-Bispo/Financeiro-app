@@ -114,14 +114,21 @@ export async function renderRecorrentes() {
     content.innerHTML = `
       <div class="tab-container ${compactClass}">
         <div class="tab-header">
-          <div class="flex items-center justify-between w-full">
-            <div class="flex items-center gap-2">
-              <h2 class="tab-title-highlight">♻️ Recorrentes</h2>
-              <div class="hidden md:flex items-center gap-1 text-xs bg-indigo-100 dark:bg-indigo-900/30 px-2 py-1 rounded-md">
-                <span class="text-indigo-700 dark:text-indigo-300">${items.length} ativos</span>
+          <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-600">
+            <div class="flex items-center justify-between w-full">
+              <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
+                    <span class="text-white text-sm">♻️</span>
+                  </div>
+                  <div>
+                    <h2 class="text-gray-800 dark:text-white font-semibold text-base">Recorrentes</h2>
+                    <div class="flex items-center gap-1">
+                      <span class="text-indigo-600 dark:text-indigo-400 text-xs">${items.length} ativos</span>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-            <div class="flex items-center gap-2">
               <div id="rec-period-indicator"></div>
             </div>
           </div>

@@ -238,14 +238,21 @@ export function renderTransactions() {
   content.innerHTML = `
     <div class="tab-container">
       <div class="tab-header">
-        <div class="flex items-center justify-between w-full">
-          <div class="flex items-center gap-2">
-            <h2 class="tab-title-highlight">📋 Transações</h2>
-            <div class="hidden md:flex items-center gap-1 text-xs bg-blue-100 dark:bg-blue-900/30 px-2 py-1 rounded-md">
-              <span class="text-blue-700 dark:text-blue-300">${transacoes.length} itens</span>
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-600">
+          <div class="flex items-center justify-between w-full">
+            <div class="flex items-center gap-3">
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                  <span class="text-white text-sm">📋</span>
+                </div>
+                <div>
+                  <h2 class="text-gray-800 dark:text-white font-semibold text-base">Transações</h2>
+                  <div class="flex items-center gap-1">
+                    <span class="text-blue-600 dark:text-blue-400 text-xs">${transacoes.length} itens</span>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-          <div class="flex items-center gap-2">
             <div id="tx-period-indicator"></div>
           </div>
         </div>

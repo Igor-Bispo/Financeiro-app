@@ -281,14 +281,21 @@ export class AnalyticsPage {
       container.innerHTML = `
         <div class="tab-container">
           <div class="tab-header">
-            <div class="flex items-center justify-between w-full">
-              <div class="flex items-center gap-2">
-                <h2 class="tab-title-highlight">📊 Análises</h2>
-                <div class="hidden md:flex items-center gap-1 text-xs bg-purple-100 dark:bg-purple-900/30 px-2 py-1 rounded-md">
-                  <span class="text-purple-700 dark:text-purple-300">Inteligente</span>
+            <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-600">
+              <div class="flex items-center justify-between w-full">
+                <div class="flex items-center gap-3">
+                  <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                      <span class="text-white text-sm">📊</span>
+                    </div>
+                    <div>
+                      <h2 class="text-gray-800 dark:text-white font-semibold text-base">Análises</h2>
+                      <div class="flex items-center gap-1">
+                        <span class="text-purple-600 dark:text-purple-400 text-xs">Inteligente</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div class="flex items-center gap-2">
                 <div id="analytics-period-indicator"></div>
               </div>
             </div>
