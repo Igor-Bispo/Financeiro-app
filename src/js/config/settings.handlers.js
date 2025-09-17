@@ -837,6 +837,7 @@ document.addEventListener('click', (ev) => {
                          t.id === 'view-performance-events' ||
                          t.id === 'save-days-chunk' ||
                          t.id === 'reset-days-chunk' ||
+                         t.id === 'check-updates-btn' ||
                          t.id === 'toggle-theme-btn' ||
                          t.id === 'enter-budget-button' ||
                          t.id === 'enter-text' ||
