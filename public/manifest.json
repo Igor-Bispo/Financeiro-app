@@ -3,6 +3,7 @@
   "short_name": "ServoTech",
   "start_url": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
   "background_color": "#4F46E5",
   "theme_color": "#4F46E5",
   "description": "Aplicativo de controle financeiro pessoal com reconhecimento de voz, categorização inteligente e orçamentos compartilhados.",
