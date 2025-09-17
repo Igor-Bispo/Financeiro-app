@@ -921,6 +921,7 @@ document.addEventListener('click', (ev) => {
                          t.id === 'check-updates-btn' ||
                          t.id === 'help-support-btn' ||
                          t.id === 'toggle-theme-btn' ||
+                         t.classList?.contains('theme-toggle-btn') ||
                          t.id === 'enter-budget-button' ||
                          t.id === 'enter-text' ||
                          t.classList?.contains('color-theme-btn') ||
@@ -2112,7 +2113,7 @@ ${events.slice(0, 10).map(e =>
     
 
     // Handler para botão de toggle de tema
-    if (t.id === 'toggle-theme-btn') {
+    if (t.id === 'toggle-theme-btn' || t.classList?.contains('theme-toggle-btn')) {
       // Alternar entre light e dark
       const isDark = document.documentElement.classList.contains('dark');
       if (isDark) {
