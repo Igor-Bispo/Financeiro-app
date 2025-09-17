@@ -1751,6 +1751,12 @@ ${events.slice(0, 10).map(e =>
     }
     
     // NOVA LÓGICA SIMPLIFICADA: Handler para botão de verificar atualizações
+    console.log('🔍 [DEBUG] Verificando se é botão de atualizações...');
+    console.log('🔍 [DEBUG] t.id:', t.id);
+    console.log('🔍 [DEBUG] t.closest result:', t.closest('#check-updates-btn'));
+    console.log('🔍 [DEBUG] t.textContent:', t.textContent);
+    console.log('🔍 [DEBUG] t.textContent.includes("Atualizações"):', t.textContent?.includes('Atualizações'));
+    
     if (t.id === 'check-updates-btn' || t.closest('#check-updates-btn') || t.textContent?.includes('Atualizações')) {
       console.log('🔄 [NOVA LÓGICA] Botão de atualizações clicado!');
       ev.preventDefault();
