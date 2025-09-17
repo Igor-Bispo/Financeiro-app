@@ -453,9 +453,9 @@ small, .text-muted { color: var(--text-secondary); }
   overflow-y: auto;
 }
 
-/* === MAXIMIZAÇÃO EXTREMA DO ESPAÇO NO MOBILE === */
+/* === ELIMINAÇÃO DOS ESPAÇOS LATERAIS NO MOBILE === */
 @media (max-width: 768px) {
-  /* Containers principais com padding zero */
+  /* Containers principais - ZERO padding lateral, mantendo organização vertical */
   .app-container,
   .content-area,
   .tab-container,
@@ -463,11 +463,16 @@ small, .text-muted { color: var(--text-secondary); }
     max-width: 100% !important;
     width: 100% !important;
     margin: 0 !important;
-    padding: 1px !important;
+    /* ZERO padding lateral - máximo aproveitamento das bordas */
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    /* Manter padding vertical para organização */
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
     box-sizing: border-box !important;
   }
   
-  /* Cards e elementos internos ultra compactos */
+  /* Cards e elementos internos - padding lateral mínimo mas organizados */
   .u-card,
   .tab-content,
   .content-spacing,
@@ -475,8 +480,14 @@ small, .text-muted { color: var(--text-secondary); }
   .grid-container {
     max-width: 100% !important;
     width: 100% !important;
-    margin: 0 !important;
-    padding: 2px !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    /* Padding lateral mínimo para não grudar nas bordas */
+    padding-left: 4px !important;
+    padding-right: 4px !important;
+    /* Manter padding vertical para organização */
+    padding-top: 12px !important;
+    padding-bottom: 12px !important;
     box-sizing: border-box !important;
   }
   
@@ -493,25 +504,34 @@ small, .text-muted { color: var(--text-secondary); }
     line-height: 1.2 !important;
   }
   
-  /* Eliminar TODAS as margens desperdiçadas */
-  .mb-8, .mb-6, .mb-4, .mb-3, .mb-2 {
-    margin-bottom: 2px !important;
-  }
+  /* MANTER espaçamentos verticais para organização */
+  .mb-8 { margin-bottom: 16px !important; }
+  .mb-6 { margin-bottom: 12px !important; }
+  .mb-4 { margin-bottom: 8px !important; }
+  .mb-3 { margin-bottom: 6px !important; }
+  .mb-2 { margin-bottom: 4px !important; }
+
+  .mt-8 { margin-top: 16px !important; }
+  .mt-6 { margin-top: 12px !important; }
+  .mt-4 { margin-top: 8px !important; }
+  .mt-3 { margin-top: 6px !important; }
+  .mt-2 { margin-top: 4px !important; }
   
-  .mt-8, .mt-6, .mt-4, .mt-3, .mt-2 {
-    margin-top: 2px !important;
-  }
-  
-  /* Cards com padding extremamente mínimo */
+  /* Cards com padding lateral mínimo mas organizados */
   .u-card,
   .bg-white,
   .bg-gradient-to-br,
   .rounded-2xl,
   .rounded-xl,
   .rounded-lg {
-    margin-bottom: 2px !important;
-    padding: 4px !important;
-    border-radius: 6px !important;
+    /* Eliminar apenas margens laterais */
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    /* Manter margens verticais para organização */
+    margin-bottom: 12px !important;
+    /* Padding interno adequado - lateral mínimo, vertical organizado */
+    padding: 12px 6px !important;
+    border-radius: 8px !important;
   }
   
   /* Títulos de seções ultra compactos */
