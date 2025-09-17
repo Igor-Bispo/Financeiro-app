@@ -453,9 +453,9 @@ small, .text-muted { color: var(--text-secondary); }
   overflow-y: auto;
 }
 
-/* === TESTE VISUAL DRAMÁTICO PARA MOBILE === */
+/* === DESIGN FINAL OTIMIZADO PARA MOBILE === */
 @media (max-width: 768px) {
-  /* MUDANÇA VISÍVEL - Containers com background para teste */
+  /* Containers principais - Aproveitamento máximo com conforto */
   .app-container,
   .content-area,
   .tab-container,
@@ -463,18 +463,16 @@ small, .text-muted { color: var(--text-secondary); }
     max-width: 100% !important;
     width: 100% !important;
     margin: 0 !important;
-    /* Padding lateral ZERO para máximo aproveitamento */
-    padding-left: 0px !important;
-    padding-right: 0px !important;
-    /* Padding vertical mínimo */
-    padding-top: 2px !important;
-    padding-bottom: 2px !important;
+    /* Padding lateral mínimo para aproveitamento máximo */
+    padding-left: 2px !important;
+    padding-right: 2px !important;
+    /* Padding vertical para organização */
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
     box-sizing: border-box !important;
-    /* BACKGROUND TEMPORÁRIO PARA TESTE VISUAL */
-    background: linear-gradient(45deg, rgba(255,0,0,0.1), rgba(0,255,0,0.1)) !important;
   }
   
-  /* Cards e elementos internos - TESTE VISUAL */
+  /* Cards e elementos internos - Padding balanceado */
   .u-card,
   .tab-content,
   .content-spacing,
@@ -484,14 +482,12 @@ small, .text-muted { color: var(--text-secondary); }
     width: 100% !important;
     margin-left: 0 !important;
     margin-right: 0 !important;
-    /* Padding ultra mínimo para teste */
-    padding-left: 2px !important;
-    padding-right: 2px !important;
-    padding-top: 4px !important;
-    padding-bottom: 4px !important;
+    /* Padding balanceado - lateral mínimo, vertical confortável */
+    padding-left: 6px !important;
+    padding-right: 6px !important;
+    padding-top: 12px !important;
+    padding-bottom: 12px !important;
     box-sizing: border-box !important;
-    /* BACKGROUND TEMPORÁRIO PARA TESTE VISUAL */
-    background: rgba(0,0,255,0.1) !important;
   }
   
   /* Headers com design limpo e natural */
@@ -573,7 +569,7 @@ small, .text-muted { color: var(--text-secondary); }
   .mt-3 { margin-top: 8px !important; }
   .mt-2 { margin-top: 6px !important; }
   
-  /* Cards com design natural e confortável */
+  /* Cards com design otimizado */
   .u-card,
   .bg-white,
   .bg-gradient-to-br,
@@ -583,11 +579,11 @@ small, .text-muted { color: var(--text-secondary); }
     /* Eliminar apenas margens laterais */
     margin-left: 0 !important;
     margin-right: 0 !important;
-    /* Respiração natural entre cards */
-    margin-bottom: 20px !important;
-    /* Padding confortável para boa experiência */
-    padding: 16px 14px !important;
-    border-radius: 12px !important;
+    /* Espaçamento organizado entre cards */
+    margin-bottom: 12px !important;
+    /* Padding otimizado - lateral mínimo, vertical confortável */
+    padding: 14px 8px !important;
+    border-radius: 10px !important;
   }
   
   /* Títulos de seções ultra compactos */
