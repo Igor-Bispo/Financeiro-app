@@ -2,7 +2,7 @@
 // Este arquivo gerencia a limpeza automática de cache quando necessário
 
 const CACHE_VERSION_KEY = 'app_cache_version';
-const CURRENT_VERSION = 'v4.42.0';
+const CURRENT_VERSION = 'v4.43.0';
 
 /**
  * Verifica se há uma nova versão e limpa o cache se necessário
