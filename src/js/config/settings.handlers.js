@@ -1756,8 +1756,13 @@ ${events.slice(0, 10).map(e =>
       ev.preventDefault();
       ev.stopPropagation();
       
-      // Executar função async diretamente
-      (async () => {
+      // Adicionar delay para permitir ver os logs
+      console.log('[DEBUG] Aguardando 3 segundos para permitir visualização dos logs...');
+      setTimeout(async () => {
+        console.log('[DEBUG] Iniciando processamento após delay...');
+        
+        // Executar função async diretamente
+        (async () => {
       
       // Verificar se Modal está disponível
       console.log('[DEBUG] Verificando disponibilidade do Modal...');
@@ -1940,7 +1945,8 @@ ${events.slice(0, 10).map(e =>
         }
       }
       
-      })(); // Fechar função async
+        })(); // Fechar função async
+        }, 3000); // Fechar setTimeout
       return;
     }
     
