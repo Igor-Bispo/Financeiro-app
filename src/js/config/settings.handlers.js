@@ -1756,13 +1756,8 @@ ${events.slice(0, 10).map(e =>
       ev.preventDefault();
       ev.stopPropagation();
       
-      // Executar função async
-      handleUpdateButtonClick();
-      return;
-    }
-    
-    // Função async para lidar com o botão de atualização
-    async function handleUpdateButtonClick() {
+      // Executar função async diretamente
+      (async () => {
       
       // Verificar se Modal está disponível
       console.log('[DEBUG] Verificando disponibilidade do Modal...');
@@ -1945,6 +1940,7 @@ ${events.slice(0, 10).map(e =>
         }
       }
       
+      })(); // Fechar função async
       return;
     }
     
