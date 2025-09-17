@@ -2112,7 +2112,7 @@ ${events.slice(0, 10).map(e =>
     
 
     // Handler para botão de toggle de tema
-    if (t.id === 'toggle-theme-btn' || t.classList?.contains('theme-toggle-btn')) {
+    if (t.id === 'toggle-theme-btn' || t.classList?.contains('theme-toggle-btn') || t.closest('.theme-toggle-btn')) {
       // Alternar entre light e dark
       const isDark = document.documentElement.classList.contains('dark');
       if (isDark) {
