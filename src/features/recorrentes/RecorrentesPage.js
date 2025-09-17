@@ -113,9 +113,18 @@ export async function renderRecorrentes() {
     const compactClass = (typeof window !== 'undefined' && window.innerWidth <= 480) ? 'recorrentes-compact' : '';
     content.innerHTML = `
       <div class="tab-container ${compactClass}">
-        <div class="tab-header flex items-center justify-between">
-          <h2 class="tab-title-highlight">♻️ Recorrentes</h2>
-          <div id="rec-period-indicator"></div>
+        <div class="tab-header">
+          <div class="flex items-center justify-between w-full">
+            <div class="flex items-center gap-2">
+              <h2 class="tab-title-highlight">♻️ Recorrentes</h2>
+              <div class="hidden md:flex items-center gap-1 text-xs bg-indigo-100 dark:bg-indigo-900/30 px-2 py-1 rounded-md">
+                <span class="text-indigo-700 dark:text-indigo-300">${recorrentes.length} ativos</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <div id="rec-period-indicator"></div>
+            </div>
+          </div>
         </div>
         <div class="tab-content">
           <div class="content-spacing">
