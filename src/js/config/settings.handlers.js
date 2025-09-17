@@ -838,6 +838,7 @@ document.addEventListener('click', (ev) => {
                          t.id === 'save-days-chunk' ||
                          t.id === 'reset-days-chunk' ||
                          t.id === 'check-updates-btn' ||
+                         t.id === 'help-support-btn' ||
                          t.id === 'toggle-theme-btn' ||
                          t.id === 'enter-budget-button' ||
                          t.id === 'enter-text' ||
@@ -1471,7 +1472,7 @@ document.addEventListener('click', (ev) => {
       return;
     }
     
-    if (t.textContent?.includes('Ajuda e Suporte')) {
+    if (t.textContent?.includes('Ajuda e Suporte') || (t.textContent?.includes('Suporte') && t.id === 'help-support-btn')) {
       console.log('[DEBUG] Ajuda e Suporte clicado!');
       
       const helpContent = `
