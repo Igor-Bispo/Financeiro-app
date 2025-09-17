@@ -1751,13 +1751,8 @@ ${events.slice(0, 10).map(e =>
     }
     
     // Handler para botão de verificar atualizações
-    console.log('[DEBUG] Verificando se é botão de atualizações...');
-    console.log('[DEBUG] t.id:', t.id);
-    console.log('[DEBUG] t.closest result:', t.closest('#check-updates-btn'));
-    console.log('[DEBUG] t.textContent:', t.textContent);
-    
-    if (t.id === 'check-updates-btn' || t.closest('#check-updates-btn') || t.textContent?.includes('Atualizações')) {
-      console.log('[DEBUG] Botão de verificar atualizações clicado');
+    if (t.id === 'check-updates-btn' || t.closest('#check-updates-btn')) {
+      console.log('[DEBUG] Botão de verificar atualizações clicado - ID:', t.id);
       ev.preventDefault();
       ev.stopPropagation();
       
