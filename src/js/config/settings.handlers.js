@@ -696,8 +696,8 @@ window.showWhatsNew = async function () {
           </div>
           <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
             <p class="text-gray-700 dark:text-gray-300">
-              Esta versão inclui uma reorganização completa das abas com padrão compacto, melhorando significativamente a experiência mobile. 
-              Todas as 7 abas principais foram otimizadas para uma interface mais limpa e organizada.
+              Esta versão traz headers harmonizados em todas as abas, um modal de alertas interativo no Dashboard e otimizações mobile significativas. 
+              O design agora está completamente unificado com melhor aproveitamento do espaço em dispositivos móveis.
             </p>
           </div>
         </div>
@@ -779,7 +779,7 @@ window.showWhatsNew = async function () {
   
   function fallbackAlert() {
     console.log('[DEBUG] Executando fallback alert...');
-    alert('🆕 Novidades v4.38.0:\n\n📊 Dashboard: Resumo compacto com métricas essenciais\n💰 Transações: Interface otimizada com 3 métricas principais\n📂 Categorias: Cards compactos com resumo financeiro\n🔄 Recorrentes: Seções organizadas por status\n📈 Analytics: Gráficos em layout compacto\n🔔 Notificações: Filtros organizados em seções\n⚙️ Config: Seções lógicas com cards compactos\n🎯 Espaçamento Otimizado: Melhor aproveitamento do espaço\n📱 UX Mobile Aprimorada: Interface limpa e organizada\n⚡ Performance Melhorada: Carregamento mais rápido\n🎨 Design Consistente: Padrão visual unificado');
+    alert('🆕 Novidades v4.43.0:\n\n🎨 Headers Harmonizados: Design unificado em todas as abas\n🎯 Seletor de Período Minimalista: Interface clean e compacta\n📱 Otimização Mobile: Espaçamentos melhorados para mobile\n👑 Card Proprietário Melhorado: Layout vertical mais claro\n🚨 Modal de Alertas Clicável: Clique em "Alertas" no Dashboard\n📊 Informações Detalhadas: Gasto, limite e percentual por categoria\n🎨 Interface Moderna: Barras de progresso animadas\n🔧 Eliminação de Redundâncias: Informações duplicadas removidas\n⚡ Event Handlers Precisos: Cliques corrigidos sem falsos positivos\n📋 Seção Resumo Otimizada: Layout mais limpo e organizado\n🚀 Performance Melhorada: Otimizações de cache e renderização');
   }
 };
 

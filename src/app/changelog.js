@@ -1,6 +1,23 @@
 // Changelog simples para exibir no modal de "O que mudou"
 // Adicione entradas conforme releases forem saindo
 export const CHANGELOG = {
+  '4.43.0': {
+    date: '2025-01-15',
+    title: '4.43.0 — Headers Harmonizados e Modal de Alertas Interativo',
+    items: [
+      '🎨 Headers Harmonizados: Design unificado em todas as abas (Dashboard, Transações, Categorias, Recorrentes, Notificações, Analytics, Configurações)',
+      '🎯 Seletor de Período Minimalista: Interface clean e compacta com design moderno',
+      '📱 Otimização Mobile: Espaçamentos otimizados para melhor aproveitamento da tela',
+      '👑 Card Proprietário Melhorado: Layout vertical mais claro na seção Resumo',
+      '🚨 Modal de Alertas Clicável: Clique em "Alertas" no Dashboard para ver categorias em alerta',
+      '📊 Informações Detalhadas: Gasto, limite, percentual e diferença por categoria',
+      '🎨 Interface Moderna: Barras de progresso animadas e estados visuais diferenciados',
+      '🔧 Eliminação de Redundâncias: Removidas informações duplicadas na aba Configurações',
+      '⚡ Event Handlers Precisos: Corrigidos handlers de clique para evitar falsos positivos',
+      '📋 Seção Resumo Otimizada: Layout mais limpo e organizado',
+      '🚀 Performance Melhorada: Otimizações de cache e renderização'
+    ]
+  },
   '4.38.0': {
     date: '2025-09-16',
     title: '4.38.0 — Organização Completa das Abas com Padrão Compacto',
