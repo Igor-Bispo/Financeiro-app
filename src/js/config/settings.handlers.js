@@ -650,23 +650,79 @@ window.showWhatsNew = async function () {
     
     // Gerar HTML do changelog
     const html = `
-      <div class="space-y-4">
-        <div class="bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20 p-4 rounded-lg border border-violet-200 dark:border-violet-700">
-          <div class="flex items-center gap-2 mb-3">
-            <span class="text-2xl">🚀</span>
-            <h3 class="font-bold text-violet-800 dark:text-violet-200 text-lg">${latestChangelog.title}</h3>
+      <div class="space-y-6">
+        <!-- Header do Modal -->
+        <div class="text-center pb-4 border-b border-gray-200 dark:border-gray-700">
+          <div class="w-16 h-16 bg-gradient-to-br from-violet-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+            <span class="text-3xl text-white">🚀</span>
           </div>
-          <p class="text-sm text-violet-600 dark:text-violet-400 mb-3">📅 ${latestChangelog.date}</p>
-          <ul class="text-sm text-violet-700 dark:text-violet-300 space-y-2">
-            ${latestChangelog.items.map(item => `<li class="flex items-start gap-2"><span class="text-violet-500 mt-1">•</span><span>${item}</span></li>`).join('')}
-          </ul>
+          <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-2">Novidades da Versão</h2>
+          <p class="text-gray-600 dark:text-gray-400">Confira as últimas melhorias e recursos</p>
         </div>
-        <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-          <h4 class="font-semibold text-blue-800 dark:text-blue-200 mb-2">💡 Dica</h4>
-          <p class="text-sm text-blue-700 dark:text-blue-300">
-            Esta versão inclui uma reorganização completa das abas com padrão compacto, melhorando significativamente a experiência mobile. 
-            Todas as 7 abas principais foram otimizadas para uma interface mais limpa e organizada.
-          </p>
+
+        <!-- Changelog Principal -->
+        <div class="bg-gradient-to-br from-violet-50 to-purple-100 dark:from-violet-900/30 dark:to-purple-800/20 p-6 rounded-xl border border-violet-200 dark:border-violet-700">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-12 h-12 bg-violet-500 rounded-lg flex items-center justify-center shadow-md">
+              <span class="text-xl text-white">✨</span>
+            </div>
+            <div>
+              <h3 class="text-lg font-bold text-violet-800 dark:text-violet-200">${latestChangelog.title}</h3>
+              <p class="text-sm text-violet-600 dark:text-violet-400">📅 ${latestChangelog.date}</p>
+            </div>
+          </div>
+          <div class="space-y-3">
+            ${latestChangelog.items.map(item => `
+              <div class="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm">
+                <div class="flex items-start gap-3">
+                  <span class="text-violet-500 mt-1">🔹</span>
+                  <span class="text-gray-700 dark:text-gray-300">${item}</span>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- Dica -->
+        <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/20 p-6 rounded-xl border border-blue-200 dark:border-blue-700">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center shadow-md">
+              <span class="text-xl text-white">💡</span>
+            </div>
+            <div>
+              <h3 class="text-lg font-bold text-blue-800 dark:text-blue-200">Dica Importante</h3>
+              <p class="text-sm text-blue-600 dark:text-blue-400">Informações sobre esta atualização</p>
+            </div>
+          </div>
+          <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+            <p class="text-gray-700 dark:text-gray-300">
+              Esta versão inclui uma reorganização completa das abas com padrão compacto, melhorando significativamente a experiência mobile. 
+              Todas as 7 abas principais foram otimizadas para uma interface mais limpa e organizada.
+            </p>
+          </div>
+        </div>
+
+        <!-- Ações -->
+        <div class="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/20 p-6 rounded-xl border border-green-200 dark:border-green-700">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center shadow-md">
+              <span class="text-xl text-white">🎯</span>
+            </div>
+            <div>
+              <h3 class="text-lg font-bold text-green-800 dark:text-green-200">Próximos Passos</h3>
+              <p class="text-sm text-green-600 dark:text-green-400">Aproveite ao máximo as novas funcionalidades</p>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <button onclick="window.location.hash = '#/dashboard'" class="bg-blue-500 hover:bg-blue-600 text-white font-medium text-sm p-3 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2">
+              <span>📊</span>
+              <span>Ver Dashboard</span>
+            </button>
+            <button onclick="if(window.showWhatsNew) { /* Fechar modal */ }" class="bg-gray-500 hover:bg-gray-600 text-white font-medium text-sm p-3 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2">
+              <span>✅</span>
+              <span>Entendi</span>
+            </button>
+          </div>
         </div>
       </div>
     `;
@@ -678,7 +734,7 @@ window.showWhatsNew = async function () {
       console.log('[DEBUG] Abrindo modal com window.Modal...');
       try {
         const modal = window.Modal({ 
-          title: '🆕 O que mudou', 
+          title: '', // Removido para evitar redundância com o header interno
           content: html,
           onClose: () => console.log('[DEBUG] Modal "O que mudou" fechado')
         });
@@ -1476,30 +1532,111 @@ document.addEventListener('click', (ev) => {
       console.log('[DEBUG] Ajuda e Suporte clicado!');
       
       const helpContent = `
-        <div class="space-y-4">
-          <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-            <h3 class="font-semibold text-blue-800 dark:text-blue-200 mb-2">📞 Contato e Suporte</h3>
-            <ul class="text-sm text-blue-700 dark:text-blue-300 space-y-2">
-              <li><strong>Email:</strong> igormbispo@hotmail.com</li>
-              <li><strong>WhatsApp:</strong> (71) 99200-3106</li>
-              <li><strong>Horário:</strong> Segunda a Sexta, 9h às 18h</li>
-            </ul>
+        <div class="space-y-6">
+          <!-- Header do Modal -->
+          <div class="text-center pb-4 border-b border-gray-200 dark:border-gray-700">
+            <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <span class="text-3xl text-white">🆘</span>
+            </div>
+            <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-2">Central de Ajuda</h2>
+            <p class="text-gray-600 dark:text-gray-400">Estamos aqui para ajudar você!</p>
           </div>
-          <div class="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
-            <h4 class="font-semibold text-green-800 dark:text-green-200 mb-2">❓ Perguntas Frequentes</h4>
-            <ul class="text-sm text-green-700 dark:text-green-300 space-y-1">
-              <li>• Como sincronizar dados entre dispositivos?</li>
-              <li>• Como fazer backup das minhas informações?</li>
-              <li>• Como configurar notificações?</li>
-              <li>• Como usar o modo offline?</li>
-            </ul>
+
+          <!-- Contato Direto -->
+          <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/20 p-6 rounded-xl border border-blue-200 dark:border-blue-700">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center shadow-md">
+                <span class="text-xl text-white">📞</span>
+              </div>
+              <div>
+                <h3 class="text-lg font-bold text-blue-800 dark:text-blue-200">Contato Direto</h3>
+                <p class="text-sm text-blue-600 dark:text-blue-400">Fale conosco para suporte personalizado</p>
+              </div>
+            </div>
+            <div class="space-y-3">
+              <div class="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+                <span class="text-xl">📧</span>
+                <div>
+                  <div class="font-semibold text-gray-800 dark:text-gray-200">Email</div>
+                  <div class="text-blue-600 dark:text-blue-400">igormbispo@hotmail.com</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+                <span class="text-xl">📱</span>
+                <div>
+                  <div class="font-semibold text-gray-800 dark:text-gray-200">WhatsApp</div>
+                  <div class="text-green-600 dark:text-green-400">(71) 99200-3106</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+                <span class="text-xl">🕒</span>
+                <div>
+                  <div class="font-semibold text-gray-800 dark:text-gray-200">Horário de Atendimento</div>
+                  <div class="text-gray-600 dark:text-gray-400">Segunda a Sexta, 9h às 18h</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- FAQ -->
+          <div class="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/20 p-6 rounded-xl border border-green-200 dark:border-green-700">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center shadow-md">
+                <span class="text-xl text-white">❓</span>
+              </div>
+              <div>
+                <h3 class="text-lg font-bold text-green-800 dark:text-green-200">Perguntas Frequentes</h3>
+                <p class="text-sm text-green-600 dark:text-green-400">Respostas rápidas para dúvidas comuns</p>
+              </div>
+            </div>
+            <div class="space-y-3">
+              <div class="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm">
+                <div class="font-semibold text-gray-800 dark:text-gray-200 mb-1">💾 Como fazer backup dos dados?</div>
+                <div class="text-sm text-gray-600 dark:text-gray-400">Use "Exportar Dados" na seção Dados e Privacidade</div>
+              </div>
+              <div class="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm">
+                <div class="font-semibold text-gray-800 dark:text-gray-200 mb-1">🔄 Como sincronizar entre dispositivos?</div>
+                <div class="text-sm text-gray-600 dark:text-gray-400">Faça login com a mesma conta Google em todos os dispositivos</div>
+              </div>
+              <div class="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm">
+                <div class="font-semibold text-gray-800 dark:text-gray-200 mb-1">🔔 Como configurar notificações?</div>
+                <div class="text-sm text-gray-600 dark:text-gray-400">Acesse a seção Notificações nas configurações</div>
+              </div>
+              <div class="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm">
+                <div class="font-semibold text-gray-800 dark:text-gray-200 mb-1">📱 Como usar offline?</div>
+                <div class="text-sm text-gray-600 dark:text-gray-400">O app funciona offline automaticamente após o primeiro acesso</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Ações Rápidas -->
+          <div class="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/20 p-6 rounded-xl border border-purple-200 dark:border-purple-700">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center shadow-md">
+                <span class="text-xl text-white">⚡</span>
+              </div>
+              <div>
+                <h3 class="text-lg font-bold text-purple-800 dark:text-purple-200">Ações Rápidas</h3>
+                <p class="text-sm text-purple-600 dark:text-purple-400">Ferramentas úteis para resolver problemas</p>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <button onclick="window.location.reload()" class="bg-blue-500 hover:bg-blue-600 text-white font-medium text-sm p-3 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2">
+                <span>🔄</span>
+                <span>Recarregar App</span>
+              </button>
+              <button onclick="if(window.clearOfflineCache) window.clearOfflineCache()" class="bg-orange-500 hover:bg-orange-600 text-white font-medium text-sm p-3 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2">
+                <span>🗑️</span>
+                <span>Limpar Cache</span>
+              </button>
+            </div>
           </div>
         </div>
       `;
       
       if (window.Modal) {
         window.Modal({ 
-          title: '🆘 Ajuda e Suporte', 
+          title: '', // Removido para evitar redundância com o header interno
           content: helpContent 
         });
       } else {
