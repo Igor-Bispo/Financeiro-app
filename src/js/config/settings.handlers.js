@@ -730,22 +730,46 @@ window.showWhatsNew = async function () {
     console.log('[DEBUG] Verificando disponibilidade do Modal...');
     console.log('[DEBUG] window.Modal disponível:', !!window.Modal);
     
-    if (window.Modal && typeof window.Modal === 'function') {
-      console.log('[DEBUG] Abrindo modal com window.Modal...');
-      try {
-        const modal = window.Modal({ 
-          title: '', // Removido para evitar redundância com o header interno
-          content: html,
-          onClose: () => console.log('[DEBUG] Modal "O que mudou" fechado')
-        });
-        console.log('[DEBUG] Modal criado com sucesso:', modal);
-      } catch (error) {
-        console.error('[DEBUG] Erro ao criar modal:', error);
-        fallbackAlert();
-      }
-    } else {
-      console.log('[DEBUG] Modal não disponível, usando fallback...');
-      fallbackAlert();
+    // Criar modal diretamente no DOM (como fizemos com outros modais)
+    const modalHTML = `
+      <div id="whats-new-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+          ${html}
+          <!-- Botão de fechar -->
+          <div class="text-center p-6 border-t border-gray-200 dark:border-gray-700">
+            <button id="close-whats-new-modal" class="bg-gray-500 hover:bg-gray-600 text-white font-medium px-6 py-2 rounded-lg transition-all duration-200">
+              Fechar
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    // Remover modal existente se houver
+    const existingModal = document.getElementById('whats-new-modal');
+    if (existingModal) {
+      existingModal.remove();
+    }
+    
+    // Adicionar modal ao DOM
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    // Event listeners
+    const modal = document.getElementById('whats-new-modal');
+    const closeBtn = document.getElementById('close-whats-new-modal');
+    
+    function closeModal() {
+      if (modal) modal.remove();
+    }
+    
+    if (closeBtn) {
+      closeBtn.addEventListener('click', closeModal);
+    }
+    
+    if (modal) {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+      });
     }
     
   } catch (error) {
@@ -1634,13 +1658,46 @@ document.addEventListener('click', (ev) => {
         </div>
       `;
       
-      if (window.Modal) {
-        window.Modal({ 
-          title: '', // Removido para evitar redundância com o header interno
-          content: helpContent 
+      // Criar modal diretamente no DOM (como fizemos com o modal de atualizações)
+      const modalHTML = `
+        <div id="help-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+            ${helpContent}
+            <!-- Botão de fechar -->
+            <div class="text-center p-6 border-t border-gray-200 dark:border-gray-700">
+              <button id="close-help-modal" class="bg-gray-500 hover:bg-gray-600 text-white font-medium px-6 py-2 rounded-lg transition-all duration-200">
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      // Remover modal existente se houver
+      const existingModal = document.getElementById('help-modal');
+      if (existingModal) {
+        existingModal.remove();
+      }
+      
+      // Adicionar modal ao DOM
+      document.body.insertAdjacentHTML('beforeend', modalHTML);
+      
+      // Event listeners
+      const modal = document.getElementById('help-modal');
+      const closeBtn = document.getElementById('close-help-modal');
+      
+      function closeModal() {
+        if (modal) modal.remove();
+      }
+      
+      if (closeBtn) {
+        closeBtn.addEventListener('click', closeModal);
+      }
+      
+      if (modal) {
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) closeModal();
         });
-      } else {
-        alert('Suporte:\n\nEmail: igormbispo@hotmail.com\nWhatsApp: (71) 99200-3106\nHorário: Segunda a Sexta, 9h às 18h');
       }
       
       return;
