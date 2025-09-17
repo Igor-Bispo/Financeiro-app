@@ -1757,7 +1757,7 @@ ${events.slice(0, 10).map(e =>
       ev.stopPropagation();
       
       // Adicionar delay para permitir ver os logs
-      console.log('[DEBUG] Aguardando 3 segundos para permitir visualização dos logs...');
+      console.log('[DEBUG] Aguardando 10 segundos para permitir visualização dos logs...');
       setTimeout(async () => {
         console.log('[DEBUG] Iniciando processamento após delay...');
         
@@ -1946,7 +1946,7 @@ ${events.slice(0, 10).map(e =>
       }
       
         })(); // Fechar função async
-        }, 3000); // Fechar setTimeout
+        }, 10000); // Fechar setTimeout
       return;
     }
     
