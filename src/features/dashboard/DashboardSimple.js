@@ -211,9 +211,7 @@ export function renderDashboard(container) {
   html += '          </div>';
   html += '        </div>';
   html += '        <!-- Seletor de período integrado -->';
-  html += '        <div class="bg-white dark:bg-gray-800 rounded-xl px-4 py-2 shadow-sm border border-gray-200 dark:border-gray-600">';
-  html += '          <div id="dash-period-indicator"></div>';
-  html += '        </div>';
+  html += '        <div id="dash-period-indicator"></div>';
   html += '      </div>';
   html += '    </div>';
   html += '  </div>';
