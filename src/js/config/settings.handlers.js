@@ -1755,7 +1755,7 @@ document.addEventListener('click', (ev) => {
       return;
     }
     
-    if (t.textContent?.includes('Ajuda e Suporte') || (t.textContent?.includes('Suporte') && t.id === 'help-support-btn')) {
+    if (t.id === 'help-support-btn' || t.closest('#help-support-btn')) {
       console.log('[DEBUG] Ajuda e Suporte clicado!');
       
       const helpContent = `
