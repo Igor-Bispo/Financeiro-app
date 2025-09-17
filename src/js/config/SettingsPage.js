@@ -103,8 +103,8 @@ function postRenderSetup() {
         }
 
         // Conectar botões da seção Sobre o App às funções globais
+        // NOTA: check-updates-btn é tratado pelo settings.handlers.js
         const btnMap = [
-            { id: 'check-updates-btn', fn: window.checkForUpdates },
             { id: 'help-support-btn', fn: window.openHelp },
             { id: 'rate-app-btn', fn: window.rateApp },
             { id: 'copy-info-btn', fn: window.copyAppInfo },
