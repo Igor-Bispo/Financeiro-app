@@ -919,16 +919,15 @@ document.addEventListener('click', (ev) => {
                          t.id === 'save-days-chunk' ||
                          t.id === 'reset-days-chunk' ||
                          t.id === 'check-updates-btn' ||
+                         t.closest('#check-updates-btn') ||
                          t.id === 'help-support-btn' ||
+                         t.closest('#help-support-btn') ||
                          t.id === 'toggle-theme-btn' ||
                          t.classList?.contains('theme-toggle-btn') ||
                          t.id === 'enter-budget-button' ||
                          t.id === 'enter-text' ||
                          t.classList?.contains('color-theme-btn') ||
                          t.classList?.contains('compact-size-btn') ||
-                         t.textContent?.includes('Verificar Atualizações') ||
-                         t.textContent?.includes('Ajuda e Suporte') ||
-                         t.textContent?.includes('Avaliar App') ||
                          t.textContent?.includes('Copiar Informações') ||
                          t.textContent?.includes('Limpar Cache Offline') ||
                          t.textContent?.includes('O que mudou') ||
@@ -2151,7 +2150,7 @@ ${events.slice(0, 10).map(e =>
     }
     
     // TESTE DIRETO: Handler para botão de verificar atualizações
-    if (t.id === 'check-updates-btn' || (t.textContent && t.textContent.includes('Atualizações')) || t.closest('#check-updates-btn')) {
+    if (t.id === 'check-updates-btn' || t.closest('#check-updates-btn')) {
       console.log('🚀 [TESTE DIRETO] Botão de atualizações detectado!');
       console.log('🔍 [DEBUG] Elemento clicado:', t);
       console.log('🔍 [DEBUG] ID do elemento:', t.id);
