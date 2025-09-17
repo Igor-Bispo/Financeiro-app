@@ -501,8 +501,16 @@ export function renderDashboard(container) {
     // Completar com top gastos (evitando duplicatas)
     for (var j = 0; j < categoriasComGasto.length && categoriasUnificadas.length < 6; j++) {
       if (!idsJaAdicionados.has(categoriasComGasto[j].id)) {
-        categoriasUnificadas.push(categoriasComGasto[j]);
-        idsJaAdicionados.add(categoriasComGasto[j].id);
+        var catGasto = categoriasComGasto[j];
+        // Verificar se esta categoria tem limite (pode ter sido perdida na primeira filtragem)
+        var temLimiteReal = (catGasto.limite || 0) > 0;
+        if (temLimiteReal) {
+          var limite = Number(catGasto.limite || 0);
+          var porcent = limite > 0 ? (catGasto.gasto / limite) * 100 : 0;
+          catGasto = { ...catGasto, porcentagem: porcent, temLimite: true };
+        }
+        categoriasUnificadas.push(catGasto);
+        idsJaAdicionados.add(catGasto.id);
       }
     }
 
