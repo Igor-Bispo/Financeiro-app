@@ -1756,6 +1756,11 @@ ${events.slice(0, 10).map(e =>
       ev.preventDefault();
       ev.stopPropagation();
       
+      // Verificar se Modal está disponível
+      console.log('[DEBUG] Verificando disponibilidade do Modal...');
+      console.log('[DEBUG] window.Modal disponível:', !!window.Modal);
+      console.log('[DEBUG] typeof window.Modal:', typeof window.Modal);
+      
       // Criar modal personalizado para escolha
       const modalContent = `
         <div class="space-y-4">
@@ -1799,46 +1804,74 @@ ${events.slice(0, 10).map(e =>
         </div>
       `;
       
-      // Criar modal
-      if (window.Modal && typeof window.Modal === 'function') {
-        const modal = window.Modal({
-          title: '🔄 Verificar Atualizações',
-          content: modalContent,
-          onClose: () => console.log('[DEBUG] Modal de atualização fechado')
-        });
-        
-        // Adicionar event listeners aos botões
-        setTimeout(() => {
-          const normalBtn = document.getElementById('normal-update-btn');
-          const hardBtn = document.getElementById('hard-refresh-btn');
-          const cancelBtn = document.getElementById('cancel-update-btn');
+      // Tentar criar modal
+      try {
+        if (window.Modal && typeof window.Modal === 'function') {
+          console.log('[DEBUG] Criando modal com window.Modal...');
+          const modal = window.Modal({
+            title: '🔄 Verificar Atualizações',
+            content: modalContent,
+            onClose: () => console.log('[DEBUG] Modal de atualização fechado')
+          });
           
-          if (normalBtn) {
-            normalBtn.addEventListener('click', () => {
-              console.log('[DEBUG] Verificação normal escolhida');
-              modal.close();
-              executeNormalUpdate();
-            });
-          }
+          console.log('[DEBUG] Modal criado:', modal);
           
-          if (hardBtn) {
-            hardBtn.addEventListener('click', () => {
-              console.log('[DEBUG] Hard refresh escolhido');
-              modal.close();
-              executeHardRefresh();
+          // Adicionar event listeners aos botões
+          setTimeout(() => {
+            console.log('[DEBUG] Adicionando event listeners...');
+            const normalBtn = document.getElementById('normal-update-btn');
+            const hardBtn = document.getElementById('hard-refresh-btn');
+            const cancelBtn = document.getElementById('cancel-update-btn');
+            
+            console.log('[DEBUG] Botões encontrados:', {
+              normal: !!normalBtn,
+              hard: !!hardBtn,
+              cancel: !!cancelBtn
             });
-          }
+            
+            if (normalBtn) {
+              normalBtn.addEventListener('click', () => {
+                console.log('[DEBUG] Verificação normal escolhida');
+                modal.close();
+                executeNormalUpdate();
+              });
+            }
+            
+            if (hardBtn) {
+              hardBtn.addEventListener('click', () => {
+                console.log('[DEBUG] Hard refresh escolhido');
+                modal.close();
+                executeHardRefresh();
+              });
+            }
+            
+            if (cancelBtn) {
+              cancelBtn.addEventListener('click', () => {
+                console.log('[DEBUG] Atualização cancelada');
+                modal.close();
+              });
+            }
+          }, 200);
           
-          if (cancelBtn) {
-            cancelBtn.addEventListener('click', () => {
-              console.log('[DEBUG] Atualização cancelada');
-              modal.close();
-            });
+        } else {
+          console.log('[DEBUG] Modal não disponível, usando fallback...');
+          // Fallback para confirm se modal não estiver disponível
+          const choice = confirm(
+            '🔄 Escolha o tipo de atualização:\n\n' +
+            '• OK = Verificação normal (recomendado)\n' +
+            '• Cancelar = Hard refresh completo (limpa cache e dados)\n\n' +
+            'Hard refresh é útil quando há problemas persistentes.'
+          );
+          
+          if (choice) {
+            executeNormalUpdate();
+          } else {
+            executeHardRefresh();
           }
-        }, 100);
-        
-      } else {
-        // Fallback para confirm se modal não estiver disponível
+        }
+      } catch (error) {
+        console.error('[DEBUG] Erro ao criar modal:', error);
+        // Fallback em caso de erro
         const choice = confirm(
           '🔄 Escolha o tipo de atualização:\n\n' +
           '• OK = Verificação normal (recomendado)\n' +
