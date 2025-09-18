@@ -359,23 +359,21 @@ export function renderDashboard(container) {
     html += '              </div>';
   }
   
-  // Resumo Compacto
-  html += '              <div class="grid grid-cols-2 gap-2 text-xs">';
-  html += '                <div class="flex justify-between">';
-  html += '                  <span class="text-gray-600 dark:text-gray-400">📈 Receitas:</span>';
-  html += '                  <span class="font-medium text-green-600 dark:text-green-400">R$ ' + formatBR(receitas) + '</span>';
-  html += '                </div>';
-  html += '                <div class="flex justify-between">';
-  html += '                  <span class="text-gray-600 dark:text-gray-400">📉 Despesas:</span>';
-  html += '                  <span class="font-medium text-red-600 dark:text-red-400">R$ ' + formatBR(despesas) + '</span>';
-  html += '                </div>';
-  html += '              </div>';
   
   // Progresso do Orçamento (só se houver orçamento)
   if (orcado > 0) {
+    const saldoOrcamento = orcado - despesas;
     html += '              <div class="flex justify-between text-xs mb-1">';
-    html += '                <span class="text-gray-600 dark:text-gray-400">📊 Orçamento:</span>';
-    html += '                <span class="font-medium ' + (progressoOrcado > 0.7 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400') + '">' + (progressoOrcado*100).toFixed(1) + '% usado</span>';
+    html += '                <span class="text-gray-600 dark:text-gray-400">📊 Orçamento Total:</span>';
+    html += '                <span class="font-medium text-blue-600 dark:text-blue-400">R$ ' + formatBR(orcado) + '</span>';
+    html += '              </div>';
+    html += '              <div class="flex justify-between text-xs mb-1">';
+    html += '                <span class="text-gray-600 dark:text-gray-400">📊 Usado:</span>';
+    html += '                <span class="font-medium ' + (progressoOrcado > 0.7 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400') + '">' + (progressoOrcado*100).toFixed(1) + '%</span>';
+    html += '              </div>';
+    html += '              <div class="flex justify-between text-xs mb-1">';
+    html += '                <span class="text-gray-600 dark:text-gray-400">💰 Saldo Restante:</span>';
+    html += '                <span class="font-medium ' + (saldoOrcamento >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400') + '">R$ ' + formatBR(Math.abs(saldoOrcamento)) + '</span>';
     html += '              </div>';
     html += '              <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 mb-2">';
     html += '                <div class="h-1.5 rounded-full ' + (progressoOrcado > 0.7 ? 'bg-red-500' : 'bg-green-500') + '" style="width: ' + Math.min(progressoOrcado * 100, 100) + '%"></div>';
@@ -393,7 +391,7 @@ export function renderDashboard(container) {
   // Insights Inteligentes (só se houver orçamento)
   if (orcado > 0) {
     html += '              <div class="border-t border-gray-200 dark:border-gray-600 pt-2 mt-2">';
-    html += '                <div class="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">💡 Análise do Orçamento:</div>';
+    html += '                <div class="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">💡 Análise e Recomendações:</div>';
     
     // Cobertura das receitas
     if (analiseOrcamento.coberturaOrcamento >= 100) {
@@ -432,10 +430,6 @@ export function renderDashboard(container) {
       html += '                  <div class="text-red-600 dark:text-red-400">• Controle gastos ou aumente receitas</div>';
     }
     
-    // Análise inteligente das metas (com saldos restantes)
-    html += '                  <div class="text-gray-600 dark:text-gray-400">• Saldo restante orçamento: R$ ' + formatBR(saldoRestanteOrcamento) + '</div>';
-    html += '                  <div class="text-gray-600 dark:text-gray-400">• Saldo restante receitas: R$ ' + formatBR(saldoRestanteReceitas) + '</div>';
-    html += '                  <div class="text-gray-600 dark:text-gray-400">• Saldo conservador (80%): R$ ' + formatBR(saldoRestanteConservador) + '</div>';
     
     if (analiseMetas.orcamentoMaiorQueReceitas) {
       html += '                  <div class="text-orange-600 dark:text-orange-400">• Meta orçamento é R$ ' + formatBR(analiseMetas.diferencaOrcamentoVsReceitas) + '/dia maior que receitas</div>';
