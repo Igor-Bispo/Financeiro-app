@@ -595,12 +595,12 @@ export async function renderNotifications(force = false) {
                   Ferramentas de Desenvolvimento
                 </summary>
                 <div class="mt-3 grid grid-cols-2 md:grid-cols-3 gap-2">
-                  <button onclick="window.__sendTestToOwner && window.__sendTestToOwner()" class="u-btn u-btn--outline mobile-btn text-xs">📣 Teste Dono</button>
-                  <button onclick="window.__sendTestToShared && window.__sendTestToShared()" class="u-btn u-btn--outline mobile-btn text-xs">📣 Teste Compartilhados</button>
-                  <button onclick="window.__testNotificationModal && window.__testNotificationModal()" class="u-btn u-btn--outline mobile-btn text-xs">📱 Testar Modal</button>
-                  <button onclick="window.debugNotificationSystem && window.debugNotificationSystem()" class="u-btn u-btn--outline mobile-btn text-xs">🔍 Debug Sistema</button>
-                  <button onclick="window.debugSharedNotificationTest && window.debugSharedNotificationTest()" class="u-btn u-btn--outline mobile-btn text-xs">🧪 Debug Compartilhados</button>
-                  <button onclick="window.debugCheckOtherUserNotifications && window.debugCheckOtherUserNotifications()" class="u-btn u-btn--outline mobile-btn text-xs">👥 Ver Outros</button>
+                  <button onclick="window.__sendTestToOwner && window.__sendTestToOwner()" class="btn btn-outline btn-sm">📣 Teste Dono</button>
+                  <button onclick="window.__sendTestToShared && window.__sendTestToShared()" class="btn btn-outline btn-sm">📣 Teste Compartilhados</button>
+                  <button onclick="window.__testNotificationModal && window.__testNotificationModal()" class="btn btn-outline btn-sm">📱 Testar Modal</button>
+                  <button onclick="window.debugNotificationSystem && window.debugNotificationSystem()" class="btn btn-outline btn-sm">🔍 Debug Sistema</button>
+                  <button onclick="window.debugSharedNotificationTest && window.debugSharedNotificationTest()" class="btn btn-outline btn-sm">🧪 Debug Compartilhados</button>
+                  <button onclick="window.debugCheckOtherUserNotifications && window.debugCheckOtherUserNotifications()" class="btn btn-outline btn-sm">👥 Ver Outros</button>
                 </div>
               </details>
 

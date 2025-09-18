@@ -30,6 +30,22 @@
   outline-offset: 2px;
 }
 
+/* Melhorias de acessibilidade */
+.btn:focus {
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: 2px;
+}
+
+.btn[aria-pressed="true"] {
+  background-color: var(--color-primary-600);
+  border-color: var(--color-primary-600);
+}
+
+.btn[aria-expanded="true"] {
+  background-color: var(--color-primary-100);
+  border-color: var(--color-primary-300);
+}
+
 .btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;

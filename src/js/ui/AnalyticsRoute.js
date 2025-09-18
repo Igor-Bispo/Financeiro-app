@@ -303,7 +303,7 @@ async function renderErrorPage(error, timestamp) {
   appContent.innerHTML = `
     <div class="tab-container">
       <div class="tab-header">
-        <h2 class="tab-title-highlight">📊 Análises</h2>
+        <h1 class="text-2xl font-semibold text-gray-900 leading-tight">📊 Análises</h1>
         <div id="analytics-period-indicator"></div>
       </div>
       <div class="tab-content">

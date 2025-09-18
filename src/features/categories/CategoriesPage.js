@@ -545,7 +545,7 @@ ${categorias.length === 0 ? `
     if (wrap && totalCategorias === 0) {
       const empty = document.createElement('div');
       empty.className = 'empty-state mt-2';
-      empty.innerHTML = '<div class="empty-icon">📁</div><div class="empty-text">Nenhuma categoria cadastrada</div><div class="mt-2"><button class="u-btn u-btn--primary mobile-btn w-full" onclick="window.showAddCategoryModal && window.showAddCategoryModal()">Criar categoria</button></div>';
+      empty.innerHTML = '<div class="empty-icon">📁</div><div class="empty-text">Nenhuma categoria cadastrada</div><div class="mt-2"><button class="btn btn-primary w-full" onclick="window.showAddCategoryModal && window.showAddCategoryModal()">Criar categoria</button></div>';
       wrap.appendChild(empty);
     }
   } catch {}
@@ -1031,15 +1031,15 @@ export function renderAllCategories() {
 }
       
       <div class="flex flex-wrap justify-end gap-1 sm:gap-2 mt-4">
-        <button onclick="editCategory('${cat.id}')" class="u-btn u-btn--outline mobile-btn">
+        <button onclick="editCategory('${cat.id}')" class="btn btn-outline btn-sm">
           <span class="icon-standard">✏️</span>
           <span class="hidden sm:inline">Editar</span>
         </button>
-  <button onclick="window.deleteCategoryWithConfirmation('${cat.id}', '${cat.nome}')" class="u-btn u-btn--danger mobile-btn">
+  <button onclick="window.deleteCategoryWithConfirmation('${cat.id}', '${cat.nome}')" class="btn btn-danger btn-sm">
           <span class="icon-standard">🗑️</span>
           <span class="hidden sm:inline">Excluir</span>
         </button>
-  <button onclick="showCategoryHistory('${cat.id}')" class="u-btn u-btn--outline mobile-btn">
+  <button onclick="showCategoryHistory('${cat.id}')" class="btn btn-outline btn-sm">
           <span class="icon-standard">📊</span>
           <span class="hidden sm:inline">Histórico</span>
         </button>
@@ -1070,15 +1070,15 @@ export function renderFilteredCategories(filteredCategories) {
       ${cat.limite ? `<p class="text-xs text-gray-500 dark:text-gray-400">Limite: R$ ${cat.limite.toFixed(2)}</p>` : '<p class="text-xs text-gray-500 dark:text-gray-400">Sem limite definido</p>'}
       
       <div class="flex flex-wrap justify-end gap-1 sm:gap-2 mt-4">
-        <button onclick="editCategory('${cat.id}')" class="u-btn u-btn--outline mobile-btn">
+        <button onclick="editCategory('${cat.id}')" class="btn btn-outline btn-sm">
           <span class="icon-standard">✏️</span>
           <span class="hidden sm:inline">Editar</span>
         </button>
-  <button onclick="window.deleteCategoryWithConfirmation('${cat.id}', '${cat.nome}')" class="u-btn u-btn--danger mobile-btn">
+  <button onclick="window.deleteCategoryWithConfirmation('${cat.id}', '${cat.nome}')" class="btn btn-danger btn-sm">
           <span class="icon-standard">🗑️</span>
           <span class="hidden sm:inline">Excluir</span>
         </button>
-  <button onclick="showCategoryHistory('${cat.id}')" class="u-btn u-btn--outline mobile-btn">
+  <button onclick="showCategoryHistory('${cat.id}')" class="btn btn-outline btn-sm">
           <span class="icon-standard">📊</span>
           <span class="hidden sm:inline">Histórico</span>
         </button>

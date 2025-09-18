@@ -1410,7 +1410,7 @@ async function router(path) {
             content.innerHTML = `
                 <div class="tab-container">
                   <div class="tab-header">
-                    <h2 class="tab-title-highlight">ðŸ"¨ Ani¡lises</h2>
+                    <h1 class="text-2xl font-semibold text-gray-900 leading-tight">📊 Análises</h1>
                   </div>
                   <div class="tab-content">
                     <div class="content-spacing">
@@ -1466,7 +1466,7 @@ async function router(path) {
         content.innerHTML = `
             <div class="tab-container">
               <div class="tab-header">
-                <h2 class="tab-title-highlight">Notificacoes</h2>
+                <h1 class="text-2xl font-semibold text-gray-900 leading-tight">📧 Notificações</h1>
               </div>
               <div class="tab-content">
                 <div class="content-spacing">
@@ -2619,7 +2619,7 @@ async function renderNotifications() {
   content.innerHTML = `
     <div class="tab-container">
       <div class="tab-header">
-  <h2 class="tab-title-highlight">ðŸ"" Notificacoes</h2>
+  <h1 class="text-2xl font-semibold text-gray-900 leading-tight">📧 Notificações</h1>
   
       </div>
       <div class="tab-content">

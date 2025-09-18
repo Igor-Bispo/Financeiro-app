@@ -351,7 +351,7 @@ export function renderRecorrentes() {
   content.innerHTML = `
     <div class="tab-container">
       <div class="tab-header">
-  <h2 class="tab-title-highlight">🔄 Recorrentes</h2>
+  <h1 class="text-2xl font-semibold text-gray-900 leading-tight">♻️ Recorrentes</h1>
   <div id="rec-period-indicator"></div>
       </div>
       <div class="tab-content">
