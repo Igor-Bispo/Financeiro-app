@@ -465,9 +465,9 @@ small, .text-muted { color: var(--text-secondary); }
     max-width: 100% !important;
     width: 100% !important;
     margin: 0 !important;
-    /* Padding lateral mínimo para aproveitamento máximo */
-    padding-left: 2px !important;
-    padding-right: 2px !important;
+    /* Padding lateral adequado para enquadramento */
+    padding-left: 8px !important;
+    padding-right: 8px !important;
     /* Padding vertical para organização */
     padding-top: 8px !important;
     padding-bottom: 8px !important;
@@ -484,9 +484,9 @@ small, .text-muted { color: var(--text-secondary); }
     width: 100% !important;
     margin-left: 0 !important;
     margin-right: 0 !important;
-    /* Padding balanceado - lateral mínimo, vertical confortável */
-    padding-left: 6px !important;
-    padding-right: 6px !important;
+    /* Padding balanceado - lateral adequado, vertical confortável */
+    padding-left: 8px !important;
+    padding-right: 8px !important;
     padding-top: 12px !important;
     padding-bottom: 12px !important;
     box-sizing: border-box !important;
@@ -496,6 +496,40 @@ small, .text-muted { color: var(--text-secondary); }
   .tab-header {
     padding: 12px 16px !important;
     margin-bottom: 20px !important;
+    overflow: hidden;
+  }
+  
+  .tab-header .flex {
+    min-width: 0;
+    flex-shrink: 1;
+  }
+  
+  /* Garantir que os ícones dos headers mantenham o tamanho correto */
+  .tab-header .w-8 {
+    width: 2rem !important;
+    min-width: 2rem !important;
+    flex-shrink: 0 !important;
+  }
+  
+  .tab-header .h-8 {
+    height: 2rem !important;
+    min-height: 2rem !important;
+  }
+  
+  .tab-header .text-sm {
+    font-size: 0.875rem !important;
+  }
+  
+  /* Ícones dos headers com gradiente - tamanho fixo */
+  .tab-header .bg-gradient-to-br {
+    width: 2rem !important;
+    height: 2rem !important;
+    min-width: 2rem !important;
+    min-height: 2rem !important;
+    flex-shrink: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
   }
 
   .tab-title-highlight {
@@ -662,7 +696,7 @@ small, .text-muted { color: var(--text-secondary); }
   .content-area,
   .tab-container,
   .settings-container {
-    padding: 2px !important;
+    padding: 8px !important;
   }
   
   /* Cards ainda menores para maximizar conteúdo */
@@ -971,11 +1005,7 @@ h3 { font-size: 1rem; }
   transition: background-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
 }
 .u-btn:disabled { opacity: .6; cursor: not-allowed; }
-.u-btn--primary { background: var(--primary-color); color: var(--text-white); box-shadow: 0 6px 16px rgba(var(--primary-color-rgb), .25); }
-.u-btn--primary:hover { filter: brightness(1.05); }
-.u-btn--outline { background: transparent; color: var(--primary-color); border: 2px solid var(--primary-color); }
-.u-btn--ghost { background: transparent; color: var(--text-primary); }
-.u-btn--danger { background: var(--danger-color); color: var(--text-white); }
+/* Classes antigas removidas - usar btn classes do modern-components.css */
 
 /* Inputs/Select padronizados (opt-in) */
 .u-input, .u-select, .u-textarea { 
@@ -6083,54 +6113,50 @@ textarea {
 }
 
 /* Typography alignment with DS in Settings */
-/* Settings typography: unify body text; only titles are larger */
-.settings-container,
-.settings-container .content-section,
-.settings-container p,
-.settings-container li,
-.settings-container label,
-.settings-container small,
-.settings-container button,
-.settings-container input,
-.settings-container select,
-.settings-container textarea,
-.settings-container .content-section .setting-label,
-.settings-container .content-section .setting-description,
-.settings-container .content-section .about-label,
-.settings-container .content-section .about-value,
-.settings-container .content-section .app-button,
-.settings-container .content-section .privacy-button,
-.settings-container .content-section .user-email,
-.settings-container .content-section .invitation-email,
-.settings-container .content-section .budget-name,
-.settings-container .content-section .detail-label,
-.settings-container .content-section .detail-value,
-.settings-container .content-section .budget-item-name,
-.settings-container .content-section .budget-item-date,
-.settings-container .content-section .empty-text {
-  font-size: var(--font-size-base) !important;
+/* Settings typography: use standard Tailwind classes for consistency */
+.settings-container {
   font-family: var(--font-family);
 }
-
-/* Normalize Tailwind text size utilities inside Settings to base (except titles) */
-.settings-container .text-xs,
-.settings-container .text-sm,
-.settings-container .text-base { font-size: var(--font-size-base) !important; }
-.settings-container .u-btn,
-.settings-container .u-input,
-.settings-container .u-textarea,
-.settings-container .u-select { font-size: var(--font-size-base) !important; }
 /* Keep section/card titles intentionally larger */
 .settings-container .section-title,
 .settings-container h3 { font-size: var(--font-size-lg) !important; }
+
+/* === ÍCONES DOS HEADERS - TAMANHO CORRETO === */
+/* Garantir que os ícones dos headers mantenham o tamanho correto em todas as resoluções */
+.tab-header .w-8,
+.tab-header .h-8 {
+  width: 2rem !important;
+  height: 2rem !important;
+  min-width: 2rem !important;
+  min-height: 2rem !important;
+  flex-shrink: 0 !important;
+}
+
+.tab-header .bg-gradient-to-br {
+  width: 2rem !important;
+  height: 2rem !important;
+  min-width: 2rem !important;
+  min-height: 2rem !important;
+  flex-shrink: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.tab-header .text-sm {
+  font-size: 0.875rem !important;
+}
 
 /* === PERIOD INDICATOR - DESIGN CLEAN E MODERNO === */
 .period-indicator {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   background: transparent;
   border-radius: 12px;
+  flex-shrink: 1;
+  min-width: 0;
+  max-width: 100%;
   padding: 0;
   border: none;
   box-shadow: none;
@@ -6164,40 +6190,48 @@ textarea {
   margin-left: 1rem;
 }
 
+/* Layout específico para aba de notificações */
+#notif-period-indicator {
+  margin-left: 3rem;
+}
+
 .period-indicator__btn {
-  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-  color: white;
-  border: none;
-  border-radius: 6px;
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+  padding: 0;
+  background-color: transparent;
+  border: 1px solid var(--color-primary-600);
+  color: var(--color-primary-600);
+  border-radius: var(--border-radius-md);
   cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 14px;
-  font-weight: 500;
-  box-shadow: 0 1px 3px rgba(59, 130, 246, 0.2);
+  transition: all var(--transition-fast);
+  box-shadow: none;
+  pointer-events: auto;
+  position: relative;
+  z-index: 10;
 }
 
 .period-indicator__btn:hover {
-  background: linear-gradient(135deg, #2563eb, #1e40af);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
-}
-
-.period-indicator__btn:active {
-  transform: translateY(0);
-  box-shadow: 0 1px 3px rgba(59, 130, 246, 0.2);
+  background-color: var(--color-primary-50) !important;
+  color: var(--color-primary-700) !important;
+  border-color: var(--color-primary-700) !important;
+  box-shadow: var(--shadow-sm) !important;
 }
 
 .period-indicator__current {
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-width: 70px;
-  padding: 0 6px;
+  min-width: 60px;
+  max-width: 80px;
+  padding: 0 4px;
+  flex-shrink: 1;
+  overflow: hidden;
 }
 
 .period-indicator__month {
@@ -6221,49 +6255,72 @@ textarea {
   font-weight: 500;
 }
 
-/* Dark mode para PeriodIndicator */
-.dark .period-indicator__btn {
-  background: linear-gradient(135deg, #4f46e5, #3730a3);
-  box-shadow: 0 1px 3px rgba(79, 70, 229, 0.2);
-}
+/* Dark mode styles removidos - usando classes padronizadas btn-outline */
 
-.dark .period-indicator__btn:hover {
-  background: linear-gradient(135deg, #4338ca, #312e81);
-  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.3);
-}
-
-.dark .period-indicator__month {
-  color: #9ca3af;
-}
-
-.dark .period-indicator__year {
-  color: #f9fafb;
-}
+/* Botão de análises avançadas agora usa as classes padronizadas automaticamente */
 
 /* Responsividade para mobile */
 @media (max-width: 768px) {
   .period-indicator {
-    gap: 4px;
+    gap: 2px;
+    flex-shrink: 1;
+    min-width: 0;
   }
   
   .period-indicator__btn {
-    width: 24px;
-    height: 24px;
-    font-size: 12px;
-    border-radius: 4px;
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+    flex-shrink: 0;
   }
   
   .period-indicator__current {
-    min-width: 60px;
-    padding: 0 4px;
+    min-width: 50px;
+    max-width: 60px;
+    padding: 0 2px;
+    flex-shrink: 1;
+    overflow: hidden;
   }
   
   .period-indicator__month {
-    font-size: 10px;
+    font-size: 9px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   
   .period-indicator__year {
-    font-size: 12px;
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  /* Layout específico para aba de notificações em mobile */
+  #notif-period-indicator {
+    margin-left: 3rem !important;
+  }
+  
+  /* Forçar espaçamento adicional no seletor de período */
+  #notif-period-indicator .period-indicator {
+    margin-left: 0.5rem !important;
+  }
+  
+  /* Regra super específica para forçar espaçamento */
+  .tab-container .tab-header #notif-period-indicator {
+    margin-left: 3rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Layout específico para aba de notificações em telas muito pequenas */
+  #notif-period-indicator {
+    margin-left: 2.5rem !important;
+  }
+  
+  /* Regra super específica para forçar espaçamento em telas pequenas */
+  .tab-container .tab-header #notif-period-indicator {
+    margin-left: 2.5rem !important;
   }
 }
 

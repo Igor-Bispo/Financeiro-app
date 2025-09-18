@@ -148,9 +148,9 @@ function saveFiltersState() {
     window.__notifFilters = notifFilters;
     
     const filtersToSave = {
-      types: Array.isArray(notifFilters.types) ? notifFilters.types : [],
-      period: notifFilters.period || 'all',
-      unreadOnly: !!notifFilters.unreadOnly,
+        types: Array.isArray(notifFilters.types) ? notifFilters.types : [],
+        period: notifFilters.period || 'all',
+        unreadOnly: !!notifFilters.unreadOnly,
     };
     
     localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(filtersToSave));
@@ -244,7 +244,7 @@ function clearOldNotificationsWithToast(daysOverride) {
 
 function openNotificationTarget(id, type) {
   // Sempre redirecionar para o dashboard após hard reset
-  window.location.hash = '#/dashboard';
+    window.location.hash = '#/dashboard';
 }
 function showConfirmationModal(cfg) {
   const ok = confirm(cfg?.message || 'Confirmar?');
@@ -288,7 +288,7 @@ export async function renderNotifications(force = false) {
     }, 100);
     return;
   }
-  
+
   isRendering = true;
   console.log('[NotificationsPage] 🚀 Iniciando renderização...');
   
@@ -417,7 +417,7 @@ export async function renderNotifications(force = false) {
                 <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">📬 Inbox</h2>
               </div>
         <div class="u-card bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden p-4">
-                  <div class="empty-state">
+                <div class="empty-state">
                   <div class="empty-icon">✅</div>
                   <div class="empty-text">🎉 Todas as notificações foram lidas!</div>
                   <div class="empty-description">Você está em dia com suas notificações. Não há nada novo para ver.</div>
@@ -443,14 +443,14 @@ export async function renderNotifications(force = false) {
                   <span class="text-white text-sm">🔔</span>
                 </div>
                 <div>
-                  <h1 class="text-2xl font-semibold text-gray-900 leading-tight flex items-center gap-2">📧 Notificações ${unreadBadge}</h1>
+                  <h2 class="text-gray-800 dark:text-white font-semibold text-base">Notificações ${unreadBadge}</h2>
                   <div class="flex items-center gap-1">
                     <span class="text-orange-600 dark:text-orange-400 text-xs">${unreadCount > 0 ? `${unreadCount} não lidas` : 'Todas lidas'}</span>
                   </div>
                 </div>
               </div>
             </div>
-            <div id="notif-period-indicator"></div>
+        <div id="notif-period-indicator"></div>
           </div>
         </div>
       </div>
@@ -545,7 +545,7 @@ export async function renderNotifications(force = false) {
                     Gerenciar Notificações
                   </h3>
                   <p class="text-sm text-gray-600 dark:text-gray-400">Ações rápidas e filtros</p>
-                </div>
+                  </div>
                 <div class="text-right">
                   <div class="text-lg font-bold text-blue-600 dark:text-blue-400">${totalNotificacoes}</div>
                   <p class="text-xs text-gray-500 dark:text-gray-400">Total</p>
@@ -553,7 +553,7 @@ export async function renderNotifications(force = false) {
               </div>
               
               <!-- Ações Principais -->
-              <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
                 <button onclick="window.showConfirmationModal({ title: 'Marcar como Lidas', message: 'Deseja marcar todas as notificações como lidas?', confirmText: 'Sim, Marcar', confirmColor: 'bg-blue-500 hover:bg-blue-600', onConfirmFn: 'markAllNotificationsAsRead' })" class="btn btn-primary btn-sm">✅ Marcar lidas</button>
                 <button onclick="window.showConfirmationModal({ title: 'Arquivar notificações lidas', message: 'Deseja arquivar todas as notificações lidas? Você poderá restaurá-las depois.', confirmText: 'Sim, Arquivar', confirmColor: 'bg-indigo-500 hover:bg-indigo-600', onConfirmFn: 'archiveAllReadNotifications' })" class="btn btn-outline btn-sm">🗃️ Arquivar</button>
                 <button onclick="window.showConfirmationModal({ title: 'Apagar notificações lidas', message: 'Deseja apagar todas as notificações lidas? Esta ação não pode ser desfeita.', confirmText: 'Sim, Apagar', confirmColor: 'bg-red-500 hover:bg-red-600', onConfirmFn: 'deleteAllReadNotifications' })" class="btn btn-danger btn-sm">🗑️ Apagar</button>
@@ -575,12 +575,12 @@ export async function renderNotifications(force = false) {
                     <span class="text-xs text-gray-600 dark:text-gray-400 mr-1">Período:</span>
                     ${periodButtonsHtml}
                   </div>
-                  <div class="flex items-center justify-between">
+                  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <label class="inline-flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400" title="Atalho: U">
                       <input type="checkbox" ${filters.unreadOnly ? 'checked' : ''} onchange="window.toggleUnreadOnly && window.toggleUnreadOnly()" />
                       Apenas não lidas
                     </label>
-                    <div class="flex gap-2">
+                    <div class="flex gap-2 flex-wrap">
                       <button onclick="window.resetNotificationFilters && window.resetNotificationFilters()" class="btn btn-ghost btn-sm">♻️ Reset</button>
                       <button onclick="window.loadUnreadNotifications && window.loadUnreadNotifications()" class="btn btn-primary btn-sm">📬 Não lidas</button>
                     </div>

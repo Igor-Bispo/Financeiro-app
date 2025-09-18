@@ -125,8 +125,8 @@ export function RecorrenteForm({ onSubmit, initialData = {} }) {
       <label for="rec-efetivar" class="checkbox-label">Criar transação para este mês automaticamente</label>
     </div>
     <div class="flex justify-end space-x-3 pt-4">
-  <button type="button" onclick="(window.closeModal ? window.closeModal() : (document.getElementById('app-modal')?.remove()))" class="u-btn u-btn--ghost">Cancelar</button>
-  <button type="submit" class="u-btn u-btn--primary">Salvar</button>
+  <button type="button" onclick="(window.closeModal ? window.closeModal() : (document.getElementById('app-modal')?.remove()))" class="btn btn-ghost btn-sm">Cancelar</button>
+  <button type="submit" class="btn btn-primary btn-sm">Salvar</button>
     </div>
   `;
 

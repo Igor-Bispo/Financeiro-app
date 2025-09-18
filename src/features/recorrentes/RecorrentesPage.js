@@ -17,7 +17,7 @@ export async function render(container) {
   content.className = 'recorrentes-content';
   content.innerHTML = `
     <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-6">
-      <div class="flex justify-between items-center mb-6">
+      <div class="flex justify-between items-center mb-6 gap-4">
         <h3 class="text-lg font-bold text-gray-900 dark:text-white">🔁 Gerenciar Recorrentes</h3>
   <button onclick="window.showAddRecorrenteModal && window.showAddRecorrenteModal()" class="btn btn-primary btn-sm">
           ➕ Nova Recorrente
@@ -115,7 +115,7 @@ export async function renderRecorrentes() {
       <div class="tab-container ${compactClass}">
         <div class="tab-header">
           <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-600">
-            <div class="flex items-center justify-between w-full">
+            <div class="flex items-center justify-between w-full gap-4">
               <div class="flex items-center gap-3">
                 <div class="flex items-center gap-2">
                   <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
@@ -144,7 +144,7 @@ export async function renderRecorrentes() {
               
               <div class="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 rounded-2xl shadow-lg border border-blue-200 dark:border-gray-600 p-4 mb-6">
                 <!-- Header Compacto -->
-                <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center justify-between mb-4 gap-4">
                   <div>
                     <h3 class="text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
                       <span class="text-xl">♻️</span>
@@ -296,7 +296,7 @@ export async function renderRecorrentes() {
         const aplicado = st?.foiEfetivadaEsteMes ? '<span class=\"text-xs text-green-600 ml-2\">aplicada</span>' : '';
         const valorNum = Number(it.valor ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
         return `
-          <div class=\"p-3 rounded border border-gray-200 dark:border-gray-700 flex justify-between items-center mb-2\">
+          <div class=\"p-3 rounded border border-gray-200 dark:border-gray-700 flex justify-between items-center mb-2 gap-4\">
             <div class=\"truncate\">
               <div class=\"font-medium ${ativo ? '' : 'line-through opacity-70'}\">${nome}${badge}${aplicado}</div>
               <div class=\"text-sm text-gray-500\">R$ ${valorNum}</div>

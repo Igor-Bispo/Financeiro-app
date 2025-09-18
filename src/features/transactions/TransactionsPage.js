@@ -134,7 +134,7 @@ export async function render(container) {
   content.className = 'transactions-content';
   content.innerHTML = `
   <div class="u-card bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-6">
-      <div class="flex justify-between items-center mb-6">
+      <div class="flex justify-between items-center mb-6 gap-4">
         <h3 class="text-lg font-bold text-gray-900 dark:text-white">📋 Lista de Transações</h3>
   <button onclick="window.showAddTransactionModal()" class="btn btn-primary btn-sm">
           ➕ Nova Transação
@@ -239,7 +239,7 @@ export function renderTransactions() {
     <div class="tab-container">
       <div class="tab-header">
         <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-600">
-          <div class="flex items-center justify-between w-full">
+          <div class="flex items-center justify-between w-full gap-4">
             <div class="flex items-center gap-3">
               <div class="flex items-center gap-2">
                 <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
@@ -270,7 +270,7 @@ export function renderTransactions() {
             
             <div class="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 rounded-2xl shadow-lg border border-blue-200 dark:border-gray-600 p-4 mb-6">
               <!-- Header Compacto -->
-              <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center justify-between mb-4 gap-4">
                 <div>
                   <h3 class="text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
                     <span class="text-xl">💸</span>
@@ -663,7 +663,7 @@ export function renderAllTransactions() {
     return `
   <div id="month-${mesAno}" class="u-card bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden mb-6" data-mes="${mesAno}" data-loaded="0">
         <div class="bg-gradient-to-r from-green-50 to-teal-50 dark:from-gray-800 dark:to-gray-800 p-4 border-b border-gray-200 dark:border-gray-700">
-          <div class="flex justify-between items-center">
+          <div class="flex justify-between items-center gap-4">
             <div>
               <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">${nomeMes} ${ano}</h3>
               <p class="text-sm text-gray-500 dark:text-gray-400">${transacoesMes.length} transações</p>
@@ -883,7 +883,7 @@ export function renderDayGroupsVirtualized(mesAno, transacoesMes, ano, mes) {
     } catch {}
     const moreBtn = hasMore ? `
     <div class="mt-3 flex justify-center">
-  <button id="more-days-${mesAno}" class="u-btn u-btn--outline mobile-btn" onclick="window.loadMoreDayGroups && window.loadMoreDayGroups('${mesAno}')">Carregar mais dias</button>
+  <button id="more-days-${mesAno}" class="btn btn-outline btn-sm" onclick="window.loadMoreDayGroups && window.loadMoreDayGroups('${mesAno}')">Carregar mais dias</button>
       </div>
     ` : '';
     // Sentinel para infinite scroll (sempre presente; o observer decide quando carregar)
@@ -1192,11 +1192,11 @@ export function renderFilteredTransactions(filteredTransactions) {
             ${isReceita ? '+' : '-'}R$ ${parseFloat(t.valor).toFixed(2)}
           </span>
           <div class="flex gap-1">
-            <button onclick="window.editTransaction('${t.id}')" class="u-btn u-btn--outline mobile-btn" title="Editar transação">
-              <span class="icon-standard">✏️</span>
+            <button onclick="window.editTransaction('${t.id}')" class="btn btn-outline btn-sm" title="Editar transação">
+              ✏️
             </button>
-            <button onclick="window.deleteTransactionWithConfirmation('${t.id}', '${t.descricao.replace(/'/g, "\\'")}')" class="u-btn u-btn--danger mobile-btn" title="Excluir transação">
-              <span class="icon-standard">🗑️</span>
+            <button onclick="window.deleteTransactionWithConfirmation('${t.id}', '${t.descricao.replace(/'/g, "\\'")}')" class="btn btn-danger btn-sm" title="Excluir transação">
+              🗑️
             </button>
           </div>
         </div>

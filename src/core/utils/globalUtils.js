@@ -360,13 +360,7 @@ export const globalFunctions = {
     }
   },
 
-  showAddCategoryModal: (data) => {
-    eventBus.emit('modal:show', {
-      type: 'category',
-      data,
-      title: 'Nova Categoria'
-    });
-  },
+  // showAddCategoryModal será definido dinamicamente quando necessário
 
   showAddRecorrenteModal: (data) => {
     eventBus.emit('modal:show', {

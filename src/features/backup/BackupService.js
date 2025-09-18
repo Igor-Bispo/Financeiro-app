@@ -446,19 +446,19 @@ export function showExportOptions() {
       title: '📤 Opções de Exportação',
       content: `
         <div class="space-y-4">
-          <button onclick="window.downloadBackup && window.downloadBackup()" class="w-full u-btn u-btn--primary">
+          <button onclick="window.downloadBackup && window.downloadBackup()" class="w-full btn btn-primary btn-sm">
             <span class="icon-standard">💾</span>
             Backup JSON Completo
           </button>
-          <button onclick="window.exportToExcel && window.exportToExcel()" class="w-full u-btn u-btn--outline">
+          <button onclick="window.exportToExcel && window.exportToExcel()" class="w-full btn btn-outline btn-sm">
             <span class="icon-standard">📊</span>
             Exportar para Excel
           </button>
-          <button onclick="window.exportToPDF && window.exportToPDF()" class="w-full u-btn u-btn--outline">
+          <button onclick="window.exportToPDF && window.exportToPDF()" class="w-full btn btn-outline btn-sm">
             <span class="icon-standard">📄</span>
             Exportar para PDF
           </button>
-          <button onclick="window.exportReadmePDF && window.exportReadmePDF()" class="w-full u-btn u-btn--outline">
+          <button onclick="window.exportReadmePDF && window.exportReadmePDF()" class="w-full btn btn-outline btn-sm">
             <span class="icon-standard">📖</span>
             Guia de Uso (PDF)
           </button>

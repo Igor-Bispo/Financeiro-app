@@ -139,11 +139,11 @@ export function renderNotificationCard(notification) {
             confirmText: 'Sim, Marcar',
             confirmColor: 'bg-blue-500 hover:bg-blue-600',
             onConfirm: () => window.markNotificationAsRead && window.markNotificationAsRead('${notification.id}')
-          })" class="flex-1 u-btn u-btn--primary text-sm flex items-center justify-center gap-2">✅ Marcar como lida</button>
+          })" class="flex-1 btn btn-primary btn-sm flex items-center justify-center gap-2">✅ Marcar como lida</button>
           ` : ''}
-          <button onclick="window.__pinNotification && window.__pinNotification('${notification.id}', ${!notification.pinned})" class="flex-1 u-btn ${notification.pinned ? 'u-btn--danger' : 'u-btn--outline'} text-sm flex items-center justify-center gap-2">${notification.pinned ? '📌 Desfixar' : '📍 Fixar'}</button>
-          <button onclick="window.__archiveNotification && window.__archiveNotification('${notification.id}', ${!notification.archivedAt})" class="flex-1 u-btn u-btn--outline text-sm flex items-center justify-center gap-2">${notification.archivedAt ? '📂 Restaurar' : '🗃️ Arquivar'}</button>
-          <button onclick="window.openNotificationTarget && window.openNotificationTarget('${notification.id}','${notification.type || ''}')" class="flex-1 u-btn u-btn--outline text-sm flex items-center justify-center gap-2">🔗 Ver no app</button>
+          <button onclick="window.__pinNotification && window.__pinNotification('${notification.id}', ${!notification.pinned})" class="flex-1 btn ${notification.pinned ? 'btn-danger' : 'btn-outline'} btn-sm flex items-center justify-center gap-2">${notification.pinned ? '📌 Desfixar' : '📍 Fixar'}</button>
+          <button onclick="window.__archiveNotification && window.__archiveNotification('${notification.id}', ${!notification.archivedAt})" class="flex-1 btn btn-outline btn-sm flex items-center justify-center gap-2">${notification.archivedAt ? '📂 Restaurar' : '🗃️ Arquivar'}</button>
+          <button onclick="window.openNotificationTarget && window.openNotificationTarget('${notification.id}','${notification.type || ''}')" class="flex-1 btn btn-outline btn-sm flex items-center justify-center gap-2">🔗 Ver no app</button>
         </div>
       </div>
     </div>

@@ -282,13 +282,14 @@ export class AnalyticsPage {
         <div class="tab-container">
           <div class="tab-header">
             <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-600">
-              <div class="flex items-center justify-between w-full">
+              <div class="flex items-center justify-between w-full gap-4">
                 <div class="flex items-center gap-3">
                   <div class="flex items-center gap-2">
                     <div class="w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg flex items-center justify-center">
                       <span class="text-white text-sm">📊</span>
                     </div>
                     <div>
+                      <h1 class="text-2xl font-semibold text-gray-900 leading-tight">Análises</h1>
                       <div class="flex items-center gap-1">
                         <span class="text-purple-600 dark:text-purple-400 text-xs">Inteligente</span>
                       </div>
@@ -307,19 +308,7 @@ export class AnalyticsPage {
         </div>
       `;
 
-      // Indicador interativo de período removido aqui; mostrar rótulo no resumo abaixo.
-      // Inserir botão de alternância para análises avançadas
-      try {
-        const header = container.querySelector('.tab-header');
-        if (header) {
-          const toggleBtn = document.createElement('button');
-          toggleBtn.id = 'analytics-advanced-toggle';
-          toggleBtn.className = 'btn btn-outline btn-sm';
-          toggleBtn.style.marginLeft = 'auto';
-          toggleBtn.textContent = 'Mostrar análises avançadas';
-          header.appendChild(toggleBtn);
-        }
-      } catch {}
+      // Botão de análises avançadas será adicionado mais abaixo, não no topo
 
       // Caso não haja dados ainda, renderizar um empty state e retornar
       if (noData) {
@@ -351,7 +340,7 @@ export class AnalyticsPage {
         
         <div class="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 rounded-2xl shadow-lg border border-blue-200 dark:border-gray-600 p-4 mb-6">
           <!-- Header Compacto -->
-          <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center justify-between mb-4 gap-4">
             <div>
               <h3 class="text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
                 <span class="text-xl">📊</span>
@@ -425,6 +414,14 @@ export class AnalyticsPage {
       `;
       const sectionsRoot = container.querySelector('#analytics-sections') || container;
       sectionsRoot.appendChild(resumoSection);
+      
+      // Adicionar botão de análises avançadas após o resumo
+      const toggleBtn = document.createElement('button');
+      toggleBtn.id = 'analytics-advanced-toggle';
+      toggleBtn.className = 'btn btn-outline btn-sm w-full mt-4';
+      toggleBtn.textContent = 'Mostrar análises avançadas';
+      sectionsRoot.appendChild(toggleBtn);
+      
       // Criar container para análises avançadas (gráficos, previsões, detalhado)
       const advancedRoot = document.createElement('div');
       advancedRoot.id = 'analytics-advanced';
@@ -566,7 +563,7 @@ export class AnalyticsPage {
         
         <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div class="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-gray-800 dark:to-gray-800 p-4 border-b border-gray-200 dark:border-gray-700">
-            <div class="flex justify-between items-center">
+            <div class="flex justify-between items-center gap-4">
               <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">📅 Previsão para os Próximos Meses</h3>
               <div class="text-xs text-gray-500 dark:text-gray-400 bg-purple-100 dark:bg-purple-900 px-2 py-1 rounded-full">
                 IA Predict
@@ -688,7 +685,7 @@ export class AnalyticsPage {
               <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                 ${alertas.slice(0,6).map(a => `
                   <div class="p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800">
-                    <div class="flex items-center justify-between">
+                    <div class="flex items-center justify-between gap-4">
                       <div class="flex items-center gap-3">
                         <div class="w-3 h-3 rounded-full" style="background-color:${a.cor}"></div>
                         <div>

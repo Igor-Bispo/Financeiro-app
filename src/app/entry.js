@@ -108,8 +108,8 @@ if (false && import.meta.env && import.meta.env.PROD && 'serviceWorker' in navig
           bar.innerHTML = `
             <span style="font-size: 0.9rem;">Nova versão disponível</span>
             <div style="display:flex; gap:8px;">
-              <button id="update-apply-btn" class="u-btn u-btn--primary" style="padding:6px 10px;">Atualizar</button>
-              <button id="update-settings-btn" class="u-btn u-btn--outline" style="padding:6px 10px;">Detalhes</button>
+              <button id="update-apply-btn" class="btn btn-primary btn-sm" style="padding:6px 10px;">Atualizar</button>
+              <button id="update-settings-btn" class="btn btn-outline btn-sm" style="padding:6px 10px;">Detalhes</button>
             </div>
           `;
           document.body.appendChild(bar);

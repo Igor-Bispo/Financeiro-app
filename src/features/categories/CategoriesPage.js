@@ -22,10 +22,40 @@ export async function render(container) {
   const root = document.createElement('div');
   root.className = 'categories-page';
 
+  // Garantir que showAddCategoryModal esteja disponível
+  if (!window.showAddCategoryModal) {
+    try {
+      const { default: showAddCategoryModal } = await import('@js/showAddCategoryModal.js');
+      window.showAddCategoryModal = showAddCategoryModal;
+      console.log('✅ showAddCategoryModal carregado dinamicamente');
+    } catch (error) {
+      console.error('❌ Falha ao carregar showAddCategoryModal:', error);
+    }
+  }
+
   // Header com indicador de período
   const header = document.createElement('div');
   header.className = 'tab-header mb-6';
-  header.innerHTML = '<h1 class="text-2xl font-semibold text-gray-900 leading-tight">📂 Categorias</h1><div id="cat-period-indicator"></div>';
+  header.innerHTML = `
+    <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-600">
+      <div class="flex items-center justify-between w-full gap-4">
+        <div class="flex items-center gap-3">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-lg flex items-center justify-center">
+              <span class="text-white text-sm">📂</span>
+            </div>
+            <div>
+              <h1 class="text-2xl font-semibold text-gray-900 leading-tight">📂 Categorias</h1>
+              <div class="flex items-center gap-1">
+                <span class="text-cyan-600 dark:text-cyan-400 text-xs">Organize seus gastos</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="cat-period-indicator"></div>
+      </div>
+    </div>
+  `;
 
   // O indicador de período será injetado na renderização principal (cat-period-indicator)
 
@@ -36,7 +66,7 @@ export async function render(container) {
   content.className = 'categories-content';
   content.innerHTML = `
     <div class="u-card bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-6">
-      <div class="flex justify-between items-center mb-6">
+      <div class="flex justify-between items-center mb-6 gap-4">
         <h3 class="text-lg font-bold text-gray-900 dark:text-white">📁 Gerenciar Categorias</h3>
   <button onclick="window.showAddCategoryModal()" class="btn btn-primary btn-sm">
           ➕ Nova Categoria
@@ -64,19 +94,61 @@ export async function render(container) {
   } catch {}
 
   // Garantir indicador após render
-  try { mountPeriodIndicator('#cat-period-indicator'); } catch {}
+  try { 
+    console.log('🔧 Montando indicador de período em categorias');
+    mountPeriodIndicator('#cat-period-indicator'); 
+  } catch (error) {
+    console.error('❌ Erro ao montar indicador:', error);
+  }
 
   root.appendChild(content);
 
   // Limpar container e adicionar novo conteúdo
   if (container) {
+    console.log('🔍 ANTES da limpeza - verificando indicador...');
+    const periodIndicator = container.querySelector('#cat-period-indicator');
+    console.log('🔍 Indicador encontrado antes da limpeza:', periodIndicator);
+    
     container.innerHTML = '';
     container.appendChild(root);
+    
+    console.log('🔍 APÓS limpeza - verificando estrutura...');
+    const header = container.querySelector('.tab-header');
+    console.log('🔍 Header encontrado:', header);
+    
+    if (header) {
+      const headerContent = header.querySelector('.bg-white');
+      console.log('🔍 Header content encontrado:', headerContent);
+      
+      if (headerContent) {
+        const rightSide = headerContent.querySelector('.flex.items-center.justify-between');
+        console.log('🔍 Right side encontrado:', rightSide);
+        
+        if (rightSide && periodIndicator) {
+          console.log('🔍 Re-adicionando indicador...');
+          rightSide.appendChild(periodIndicator);
+          console.log('✅ Indicador re-adicionado com sucesso');
+        } else if (!periodIndicator) {
+          console.log('⚠️ Indicador não existe, será criado posteriormente');
+        } else {
+          console.error('❌ Right side não encontrado');
+        }
+      } else {
+        console.error('❌ Header content não encontrado');
+      }
+    } else {
+      console.error('❌ Header não encontrado');
+    }
   }
 
   // Carregar categorias reais
   await loadCategories();
-  try { mountPeriodIndicator('#cat-period-indicator'); } catch {}
+  try { 
+    console.log('🔧 Re-montando indicador após loadCategories');
+    mountPeriodIndicator('#cat-period-indicator'); 
+  } catch (error) {
+    console.error('❌ Erro ao re-montar indicador:', error);
+  }
 }
 
 async function loadCategories() {
@@ -89,8 +161,220 @@ async function loadCategories() {
   }
 }
 
+// Função para atualizar apenas os dados das categorias sem re-renderizar o header
+async function updateCategoriesData() {
+  console.log('🔄 updateCategoriesData - Atualizando dados sem re-renderizar header');
+  
+  try {
+    // Garantir dados necessários disponíveis
+    await loadTransactions();
+    await loadRecorrentes();
+    
+    // Calcular gastos por categoria no mês selecionado
+    const { year: anoAtual, month: mesAtual } = getSelectedPeriod();
+    console.log('📅 Período selecionado para atualização:', { anoAtual, mesAtual });
+
+    // Recalcular e atualizar os dados das categorias
+    await updateCategoriesContent(anoAtual, mesAtual);
+    
+    console.log('✅ Dados das categorias atualizados sem re-renderizar header');
+    
+  } catch (error) {
+    console.error('❌ Erro ao atualizar dados das categorias:', error);
+  }
+}
+
+// Função auxiliar para calcular dias restantes no mês
+function calcularDiasRestantesNoMes(ano, mes) {
+  const ultimoDiaDoMes = new Date(ano, mes, 0).getDate(); // Último dia do mês
+  const diaAtual = new Date().getDate();
+  return Math.max(1, ultimoDiaDoMes - diaAtual + 1);
+}
+
+// Função auxiliar para calcular gastos de categoria corretamente
+function calcularGastosCategoria(cat, anoAtual, mesAtual) {
+  // Filtrar transações da categoria no mês atual
+  const transacoesCategoria = window.appState.transactions.filter(t => {
+    // Tratar Firestore Timestamp
+    let transacaoData;
+    if (t.createdAt && typeof t.createdAt === 'object' && t.createdAt.seconds) {
+      transacaoData = new Date(t.createdAt.seconds * 1000);
+    } else {
+      transacaoData = new Date(t.createdAt);
+    }
+
+    const transacaoAno = transacaoData.getFullYear();
+    const transacaoMes = transacaoData.getMonth() + 1;
+
+    return (
+      t.categoriaId === cat.id &&
+      t.tipo === cat.tipo &&
+      transacaoAno === anoAtual &&
+      transacaoMes === mesAtual
+    );
+  });
+
+  // Separar transações diretas das transações geradas por recorrentes
+  const transacoesDiretas = transacoesCategoria.filter(t => !t.recorrenteId);
+  const transacoesRecorrentes = transacoesCategoria.filter(t => t.recorrenteId);
+
+  // Calcular totais
+  const totalGastoTransacoes = transacoesDiretas.reduce((sum, t) => sum + parseFloat(t.valor), 0);
+  const totalGastoRecorrentes = transacoesRecorrentes.reduce((sum, t) => sum + parseFloat(t.valor), 0);
+  const totalGasto = totalGastoTransacoes + totalGastoRecorrentes;
+
+  return {
+    totalGasto,
+    totalGastoTransacoes,
+    totalGastoRecorrentes,
+    transacoesCategoria: transacoesDiretas,
+    recorrentesAplicadas: transacoesRecorrentes
+  };
+}
+
+// Função para atualizar o conteúdo das categorias com os dados do novo período
+async function updateCategoriesContent(anoAtual, mesAtual) {
+  console.log('🔄 updateCategoriesContent - Recalculando dados para período:', { anoAtual, mesAtual });
+  
+  try {
+    // Obter categorias do orçamento atual
+    const currentBudgetId = window.appState?.currentBudget?.id;
+    const budgets = window.appState?.budgets || [];
+    const isMultiBudget = Array.isArray(budgets) && budgets.length > 1;
+    const categorias = (window.appState.categories || []).filter(cat => !currentBudgetId || cat.budgetId === currentBudgetId || (!isMultiBudget && !cat.budgetId));
+    
+    // Debug: Log das categorias disponíveis
+    console.log('🔍 DEBUG Categorias disponíveis:', categorias.map(c => ({ nome: c.nome, limite: c.limite })));
+
+    // Recalcular gastos por categoria no mês selecionado
+    const categoriasComGastos = categorias
+      .map(cat => {
+        // Usar função auxiliar para calcular gastos corretamente
+        const gastos = calcularGastosCategoria(cat, anoAtual, mesAtual);
+        const { totalGasto, totalGastoTransacoes, totalGastoRecorrentes, transacoesCategoria, recorrentesAplicadas } = gastos;
+
+      
+      // Debug: Log dos cálculos para esta categoria
+      if (cat.nome === 'igor300' || cat.nome === 'salario') {
+        console.log('🔍 DEBUG Categoria:', {
+          nome: cat.nome,
+          transacoesCategoria: transacoesCategoria.length,
+          totalGastoTransacoes,
+          totalGastoRecorrentes,
+          totalGasto,
+          limite: cat.limite,
+          saldo: limite - totalGasto,
+          transacoesDetalhes: transacoesCategoria.map(t => ({ valor: t.valor, descricao: t.descricao }))
+        });
+      }
+
+        const limite = Number(cat.limite) || 0;
+        const saldo = limite - totalGasto;
+        const porcentagem = limite > 0 ? Math.min((totalGasto / limite) * 100, 100) : 0;
+
+        // Determinar cor da barra baseada na porcentagem
+        let corBarra = 'bg-green-500';
+        if (porcentagem >= 90) {
+          corBarra = 'bg-red-500';
+        } else if (porcentagem >= 75) {
+          corBarra = 'bg-yellow-500';
+        } else if (porcentagem >= 50) {
+          corBarra = 'bg-orange-500';
+        }
+
+        return {
+          ...cat,
+          totalGasto,
+          totalGastoTransacoes,
+          totalGastoRecorrentes,
+          limite,
+          saldo,
+          porcentagem,
+          corBarra
+        };
+      })
+      .sort((a, b) => b.totalGasto - a.totalGasto); // Ordenar por gasto (maior para menor)
+
+    // Atualizar elementos na tela com os novos dados
+    updateCategoryCards(categoriasComGastos, anoAtual, mesAtual);
+    updateCategoryStatistics(categoriasComGastos, anoAtual, mesAtual);
+    
+    console.log('✅ Conteúdo das categorias atualizado com sucesso');
+    
+  } catch (error) {
+    console.error('❌ Erro ao atualizar conteúdo das categorias:', error);
+  }
+}
+
+// Função para atualizar os cards das categorias
+function updateCategoryCards(categoriasComGastos, anoAtual, mesAtual) {
+  console.log('🔄 Atualizando cards das categorias...');
+  
+  // Atualizar cada card de categoria
+  categoriasComGastos.forEach(cat => {
+    const cardElement = document.querySelector(`[data-category-id="${cat.id}"]`);
+    if (cardElement) {
+      // Atualizar valores no card
+      const valorElement = cardElement.querySelector('.category-value');
+      const porcentagemElement = cardElement.querySelector('.category-percentage');
+      const barraElement = cardElement.querySelector('.category-progress-bar');
+      
+      if (valorElement) {
+        valorElement.textContent = `R$ ${cat.totalGasto.toFixed(2)}`;
+      }
+      
+      if (porcentagemElement) {
+        porcentagemElement.textContent = `${cat.porcentagem.toFixed(1)}%`;
+      }
+      
+      if (barraElement) {
+        barraElement.style.width = `${cat.porcentagem}%`;
+        barraElement.className = `category-progress-bar ${cat.corBarra}`;
+      }
+      
+      // Atualizar período no cabeçalho
+      const periodoElement = cardElement.querySelector('.text-sm.text-gray-500');
+      if (periodoElement) {
+        const isReceita = cat.tipo === 'receita';
+        periodoElement.textContent = `${isReceita ? 'Receita' : 'Despesa'} • ${String(mesAtual).padStart(2,'0')}/${anoAtual}`;
+      }
+      
+      // Atualizar meta diária se existir
+      const metaDiariaElement = cardElement.querySelector('.text-blue-600');
+      if (metaDiariaElement && cat.limite > 0 && cat.saldo > 0) {
+        // Calcular dias restantes no mês corretamente
+        const diasRestantes = calcularDiasRestantesNoMes(anoAtual, mesAtual);
+        metaDiariaElement.textContent = `💡 Meta diária: R$ ${(cat.saldo / diasRestantes).toFixed(2)}/dia`;
+      }
+    }
+  });
+}
+
+// Função para atualizar estatísticas das categorias
+function updateCategoryStatistics(categoriasComGastos, anoAtual, mesAtual) {
+  console.log('📊 Atualizando estatísticas para período:', { anoAtual, mesAtual });
+  
+  // Calcular categorias em alerta
+  const categoriasEmAlerta = categoriasComGastos.filter(cat => cat.limite > 0 && cat.totalGasto > cat.limite).length;
+  
+  // Atualizar contador de alertas
+  const alertElement = document.querySelector('.categories-alert-count');
+  if (alertElement) {
+    alertElement.textContent = categoriasEmAlerta;
+    alertElement.className = `categories-alert-count ${categoriasEmAlerta > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`;
+  }
+  
+  // Atualizar texto do período
+  const periodElements = document.querySelectorAll('[data-period-text]');
+  periodElements.forEach(el => {
+    el.textContent = `${String(mesAtual).padStart(2,'0')}/${anoAtual}`;
+  });
+}
+
 // Função para renderizar categorias (movida do app.js)
 export async function renderCategories() {
+  console.log('🚀 renderCategories chamada - INÍCIO');
+  console.log('📅 Período atual:', getSelectedPeriod());
   // Suprimir rajadas de chamadas muito próximas
   try {
     const now = Date.now();
@@ -117,6 +401,7 @@ export async function renderCategories() {
 
   // Calcular gastos por categoria no mês selecionado
   const { year: anoAtual, month: mesAtual } = getSelectedPeriod();
+  console.log('📅 Período selecionado para categorias:', { anoAtual, mesAtual });
 
   const categoriasComGastos = window.appState.categories
     .map(cat => {
@@ -173,11 +458,25 @@ export async function renderCategories() {
         }
       });
 
-      // Total geral (transações + recorrentes)
+      // Total geral (transações diretas + transações de recorrentes)
       const totalGasto = totalGastoTransacoes + totalGastoRecorrentes;
-
+      
       // Calcular limite (se existir)
       const limite = cat.limite ? parseFloat(cat.limite) : 0;
+
+      // Debug: Log dos cálculos para esta categoria
+      if (cat.nome === 'igor300' || cat.nome === 'salario') {
+        console.log('🔍 DEBUG Categoria:', {
+          nome: cat.nome,
+          transacoesCategoria: transacoesCategoria.length,
+          totalGastoTransacoes,
+          totalGastoRecorrentes,
+          totalGasto,
+          limite: cat.limite,
+          saldo: limite - totalGasto,
+          transacoesDetalhes: transacoesCategoria.map(t => ({ valor: t.valor, descricao: t.descricao }))
+        });
+      }
 
       // Calcular saldo (para receitas: quanto falta para atingir o limite)
       const saldo =
@@ -239,7 +538,7 @@ export async function renderCategories() {
     <div class="tab-container">
       <div class="tab-header">
         <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-600">
-          <div class="flex items-center justify-between w-full">
+          <div class="flex items-center justify-between w-full gap-4">
             <div class="flex items-center gap-3">
               <div class="flex items-center gap-2">
                 <div class="w-8 h-8 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-lg flex items-center justify-center">
@@ -270,16 +569,16 @@ export async function renderCategories() {
             
             <div class="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 rounded-2xl shadow-lg border border-blue-200 dark:border-gray-600 p-4 mb-6">
               <!-- Header Compacto -->
-              <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center justify-between mb-4 gap-4">
                 <div>
                   <h3 class="text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
                     <span class="text-xl">📊</span>
                     Controle de Categorias
                   </h3>
-                  <p class="text-sm text-gray-600 dark:text-gray-400">${totalCategorias} categorias • ${String(selMonth).padStart(2,'0')}/${selYear}</p>
+                  <p class="text-sm text-gray-600 dark:text-gray-400">${totalCategorias} categorias • <span data-period-text>${String(selMonth).padStart(2,'0')}/${selYear}</span></p>
                 </div>
                 <div class="text-right">
-                  <div class="text-lg font-bold ${categoriasEmAlerta > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}">
+                  <div class="text-lg font-bold categories-alert-count ${categoriasEmAlerta > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}">
                     ${categoriasEmAlerta}
                   </div>
                   <p class="text-xs text-gray-500 dark:text-gray-400">${categoriasEmAlerta > 0 ? 'Alertas' : 'OK'}</p>
@@ -438,7 +737,7 @@ ${categorias.length === 0 ? `
     const excedeuLimite = temLimite && cat.totalGasto > cat.limite;
 
     return `
-                    <div class="u-card bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-2xl transition-all duration-300 group ${excedeuLimite ? 'ring-2 ring-red-200 dark:ring-red-800' : ''}">
+                    <div class="u-card bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-2xl transition-all duration-300 group ${excedeuLimite ? 'ring-2 ring-red-200 dark:ring-red-800' : ''}" data-category-id="${cat.id}">
                       <!-- Header da Categoria -->
                       <div class="bg-gradient-to-r ${isReceita ? 'from-green-50 to-emerald-50 dark:from-gray-800 dark:to-gray-800' : 'from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-800'} p-4 border-b border-gray-200 dark:border-gray-700">
                         <div class="flex items-center justify-between">
@@ -448,7 +747,7 @@ ${categorias.length === 0 ? `
                     </div>
                             <div>
                               <h3 class="font-bold text-gray-900 dark:text-gray-100 truncate">${cat.nome}</h3>
-                              <p class="text-sm text-gray-500 dark:text-gray-400">${isReceita ? 'Receita' : 'Despesa'}</p>
+                              <p class="text-sm text-gray-500 dark:text-gray-400">${isReceita ? 'Receita' : 'Despesa'} • ${String(mesAtual).padStart(2,'0')}/${anoAtual}</p>
                             </div>
                           </div>
                           ${excedeuLimite ? '<div class="text-2xl">🚨</div>' : temLimite && cat.porcentagem >= 90 ? '<div class="text-2xl">⚠️</div>' : ''}
@@ -461,12 +760,12 @@ ${categorias.length === 0 ? `
                           <div class="mb-4">
                             <div class="flex justify-between items-center mb-2">
                               <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Limite: R$ ${cat.limite.toFixed(2)}</span>
-                              <span class="text-sm font-medium ${excedeuLimite ? 'text-red-600 dark:text-red-400' : cat.porcentagem >= 90 ? 'text-yellow-600 dark:text-yellow-400' : 'text-green-600 dark:text-green-400'}">
+                              <span class="text-sm font-medium category-percentage ${excedeuLimite ? 'text-red-600 dark:text-red-400' : cat.porcentagem >= 90 ? 'text-yellow-600 dark:text-yellow-400' : 'text-green-600 dark:text-green-400'}">
                                 ${cat.porcentagem.toFixed(1)}%
                               </span>
                             </div>
                             <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                              <div class="h-2 rounded-full ${cat.corBarra} transition-all duration-300" style="width: ${cat.porcentagem}%"></div>
+                              <div class="h-2 rounded-full category-progress-bar ${cat.corBarra} transition-all duration-300" style="width: ${cat.porcentagem}%"></div>
                             </div>
                             <div class="flex justify-between items-center mt-2 text-xs text-gray-600 dark:text-gray-400">
                               <span>R$ 0</span>
@@ -475,29 +774,41 @@ ${categorias.length === 0 ? `
                           </div>
                           
                           <div class="space-y-2 mb-4">
-                            <div class="flex justify-between items-center">
-                              <span class="text-gray-600 dark:text-gray-400">${cat.tipo === 'receita' ? 'Receita' : 'Gasto'} do mês:</span>
-                              <span class="font-medium ${cat.tipo === 'receita' ? 'text-green-600' : 'text-gray-900 dark:text-gray-100'}">R$ ${cat.totalGasto.toFixed(2)}</span>
-                            </div>
-                            ${
-  cat.totalGasto > 0
-    ? `
-                                  <div class="text-xs text-gray-500 dark:text-gray-400 pl-2">
-                                    • ${cat.tipo === 'receita' ? 'Receitas' : 'Transações'}: R$ ${cat.totalGastoTransacoes.toFixed(2)}
-                                    ${cat.totalGastoRecorrentes > 0 ? `<br>• Recorrentes: R$ ${cat.totalGastoRecorrentes.toFixed(2)}` : ''}
-                                  </div>
-                                `
-    : ''
-}
-                            <div class="text-xs text-gray-500 dark:text-gray-400">
-                              ${excedeuLimite ? `🚨 Excedeu em R$ ${Math.abs(cat.saldo).toFixed(2)}` : `Saldo: R$ ${cat.saldo.toFixed(2)}`}
-                            </div>
+                            ${cat.totalGasto > 0 ? `
+                              <div class="flex justify-between items-center">
+                                <span class="text-gray-600 dark:text-gray-400">${cat.tipo === 'receita' ? 'Receita' : 'Gasto'} do mês:</span>
+                                <span class="font-medium category-value ${cat.tipo === 'receita' ? 'text-green-600' : 'text-gray-900 dark:text-gray-100'}">R$ ${cat.totalGasto.toFixed(2)}</span>
+                              </div>
+                              <div class="text-xs text-gray-500 dark:text-gray-400 pl-2">
+                                ${cat.totalGastoTransacoes > 0 && cat.totalGastoRecorrentes > 0 ? `
+                                  • ${cat.totalGastoTransacoes > 0 ? 'Transações' : '0 transações'}: R$ ${cat.totalGastoTransacoes.toFixed(2)}<br>
+                                  • ${cat.totalGastoRecorrentes > 0 ? 'Recorrentes' : '0 recorrentes'}: R$ ${cat.totalGastoRecorrentes.toFixed(2)}
+                                ` : cat.totalGastoTransacoes > 0 ? `
+                                  • Transações: R$ ${cat.totalGastoTransacoes.toFixed(2)}
+                                ` : `
+                                  • Recorrentes: R$ ${cat.totalGastoRecorrentes.toFixed(2)}
+                                `}
+                              </div>
+                            ` : `
+                              <div class="text-center text-gray-500 dark:text-gray-400 py-2">
+                                <span class="text-sm">Nenhum ${cat.tipo === 'receita' ? 'receita' : 'gasto'} este mês</span>
+                              </div>
+                            `}
+                            
+                            ${temLimite && cat.saldo > 0 ? `
+                              <div class="text-xs text-gray-500 dark:text-gray-400">
+                                ${excedeuLimite ? `🚨 Excedeu em R$ ${Math.abs(cat.saldo).toFixed(2)}` : `Saldo: R$ ${cat.saldo.toFixed(2)}`}
+                              </div>
+                              <div class="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                                💡 Meta diária: R$ ${(cat.saldo / calcularDiasRestantesNoMes(anoAtual, mesAtual)).toFixed(2)}/dia
+                              </div>
+                            ` : ''}
                           </div>
                         ` : `
                           <div class="space-y-2 mb-4">
                             <div class="flex justify-between items-center">
                               <span class="text-gray-600 dark:text-gray-400">${cat.tipo === 'receita' ? 'Receita' : 'Gasto'} do mês:</span>
-                              <span class="font-medium ${cat.tipo === 'receita' ? 'text-green-600' : 'text-gray-900 dark:text-gray-100'}">R$ ${cat.totalGasto.toFixed(2)}</span>
+                              <span class="font-medium category-value ${cat.tipo === 'receita' ? 'text-green-600' : 'text-gray-900 dark:text-gray-100'}">R$ ${cat.totalGasto.toFixed(2)}</span>
                             </div>
                             ${
   cat.totalGasto > 0
@@ -581,6 +892,33 @@ ${categorias.length === 0 ? `
             url.hash = `${hh}?ym=${ym}`;
             history.replaceState(null, '', url.toString());
           } catch {}
+          console.log('🔄 Período mudou, verificando se deve re-renderizar...');
+          // Em vez de re-renderizar toda a página, apenas atualizar os dados
+          try {
+            const content = document.getElementById('app-content');
+            console.log('🔍 Conteúdo da página atual:', content ? content.innerHTML.substring(0, 200) + '...' : 'null');
+            
+            // Verificação mais robusta - procurar por múltiplos indicadores da página de categorias
+            const isCategoriesPage = content && (
+              content.innerHTML.includes('📂 Categorias') ||
+              content.innerHTML.includes('cat-period-indicator') ||
+              content.innerHTML.includes('categories-page') ||
+              content.querySelector('#cat-period-indicator') !== null
+            );
+            
+            if (isCategoriesPage) {
+              console.log('✅ Página de categorias já carregada, ATUALIZANDO dados do período');
+              console.log('🎯 Atualizando apenas os dados sem re-renderizar header');
+              // Atualizar apenas os dados sem re-renderizar toda a página
+              updateCategoriesData();
+              return;
+            } else {
+              console.log('⚠️ Página de categorias não encontrada, re-renderizando...');
+            }
+          } catch (e) {
+            console.warn('Erro ao verificar página atual:', e);
+          }
+          console.log('🚀 Chamando renderCategories()...');
           renderCategories();
         }
       }));
@@ -925,11 +1263,25 @@ export function renderAllCategories() {
         }
       });
 
-      // Total geral (transações + recorrentes)
+      // Total geral (transações diretas + transações de recorrentes)
       const totalGasto = totalGastoTransacoes + totalGastoRecorrentes;
-
+      
       // Calcular limite (se existir)
       const limite = cat.limite ? parseFloat(cat.limite) : 0;
+
+      // Debug: Log dos cálculos para esta categoria
+      if (cat.nome === 'igor300' || cat.nome === 'salario') {
+        console.log('🔍 DEBUG Categoria:', {
+          nome: cat.nome,
+          transacoesCategoria: transacoesCategoria.length,
+          totalGastoTransacoes,
+          totalGastoRecorrentes,
+          totalGasto,
+          limite: cat.limite,
+          saldo: limite - totalGasto,
+          transacoesDetalhes: transacoesCategoria.map(t => ({ valor: t.valor, descricao: t.descricao }))
+        });
+      }
 
       // Calcular saldo (para receitas: quanto falta para atingir o limite)
       const saldo =
@@ -1046,6 +1398,21 @@ export function renderAllCategories() {
       </div>
     </div>
   `).join('');
+  
+  // Re-montar indicador de período após renderização
+  try {
+    console.log('🔧 Re-montando indicador após renderCategories');
+    const indicatorElement = document.getElementById('cat-period-indicator');
+    console.log('🔍 Elemento cat-period-indicator encontrado:', indicatorElement);
+    if (indicatorElement) {
+      mountPeriodIndicator('#cat-period-indicator');
+      console.log('✅ Indicador re-montado com sucesso');
+    } else {
+      console.error('❌ Elemento cat-period-indicator não encontrado!');
+    }
+  } catch (error) {
+    console.error('❌ Erro ao re-montar indicador após renderCategories:', error);
+  }
 }
 
 // Função para renderizar categorias filtradas
@@ -1085,4 +1452,19 @@ export function renderFilteredCategories(filteredCategories) {
       </div>
     </div>
   `).join('');
+  
+  // Re-montar indicador de período após renderização
+  try {
+    console.log('🔧 Re-montando indicador após renderCategories');
+    const indicatorElement = document.getElementById('cat-period-indicator');
+    console.log('🔍 Elemento cat-period-indicator encontrado:', indicatorElement);
+    if (indicatorElement) {
+      mountPeriodIndicator('#cat-period-indicator');
+      console.log('✅ Indicador re-montado com sucesso');
+    } else {
+      console.error('❌ Elemento cat-period-indicator não encontrado!');
+    }
+  } catch (error) {
+    console.error('❌ Erro ao re-montar indicador após renderCategories:', error);
+  }
 }

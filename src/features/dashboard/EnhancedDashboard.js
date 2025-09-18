@@ -180,7 +180,7 @@ export class EnhancedDashboard {
         <div class="recent-section">
           <div class="section-header">
             <h2 class="section-title">Transações Recentes</h2>
-            <a href="#/transactions" class="view-all-btn">Ver todas</a>
+            <a href="#/transactions" class="btn btn-outline btn-sm">Ver todas</a>
           </div>
           <div class="transactions-list">
             ${this.stats.recentTransactions.length > 0 ?
@@ -209,21 +209,17 @@ export class EnhancedDashboard {
         <div class="quick-actions">
           <h2 class="section-title">Ações Rápidas</h2>
           <div class="actions-grid">
-            <button class="action-btn primary" onclick="window.location.hash='#/transactions?action=add'">
-              <div class="action-icon">+</div>
-              <div class="action-text">Nova Transação</div>
+            <button class="btn btn-primary btn-sm" onclick="window.location.hash='#/transactions?action=add'">
+              ➕ Nova Transação
             </button>
-            <button class="action-btn secondary" onclick="window.location.hash='#/categories'">
-              <div class="action-icon">📁</div>
-              <div class="action-text">Categorias</div>
+            <button class="btn btn-outline btn-sm" onclick="window.location.hash='#/categories'">
+              📂 Categorias
             </button>
-            <button class="action-btn secondary" onclick="window.location.hash='#/analytics'">
-              <div class="action-icon">📊</div>
-              <div class="action-text">Relatórios</div>
+            <button class="btn btn-outline btn-sm" onclick="window.location.hash='#/analytics'">
+              📊 Análises
             </button>
-            <button class="action-btn secondary" onclick="this.showBudgetModal()">
-              <div class="action-icon">🎯</div>
-              <div class="action-text">Orçamento</div>
+            <button class="btn btn-outline btn-sm" onclick="this.showBudgetModal()">
+              💰 Orçamento
             </button>
           </div>
         </div>

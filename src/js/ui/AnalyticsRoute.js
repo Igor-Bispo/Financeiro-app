@@ -275,10 +275,10 @@ async function renderAnalyticsContent(container, timestamp) {
         <p class="text-sm mt-2 opacity-75">${pageError.message}</p>
       </div>
       <div class="flex gap-2">
-  <button onclick="window.location.hash = '#/analytics'" class="u-btn u-btn--ghost">
+  <button onclick="window.location.hash = '#/analytics'" class="btn btn-ghost btn-sm">
           <i class="fas fa-redo mr-2"></i> Tentar Novamente
         </button>
-  <button onclick="window.location.hash = '#/dashboard'" class="u-btn u-btn--primary">
+  <button onclick="window.location.hash = '#/dashboard'" class="btn btn-primary btn-sm">
           <i class="fas fa-arrow-left mr-2"></i> Voltar ao Dashboard
         </button>
       </div>
@@ -315,10 +315,10 @@ async function renderErrorPage(error, timestamp) {
             <p class="text-xs mt-1 opacity-50">Timestamp: ${timestamp}</p>
           </div>
           <div class="flex gap-2">
-            <button id="retry-analytics-btn" class="u-btn u-btn--ghost">
+            <button id="retry-analytics-btn" class="btn btn-ghost btn-sm">
               <i class="fas fa-redo mr-2"></i> Tentar Novamente
             </button>
-            <button id="back-dashboard-btn" class="u-btn u-btn--primary">
+            <button id="back-dashboard-btn" class="btn btn-primary btn-sm">
               <i class="fas fa-arrow-left mr-2"></i> Voltar ao Dashboard
             </button>
           </div>

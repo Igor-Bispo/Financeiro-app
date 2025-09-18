@@ -29,7 +29,7 @@ function renderSharedWithMe(budgets, currentUser, currentBudget) {
                                 <p class="text-xs text-green-600 dark:text-green-400 font-semibold bg-green-100 dark:bg-green-900/50 rounded-full px-2 py-0.5 inline-block mt-1">Compartilhado</p>
                             </div>
                             ${budget.id !== currentBudget?.id ? `
-                                <button type="button" class="enter-budget-button u-btn u-btn--primary" data-budget-id="${budget.id}" data-budget-name="${(budget.nome || 'Orçamento').replace(/\"/g, '&quot;')}" title="Entrar neste orçamento">
+                                <button type="button" class="enter-budget-button btn btn-primary btn-sm" data-budget-id="${budget.id}" data-budget-name="${(budget.nome || 'Orçamento').replace(/\"/g, '&quot;')}" title="Entrar neste orçamento">
                                     <span class="enter-icon">🚪</span><span class="enter-text">Entrar</span>
                                 </button>
                             ` : `
@@ -39,8 +39,8 @@ function renderSharedWithMe(budgets, currentUser, currentBudget) {
                         <p class="text-xs text-gray-500 dark:text-gray-400 mt-3 truncate">ID: ${budget.id}</p>
                     </div>
                     <div class="bg-gray-50 dark:bg-gray-800/50 px-5 py-3 flex justify-end items-center gap-2">
-                        <button class="u-btn u-btn--ghost text-sm copy-budget-id-btn" data-budget-id="${budget.id}" title="Copiar ID do orçamento">📋 Copiar ID</button>
-                        <button class="u-btn u-btn--danger text-sm leave-budget-btn" data-budget-id="${budget.id}" data-budget-name="${(budget.nome || 'Orçamento').replace(/"/g, '&quot;')}" title="Sair deste orçamento">🚪 Sair</button>
+                        <button class="btn btn-outline btn-sm copy-budget-id-btn" data-budget-id="${budget.id}" title="Copiar ID do orçamento">📋 Copiar ID</button>
+                        <button class="btn btn-danger btn-sm leave-budget-btn" data-budget-id="${budget.id}" data-budget-name="${(budget.nome || 'Orçamento').replace(/"/g, '&quot;')}" title="Sair deste orçamento">🚪 Sair</button>
                     </div>
                 </div>
             `).join('')}
@@ -67,7 +67,7 @@ function renderMyBudgets(budgets, currentUser, currentBudget) {
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Criado em ${budget.createdAt ? new Date(budget.createdAt.seconds * 1000).toLocaleDateString('pt-BR') : 'Data não disponível'}</p>
                             </div>
                             ${budget.id !== currentBudget?.id ? `
-                                <button type="button" class="enter-budget-button u-btn u-btn--primary" data-budget-id="${budget.id}" data-budget-name="${(budget.nome || 'Orçamento').replace(/"/g, '&quot;')}" title="Entrar neste orçamento">
+                                <button type="button" class="enter-budget-button btn btn-primary btn-sm" data-budget-id="${budget.id}" data-budget-name="${(budget.nome || 'Orçamento').replace(/"/g, '&quot;')}" title="Entrar neste orçamento">
                                     <span class="enter-icon">🚪</span><span class="enter-text">Entrar</span>
                                 </button>
                             ` : `
@@ -76,8 +76,8 @@ function renderMyBudgets(budgets, currentUser, currentBudget) {
                         </div>
                     </div>
                     <div class="bg-gray-50 dark:bg-gray-800/50 px-5 py-3 flex justify-end items-center gap-2">
-                        <button class="u-btn u-btn--ghost text-sm copy-budget-id-btn" data-budget-id="${budget.id}" title="Copiar ID do orçamento">📋 Copiar ID</button>
-                        <button class="u-btn u-btn--danger text-sm delete-budget-btn" data-budget-id="${budget.id}" data-budget-name="${(budget.nome || 'Orçamento').replace(/"/g, '&quot;')}" title="Excluir orçamento">🗑️ Excluir</button>
+                        <button class="btn btn-outline btn-sm copy-budget-id-btn" data-budget-id="${budget.id}" title="Copiar ID do orçamento">📋 Copiar ID</button>
+                        <button class="btn btn-danger btn-sm delete-budget-btn" data-budget-id="${budget.id}" data-budget-name="${(budget.nome || 'Orçamento').replace(/"/g, '&quot;')}" title="Excluir orçamento">🗑️ Excluir</button>
                     </div>
                 </div>
             `).join('')}
@@ -120,7 +120,7 @@ export function generateSettingsHTML(state) {
                                 <div class="text-sm text-gray-600 dark:text-gray-400">Conectado como</div>
                                 <div class="font-medium text-gray-900 dark:text-gray-100 truncate" title="${currentUser.email || ''}">${currentUser.email || 'Usuário'}</div>
                             </div>
-                            <button id="btn-logout" class="u-btn u-btn--danger">Sair</button>
+                            <button id="btn-logout" class="btn btn-danger btn-sm">Sair</button>
                         </div>
                     </div>
                     ` : ''}
@@ -166,7 +166,7 @@ export function generateSettingsHTML(state) {
                                                     <div class="text-xs text-gray-500 dark:text-gray-400">Membro</div>
                                                 </div>
                                             </div>
-                                            <button class="remove-user-btn u-btn u-btn--danger text-sm" data-uid="${user.uid}" data-email="${user.email}" title="Remover usuário">
+                                            <button class="remove-user-btn btn btn-danger btn-sm" data-uid="${user.uid}" data-email="${user.email}" title="Remover usuário">
                                                 🗑️ Remover
                                             </button>
                                         </div>
@@ -200,7 +200,7 @@ export function generateSettingsHTML(state) {
                                             </div>
                                         </div>
                                         <div class="flex gap-2">
-                                            <button class="cancel-invitation-btn u-btn u-btn--ghost text-sm" data-invite-id="${invite.id}" title="Cancelar convite">
+                                            <button class="cancel-invitation-btn btn btn-outline btn-sm" data-invite-id="${invite.id}" title="Cancelar convite">
                                                 ❌ Cancelar
                                             </button>
                                         </div>
@@ -229,10 +229,10 @@ export function generateSettingsHTML(state) {
                                                 </div>
                                             </div>
                                             <div class="flex gap-2">
-                                                <button class="accept-invitation-btn u-btn u-btn--primary text-sm" data-invite-id="${invite.id}" title="Aceitar convite">
+                                                <button class="accept-invitation-btn btn btn-primary btn-sm" data-invite-id="${invite.id}" title="Aceitar convite">
                                                     ✅ Aceitar
                                                 </button>
-                                                <button class="decline-invitation-btn u-btn u-btn--danger text-sm" data-invite-id="${invite.id}" title="Recusar convite">
+                                                <button class="decline-invitation-btn btn btn-danger btn-sm" data-invite-id="${invite.id}" title="Recusar convite">
                                                     ❌ Recusar
                                                 </button>
                                             </div>
@@ -275,7 +275,7 @@ export function generateSettingsHTML(state) {
                                     <div class="flex gap-3">
                                         <input type="email" id="share-email-input" placeholder="email@exemplo.com" 
                                                class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                        <button id="share-budget-btn" class="u-btn u-btn--primary">
+                                        <button id="share-budget-btn" class="btn btn-primary btn-sm">
                                             📤 Enviar Convite
                                         </button>
                                     </div>
@@ -295,7 +295,7 @@ export function generateSettingsHTML(state) {
                         <h2 class="section-title blue-border">📁 Meus Orçamentos</h2>
                         <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-4">
                             ${renderMyBudgets(budgets, currentUser, currentBudget)}
-                            <button id="create-new-budget-btn" class="create-button u-btn u-btn--primary mt-5 w-full">➕ Criar Novo Orçamento</button>
+                            <button id="create-new-budget-btn" class="create-button btn btn-primary btn-sm mt-5 w-full">➕ Criar Novo Orçamento</button>
                         </div>
                     </div>
 
@@ -304,21 +304,21 @@ export function generateSettingsHTML(state) {
                         <h2 class="section-title red-border">💾 Dados e Privacidade</h2>
                         <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-4">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <button id="export-data-btn" class="u-btn u-btn--primary flex items-center justify-center gap-2 p-4">
+                                <button id="export-data-btn" class="btn btn-primary btn-sm flex items-center justify-center gap-2 p-4">
                                     <span class="text-xl">📤</span>
                                     <div class="text-left">
                                         <div class="font-medium">Exportar Dados</div>
                                         <div class="text-xs opacity-75">Backup completo</div>
                                     </div>
                                 </button>
-                                <button id="import-data-btn" class="u-btn u-btn--secondary flex items-center justify-center gap-2 p-4">
+                                <button id="import-data-btn" class="btn btn-secondary btn-sm flex items-center justify-center gap-2 p-4">
                                     <span class="text-xl">📥</span>
                                     <div class="text-left">
                                         <div class="font-medium">Importar Dados</div>
                                         <div class="text-xs opacity-75">Restaurar backup</div>
                                     </div>
                                 </button>
-                                <button id="clear-data-btn" class="u-btn u-btn--danger flex items-center justify-center gap-2 p-4">
+                                <button id="clear-data-btn" class="btn btn-danger btn-sm flex items-center justify-center gap-2 p-4">
                                     <span class="text-xl">🗑️</span>
                                     <div class="text-left">
                                         <div class="font-medium">Limpar Dados</div>
@@ -378,7 +378,7 @@ export function generateSettingsHTML(state) {
                                         <div class="font-medium text-gray-900 dark:text-gray-100">Modo Escuro</div>
                                         <div class="text-sm text-gray-500 dark:text-gray-400">Alternar tema escuro/claro</div>
                                     </div>
-                                    <button id="toggle-theme-btn" class="u-btn u-btn--primary">
+                                    <button id="toggle-theme-btn" class="btn btn-primary btn-sm">
                                         🌙 Alternar
                                     </button>
                                 </div>
@@ -456,19 +456,19 @@ export function generateSettingsHTML(state) {
                                     <div class="text-xs text-gray-400 dark:text-gray-500 mt-1">Última atualização: ${lastUpdateLabel}</div>
                                 </div>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    <button id="check-updates-btn" class="u-btn u-btn--primary flex items-center justify-center gap-2 p-3">
+                                    <button id="check-updates-btn" class="btn btn-primary btn-sm flex items-center justify-center gap-2 p-3">
                                         <span>🔄</span>
                                         <span>Verificar Atualizações</span>
                                     </button>
-                                    <button id="help-support-btn" class="u-btn u-btn--secondary flex items-center justify-center gap-2 p-3">
+                                    <button id="help-support-btn" class="btn btn-secondary btn-sm flex items-center justify-center gap-2 p-3">
                                         <span>❓</span>
                                         <span>Ajuda e Suporte</span>
                                     </button>
-                                    <button id="rate-app-btn" class="u-btn u-btn--primary flex items-center justify-center gap-2 p-3">
+                                    <button id="rate-app-btn" class="btn btn-primary btn-sm flex items-center justify-center gap-2 p-3">
                                         <span>⭐</span>
                                         <span>Avaliar App</span>
                                     </button>
-                                    <button id="about-app-btn" class="u-btn u-btn--ghost flex items-center justify-center gap-2 p-3">
+                                    <button id="about-app-btn" class="btn btn-ghost btn-sm flex items-center justify-center gap-2 p-3">
                                         <span>ℹ️</span>
                                         <span>Sobre o App</span>
                                     </button>
