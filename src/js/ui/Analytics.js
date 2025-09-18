@@ -13,40 +13,50 @@ import { db } from '../firebase.js';
  * Classe Analytics para análise de dados financeiros
  */
 export class Analytics {
-  // Busca transações do Firestore para um período; tenta createdAt range e faz fallback para budgetId puro quando necessário
+  // Cache simples para evitar consultas repetidas
+  static _cache = new Map();
+  static _cacheTimeout = 5 * 60 * 1000; // 5 minutos
+
+  // Busca transações do Firestore para um período usando abordagem otimizada
   static async fetchTransactionsForPeriod(budgetId, startDate, endDate) {
     try {
-      const transacoesRef = collection(db, 'transactions');
-      // Primeira tentativa: range por createdAt (eficiente quando os dados possuem esse campo)
-      try {
-        const qRange = query(
-          transacoesRef,
-          where('budgetId', '==', budgetId),
-          where('createdAt', '>=', startDate),
-          where('createdAt', '<=', endDate)
-        );
-        const snap = await getDocs(qRange);
-        const items = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        if (items.length > 0) {
-          return items;
-        }
-      } catch (e) {
-        // Ignorar erro e tentar fallback amplo
-        console.warn('Fallback to broad query (createdAt range unsupported or empty):', e?.message || e);
+      // Verificar cache primeiro
+      const cacheKey = `${budgetId}_${startDate}_${endDate}`;
+      const cached = Analytics._cache.get(cacheKey);
+      if (cached && Date.now() - cached.timestamp < Analytics._cacheTimeout) {
+        return cached.data;
       }
 
-      // Fallback: buscar por budgetId e filtrar por data efetiva no cliente
+      const transacoesRef = collection(db, 'transactions');
+      
+      // Estratégia otimizada: buscar apenas por budgetId e filtrar no cliente
+      // Isso evita a necessidade de índices compostos complexos
       const qBudget = query(transacoesRef, where('budgetId', '==', budgetId));
       const snapAll = await getDocs(qBudget);
       const all = snapAll.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      return all.filter(t => {
+      
+      // Filtrar por data efetiva no cliente
+      const filtered = all.filter(t => {
         const d = Analytics.txToDate(t);
         return d && d >= startDate && d <= endDate;
       });
+
+      // Armazenar no cache
+      Analytics._cache.set(cacheKey, {
+        data: filtered,
+        timestamp: Date.now()
+      });
+
+      return filtered;
     } catch (err) {
       console.error('Erro ao buscar transações do período:', err);
       return [];
     }
+  }
+
+  // Limpar cache quando necessário
+  static clearCache() {
+    Analytics._cache.clear();
   }
   // Helper: resolve a transaction's effective date consistently (prefers explicit date fields)
   static txToDate(t) {
@@ -220,20 +230,21 @@ export class Analytics {
             return d && d >= periodo.startDate && d <= periodo.endDate;
           });
         } else {
-          // Buscar do Firestore
+          // Buscar do Firestore usando abordagem otimizada
           const transacoesRef = collection(db, 'transactions');
-          const q = query(
-            transacoesRef,
-            where('budgetId', '==', budgetId),
-            where('createdAt', '>=', periodo.startDate),
-            where('createdAt', '<=', periodo.endDate)
-          );
+          const q = query(transacoesRef, where('budgetId', '==', budgetId));
 
           const querySnapshot = await getDocs(q);
-          transacoes = querySnapshot.docs.map(doc => ({
+          const allTransactions = querySnapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
           }));
+          
+          // Filtrar por período no cliente
+          transacoes = allTransactions.filter(t => {
+            const d = Analytics.txToDate(t);
+            return d && d >= periodo.startDate && d <= periodo.endDate;
+          });
         }
 
         // Calcular receitas e despesas

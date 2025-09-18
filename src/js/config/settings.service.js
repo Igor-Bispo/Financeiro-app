@@ -15,8 +15,8 @@ export async function loadBudgetInvitations(userId) {
   try {
     console.log('[DEBUG] Carregando convites para userId:', userId);
     
-    // Primeiro, vamos buscar convites por invitedUserId
-    const q1 = query(collection(db, 'budgetInvitations'), where('invitedUserId', '==', userId), where('status', '==', 'pending'));
+    // Buscar convites por invitedUserId (sem filtro de status para evitar índice composto)
+    const q1 = query(collection(db, 'budgetInvitations'), where('invitedUserId', '==', userId));
     const snapshot1 = await getDocs(q1);
     console.log('[DEBUG] Convites por invitedUserId:', snapshot1.docs.length);
     
@@ -24,7 +24,7 @@ export async function loadBudgetInvitations(userId) {
     const user = window.appState?.currentUser;
     let invitations;
     if (user?.email) {
-      const q2 = query(collection(db, 'budgetInvitations'), where('invitedUserEmail', '==', user.email), where('status', '==', 'pending'));
+      const q2 = query(collection(db, 'budgetInvitations'), where('invitedUserEmail', '==', user.email));
       const snapshot2 = await getDocs(q2);
       console.log('[DEBUG] Convites por email:', snapshot2.docs.length);
       
@@ -33,11 +33,11 @@ export async function loadBudgetInvitations(userId) {
       [...snapshot1.docs, ...snapshot2.docs].forEach(doc => {
         allInvitations.set(doc.id, { id: doc.id, ...doc.data() });
       });
-      invitations = Array.from(allInvitations.values());
-      console.log('[DEBUG] Total de convites únicos:', invitations.length);
+      invitations = Array.from(allInvitations.values()).filter(inv => inv.status === 'pending');
+      console.log('[DEBUG] Total de convites únicos (pending):', invitations.length);
     } else {
-      invitations = snapshot1.docs.map(d => ({ id: d.id, ...d.data() }));
-      console.log('[DEBUG] Convites encontrados:', invitations.length);
+      invitations = snapshot1.docs.map(d => ({ id: d.id, ...d.data() })).filter(inv => inv.status === 'pending');
+      console.log('[DEBUG] Convites encontrados (pending):', invitations.length);
     }
     const budgetCache = new Map();
     const ownerCache = new Map();
@@ -76,9 +76,9 @@ export async function loadBudgetInvitations(userId) {
 export async function loadSentBudgetInvitations(budgetId) {
   if (!budgetId) return [];
   try {
-    const q = query(collection(db, 'budgetInvitations'), where('budgetId', '==', budgetId), where('status', '==', 'pending'));
+    const q = query(collection(db, 'budgetInvitations'), where('budgetId', '==', budgetId));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    return snapshot.docs.map(d => ({ id: d.id, ...d.data() })).filter(inv => inv.status === 'pending');
   } catch (error) {
     console.error('Erro ao carregar convites enviados:', error);
     throw error;
