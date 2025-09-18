@@ -7,10 +7,22 @@ console.log('[settings.handlers] minimal handlers loaded @', new Date().toISOStr
 
 // Função auxiliar para Snackbar
 function snk() {
+  console.log('[DEBUG] snk() chamada - verificando disponibilidade do Snackbar...');
+  console.log('[DEBUG] window.Snackbar disponível:', !!window.Snackbar);
+  console.log('[DEBUG] window.Snackbar.show disponível:', !!(window.Snackbar && typeof window.Snackbar.show === 'function'));
+  
   if (window.Snackbar && typeof window.Snackbar.show === 'function') {
-    return window.Snackbar;
+    console.log('[DEBUG] Usando window.Snackbar');
+    return {
+      success: (msg) => window.Snackbar.show(msg, 'success', 3000),
+      error: (msg) => window.Snackbar.show(msg, 'error', 3000),
+      info: (msg) => window.Snackbar.show(msg, 'info', 3000),
+      warning: (msg) => window.Snackbar.show(msg, 'warning', 3000)
+    };
   }
+  
   // Fallback para alert se Snackbar não estiver disponível
+  console.log('[DEBUG] Usando fallback alert');
   return {
     success: (msg) => { console.log('SUCCESS:', msg); alert('✅ ' + msg); },
     error: (msg) => { console.log('ERROR:', msg); alert('❌ ' + msg); },
@@ -346,6 +358,67 @@ window.enterBudget = async function (budgetId, budgetName) {
     snk().error('Erro ao entrar no orçamento: ' + error.message);
   }
 };
+
+// Accept invitation --------------------------------------------------------
+async function handleAcceptInvitation(inviteId) {
+  try {
+    console.log('[DEBUG] Aceitando convite:', inviteId);
+    const { appState } = window;
+    if (!appState?.currentUser) { 
+      snk().error('Precisa estar autenticado'); 
+      return; 
+    }
+    
+    await (await svc()).acceptBudgetInvitation(inviteId);
+    snk().success('Convite aceito com sucesso!');
+    window.dispatchEvent(new CustomEvent('invitation:changed'));
+    
+    // Recarregar orçamentos disponíveis
+    try {
+      const { loadUserBudgets } = await import('@features/budgets/service.js');
+      await loadUserBudgets(appState.currentUser.uid);
+      console.log('[DEBUG] Orçamentos recarregados após aceitar convite');
+      
+      // Verificar se os orçamentos foram atualizados no appState
+      console.log('[DEBUG] Orçamentos no appState após recarregar:', window.appState?.budgets);
+      console.log('[DEBUG] Orçamentos compartilhados:', window.appState?.budgets?.filter(b => b.isOwner === false));
+    } catch (error) {
+      console.error('[DEBUG] Erro ao recarregar orçamentos:', error);
+    }
+    
+    // Recarregar a página para atualizar o estado
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000);
+  } catch (e) {
+    console.error('[DEBUG] Erro ao aceitar convite:', e);
+    snk().error(e?.message || 'Erro ao aceitar convite');
+  }
+}
+
+// Decline invitation -------------------------------------------------------
+async function handleDeclineInvitation(inviteId) {
+  try {
+    console.log('[DEBUG] Recusando convite:', inviteId);
+    const { appState } = window;
+    if (!appState?.currentUser) { 
+      snk().error('Precisa estar autenticado'); 
+      return; 
+    }
+    
+    await (await svc()).declineBudgetInvitation(inviteId);
+    snk().success('Convite recusado');
+    window.dispatchEvent(new CustomEvent('invitation:changed'));
+    
+    // Recarregar a página para atualizar o estado
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000);
+  } catch (e) {
+    console.error('[DEBUG] Erro ao recusar convite:', e);
+    snk().error(e?.message || 'Erro ao recusar convite');
+  }
+}
 
 // Share / invite form submit -----------------------------------------------
 async function handleInviteSubmit(form) {
@@ -714,11 +787,11 @@ window.showWhatsNew = async function () {
             </div>
           </div>
           <div class="grid grid-cols-2 gap-3">
-            <button onclick="window.location.hash = '#/dashboard'" class="bg-blue-500 hover:bg-blue-600 text-white font-medium text-sm p-3 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2">
+            <button id="go-to-dashboard-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-medium text-sm p-3 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2">
               <span>📊</span>
               <span>Ver Dashboard</span>
             </button>
-            <button onclick="if(window.showWhatsNew) { /* Fechar modal */ }" class="bg-gray-500 hover:bg-gray-600 text-white font-medium text-sm p-3 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2">
+            <button id="understand-btn" class="bg-gray-500 hover:bg-gray-600 text-white font-medium text-sm p-3 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2">
               <span>✅</span>
               <span>Entendi</span>
             </button>
@@ -757,6 +830,8 @@ window.showWhatsNew = async function () {
     // Event listeners
     const modal = document.getElementById('whats-new-modal');
     const closeBtn = document.getElementById('close-whats-new-modal');
+    const goToDashboardBtn = document.getElementById('go-to-dashboard-btn');
+    const understandBtn = document.getElementById('understand-btn');
     
     function closeModal() {
       if (modal) modal.remove();
@@ -764,6 +839,17 @@ window.showWhatsNew = async function () {
     
     if (closeBtn) {
       closeBtn.addEventListener('click', closeModal);
+    }
+    
+    if (goToDashboardBtn) {
+      goToDashboardBtn.addEventListener('click', () => {
+        closeModal();
+        window.location.hash = '#/dashboard';
+      });
+    }
+    
+    if (understandBtn) {
+      understandBtn.addEventListener('click', closeModal);
     }
     
     if (modal) {
@@ -870,19 +956,56 @@ window.installApp = function () {
 
 // Delegated events ---------------------------------------------------------
 // Event listener global único para todos os cliques
-document.addEventListener('click', (ev) => {
+  document.addEventListener('click', (ev) => {
     const t = ev.target;
-  console.log('[DEBUG] Click detectado:', t.tagName, t.className, t.id, t.textContent?.substring(0, 30));
-  
-  // Debug específico para logout
-  if (t.id === 'btn-logout' || t.textContent?.trim() === 'Sair') {
-    console.log('[DEBUG] BOTÃO LOGOUT DETECTADO!', {
-      id: t.id,
-      textContent: t.textContent,
-      className: t.className,
-      tagName: t.tagName
-    });
+    
+    // Log geral para debug
+    console.log('[DEBUG] Click detectado:', t.tagName, t.className, t.id, t.textContent?.substring(0, 50));
+    
+    // Log específico para botão de teste
+    if (t.id === 'test-notifications-btn') {
+      console.log('[DEBUG] 🎯 BOTÃO DE TESTE DETECTADO!');
+      console.log('[DEBUG] Evento completo:', ev);
+      console.log('[DEBUG] Target:', t);
+      console.log('[DEBUG] ID:', t.id);
+      console.log('[DEBUG] Texto:', t.textContent);
+      console.log('[DEBUG] Continuando para o handler específico...');
+    }
+  // Se for um SPAN dentro do botão de tema, processar como se fosse o botão
+  if (t.textContent?.includes('🌙') || t.textContent?.includes('☀️')) {
+    if (t.tagName === 'SPAN' && t.parentElement?.classList?.contains('theme-toggle-btn')) {
+      const button = t.parentElement;
+      
+      // Alternar entre light e dark
+      const isDark = document.documentElement.classList.contains('dark');
+      
+      if (isDark) {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+        // Atualizar o ícone no span interno
+        const iconSpan = button.querySelector('span');
+        if (iconSpan) {
+          iconSpan.textContent = '🌙';
+        }
+      } else {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+        // Atualizar o ícone no span interno
+        const iconSpan = button.querySelector('span');
+        if (iconSpan) {
+          iconSpan.textContent = '☀️';
+        }
+      }
+      
+      // Mostrar snackbar
+      if (window.snk) {
+        window.snk().success(`Tema alterado para ${isDark ? 'claro' : 'escuro'}`);
+      }
+      
+      return; // Evitar processamento duplo
+    }
   }
+  
   
   // Verificar se é um dos elementos que queremos tratar
   const isTargetElement = t.textContent?.includes('Backup completo') || 
@@ -891,8 +1014,15 @@ document.addEventListener('click', (ev) => {
                          t.textContent?.includes('Exportar Dados') ||
                          t.textContent?.includes('Restaurar backup') ||
                          t.textContent?.includes('Remover tudo') ||
+                         t.textContent?.includes('Enviar Convite') ||
+                         t.textContent?.includes('📤 Enviar') ||
+                         t.textContent?.includes('Aceitar') ||
+                         t.textContent?.includes('Recusar') ||
                          t.id === 'export-data-btn' ||
                          t.id === 'import-data-btn' ||
+                         t.id === 'share-budget-btn' ||
+                         t.classList?.contains('accept-invitation-btn') ||
+                         t.classList?.contains('decline-invitation-btn') ||
                          t.id === 'clear-data-btn' ||
                          t.id === 'btn-logout' ||
                          t.id === 'limit-alerts-toggle' ||
@@ -933,7 +1063,9 @@ document.addEventListener('click', (ev) => {
                          t.textContent?.includes('O que mudou') ||
                          t.textContent?.includes('Instalar App') ||
                          t.textContent?.trim() === 'Entrar' ||
-                         t.textContent?.trim() === 'Sair';
+                         t.textContent?.trim() === 'Sair' ||
+                         t.id === 'test-notifications-btn' ||
+                         t.textContent?.includes('Testar Notificações');
   
   // Debug para verificar se isTargetElement está funcionando
   if (t.id === 'btn-logout' || t.textContent?.trim() === 'Sair') {
@@ -997,8 +1129,6 @@ document.addEventListener('click', (ev) => {
     return; // Silenciosamente ignora elementos não alvo
   }
   
-  console.log('[DEBUG] Elemento é alvo, processando...');
-  console.log('[DEBUG] Elemento ID:', t.id, 'Classes:', t.className, 'Text:', t.textContent?.substring(0, 50));
   
   // Não prevenir o comportamento padrão para toggles - deixar eles mudarem visualmente
   if (t.type === 'checkbox') {
@@ -2113,9 +2243,19 @@ ${events.slice(0, 10).map(e =>
 
     // Handler para botão de toggle de tema
     if (t.id === 'toggle-theme-btn' || t.classList?.contains('theme-toggle-btn') || t.closest('.theme-toggle-btn')) {
+      console.log('[DEBUG] BOTÃO DE TEMA DETECTADO!', {
+        id: t.id,
+        className: t.className,
+        tagName: t.tagName,
+        textContent: t.textContent,
+        closest: t.closest('.theme-toggle-btn')
+      });
+      
       // Alternar entre light e dark
       const isDark = document.documentElement.classList.contains('dark');
       const button = t.closest('.theme-toggle-btn') || t;
+      
+      console.log('[DEBUG] Estado do tema:', { isDark, button });
       
       if (isDark) {
         document.documentElement.classList.remove('dark');
@@ -2125,6 +2265,7 @@ ${events.slice(0, 10).map(e =>
         if (iconSpan) {
           iconSpan.textContent = '🌙';
         }
+        console.log('[DEBUG] Tema alterado para CLARO');
       } else {
         document.documentElement.classList.add('dark');
         localStorage.setItem('theme', 'dark');
@@ -2133,6 +2274,7 @@ ${events.slice(0, 10).map(e =>
         if (iconSpan) {
           iconSpan.textContent = '☀️';
         }
+        console.log('[DEBUG] Tema alterado para ESCURO');
       }
       snk().success(`Tema alterado para ${isDark ? 'claro' : 'escuro'}`);
       return;
@@ -2297,6 +2439,95 @@ ${events.slice(0, 10).map(e =>
     // Handler para botão de copiar informações
     if (t.id === 'copy-info-btn') {
       snk().info('Copiando informações do app...');
+      return;
+    }
+
+    // Handler para botão de enviar convite
+    if (t.id === 'share-budget-btn' || t.textContent?.includes('Enviar Convite') || t.textContent?.includes('📤 Enviar')) {
+      const form = t.closest('form');
+      if (form) {
+        handleInviteSubmit(form);
+      }
+      return;
+    }
+
+    // Handler para botão de aceitar convite
+    if (t.classList?.contains('accept-invitation-btn') || t.textContent?.includes('Aceitar')) {
+      const inviteId = t.getAttribute('data-invite-id');
+      if (inviteId) {
+        handleAcceptInvitation(inviteId);
+      }
+      return;
+    }
+
+    // Handler para botão de recusar convite
+    if (t.classList?.contains('decline-invitation-btn') || t.textContent?.includes('Recusar')) {
+      const inviteId = t.getAttribute('data-invite-id');
+      if (inviteId) {
+        handleDeclineInvitation(inviteId);
+      }
+      return;
+    }
+
+    // TESTE: Handler para testar notificações
+    console.log('[DEBUG] Verificando botão de teste - ID:', t.id, 'Texto:', t.textContent);
+    console.log('[DEBUG] Condição 1 (ID):', t.id === 'test-notifications-btn');
+    console.log('[DEBUG] Condição 2 (Texto):', t.textContent?.includes('Testar Notificações'));
+    
+    if (t.id === 'test-notifications-btn' || t.textContent?.includes('Testar Notificações')) {
+      console.log('[DEBUG] ✅ BOTÃO TESTAR NOTIFICAÇÕES CLICADO!');
+      console.log('[DEBUG] Elemento clicado:', t);
+      console.log('[DEBUG] ID do elemento:', t.id);
+      console.log('[DEBUG] Texto do elemento:', t.textContent);
+      console.log('[DEBUG] Testando sistema de notificações...');
+      
+      try {
+        console.log('[DEBUG] Chamando snk().success...');
+        console.log('[DEBUG] window.Snackbar:', window.Snackbar);
+        console.log('[DEBUG] window.Snackbar.show:', window.Snackbar?.show);
+        
+        // Teste direto do Snackbar
+        if (window.Snackbar && window.Snackbar.show) {
+          console.log('[DEBUG] Testando Snackbar diretamente...');
+          window.Snackbar.show('Teste direto do Snackbar!', 'success', 5000);
+          console.log('[DEBUG] Snackbar direto chamado');
+        }
+        
+        snk().success('Teste de notificação de sucesso!');
+        console.log('[DEBUG] snk().success chamado com sucesso');
+      } catch (error) {
+        console.error('[DEBUG] Erro ao chamar snk().success:', error);
+      }
+      
+      setTimeout(() => {
+        try {
+          console.log('[DEBUG] Chamando snk().info...');
+          snk().info('Teste de notificação de informação!');
+          console.log('[DEBUG] snk().info chamado com sucesso');
+        } catch (error) {
+          console.error('[DEBUG] Erro ao chamar snk().info:', error);
+        }
+      }, 1000);
+      
+      setTimeout(() => {
+        try {
+          console.log('[DEBUG] Chamando snk().warning...');
+          snk().warning('Teste de notificação de aviso!');
+          console.log('[DEBUG] snk().warning chamado com sucesso');
+        } catch (error) {
+          console.error('[DEBUG] Erro ao chamar snk().warning:', error);
+        }
+      }, 2000);
+      
+      setTimeout(() => {
+        try {
+          console.log('[DEBUG] Chamando snk().error...');
+          snk().error('Teste de notificação de erro!');
+          console.log('[DEBUG] snk().error chamado com sucesso');
+        } catch (error) {
+          console.error('[DEBUG] Erro ao chamar snk().error:', error);
+        }
+      }, 3000);
       return;
     }
     

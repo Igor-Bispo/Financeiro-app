@@ -2399,7 +2399,7 @@ h3 { font-size: 1rem; }
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-lg);
   margin-bottom: var(--spacing-lg);
   padding-bottom: var(--spacing-md);
   border-bottom: none;
@@ -6158,6 +6158,34 @@ textarea {
   padding: 0;
   border: none;
   box-shadow: none;
+}
+
+.pi-container {
+  margin-left: var(--spacing-md);
+}
+
+/* Garantir espaçamento específico no header das abas */
+.tab-header .pi-container {
+  margin-left: 1rem;
+}
+
+.tab-header .period-indicator {
+  margin-left: 1rem;
+}
+
+/* Espaçamento específico para o dashboard */
+.dashboard-header .pi-container,
+.dashboard-header .period-indicator {
+  margin-left: 1.5rem;
+}
+
+/* Espaçamento para todas as páginas com seletor de período */
+#cat-period-indicator,
+#tx-period-indicator,
+#rec-period-indicator,
+#notif-period-indicator,
+#analytics-period-indicator {
+  margin-left: 1rem;
 }
 
 .period-indicator__btn {

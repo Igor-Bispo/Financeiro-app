@@ -296,6 +296,7 @@ export async function updateTransactionWithNotifications(transactionId, transact
 
 export async function deleteTransactionWithNotifications(transactionId) {
   try {
+    console.log('[DEBUG] deleteTransactionWithNotifications chamada para transactionId:', transactionId);
     // Ler dados da transação antes de apagar (para compor a notificação de exclusão)
     let txDataForNotification = null;
     try {
@@ -323,16 +324,26 @@ export async function deleteTransactionWithNotifications(transactionId) {
     
     // Enviar notificações de exclusão para membros do orçamento (exceto o autor)
     try {
+      console.log('[DEBUG] Iniciando envio de notificação de exclusão...');
       const user = window.appState.currentUser;
       const budgetId = txDataForNotification?.budgetId || window.appState.currentBudget?.id;
+      console.log('[DEBUG] Dados para notificação:', { user: user?.uid, budgetId, txDataForNotification });
+      
       if (budgetId && user?.uid) {
         const payload = txDataForNotification || { id: transactionId };
+        console.log('[DEBUG] Payload da notificação:', payload);
+        
         if (typeof window !== 'undefined' && typeof window.sendTransactionDeletedNotification === 'function') {
+          console.log('[DEBUG] Usando window.sendTransactionDeletedNotification');
           await window.sendTransactionDeletedNotification(budgetId, user.uid, payload);
         } else {
+          console.log('[DEBUG] Importando sendTransactionDeletedNotification');
           const { sendTransactionDeletedNotification } = await import('@features/notifications/NotificationService.js');
           await sendTransactionDeletedNotification(budgetId, user.uid, payload);
         }
+        console.log('[DEBUG] Notificação de exclusão enviada com sucesso');
+      } else {
+        console.log('[DEBUG] Não foi possível enviar notificação - dados faltando:', { budgetId: !!budgetId, userUid: !!user?.uid });
       }
     } catch (notifyErr) {
       console.warn('Não foi possível enviar notificações de exclusão de transação:', notifyErr);

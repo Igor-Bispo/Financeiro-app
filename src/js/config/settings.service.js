@@ -13,9 +13,32 @@ import { getById as getBudgetById, loadUserBudgets } from '@features/budgets/ser
 export async function loadBudgetInvitations(userId) {
   if (!userId) return [];
   try {
-    const q = query(collection(db, 'budgetInvitations'), where('invitedUserId', '==', userId), where('status', '==', 'pending'));
-    const snapshot = await getDocs(q);
-    const invitations = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    console.log('[DEBUG] Carregando convites para userId:', userId);
+    
+    // Primeiro, vamos buscar convites por invitedUserId
+    const q1 = query(collection(db, 'budgetInvitations'), where('invitedUserId', '==', userId), where('status', '==', 'pending'));
+    const snapshot1 = await getDocs(q1);
+    console.log('[DEBUG] Convites por invitedUserId:', snapshot1.docs.length);
+    
+    // Também buscar por email (para compatibilidade)
+    const user = window.appState?.currentUser;
+    let invitations;
+    if (user?.email) {
+      const q2 = query(collection(db, 'budgetInvitations'), where('invitedUserEmail', '==', user.email), where('status', '==', 'pending'));
+      const snapshot2 = await getDocs(q2);
+      console.log('[DEBUG] Convites por email:', snapshot2.docs.length);
+      
+      // Combinar resultados únicos
+      const allInvitations = new Map();
+      [...snapshot1.docs, ...snapshot2.docs].forEach(doc => {
+        allInvitations.set(doc.id, { id: doc.id, ...doc.data() });
+      });
+      invitations = Array.from(allInvitations.values());
+      console.log('[DEBUG] Total de convites únicos:', invitations.length);
+    } else {
+      invitations = snapshot1.docs.map(d => ({ id: d.id, ...d.data() }));
+      console.log('[DEBUG] Convites encontrados:', invitations.length);
+    }
     const budgetCache = new Map();
     const ownerCache = new Map();
     for (const inv of invitations) {
@@ -67,17 +90,38 @@ export async function loadSentBudgetInvitations(budgetId) {
  * @param {string} invitationId - O ID do convite.
  */
 export async function acceptBudgetInvitation(invitationId) {
+  console.log('[DEBUG] Aceitando convite:', invitationId);
   const invitationRef = doc(db, 'budgetInvitations', invitationId);
   await updateDoc(invitationRef, { status: 'accepted', acceptedAt: serverTimestamp() });
 
   const invitationSnap = await getDoc(invitationRef);
   const invitationData = invitationSnap.data();
+  console.log('[DEBUG] Dados do convite:', invitationData);
   
-  if (invitationData && invitationData.budgetId && invitationData.invitedUserId) {
+  if (invitationData && invitationData.budgetId) {
+    // Usar o currentUser.uid em vez do invitedUserId do convite
+    const currentUserId = window.appState?.currentUser?.uid;
+    if (!currentUserId) {
+      throw new Error('Usuário não autenticado');
+    }
+    
+    console.log('[DEBUG] Adicionando usuário ao orçamento:', {
+      budgetId: invitationData.budgetId,
+      currentUserId: currentUserId
+    });
+    
     const budgetRef = doc(db, 'budgets', invitationData.budgetId);
     await updateDoc(budgetRef, {
-      usuariosPermitidos: arrayUnion(invitationData.invitedUserId)
+      usuariosPermitidos: arrayUnion(currentUserId)
     });
+    
+    console.log('[DEBUG] Usuário adicionado ao orçamento com sucesso');
+  } else {
+    console.error('[DEBUG] Dados do convite inválidos:', {
+      hasInvitationData: !!invitationData,
+      hasBudgetId: !!invitationData?.budgetId
+    });
+    throw new Error('Dados do convite inválidos');
   }
 }
 

@@ -344,12 +344,14 @@ export function ensureHashHasYm(year, month) {
 export const globalFunctions = {
   showAddTransactionModal: async (data) => {
     try {
-      // Carregar e abrir o modal moderno diretamente
-      await import('@js/showAddTransactionModal.js');
-      if (typeof window.showAddTransactionModal === 'function') {
-        window.showAddTransactionModal(data || {});
+      // Usar o shim para carregar o modal
+      const { showTransactionModal } = await import('@js/TransactionModalShim.js');
+      const success = await showTransactionModal(data || {});
+      
+      if (success) {
         return;
       }
+      
       // Fallback: emitir evento de modal com tipo
       eventBus.emit('modal:show', { type: 'transaction', data, title: 'Nova Transação' });
     } catch (e) {
@@ -396,8 +398,27 @@ if (typeof window !== 'undefined') {
   // Substituir funções do window por versões modernas
   window.getSelectedPeriod = getSelectedPeriod;
   window.setSelectedPeriod = setSelectedPeriod;
-  window.showAddTransactionModal = globalFunctions.showAddTransactionModal;
-  window.showAddCategoryModal = globalFunctions.showAddCategoryModal;
+  
+  // Definir showAddTransactionModal globalmente usando o shim
+  window.showAddTransactionModal = async (data) => {
+    try {
+      // Usar o shim para carregar o modal
+      const { showTransactionModal } = await import('@js/TransactionModalShim.js');
+      const success = await showTransactionModal(data || {});
+      
+      if (success) {
+        return;
+      }
+      
+      // Fallback: emitir evento de modal com tipo
+      eventBus.emit('modal:show', { type: 'transaction', data, title: 'Nova Transação' });
+    } catch (e) {
+      console.warn('Falha ao abrir modal de transação:', e);
+      eventBus.emit('modal:show', { type: 'transaction', data, title: 'Nova Transação' });
+    }
+  };
+  
+  // window.showAddCategoryModal será definido dinamicamente quando necessário
   window.showAddRecorrenteModal = globalFunctions.showAddRecorrenteModal;
   window.closeModal = globalFunctions.closeModal;
 

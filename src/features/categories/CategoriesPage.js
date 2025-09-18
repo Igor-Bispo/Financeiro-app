@@ -597,8 +597,29 @@ ${categorias.length === 0 ? `
       window.deleteCategoryWithConfirmation = async function(categoryId, categoryName = 'categoria') {
         try {
           const name = categoryName || 'categoria';
-          const ok = confirm(`Excluir "${name}"? Esta ação não pode ser desfeita.`);
-          if (!ok) return;
+          
+          // Tentar usar o modal moderno de confirmação
+          let proceed = false;
+          if (typeof window.confirmDelete === 'function') {
+            proceed = await window.confirmDelete(name, 'categoria');
+          } else if (typeof window.showConfirmationModal === 'function') {
+            proceed = await new Promise(resolve => {
+              window.showConfirmationModal({ 
+                title: 'Excluir Categoria', 
+                message: `Tem certeza que deseja excluir "${name}"? Esta ação não pode ser desfeita.`, 
+                confirmText: 'Sim, excluir', 
+                confirmColor: 'bg-red-500 hover:bg-red-600', 
+                onConfirm: () => resolve(true), 
+                onCancel: () => resolve(false) 
+              });
+            });
+          } else {
+            // Fallback para confirm nativo
+            proceed = confirm(`Excluir "${name}"? Esta ação não pode ser desfeita.`);
+          }
+          
+          if (!proceed) return;
+          
           const svc = await import('./service.js');
           await svc.deleteCategory(categoryId);
           try { window.Snackbar?.show?.('Categoria excluída', 'success'); } catch {}
@@ -612,10 +633,44 @@ ${categorias.length === 0 ? `
 
     if (typeof window.editCategory !== 'function') {
       window.editCategory = function(categoryId) {
+        console.log('🔧 editCategory chamada com ID:', categoryId);
         try {
           const cat = window.appState?.categories?.find(c => c.id === categoryId);
-          if (cat) window.showAddCategoryModal?.(cat);
-        } catch (e) { console.warn('editCategory (fallback) falhou:', e); }
+          console.log('🔧 Categoria encontrada:', cat);
+          console.log('🔧 window.showAddCategoryModal disponível:', typeof window.showAddCategoryModal);
+          
+          if (cat) {
+            if (window.showAddCategoryModal) {
+              console.log('✅ Chamando showAddCategoryModal');
+              window.showAddCategoryModal(cat);
+            } else {
+              console.log('🔄 showAddCategoryModal não disponível, tentando carregar...');
+              // Tentar carregar o modal dinamicamente
+              import('@js/showAddCategoryModal.js').then(module => {
+                console.log('✅ Modal carregado dinamicamente');
+                if (module.default) {
+                  window.showAddCategoryModal = module.default;
+                  module.default(cat);
+                }
+              }).catch(error => {
+                console.error('❌ Falha ao carregar modal:', error);
+                if (window.Snackbar) {
+                  window.Snackbar.show('Erro ao abrir modal de edição', 'error');
+                }
+              });
+            }
+          } else {
+            console.error('❌ Categoria não encontrada:', categoryId);
+            if (window.Snackbar) {
+              window.Snackbar.show('Categoria não encontrada', 'error');
+            }
+          }
+        } catch (e) { 
+          console.warn('editCategory (fallback) falhou:', e); 
+          if (window.Snackbar) {
+            window.Snackbar.show('Erro ao editar categoria', 'error');
+          }
+        }
       };
     }
 

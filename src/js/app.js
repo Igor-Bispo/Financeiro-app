@@ -3158,18 +3158,39 @@ window.deleteTransactionWithConfirmation = function(transactionId, transactionNa
   });
 };
 
-window.deleteCategoryWithConfirmation = function(categoryId, categoryName = 'categoria') {
-  window.showConfirmationModal({
-    title: 'Excluir Categoria',
-    message: `Tem certeza que deseja excluir a categoria "${categoryName}"? Todas as transacoes desta categoria ficarao sem categoria.`,
-    confirmText: 'Sim, Excluir',
-    confirmColor: 'bg-red-500 hover:bg-red-600',
-    onConfirm: () => {
-      if (window.deleteCategory) {
-        window.deleteCategory(categoryId);
-      }
+window.deleteCategoryWithConfirmation = async function(categoryId, categoryName = 'categoria') {
+  try {
+    // Tentar usar o modal moderno de confirmação
+    let proceed = false;
+    if (typeof window.confirmDelete === 'function') {
+      proceed = await window.confirmDelete(categoryName, 'categoria');
+    } else if (typeof window.showConfirmationModal === 'function') {
+      proceed = await new Promise(resolve => {
+        window.showConfirmationModal({
+          title: 'Excluir Categoria',
+          message: `Tem certeza que deseja excluir a categoria "${categoryName}"? Todas as transações desta categoria ficarão sem categoria.`,
+          confirmText: 'Sim, Excluir',
+          confirmColor: 'bg-red-500 hover:bg-red-600',
+          onConfirm: () => resolve(true),
+          onCancel: () => resolve(false)
+        });
+      });
+    } else {
+      // Fallback para confirm nativo
+      proceed = confirm(`Tem certeza que deseja excluir a categoria "${categoryName}"?`);
     }
-  });
+    
+    if (!proceed) return;
+    
+    if (window.deleteCategory) {
+      await window.deleteCategory(categoryId);
+    }
+  } catch (e) {
+    console.error('Erro ao excluir categoria:', e);
+    if (window.Snackbar) {
+      window.Snackbar.show('Erro ao excluir categoria', 'error');
+    }
+  }
 };
 
 window.deleteRecorrenteWithConfirmation = function(recorrenteId, recorrenteName = 'despesa recorrente') {

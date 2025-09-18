@@ -488,9 +488,15 @@ export function renderTransactions() {
             if (window.Snackbar) { window.Snackbar({ message: 'Transação não encontrada', type: 'error' }); }
             return;
           }
-          await import('@js/showAddTransactionModal.js');
+          // Verificar se a função já está disponível (carregada diretamente no entry.js)
           if (typeof window.showAddTransactionModal === 'function') {
             window.showAddTransactionModal(tx);
+          } else {
+            // Fallback: tentar import dinâmico
+            await import('@js/showAddTransactionModal.js');
+            if (typeof window.showAddTransactionModal === 'function') {
+              window.showAddTransactionModal(tx);
+            }
           }
         } catch (err) {
           console.error('Falha ao abrir edição da transação', err);
@@ -503,10 +509,28 @@ export function renderTransactions() {
       window.deleteTransactionWithConfirmation = async function(transactionId, transactionName = 'transação') {
         try {
           const msg = `Tem certeza que deseja excluir "${transactionName}"?`;
-          const proceed = (typeof window.showConfirmationModal === 'function')
-            ? await new Promise(resolve => window.showConfirmationModal({ title: 'Excluir Transação', message: msg, confirmText: 'Sim, excluir', confirmColor: 'bg-red-500 hover:bg-red-600', onConfirm: () => resolve(true), onCancel: () => resolve(false) }))
-            : confirm(msg);
+          
+          // Usar o modal moderno de confirmação
+          let proceed = false;
+          if (typeof window.confirmDelete === 'function') {
+            proceed = await window.confirmDelete(transactionName, 'transação');
+          } else if (typeof window.showConfirmationModal === 'function') {
+            proceed = await new Promise(resolve => {
+              window.showConfirmationModal({ 
+                title: 'Excluir Transação', 
+                message: msg, 
+                confirmText: 'Sim, excluir', 
+                confirmColor: 'bg-red-500 hover:bg-red-600', 
+                onConfirm: () => resolve(true), 
+                onCancel: () => resolve(false) 
+              });
+            });
+          } else {
+            proceed = confirm(msg);
+          }
+          
           if (!proceed) { return; }
+          
           const { deleteTransactionWithNotifications } = await import('@features/transactions/service.js');
           await deleteTransactionWithNotifications(transactionId);
           if (window.Snackbar) { window.Snackbar({ message: 'Transação excluída', type: 'success' }); }

@@ -34,20 +34,36 @@ export function setupEventListeners() {
 
       // Sem conteúdo: encaminhar por tipo conhecido
       if (type === 'transaction') {
-        // Carrega o modal moderno de transação sob demanda
-        await import('@js/showAddTransactionModal.js');
+        // Verificar se a função já está disponível (carregada diretamente no entry.js)
         if (typeof window.showAddTransactionModal === 'function') {
           window.showAddTransactionModal(data || {});
           return;
+        }
+        
+        // Fallback: tentar import dinâmico
+        try {
+          await import('@js/showAddTransactionModal.js');
+          if (typeof window.showAddTransactionModal === 'function') {
+            window.showAddTransactionModal(data || {});
+            return;
+          }
+        } catch (importError) {
+          console.warn('Falha ao importar modal de transação:', importError);
         }
       }
 
       if (type === 'category') {
         // Carrega o modal moderno de categoria sob demanda
-        await import('@js/showAddCategoryModal.js');
-        if (typeof window.showAddCategoryModal === 'function') {
-          window.showAddCategoryModal(data || {});
+        try {
+          const { default: showAddCategoryModal } = await import('@js/showAddCategoryModal.js');
+          // Definir a função global para evitar loops
+          if (typeof window.showAddCategoryModal !== 'function') {
+            window.showAddCategoryModal = showAddCategoryModal;
+          }
+          showAddCategoryModal(data || {});
           return;
+        } catch (importError) {
+          console.warn('Falha ao importar modal de categoria:', importError);
         }
       }
 

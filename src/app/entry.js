@@ -1,6 +1,8 @@
 import './bootstrap.js';
 import '../js/config/settings.handlers.js'; // Garante handlers globais no window (corrigido path)
 import '../js/config/notification.triggers.js'; // Inicializa gatilhos de notificações (recorrentes + resumo semanal)
+import '../js/ui/ConfirmModal.js'; // Modal de confirmação moderno
+// Modal de transações será carregado dinamicamente quando necessário
 // Arquivo de entrada principal da aplicação
 // Substitui o app.js gigante com uma versão limpa e modular
 

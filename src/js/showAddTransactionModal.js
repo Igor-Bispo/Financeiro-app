@@ -1,7 +1,7 @@
 import { Modal } from './ui/Modal.js';
 import { Snackbar } from './ui/Snackbar.js';
 
-window.showAddTransactionModal = function (initialData = {}) {
+function showAddTransactionModal(initialData = {}) {
   console.log('🔧 showAddTransactionModal chamada com:', initialData);
   console.log('🔧 window.Modal disponível:', !!window.Modal);
   console.log('🔧 window.appState.categories:', window.appState?.categories);
@@ -250,8 +250,18 @@ window.showAddTransactionModal = function (initialData = {}) {
           }
         } else {
           // Confirmação + inclusão desacopladas de app.js
-          const proceed = await new Promise((resolve) => {
-            if (typeof window.showConfirmationModal === 'function') {
+          let proceed = false;
+          
+          // Usar modal moderno de confirmação como primeira opção
+          console.log('🔍 Debug modal - window.confirmTransaction:', typeof window.confirmTransaction);
+          console.log('🔍 Debug modal - window.showConfirmationModal:', typeof window.showConfirmationModal);
+          
+          if (typeof window.confirmTransaction === 'function') {
+            console.log('✅ Usando modal moderno confirmTransaction');
+            proceed = await window.confirmTransaction(transactionData);
+          } else if (typeof window.showConfirmationModal === 'function') {
+            console.log('⚠️ Usando modal legado showConfirmationModal');
+            proceed = await new Promise((resolve) => {
               window.showConfirmationModal({
                 title: 'Adicionar Transação',
                 message: `Tem certeza que deseja adicionar "${transactionData.descricao}" no valor de R$ ${Number(transactionData.valor||0).toFixed(2)}?`,
@@ -260,11 +270,21 @@ window.showAddTransactionModal = function (initialData = {}) {
                 onConfirm: () => resolve(true),
                 onCancel: () => resolve(false)
               });
-            } else {
-              // Fallback simples
-              resolve(confirm(`Adicionar "${transactionData.descricao}" no valor de R$ ${Number(transactionData.valor||0).toFixed(2)}?`));
+            });
+          } else {
+            console.log('🔄 Tentando import dinâmico do modal moderno');
+            // Fallback: tentar importar modal moderno
+            try {
+                const { confirmTransaction } = await import('./ui/ConfirmModal.js');
+              console.log('✅ Import dinâmico bem-sucedido, usando confirmTransaction');
+              proceed = await confirmTransaction(transactionData);
+            } catch (importError) {
+              console.warn('❌ Falha ao importar modal de confirmação:', importError);
+              // Fallback final para confirm básico
+              console.log('🔄 Usando confirm nativo do browser');
+              proceed = confirm(`Adicionar "${transactionData.descricao}" no valor de R$ ${Number(transactionData.valor||0).toFixed(2)}?`);
             }
-          });
+          }
 
           if (!proceed) return; // usuário cancelou
 
@@ -369,6 +389,9 @@ window.showAddTransactionModal = function (initialData = {}) {
 window.editTransaction = function (transactionId) {
   const transaction = window.appState.transactions?.find(t => t.id === transactionId);
   if (transaction) {
-    window.showAddTransactionModal(transaction);
+    showAddTransactionModal(transaction);
   }
 };
+
+// Export default para uso com import dinâmico
+export default showAddTransactionModal;

@@ -35,9 +35,14 @@ export async function loadUserBudgets(userId) {
     [...ownNorm, ...sharedNorm].forEach(b => {
       const existing = byId.get(b.id);
       // Se já existe, priorizar a versão que marca o usuário como dono (isOwner = true)
-      if (!existing || (b.isOwner && !existing.isOwner)) {
+      // MAS apenas se o usuário for realmente o dono original (b.userId === userId)
+      if (!existing) {
+        byId.set(b.id, b);
+      } else if (b.isOwner && !existing.isOwner && b.userId === userId) {
+        // Só sobrescrever se o usuário for realmente o dono original
         byId.set(b.id, b);
       }
+      // Caso contrário, manter o existente (que pode ser compartilhado)
     });
 
     const toDate = (v) => v?.toDate ? v.toDate() : (v?.seconds ? new Date(v.seconds * 1000) : (v ? new Date(v) : new Date(0)));

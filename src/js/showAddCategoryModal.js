@@ -1,7 +1,7 @@
 import { Modal } from './ui/Modal.js';
 import { Snackbar } from './ui/Snackbar.js';
 
-window.showAddCategoryModal = function (initialData = {}) {
+function showAddCategoryModal(initialData = {}) {
   console.log('🔧 showAddCategoryModal chamada com:', initialData);
   console.log('🔧 window.Modal disponível:', !!window.Modal);
 
@@ -139,9 +139,12 @@ window.editCategory = function (categoryId) {
   try {
     const category = window.appState?.categories?.find(c => c.id === categoryId);
     if (category) {
-      window.showAddCategoryModal(category);
+      showAddCategoryModal(category);
     }
   } catch (e) {
     console.warn('editCategory fallback falhou:', e);
   }
 };
+
+// Export default para uso com import dinâmico
+export default showAddCategoryModal;
