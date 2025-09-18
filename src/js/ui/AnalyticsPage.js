@@ -289,7 +289,6 @@ export class AnalyticsPage {
                       <span class="text-white text-sm">📊</span>
                     </div>
                     <div>
-                      <h1 class="text-2xl font-semibold text-gray-900 leading-tight">📊 Análises</h1>
                       <div class="flex items-center gap-1">
                         <span class="text-purple-600 dark:text-purple-400 text-xs">Inteligente</span>
                       </div>

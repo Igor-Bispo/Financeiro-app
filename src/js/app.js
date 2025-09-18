@@ -1410,9 +1410,6 @@ async function router(path) {
             content.innerHTML = `
                 <div class="tab-container">
                   <div class="tab-header">
-                    <h1 class="text-2xl font-semibold text-gray-900 leading-tight">📊 Análises</h1>
-                  </div>
-                  <div class="tab-content">
                     <div class="content-spacing">
                       <div class="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-300 px-4 py-3 rounded mb-4">
                         Nao foi possi­vel carregar o mi³dulo de ani¡lises.
@@ -1466,12 +1463,8 @@ async function router(path) {
         content.innerHTML = `
             <div class="tab-container">
               <div class="tab-header">
-                <h1 class="text-2xl font-semibold text-gray-900 leading-tight">📧 Notificações</h1>
-              </div>
-              <div class="tab-content">
-                <div class="content-spacing">
-                  <div class="text-center py-8">
-                    <div class="text-4xl mb-4">ðŸ""</div>
+                <div class="text-center py-8">
+                  <div class="text-4xl mb-4">📧</div>
                     <div class="text-lg font-semibold text-gray-800 dark:text-white mb-2">Notificacoes</div>
                     <div class="text-gray-600 dark:text-gray-400">Funcionalidade em desenvolvimento</div>
                   </div>
