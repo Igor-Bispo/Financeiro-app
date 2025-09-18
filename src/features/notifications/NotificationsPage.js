@@ -422,8 +422,8 @@ export async function renderNotifications(force = false) {
                   <div class="empty-text">🎉 Todas as notificações foram lidas!</div>
                   <div class="empty-description">Você está em dia com suas notificações. Não há nada novo para ver.</div>
           <div class="mt-2 flex gap-2">
-            <button onclick="window.renderNotifications()" class="u-btn u-btn--primary mobile-btn">🔄 Atualizar</button>
-            <button onclick="window.toggleUnreadOnly && window.toggleUnreadOnly()" class="u-btn u-btn--outline mobile-btn">👁️ Ver todas</button>
+            <button onclick="window.renderNotifications()" class="btn btn-primary btn-sm">🔄 Atualizar</button>
+            <button onclick="window.toggleUnreadOnly && window.toggleUnreadOnly()" class="btn btn-outline btn-sm">👁️ Ver todas</button>
           </div>
                 </div>
               </div>
@@ -443,7 +443,7 @@ export async function renderNotifications(force = false) {
                   <span class="text-white text-sm">🔔</span>
                 </div>
                 <div>
-                  <h2 class="text-gray-800 dark:text-white font-semibold text-base flex items-center gap-2">Notificações ${unreadBadge}</h2>
+                  <h1 class="text-2xl font-semibold text-gray-900 leading-tight flex items-center gap-2">📧 Notificações ${unreadBadge}</h1>
                   <div class="flex items-center gap-1">
                     <span class="text-orange-600 dark:text-orange-400 text-xs">${unreadCount > 0 ? `${unreadCount} não lidas` : 'Todas lidas'}</span>
                   </div>
@@ -554,10 +554,10 @@ export async function renderNotifications(force = false) {
               
               <!-- Ações Principais -->
               <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                <button onclick="window.showConfirmationModal({ title: 'Marcar como Lidas', message: 'Deseja marcar todas as notificações como lidas?', confirmText: 'Sim, Marcar', confirmColor: 'bg-blue-500 hover:bg-blue-600', onConfirmFn: 'markAllNotificationsAsRead' })" class="u-btn u-btn--primary mobile-btn text-sm">✅ Marcar lidas</button>
-                <button onclick="window.showConfirmationModal({ title: 'Arquivar notificações lidas', message: 'Deseja arquivar todas as notificações lidas? Você poderá restaurá-las depois.', confirmText: 'Sim, Arquivar', confirmColor: 'bg-indigo-500 hover:bg-indigo-600', onConfirmFn: 'archiveAllReadNotifications' })" class="u-btn u-btn--outline mobile-btn text-sm">🗃️ Arquivar</button>
-                <button onclick="window.showConfirmationModal({ title: 'Apagar notificações lidas', message: 'Deseja apagar todas as notificações lidas? Esta ação não pode ser desfeita.', confirmText: 'Sim, Apagar', confirmColor: 'bg-red-500 hover:bg-red-600', onConfirmFn: 'deleteAllReadNotifications' })" class="u-btn u-btn--danger mobile-btn text-sm">🗑️ Apagar</button>
-                <button onclick="window.renderNotifications()" class="u-btn u-btn--outline mobile-btn text-sm">🔄 Atualizar</button>
+                <button onclick="window.showConfirmationModal({ title: 'Marcar como Lidas', message: 'Deseja marcar todas as notificações como lidas?', confirmText: 'Sim, Marcar', confirmColor: 'bg-blue-500 hover:bg-blue-600', onConfirmFn: 'markAllNotificationsAsRead' })" class="btn btn-primary btn-sm">✅ Marcar lidas</button>
+                <button onclick="window.showConfirmationModal({ title: 'Arquivar notificações lidas', message: 'Deseja arquivar todas as notificações lidas? Você poderá restaurá-las depois.', confirmText: 'Sim, Arquivar', confirmColor: 'bg-indigo-500 hover:bg-indigo-600', onConfirmFn: 'archiveAllReadNotifications' })" class="btn btn-outline btn-sm">🗃️ Arquivar</button>
+                <button onclick="window.showConfirmationModal({ title: 'Apagar notificações lidas', message: 'Deseja apagar todas as notificações lidas? Esta ação não pode ser desfeita.', confirmText: 'Sim, Apagar', confirmColor: 'bg-red-500 hover:bg-red-600', onConfirmFn: 'deleteAllReadNotifications' })" class="btn btn-danger btn-sm">🗑️ Apagar</button>
+                <button onclick="window.renderNotifications()" class="btn btn-outline btn-sm">🔄 Atualizar</button>
               </div>
 
               <!-- Filtros -->
@@ -581,8 +581,8 @@ export async function renderNotifications(force = false) {
                       Apenas não lidas
                     </label>
                     <div class="flex gap-2">
-                      <button onclick="window.resetNotificationFilters && window.resetNotificationFilters()" class="u-btn u-btn--ghost text-xs">♻️ Reset</button>
-                      <button onclick="window.loadUnreadNotifications && window.loadUnreadNotifications()" class="u-btn u-btn--primary text-xs">📬 Não lidas</button>
+                      <button onclick="window.resetNotificationFilters && window.resetNotificationFilters()" class="btn btn-ghost btn-sm">♻️ Reset</button>
+                      <button onclick="window.loadUnreadNotifications && window.loadUnreadNotifications()" class="btn btn-primary btn-sm">📬 Não lidas</button>
                     </div>
                   </div>
                 </div>

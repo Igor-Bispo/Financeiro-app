@@ -40,9 +40,9 @@ export function renderTelemetrySection(container, { year, month } = {}) {
             <input id="telem-last-min" data-testid="telem-last-min" type="number" min="0" step="1" value="" placeholder="todos" class="ml-2 w-28 p-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800" />
           </label>
           <div class="flex-1"></div>
-          <button id="telem-clear" class="px-3 py-1 text-sm rounded bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700">Limpar</button>
-          <button id="telem-export" data-testid="telem-export" class="px-3 py-1 text-sm rounded bg-blue-600 text-white hover:bg-blue-700">Exportar CSV</button>
-          <button id="telem-copy" data-testid="telem-copy" class="px-3 py-1 text-sm rounded bg-indigo-600 text-white hover:bg-indigo-700">Copiar CSV</button>
+          <button id="telem-clear" class="btn btn-outline btn-sm">Limpar</button>
+          <button id="telem-export" data-testid="telem-export" class="btn btn-primary btn-sm">Exportar CSV</button>
+          <button id="telem-copy" data-testid="telem-copy" class="btn btn-primary btn-sm">Copiar CSV</button>
         </div>
         <div class="p-4 grid grid-cols-2 md:grid-cols-5 gap-4">
           <div class="text-center">
@@ -74,7 +74,7 @@ export function renderTelemetrySection(container, { year, month } = {}) {
             <tbody id="telem-tbody"></tbody>
           </table>
           <div class="mt-3">
-            <button id="telem-more" data-testid="telem-more" class="px-3 py-1 text-sm rounded bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700">Mostrar mais</button>
+            <button id="telem-more" data-testid="telem-more" class="btn btn-outline btn-sm">Mostrar mais</button>
           </div>
         </div>
       </div>
@@ -243,8 +243,8 @@ export class AnalyticsPage {
               <div class="font-semibold text-gray-900 dark:text-gray-100 mb-1">Nenhum orçamento ativo</div>
               <div class="text-sm text-gray-700 dark:text-gray-300">Entre em um orçamento nas Configurações para visualizar as análises.</div>
               <div class="mt-4 flex gap-2">
-                <button class="u-btn u-btn--primary" onclick="window.location.hash = '#/settings'">Ir para Configurações</button>
-                <button class="u-btn u-btn--outline" onclick="window.location.hash = '#/dashboard'">Voltar ao Dashboard</button>
+                <button class="btn btn-primary" onclick="window.location.hash = '#/settings'">Ir para Configurações</button>
+                <button class="btn btn-outline" onclick="window.location.hash = '#/dashboard'">Voltar ao Dashboard</button>
               </div>
             </div>
           </div>`;
@@ -289,7 +289,7 @@ export class AnalyticsPage {
                       <span class="text-white text-sm">📊</span>
                     </div>
                     <div>
-                      <h2 class="text-gray-800 dark:text-white font-semibold text-base">Análises</h2>
+                      <h1 class="text-2xl font-semibold text-gray-900 leading-tight">📊 Análises</h1>
                       <div class="flex items-center gap-1">
                         <span class="text-purple-600 dark:text-purple-400 text-xs">Inteligente</span>
                       </div>
@@ -315,7 +315,7 @@ export class AnalyticsPage {
         if (header) {
           const toggleBtn = document.createElement('button');
           toggleBtn.id = 'analytics-advanced-toggle';
-          toggleBtn.className = 'u-btn u-btn--outline';
+          toggleBtn.className = 'btn btn-outline btn-sm';
           toggleBtn.style.marginLeft = 'auto';
           toggleBtn.textContent = 'Mostrar análises avançadas';
           header.appendChild(toggleBtn);
@@ -331,7 +331,7 @@ export class AnalyticsPage {
           <div class="empty-icon">📊</div>
           <div class="empty-text">Sem dados para este período</div>
           <div class="empty-description">Registre sua primeira transação para ver gráficos e tendências.</div>
-          <div class="mt-2"><button class="u-btn u-btn--primary" onclick="window.showAddTransactionModal && window.showAddTransactionModal()">Adicionar primeira transação</button></div>
+          <div class="mt-2"><button class="btn btn-primary" onclick="window.showAddTransactionModal && window.showAddTransactionModal()">Adicionar primeira transação</button></div>
         `;
         sectionsRoot.appendChild(empty);
         return container;
@@ -524,7 +524,7 @@ export class AnalyticsPage {
       chartsSection.innerHTML = `
         <div class="flex items-center gap-2 mb-4">
           <div class="w-1 h-6 bg-gradient-to-b from-green-500 to-teal-500 rounded-full"></div>
-          <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">📊 Gráficos & Análises</h2>
+          <h2 class="text-2xl font-semibold text-gray-900 leading-tight">📊 Gráficos & Análises</h2>
         </div>
         
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">

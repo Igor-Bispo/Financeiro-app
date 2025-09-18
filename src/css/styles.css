@@ -1,6 +1,8 @@
 /* Importar estilos do modo compacto */
 @import './compact-mode.css';
 @import './notification-modal.css';
+@import './design-tokens.css';
+@import './modern-components.css';
 
 @tailwind base;
 @tailwind components;

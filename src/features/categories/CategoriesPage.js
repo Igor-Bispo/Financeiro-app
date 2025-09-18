@@ -25,7 +25,7 @@ export async function render(container) {
   // Header com indicador de período
   const header = document.createElement('div');
   header.className = 'tab-header mb-6';
-  header.innerHTML = '<h2 class="tab-title-highlight">📂 Categorias</h2><div id="cat-period-indicator"></div>';
+  header.innerHTML = '<h1 class="text-2xl font-semibold text-gray-900 leading-tight">📂 Categorias</h1><div id="cat-period-indicator"></div>';
 
   // O indicador de período será injetado na renderização principal (cat-period-indicator)
 
@@ -38,7 +38,7 @@ export async function render(container) {
     <div class="u-card bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-6">
       <div class="flex justify-between items-center mb-6">
         <h3 class="text-lg font-bold text-gray-900 dark:text-white">📁 Gerenciar Categorias</h3>
-  <button onclick="window.showAddCategoryModal()" class="u-btn u-btn--primary mobile-btn">
+  <button onclick="window.showAddCategoryModal()" class="btn btn-primary btn-sm">
           ➕ Nova Categoria
         </button>
       </div>
@@ -58,7 +58,7 @@ export async function render(container) {
     if (wrap && !hasAny) {
       const empty = document.createElement('div');
       empty.className = 'empty-state mt-2';
-      empty.innerHTML = '<div class="empty-icon">📁</div><div class="empty-text">Nenhuma categoria cadastrada</div><div class="mt-2"><button class="u-btn u-btn--primary mobile-btn w-full" onclick=\"window.showAddCategoryModal && window.showAddCategoryModal()\">Criar categoria</button></div>';
+      empty.innerHTML = '<div class="empty-icon">📁</div><div class="empty-text">Nenhuma categoria cadastrada</div><div class="mt-2"><button class="btn btn-primary w-full" onclick=\"window.showAddCategoryModal && window.showAddCategoryModal()\">Criar categoria</button></div>';
       wrap.appendChild(empty);
     }
   } catch {}
@@ -379,13 +379,13 @@ export async function renderCategories() {
                 <div class="flex flex-wrap justify-between items-center gap-2">
                   <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Gerenciar Categorias</h3>
                   <div class="flex gap-2 flex-wrap">
-                    <button onclick="window.migrarTransacoesAntigas()" class="u-btn u-btn--outline mobile-btn btn-sm">
+                    <button onclick="window.migrarTransacoesAntigas()" class="btn btn-outline btn-sm">
                       🔄 Migrar
           </button>
-                    <button onclick="window.corrigirTipoCategoria()" class="u-btn u-btn--outline mobile-btn btn-sm">
+                    <button onclick="window.corrigirTipoCategoria()" class="btn btn-outline btn-sm">
                       🔧 Corrigir
           </button>
-                    <button id="add-category-btn" class="u-btn u-btn--primary mobile-btn">
+                    <button id="add-category-btn" class="btn btn-primary btn-sm">
                       + Nova Categoria
           </button>
         </div>
@@ -425,7 +425,7 @@ ${categorias.length === 0 ? `
                   <div class="text-6xl mb-4">📂</div>
                   <div class="text-xl font-semibold text-gray-800 dark:text-white mb-2">Nenhuma categoria encontrada</div>
                   <div class="text-gray-600 dark:text-gray-400 mb-4">Crie sua primeira categoria para organizar suas finanças</div>
-                  <button onclick="window.showAddCategoryModal()" class="u-btn u-btn--primary mobile-btn w-full">
+                  <button onclick="window.showAddCategoryModal()" class="btn btn-primary w-full">
                     📂 Criar Primeira Categoria
                   </button>
                   </div>
@@ -514,15 +514,15 @@ ${categorias.length === 0 ? `
                         `}
                         
                         <div class="flex flex-wrap justify-end gap-1 sm:gap-2 mt-4">
-                          <button onclick="editCategory('${cat.id}')" class="u-btn u-btn--outline mobile-btn">
+                          <button onclick="editCategory('${cat.id}')" class="btn btn-outline btn-sm">
                             <span class="icon-standard">✏️</span>
                             <span class="hidden sm:inline">Editar</span>
                           </button>
-                          <button onclick="window.deleteCategoryWithConfirmation('${cat.id}', '${cat.nome}')" class="u-btn u-btn--danger mobile-btn">
+                          <button onclick="window.deleteCategoryWithConfirmation('${cat.id}', '${cat.nome}')" class="btn btn-danger btn-sm">
                             <span class="icon-standard">🗑️</span>
                             <span class="hidden sm:inline">Excluir</span>
                           </button>
-                          <button onclick="showCategoryHistory('${cat.id}')" class="u-btn u-btn--outline mobile-btn">
+                          <button onclick="showCategoryHistory('${cat.id}')" class="btn btn-outline btn-sm">
                             <span class="icon-standard">📊</span>
                             <span class="hidden sm:inline">Histórico</span>
                           </button>

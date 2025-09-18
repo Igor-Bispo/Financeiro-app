@@ -9,7 +9,7 @@ export async function render(container) {
   // Header padrão das abas (sem seletor interativo de período)
   const header = document.createElement('div');
   header.className = 'tab-header mb-6';
-  header.innerHTML = '<h2 class="tab-title-highlight">♻️ Recorrentes</h2>';
+  header.innerHTML = '<h1 class="text-2xl font-semibold text-gray-900 leading-tight">♻️ Recorrentes</h1>';
   root.appendChild(header);
 
   // Card inicial com ação
@@ -19,7 +19,7 @@ export async function render(container) {
     <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-6">
       <div class="flex justify-between items-center mb-6">
         <h3 class="text-lg font-bold text-gray-900 dark:text-white">🔁 Gerenciar Recorrentes</h3>
-  <button onclick="window.showAddRecorrenteModal && window.showAddRecorrenteModal()" class="u-btn u-btn--primary mobile-btn">
+  <button onclick="window.showAddRecorrenteModal && window.showAddRecorrenteModal()" class="btn btn-primary btn-sm">
           ➕ Nova Recorrente
         </button>
       </div>
@@ -214,8 +214,8 @@ export async function renderRecorrentes() {
               <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 flex flex-col md:flex-row gap-3 md:gap-4 md:items-center md:justify-between">
                 <div class="text-sm text-gray-600 dark:text-gray-400">Período selecionado: <strong>${monthName}/${selYear}</strong></div>
                 <div class="flex gap-2">
-                  <button onclick="window.showAddRecorrenteModal && window.showAddRecorrenteModal()" class="u-btn u-btn--primary mobile-btn">➕ Nova Recorrente</button>
-                  <button ${pendentesMes === 0 ? 'disabled' : ''} onclick="window.efetivarRecorrentesMesAtual && window.efetivarRecorrentesMesAtual()" class="u-btn u-btn--outline mobile-btn" ${pendentesMes === 0 ? 'disabled' : ''}>
+                  <button onclick="window.showAddRecorrenteModal && window.showAddRecorrenteModal()" class="btn btn-primary btn-sm">➕ Nova Recorrente</button>
+                  <button ${pendentesMes === 0 ? 'disabled' : ''} onclick="window.efetivarRecorrentesMesAtual && window.efetivarRecorrentesMesAtual()" class="btn btn-outline btn-sm" ${pendentesMes === 0 ? 'disabled' : ''}>
                     ⚡ Efetivar Pendentes (${pendentesMes})
                   </button>
                 </div>
@@ -279,7 +279,7 @@ export async function renderRecorrentes() {
     } catch {}
 
     if (!items.length) {
-      listEl.innerHTML = '<div class="empty-state"><div class="empty-icon">♻️</div><div class="empty-text">Nenhuma recorrente cadastrada</div><div class="empty-description">Crie sua primeira recorrente para automatizar lançamentos</div><div class="mt-2"><button class="u-btn u-btn--primary mobile-btn w-full" onclick="window.showAddRecorrenteModal && window.showAddRecorrenteModal()">➕ Nova Recorrente</button></div></div>';
+      listEl.innerHTML = '<div class="empty-state"><div class="empty-icon">♻️</div><div class="empty-text">Nenhuma recorrente cadastrada</div><div class="empty-description">Crie sua primeira recorrente para automatizar lançamentos</div><div class="mt-2"><button class="btn btn-primary w-full" onclick="window.showAddRecorrenteModal && window.showAddRecorrenteModal()">➕ Nova Recorrente</button></div></div>';
     } else {
       const ano = selYear; const mes = selMonth;
       const parts = items.map(it => {

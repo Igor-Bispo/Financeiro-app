@@ -124,7 +124,7 @@ export async function render(container) {
   // Header da aba
   const header = document.createElement('div');
   header.className = 'tab-header mb-6';
-  header.innerHTML = '<h2 class="tab-title-highlight">💸 Transações</h2><div id="tx-period-indicator"></div>';
+  header.innerHTML = '<h1 class="text-2xl font-semibold text-gray-900 leading-tight">💸 Transações</h1><div id="tx-period-indicator"></div>';
   // O indicador de período será injetado pela renderização principal (placeholder tx-period-indicator)
   
   root.appendChild(header);
@@ -136,7 +136,7 @@ export async function render(container) {
   <div class="u-card bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-6">
       <div class="flex justify-between items-center mb-6">
         <h3 class="text-lg font-bold text-gray-900 dark:text-white">📋 Lista de Transações</h3>
-  <button onclick="window.showAddTransactionModal()" class="u-btn u-btn--primary mobile-btn">
+  <button onclick="window.showAddTransactionModal()" class="btn btn-primary btn-sm">
           ➕ Nova Transação
         </button>
       </div>
@@ -346,10 +346,10 @@ export function renderTransactions() {
                 <div class="flex flex-wrap justify-between items-center gap-2">
                   <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Gerenciar Transações</h3>
                   <div class="flex gap-2">
-                    <button id="add-transaction-btn" class="u-btn u-btn--primary mobile-btn">
+                    <button id="add-transaction-btn" class="btn btn-primary btn-sm">
                       ➕ Nova Transação
             </button>
-                    <button id="voice-btn" class="u-btn u-btn--outline mobile-btn">
+                    <button id="voice-btn" class="btn btn-outline btn-sm">
                       🎤 Voz
             </button>
                   </div>
@@ -391,7 +391,7 @@ export function renderTransactions() {
               <div class="empty-state mt-4">
                 <div class="empty-icon">🧾</div>
                 <div class="empty-text">Sem transações neste período</div>
-                <div class="mt-2"><button class="u-btn u-btn--primary mobile-btn w-full" onclick="window.showAddTransactionModal && window.showAddTransactionModal()">Adicionar transação</button></div>
+                <div class="mt-2"><button class="btn btn-primary w-full" onclick="window.showAddTransactionModal && window.showAddTransactionModal()">Adicionar transação</button></div>
               </div>` : ''}
           </div>
         </div>
@@ -675,7 +675,7 @@ export function renderAllTransactions() {
           </div>
         </div>
         <div class="p-4">
-          <button class="u-btn u-btn--outline mobile-btn w-full" onclick="window.loadMonthSection && window.loadMonthSection('${mesAno}')">
+          <button class="btn btn-outline w-full" onclick="window.loadMonthSection && window.loadMonthSection('${mesAno}')">
             Carregar transações deste mês
           </button>
         </div>
@@ -700,7 +700,7 @@ export function renderOlderMonthsControl() {
 
     return `
     <div class="mb-3 flex justify-end">
-  <button id="load-older-months-btn" class="u-btn u-btn--outline mobile-btn btn-sm">
+  <button id="load-older-months-btn" class="btn btn-outline btn-sm">
           Carregar meses anteriores
         </button>
       </div>
@@ -749,7 +749,7 @@ export function renderMonthSectionHTML(mesAno, transacoesMes) {
             <div class="text-5xl mb-3">🗓️</div>
             <div class="font-medium mb-1">Nenhuma transação neste mês</div>
             <div class="text-sm text-gray-600 dark:text-gray-400 mb-3">Adicione sua primeira transação de ${nomeMes}</div>
-            <button onclick="showAddTransactionModal && showAddTransactionModal()" class="u-btn u-btn--primary mobile-btn">➕ Nova Transação</button>
+            <button onclick="showAddTransactionModal && showAddTransactionModal()" class="btn btn-primary btn-sm">➕ Nova Transação</button>
           </div>
         ` : `
         <div class="space-y-2 sm:space-y-3" id="tx-day-items-${mesAno}">

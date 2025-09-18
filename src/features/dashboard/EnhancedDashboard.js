@@ -119,7 +119,7 @@ export class EnhancedDashboard {
         <!-- Header com saldo principal -->
         <div class="dashboard-header">
           <div class="balance-card">
-            <h1 class="balance-title">Saldo Atual</h1>
+            <h1 class="balance-title text-2xl font-semibold text-gray-900 leading-tight">Saldo Atual</h1>
             <div class="balance-amount ${this.stats.balance >= 0 ? 'positive' : 'negative'}">
               ${this.formatCurrency(this.stats.balance)}
             </div>

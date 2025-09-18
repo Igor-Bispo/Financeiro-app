@@ -203,14 +203,14 @@ function showAddTransactionModal(initialData = {}) {
         <div class="flex gap-2 pt-4">
           <button 
             type="submit" 
-            class="flex-1 u-btn u-btn--primary"
+            class="flex-1 btn btn-primary"
           >
             ${isEdicao ? 'Atualizar' : 'Adicionar'}
           </button>
           <button 
             type="button" 
             onclick="this.closest('.modal').remove()"
-            class="flex-1 u-btn u-btn--ghost"
+            class="flex-1 btn btn-ghost"
           >
             Cancelar
           </button>
