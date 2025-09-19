@@ -358,13 +358,15 @@ export class DashboardDragDrop {
         ['Data de Exportação', data.exportDate],
         [''],
         ['📈 PROGRESSO DO ORÇAMENTO', ''],
-        ...data.progress.split('\n').filter(line => line.trim()).map(line => ['', line.trim()]),
+        ['Percentual', data.progress.percentage],
+        ['Usado', data.progress.used],
+        ['Total', data.progress.total],
         [''],
         ['💰 MÉTRICAS FINANCEIRAS', ''],
-        ...data.metrics.filter(metric => metric.trim()).map(metric => ['', metric.trim()]),
+        ...data.metrics.map(metric => [metric.label, metric.value]),
         [''],
         ['📊 RESUMO DETALHADO', ''],
-        ...data.summary.split('\n').filter(line => line.trim()).map(line => ['', line.trim()])
+        ...data.summary.items.map(item => [item.label, item.value])
       ];
       
       const resumoSheet = XLSX.utils.aoa_to_sheet(resumoData);
@@ -380,12 +382,18 @@ export class DashboardDragDrop {
       // Planilha 2: Análise Detalhada
       const analiseData = [
         ['CATEGORIA', 'VALOR', 'TIPO', 'STATUS'],
-        ['Receitas', this.extractValue(data.metrics[0]), 'Receita', 'Positivo'],
-        ['Despesas', this.extractValue(data.metrics[1]), 'Despesa', 'Negativo'],
-        ['Saldo', this.extractValue(data.metrics[2]), 'Saldo', this.extractValue(data.metrics[2]) >= 0 ? 'Positivo' : 'Negativo'],
+        ...data.metrics.map(metric => [
+          metric.label,
+          metric.value,
+          metric.label.includes('Receita') ? 'Receita' : 
+          metric.label.includes('Despesa') ? 'Despesa' : 'Saldo',
+          metric.label.includes('Receita') ? 'Positivo' : 
+          metric.label.includes('Despesa') ? 'Negativo' : 'Neutro'
+        ]),
         [''],
         ['MÉTRICAS DE PROGRESSO', '', '', ''],
-        ['Progresso do Orçamento', this.extractPercentage(data.progress), '%', this.extractPercentage(data.progress) > 70 ? 'Atenção' : 'Normal']
+        ['Progresso do Orçamento', data.progress.percentage, '%', 
+         parseFloat(data.progress.percentage) > 70 ? 'Atenção' : 'Normal']
       ];
       
       const analiseSheet = XLSX.utils.aoa_to_sheet(analiseData);
@@ -401,9 +409,16 @@ export class DashboardDragDrop {
       // Planilha 3: Metas Diárias
       const metasData = [
         ['META DIÁRIA', 'VALOR', 'TIPO', 'RECOMENDAÇÃO'],
-        ['Meta Orçamento', this.extractMetaValue(data.summary, 'Orçamento'), 'Conservadora', 'Baseada no orçamento total'],
-        ['Meta 100% Receitas', this.extractMetaValue(data.summary, '100% Receitas'), 'Moderada', 'Baseada nas receitas atuais'],
-        ['Meta Conservadora', this.extractMetaValue(data.summary, 'Conservadora'), 'Conservadora', '80% das receitas atuais']
+        ...data.summary.items
+          .filter(item => item.label.includes('Meta Diária'))
+          .map(item => [
+            item.label,
+            item.value,
+            item.label.includes('Orçamento') ? 'Conservadora' :
+            item.label.includes('100%') ? 'Moderada' : 'Conservadora',
+            item.label.includes('Orçamento') ? 'Baseada no orçamento total' :
+            item.label.includes('100%') ? 'Baseada nas receitas atuais' : '80% das receitas atuais'
+          ])
       ];
       
       const metasSheet = XLSX.utils.aoa_to_sheet(metasData);
@@ -485,36 +500,108 @@ export class DashboardDragDrop {
     const year = (window.appState && window.appState.selectedYear) || now.getFullYear();
     const monthName = monthNames[Math.max(0, Math.min(11, month - 1))] || '';
 
-    // Coletar dados do dashboard
-    const progressCard = document.querySelector('[data-card-type="progress"]');
-    const metricsCards = document.querySelectorAll('[data-card-type="metrics"] .bg-white');
+    // Extrair dados estruturados do dashboard
+    const progressData = this.extractProgressData();
+    const metricsData = this.extractMetricsData();
+    const summaryData = this.extractSummaryData();
     
     return {
       period: `${monthName}/${year}`,
-      progress: progressCard ? progressCard.textContent.trim() : '',
-      metrics: Array.from(metricsCards).map(card => card.textContent.trim()),
-      summary: document.querySelector('[data-card-type="summary"]')?.textContent.trim() || '',
+      progress: progressData,
+      metrics: metricsData,
+      summary: summaryData,
       exportDate: new Date().toLocaleString('pt-BR')
     };
   }
 
+  extractProgressData() {
+    const progressCard = document.querySelector('[data-card-type="progress"]');
+    if (!progressCard) return { percentage: '0%', used: 'R$ 0,00', total: 'R$ 0,00' };
+
+    const percentageEl = progressCard.querySelector('.text-lg.font-bold');
+    const detailsEl = progressCard.querySelector('.text-xs.text-gray-600');
+    
+    const percentage = percentageEl ? percentageEl.textContent.trim() : '0%';
+    const details = detailsEl ? detailsEl.textContent.trim() : 'R$ 0,00 de R$ 0,00';
+    
+    const [used, total] = details.split(' de ');
+    
+    return {
+      percentage,
+      used: used || 'R$ 0,00',
+      total: total || 'R$ 0,00'
+    };
+  }
+
+  extractMetricsData() {
+    const metricsCards = document.querySelectorAll('[data-card-type="metrics"] .bg-white');
+    const metrics = [];
+    
+    metricsCards.forEach(card => {
+      const valueEl = card.querySelector('.text-lg.font-bold');
+      const labelEl = card.querySelector('.text-xs.text-gray-600');
+      
+      if (valueEl && labelEl) {
+        metrics.push({
+          label: labelEl.textContent.trim(),
+          value: valueEl.textContent.trim()
+        });
+      }
+    });
+    
+    return metrics;
+  }
+
+  extractSummaryData() {
+    const summaryCard = document.querySelector('[data-card-type="summary"]');
+    if (!summaryCard) return { items: [] };
+
+    const items = [];
+    const lines = summaryCard.querySelectorAll('.flex.justify-between.text-xs');
+    
+    lines.forEach(line => {
+      const labelEl = line.querySelector('span:first-child');
+      const valueEl = line.querySelector('span:last-child');
+      
+      if (labelEl && valueEl) {
+        items.push({
+          label: labelEl.textContent.trim(),
+          value: valueEl.textContent.trim()
+        });
+      }
+    });
+    
+    return { items };
+  }
+
   generatePDFContent(data) {
-    return `
-RESUMO FINANCEIRO - ${data.period}
-Exportado em: ${data.exportDate}
-
-PROGRESSO DO ORÇAMENTO:
-${data.progress}
-
-MÉTRICAS:
-${data.metrics.join('\n')}
-
-RESUMO FINANCEIRO:
-${data.summary}
-
----
-Gerado pelo Sistema de Controle Financeiro
-    `.trim();
+    let content = `RESUMO FINANCEIRO - ${data.period}\n`;
+    content += `Exportado em: ${data.exportDate}\n\n`;
+    
+    // Progresso do Orçamento
+    content += `PROGRESSO DO ORÇAMENTO:\n`;
+    content += `• Percentual: ${data.progress.percentage}\n`;
+    content += `• Usado: ${data.progress.used}\n`;
+    content += `• Total: ${data.progress.total}\n\n`;
+    
+    // Métricas
+    content += `MÉTRICAS FINANCEIRAS:\n`;
+    data.metrics.forEach(metric => {
+      content += `• ${metric.label}: ${metric.value}\n`;
+    });
+    content += `\n`;
+    
+    // Resumo Financeiro
+    content += `RESUMO DETALHADO:\n`;
+    data.summary.items.forEach(item => {
+      content += `• ${item.label}: ${item.value}\n`;
+    });
+    content += `\n`;
+    
+    content += `---\n`;
+    content += `Gerado pelo Sistema de Controle Financeiro`;
+    
+    return content;
   }
 
   generateCSVContent(data) {
@@ -524,34 +611,56 @@ Gerado pelo Sistema de Controle Financeiro
       `Data Exportação,${data.exportDate},`,
       '',
       'PROGRESSO DO ORÇAMENTO',
-      `Progresso,${data.progress},`,
+      `Percentual,${data.progress.percentage},Progresso do orçamento`,
+      `Usado,${data.progress.used},Valor gasto`,
+      `Total,${data.progress.total},Orçamento total`,
       '',
-      'MÉTRICAS',
-      ...data.metrics.map(metric => `Métrica,${metric},`),
-      '',
-      'RESUMO FINANCEIRO',
-      `Resumo,${data.summary},`
+      'MÉTRICAS FINANCEIRAS'
     ];
+    
+    // Adicionar métricas
+    data.metrics.forEach(metric => {
+      lines.push(`${metric.label},${metric.value},Métrica financeira`);
+    });
+    
+    lines.push('');
+    lines.push('RESUMO DETALHADO');
+    
+    // Adicionar itens do resumo
+    data.summary.items.forEach(item => {
+      lines.push(`${item.label},${item.value},Item do resumo`);
+    });
     
     return lines.join('\n');
   }
 
   generateWhatsAppMessage(data, format = 'PDF') {
-    return `📊 *RESUMO FINANCEIRO - ${data.period}*
-
-${data.progress}
-
-📈 *Métricas:*
-${data.metrics.map(metric => `• ${metric}`).join('\n')}
-
-💰 *Resumo:*
-${data.summary}
-
-📅 Exportado em: ${data.exportDate}
-📄 Formato: ${format}
-
----
-💡 Gerado pelo Sistema de Controle Financeiro`;
+    let message = `📊 *RESUMO FINANCEIRO - ${data.period}*\n\n`;
+    
+    // Progresso do Orçamento
+    message += `📈 *Progresso do Orçamento:*\n`;
+    message += `• ${data.progress.percentage} (${data.progress.used} de ${data.progress.total})\n\n`;
+    
+    // Métricas
+    message += `💰 *Métricas:*\n`;
+    data.metrics.forEach(metric => {
+      message += `• ${metric.label}: ${metric.value}\n`;
+    });
+    message += `\n`;
+    
+    // Resumo
+    message += `📊 *Resumo Detalhado:*\n`;
+    data.summary.items.forEach(item => {
+      message += `• ${item.label}: ${item.value}\n`;
+    });
+    message += `\n`;
+    
+    message += `📅 Exportado em: ${data.exportDate}\n`;
+    message += `📄 Formato: ${format}\n\n`;
+    message += `---\n`;
+    message += `💡 Gerado pelo Sistema de Controle Financeiro`;
+    
+    return message;
   }
 
   showNotification(message, type = 'info') {
