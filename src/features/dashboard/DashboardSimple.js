@@ -209,12 +209,11 @@ export function renderDashboard(container) {
   // Saldo restante das receitas (considerando despesas já realizadas)
   var saldoRestanteReceitas = receitas - despesas;
   
-  // Meta diária para bater exatamente as receitas (100% das receitas restantes)
-  var metaDiariaReceitasCompletas = saldoRestanteReceitas > 0 ? (saldoRestanteReceitas / diasRestantes) : 0;
+  // Meta diária para bater exatamente as receitas (100% das receitas totais)
+  var metaDiariaReceitasCompletas = receitas > 0 ? (receitas / diasRestantes) : 0;
   
-  // Meta diária conservadora (80% das receitas restantes para gastos, 20% para reserva)
-  var saldoRestanteConservador = saldoRestanteReceitas * 0.8;
-  var metaDiariaConservadora = saldoRestanteConservador > 0 ? (saldoRestanteConservador / diasRestantes) : 0;
+  // Meta diária conservadora (80% das receitas totais para gastos, 20% para reserva)
+  var metaDiariaConservadora = receitas > 0 ? ((receitas * 0.8) / diasRestantes) : 0;
   
   // Análise inteligente: diferença entre metas
   var analiseMetas = {
@@ -335,29 +334,23 @@ export function renderDashboard(container) {
   html += '                <span class="font-bold text-lg ' + (saldo >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400') + '">R$ ' + formatBR(saldo) + '</span>';
   html += '              </div>';
   
-  // Meta Diária (destaque principal)
-  if (metaDiariaGlobal > 0) {
-    html += '              <div class="flex justify-between text-xs bg-blue-50 dark:bg-blue-900/20 p-2 rounded-lg border border-blue-200 dark:border-blue-800">';
-    html += '                <span class="text-gray-600 dark:text-gray-400 font-medium">💡 Meta Diária (Orçamento):</span>';
-    html += '                <span class="font-bold text-blue-600 dark:text-blue-400">R$ ' + formatBR(metaDiariaGlobal) + '/dia</span>';
-    html += '              </div>';
-  }
+  // Meta Diária (destaque principal) - sempre visível
+  html += '              <div class="flex justify-between text-xs bg-blue-50 dark:bg-blue-900/20 p-2 rounded-lg border border-blue-200 dark:border-blue-800 mb-2">';
+  html += '                <span class="text-gray-600 dark:text-gray-400 font-medium">💡 Meta Diária (Orçamento):</span>';
+  html += '                <span class="font-bold text-blue-600 dark:text-blue-400">R$ ' + formatBR(metaDiariaGlobal) + '/dia</span>';
+  html += '              </div>';
   
-  // Meta Diária para Bater as Receitas (sempre visível se houver receitas)
-  if (metaDiariaReceitasCompletas > 0) {
-    html += '              <div class="flex justify-between text-xs bg-green-50 dark:bg-green-900/20 p-2 rounded-lg border border-green-200 dark:border-green-800">';
-    html += '                <span class="text-gray-600 dark:text-gray-400 font-medium">💰 Meta Diária (100% Receitas):</span>';
-    html += '                <span class="font-bold text-green-600 dark:text-green-400">R$ ' + formatBR(metaDiariaReceitasCompletas) + '/dia</span>';
-    html += '              </div>';
-  }
+  // Meta Diária para Bater as Receitas - sempre visível
+  html += '              <div class="flex justify-between text-xs bg-green-50 dark:bg-green-900/20 p-2 rounded-lg border border-green-200 dark:border-green-800 mb-2">';
+  html += '                <span class="text-gray-600 dark:text-gray-400 font-medium">💰 Meta Diária (100% Receitas):</span>';
+  html += '                <span class="font-bold ' + (metaDiariaReceitasCompletas > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400') + '">R$ ' + formatBR(metaDiariaReceitasCompletas) + '/dia</span>';
+  html += '              </div>';
   
-  // Meta Diária Conservadora baseada nas Receitas (sempre visível se houver receitas)
-  if (metaDiariaConservadora > 0) {
-    html += '              <div class="flex justify-between text-xs bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded-lg border border-yellow-200 dark:border-yellow-800">';
-    html += '                <span class="text-gray-600 dark:text-gray-400 font-medium">⚠️ Meta Diária (Conservadora):</span>';
-    html += '                <span class="font-bold text-yellow-600 dark:text-yellow-400">R$ ' + formatBR(metaDiariaConservadora) + '/dia</span>';
-    html += '              </div>';
-  }
+  // Meta Diária Conservadora baseada nas Receitas - sempre visível
+  html += '              <div class="flex justify-between text-xs bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded-lg border border-yellow-200 dark:border-yellow-800 mb-2">';
+  html += '                <span class="text-gray-600 dark:text-gray-400 font-medium">⚠️ Meta Diária (Conservadora):</span>';
+  html += '                <span class="font-bold ' + (metaDiariaConservadora > 0 ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400') + '">R$ ' + formatBR(metaDiariaConservadora) + '/dia</span>';
+  html += '              </div>';
   
   
   // Progresso do Orçamento (só se houver orçamento)
