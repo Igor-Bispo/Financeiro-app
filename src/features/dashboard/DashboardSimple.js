@@ -2,6 +2,7 @@
 import { eventBus } from '@core/events/eventBus.js';
 import { mountPeriodIndicator } from '../../ui/PeriodIndicator.js';
 import { setupDashboardHandlers } from './DashboardHandlers.js';
+import { initDashboardDragDrop } from './DashboardDragDrop.js';
 
 let listenersAttached = false;
 // lastContainer era usado para re-render local; removido com mountPeriodIndicator
@@ -209,11 +210,12 @@ export function renderDashboard(container) {
   // Saldo restante das receitas (considerando despesas já realizadas)
   var saldoRestanteReceitas = receitas - despesas;
   
-  // Meta diária para bater exatamente as receitas (100% das receitas totais)
-  var metaDiariaReceitasCompletas = receitas > 0 ? (receitas / diasRestantes) : 0;
+  // Meta diária para bater exatamente as receitas (100% das receitas restantes)
+  var metaDiariaReceitasCompletas = saldoRestanteReceitas > 0 ? (saldoRestanteReceitas / diasRestantes) : 0;
   
-  // Meta diária conservadora (80% das receitas totais para gastos, 20% para reserva)
-  var metaDiariaConservadora = receitas > 0 ? ((receitas * 0.8) / diasRestantes) : 0;
+  // Meta diária conservadora (80% das receitas restantes para gastos, 20% para reserva)
+  var saldoRestanteConservador = saldoRestanteReceitas * 0.8;
+  var metaDiariaConservadora = saldoRestanteConservador > 0 ? (saldoRestanteConservador / diasRestantes) : 0;
   
   // Análise inteligente: diferença entre metas
   var analiseMetas = {
@@ -287,7 +289,7 @@ export function renderDashboard(container) {
   html += '    <div class="content-spacing">';
 
   // Resumo Compacto
-  html += '      <div class="mb-8">';
+  html += '      <div class="mb-12">';
   html += '        <div class="flex items-center gap-2 mb-4">';
   html += '          <div class="w-1 h-6 bg-gradient-to-b from-blue-500 to-green-500 rounded-full"></div>';
   html += '          <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">📊 Resumo</h2>';
@@ -300,11 +302,39 @@ export function renderDashboard(container) {
   html += '                <span class="text-xl">📊</span>';
   html += '                Dashboard Financeiro';
   html += '              </h3>';
-  html += '              <p class="text-sm text-gray-600 dark:text-gray-400">Orçamento: R$ ' + formatBR(orcado) + ' • ' + monthName + '/' + year + '</p>';
+  html += '              <p class="text-sm text-gray-600 dark:text-gray-400">' + monthName + '/' + year + '</p>';
+  html += '            </div>';
+  html += '            <div class="flex gap-2">';
+  html += '              <button id="export-dashboard-btn" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1">';
+  html += '                <span>📤</span>';
+  html += '                Exportar Resumo';
+  html += '              </button>';
+  html += '              <button id="reset-layout-btn" class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1">';
+  html += '                <span>🔄</span>';
+  html += '                Resetar Layout';
+  html += '              </button>';
+  html += '            </div>';
+  html += '          </div>';
+  html += '          <!-- Card de Progresso do Orçamento -->';
+  html += '          <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-600 mb-4 draggable-card" data-card-type="progress">';
+  html += '            <div class="drag-handle"></div>';
+  html += '            <div class="flex items-center justify-between mb-2">';
+  html += '              <div class="flex items-center gap-2">';
+  html += '                <span class="text-lg">📊</span>';
+  html += '                <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">Progresso do Orçamento</span>';
+  html += '              </div>';
+  html += '              <div class="text-right">';
+  html += '                <div class="text-lg font-bold ' + (progressoOrcado > 0.7 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400') + '">' + (progressoOrcado * 100).toFixed(1) + '%</div>';
+  html += '                <div class="text-xs text-gray-600 dark:text-gray-400">R$ ' + formatBR(despesas) + ' de R$ ' + formatBR(orcado) + '</div>';
+  html += '              </div>';
+  html += '            </div>';
+  html += '            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">';
+  html += '              <div class="h-2 rounded-full ' + (progressoOrcado > 0.7 ? 'bg-red-500' : 'bg-green-500') + '" style="width: ' + Math.min(progressoOrcado * 100, 100) + '%"></div>';
   html += '            </div>';
   html += '          </div>';
   html += '          <!-- Métricas Compactas -->';
-  html += '          <div class="grid grid-cols-3 gap-3 mb-4">';
+  html += '          <div class="grid grid-cols-3 gap-3 mb-4 draggable-card" data-card-type="metrics">';
+  html += '            <div class="drag-handle"></div>';
   html += '            <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm border border-gray-200 dark:border-gray-600">';
   html += '              <div class="text-lg mb-1">💚</div>';
   html += '              <div class="text-lg font-bold text-green-600 dark:text-green-400">R$ ' + formatBR(receitas) + '</div>';
@@ -316,13 +346,14 @@ export function renderDashboard(container) {
   html += '              <div class="text-xs text-gray-600 dark:text-gray-400">Despesas</div>';
   html += '            </div>';
   html += '            <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm border border-gray-200 dark:border-gray-600">';
-  html += '              <div class="text-lg mb-1">📊</div>';
-  html += '              <div class="text-lg font-bold ' + (progressoOrcado > 0.7 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400') + '">' + (progressoOrcado * 100).toFixed(1) + '%</div>';
-  html += '              <div class="text-xs text-gray-600 dark:text-gray-400">Orçamento</div>';
+  html += '              <div class="text-lg mb-1">💰</div>';
+  html += '              <div class="text-lg font-bold ' + (saldo >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400') + '">R$ ' + formatBR(Math.abs(saldo)) + '</div>';
+  html += '              <div class="text-xs text-gray-600 dark:text-gray-400">Saldo</div>';
   html += '            </div>';
   html += '          </div>';
   html += '          <!-- Resumo Financeiro Compacto -->';
-  html += '          <div class="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm border border-gray-200 dark:border-gray-600">';
+  html += '          <div class="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm border border-gray-200 dark:border-gray-600 draggable-card" data-card-type="summary">';
+  html += '            <div class="drag-handle"></div>';
   html += '            <h5 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-1">';
   html += '              <span>📈</span>';
   html += '              Resumo Financeiro';
@@ -361,11 +392,7 @@ export function renderDashboard(container) {
     html += '                <span class="font-medium text-blue-600 dark:text-blue-400">R$ ' + formatBR(orcado) + '</span>';
     html += '              </div>';
     html += '              <div class="flex justify-between text-xs mb-1">';
-    html += '                <span class="text-gray-600 dark:text-gray-400">📊 Usado:</span>';
-    html += '                <span class="font-medium ' + (progressoOrcado > 0.7 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400') + '">' + (progressoOrcado*100).toFixed(1) + '%</span>';
-    html += '              </div>';
-    html += '              <div class="flex justify-between text-xs mb-1">';
-    html += '                <span class="text-gray-600 dark:text-gray-400">💰 Saldo Restante:</span>';
+    html += '                <span class="text-gray-600 dark:text-gray-400">💰 Pode Gastar:</span>';
     html += '                <span class="font-medium ' + (saldoOrcamento >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400') + '">R$ ' + formatBR(Math.abs(saldoOrcamento)) + '</span>';
     html += '              </div>';
     html += '              <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 mb-2">';
@@ -397,7 +424,7 @@ export function renderDashboard(container) {
     
     // Déficit do orçamento
     if (analiseOrcamento.deficitOrcamento > 0) {
-      html += '                <div class="text-xs text-orange-600 dark:text-orange-400">📊 Déficit: R$ ' + formatBR(analiseOrcamento.deficitOrcamento) + '</div>';
+      html += '                <div class="text-xs text-orange-600 dark:text-orange-400">📊 Faltam receitas: R$ ' + formatBR(analiseOrcamento.deficitOrcamento) + '</div>';
     }
     
     
@@ -409,9 +436,7 @@ export function renderDashboard(container) {
     if (analiseOrcamento.coberturaOrcamento < 100) {
       var metaReceitas = orcado;
       var receitasFaltantes = Math.max(0, metaReceitas - receitas);
-      html += '                  <div class="text-blue-600 dark:text-blue-400 font-medium">💰 Meta de receitas: R$ ' + formatBR(metaReceitas) + '</div>';
       if (receitasFaltantes > 0) {
-        html += '                  <div class="text-orange-600 dark:text-orange-400">• Faltam R$ ' + formatBR(receitasFaltantes) + ' para cobrir o orçamento</div>';
         html += '                  <div class="text-blue-600 dark:text-blue-400">• 💡 Considere reduzir limites de categorias ou aumentar receitas</div>';
       }
     }
@@ -557,7 +582,7 @@ export function renderDashboard(container) {
     topRec.sort(function(a,b){ return b.total - a.total; });
     if (topRec.length > 5) topRec = topRec.slice(0,5);
 
-    html += '      <div class="mb-8">';
+    html += '      <div class="mb-12">';
     html += '        <div class="flex items-center gap-2 mb-4">';
     html += '          <div class="w-1 h-6 bg-gradient-to-b from-emerald-500 to-teal-500 rounded-full"></div>';
     html += '          <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">♻️ Top Recorrentes</h2>';
@@ -689,7 +714,7 @@ export function renderDashboard(container) {
       }
     }
 
-    html += '      <div class="mb-8">';
+    html += '      <div class="mb-12">';
     html += '        <div class="flex items-center gap-2 mb-4">';
     html += '          <div class="w-1 h-6 bg-gradient-to-b from-purple-500 to-pink-500 rounded-full"></div>';
     html += '          <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">📊 Categorias Inteligentes</h2>';
@@ -784,7 +809,7 @@ export function renderDashboard(container) {
       var db = getTxDate(b) || new Date(0);
       return db - da;
     }).slice(0,5);
-    html += '      <div class="mb-8">';
+    html += '      <div class="mb-12">';
     html += '        <div class="flex items-center gap-2 mb-4">';
     html += '          <div class="w-1 h-6 bg-gradient-to-b from-green-500 to-blue-500 rounded-full"></div>';
     html += '          <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">💳 Atividade Recente</h2>';
@@ -839,6 +864,9 @@ export function renderDashboard(container) {
 
   // Mount or update period indicator (reutilizável)
   try { mountPeriodIndicator('#dash-period-indicator'); } catch {}
+
+  // Inicializar drag and drop e funcionalidades de exportação
+  try { initDashboardDragDrop(); } catch {}
 
   // Modal seguro para categorias em alerta (>=70% do limite)
   try {

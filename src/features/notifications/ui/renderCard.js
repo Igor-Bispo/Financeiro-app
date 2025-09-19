@@ -152,7 +152,7 @@ export function renderNotificationCard(notification) {
 
 export function renderSection(title, groups) {
   return `
-    <div class="mb-8">
+    <div class="mb-12">
       <div class="flex items-center gap-2 mb-4">
         <div class="w-1 h-6 bg-gradient-to-b from-purple-500 to-pink-500 rounded-full"></div>
         <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">${title}</h2>

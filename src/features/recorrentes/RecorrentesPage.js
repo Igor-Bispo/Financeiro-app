@@ -136,7 +136,7 @@ export async function renderRecorrentes() {
         <div class="tab-content">
           <div class="content-spacing">
             <!-- ========== SEÇÃO 1: RESUMO COMPACTO ========== -->
-            <div class="mb-8">
+            <div class="mb-12">
               <div class="flex items-center gap-2 mb-4">
                 <div class="w-1 h-6 bg-gradient-to-b from-purple-500 to-green-500 rounded-full"></div>
                 <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">♻️ Resumo</h2>
@@ -206,7 +206,7 @@ export async function renderRecorrentes() {
                 </div>
               </div>
             </div>
-            <div class="mb-8">
+            <div class="mb-12">
               <div class="flex items-center gap-2 mb-4">
                 <div class="w-1 h-6 bg-gradient-to-b from-purple-500 to-green-500 rounded-full"></div>
                 <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">🔧 Ações & Filtros</h2>
@@ -222,7 +222,7 @@ export async function renderRecorrentes() {
               </div>
             </div>
 
-            <div class="mb-8">
+            <div class="mb-12">
               <div class="flex items-center gap-2 mb-4">
                 <div class="w-1 h-6 bg-gradient-to-b from-green-500 to-teal-500 rounded-full"></div>
                 <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">📋 Lista de Recorrentes</h2>

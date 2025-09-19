@@ -561,7 +561,7 @@ export async function renderCategories() {
           <!-- Indicador de período padronizado movido para o cabeçalho -->
           
           <!-- ========== SEÇÃO 1: RESUMO ANALÍTICO ========== -->
-          <div class="mb-8">
+          <div class="mb-12">
             <div class="flex items-center gap-2 mb-4">
               <div class="w-1 h-6 bg-gradient-to-b from-purple-500 to-pink-500 rounded-full"></div>
               <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">📊 Visão Geral</h2>
@@ -666,7 +666,7 @@ export async function renderCategories() {
           </div>
 
           <!-- ========== SEÇÃO 2: AÇÕES E FILTROS ========== -->
-          <div class="mb-8">
+          <div class="mb-12">
             <div class="flex items-center gap-2 mb-4">
               <div class="w-1 h-6 bg-gradient-to-b from-blue-500 to-purple-500 rounded-full"></div>
               <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">🔧 Ações & Filtros</h2>
@@ -712,7 +712,7 @@ export async function renderCategories() {
           </div>
           
           <!-- ========== SEÇÃO 3: GRID DE CATEGORIAS ========== -->
-          <div class="mb-8" id="categories-grid">
+          <div class="mb-12" id="categories-grid">
             <div class="flex items-center gap-2 mb-4">
               <div class="w-1 h-6 bg-gradient-to-b from-green-500 to-teal-500 rounded-full"></div>
               <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">📋 Todas as Categorias</h2>

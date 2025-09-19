@@ -127,7 +127,7 @@ export function generateSettingsHTML(state) {
 
                     <!-- Seção de Orçamento Atual -->
                     ${currentBudget ? `
-                    <div class="mb-8">
+                    <div class="mb-12">
                         <h2 class="section-title green-border">📋 Orçamento Atual</h2>
                         <div class="bg-gradient-to-br from-green-500 via-emerald-500 to-teal-600 rounded-2xl shadow-xl p-6 text-white">
                             <div class="flex items-center justify-between mb-6">
@@ -150,7 +150,7 @@ export function generateSettingsHTML(state) {
                     ` : ''}
 
                     <!-- Seção de Usuários e Compartilhamento -->
-                    <div class="mb-8">
+                    <div class="mb-12">
                         <h2 class="section-title blue-border">👥 Usuários & Compartilhamento</h2>
                         <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-4">
                             ${usersWithAccess.length > 0 ? `
@@ -184,7 +184,7 @@ export function generateSettingsHTML(state) {
 
                     <!-- Seção de Convites Pendentes -->
                     ${sentInvitations.length > 0 ? `
-                    <div class="mb-8">
+                    <div class="mb-12">
                         <h2 class="section-title orange-border">📤 Convites Pendentes</h2>
                         <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-4">
                             <div class="space-y-3">
@@ -212,7 +212,7 @@ export function generateSettingsHTML(state) {
                     ` : ''}
 
                     <!-- Seção de Convites Recebidos -->
-                    <div class="mb-8">
+                    <div class="mb-12">
                         <h2 class="section-title purple-border">📬 Convites Recebidos</h2>
                         <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-4">
                             ${pendingInvitations.length > 0 ? `
@@ -250,7 +250,7 @@ export function generateSettingsHTML(state) {
                     </div>
 
                     <!-- Seção de Orçamentos Compartilhados -->
-                    <div class="mb-8">
+                    <div class="mb-12">
                         <h2 class="section-title blue-border">🤝 Orçamentos Compartilhados com Você</h2>
                         <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-4">
                             ${renderSharedWithMe(budgets, currentUser, currentBudget)}
@@ -258,7 +258,7 @@ export function generateSettingsHTML(state) {
                     </div>
 
                     <!-- Seção de Compartilhar Orçamento -->
-                    <div class="mb-8">
+                    <div class="mb-12">
                         <h2 class="section-title green-border">🔗 Compartilhar Orçamento</h2>
                         <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-4">
                             ${currentBudget ? `
@@ -291,7 +291,7 @@ export function generateSettingsHTML(state) {
                     </div>
 
                     <!-- Seção de Gerenciar Orçamentos -->
-                    <div class="mb-8">
+                    <div class="mb-12">
                         <h2 class="section-title blue-border">📁 Meus Orçamentos</h2>
                         <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-4">
                             ${renderMyBudgets(budgets, currentUser, currentBudget)}
@@ -300,7 +300,7 @@ export function generateSettingsHTML(state) {
                     </div>
 
                     <!-- Seção de Dados e Privacidade -->
-                    <div class="mb-8">
+                    <div class="mb-12">
                         <h2 class="section-title red-border">💾 Dados e Privacidade</h2>
                         <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-4">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -330,7 +330,7 @@ export function generateSettingsHTML(state) {
                     </div>
 
                     <!-- Seção de Notificações -->
-                    <div class="mb-8">
+                    <div class="mb-12">
                         <h2 class="section-title orange-border">🔔 Notificações</h2>
                         <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-4">
                             <div class="space-y-4">
@@ -369,7 +369,7 @@ export function generateSettingsHTML(state) {
                     </div>
 
                     <!-- Seção de Interface -->
-                    <div class="mb-8">
+                    <div class="mb-12">
                         <h2 class="section-title green-border">🎨 Interface</h2>
                         <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-4">
                             <div class="space-y-4">
@@ -407,7 +407,7 @@ export function generateSettingsHTML(state) {
                     </div>
 
                     <!-- Seção de Privacidade e Segurança -->
-                    <div class="mb-8">
+                    <div class="mb-12">
                         <h2 class="section-title purple-border">🔒 Privacidade e Segurança</h2>
                         <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-4">
                             <div class="space-y-4">
@@ -446,7 +446,7 @@ export function generateSettingsHTML(state) {
                     </div>
 
                     <!-- Seção de Informações e Suporte -->
-                    <div class="mb-8">
+                    <div class="mb-12">
                         <h2 class="section-title blue-border">ℹ️ Informações e Suporte</h2>
                         <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-4">
                             <div class="space-y-4">
