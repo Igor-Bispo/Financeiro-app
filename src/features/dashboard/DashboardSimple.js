@@ -306,7 +306,7 @@ export function renderDashboard(container) {
   html += '            </div>';
   html += '            <div class="flex gap-2">';
                 html += '              <button id="export-dashboard-btn" class="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-200 flex items-center gap-1.5 shadow-md hover:shadow-lg transform hover:scale-105">';
-                html += '                <span class="text-sm">📱</span>';
+                html += '                <span class="text-sm">💬</span>';
                 html += '                <span class="hidden sm:inline">Compartilhar</span>';
                 html += '              </button>';
   html += '              <button id="reset-layout-btn" class="bg-gradient-to-r from-slate-500 to-slate-600 hover:from-slate-600 hover:to-slate-700 text-white px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-200 flex items-center gap-1.5 shadow-md hover:shadow-lg transform hover:scale-105">';

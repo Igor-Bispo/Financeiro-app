@@ -110,9 +110,68 @@ export class DashboardDragDrop {
     const resetBtn = document.getElementById('reset-layout-btn');
     if (resetBtn) {
       resetBtn.addEventListener('click', () => {
-        this.resetCardOrder();
+        this.showResetConfirmationModal();
       });
     }
+  }
+
+  showResetConfirmationModal() {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.innerHTML = `
+      <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-12 h-12 bg-orange-100 dark:bg-orange-900 rounded-full flex items-center justify-center">
+            <span class="text-2xl">⚠️</span>
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              Resetar Layout
+            </h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+              Esta ação irá reordenar os cards
+            </p>
+          </div>
+        </div>
+        
+        <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-6">
+          <h4 class="font-medium text-yellow-800 dark:text-yellow-200 mb-2">O que acontecerá:</h4>
+          <ul class="text-sm text-yellow-700 dark:text-yellow-300 space-y-1">
+            <li>• Todos os cards voltarão à posição original</li>
+            <li>• Sua personalização atual será perdida</li>
+            <li>• A página será recarregada automaticamente</li>
+          </ul>
+        </div>
+        
+        <div class="flex gap-3">
+          <button id="confirm-reset" class="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+            Sim, Resetar
+          </button>
+          <button id="cancel-reset" class="flex-1 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 px-4 py-2 rounded-lg font-medium transition-colors">
+            Cancelar
+          </button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Event listeners
+    modal.querySelector('#confirm-reset').addEventListener('click', () => {
+      document.body.removeChild(modal);
+      this.resetCardOrder();
+    });
+
+    modal.querySelector('#cancel-reset').addEventListener('click', () => {
+      document.body.removeChild(modal);
+    });
+
+    // Close on backdrop click
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        document.body.removeChild(modal);
+      }
+    });
   }
 
   setupExportButtons() {
@@ -128,21 +187,43 @@ export class DashboardDragDrop {
     const modal = document.createElement('div');
     modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
     modal.innerHTML = `
-      <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-          📤 Compartilhar Resumo
-        </h3>
-        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
-          Compartilhar resumo financeiro via WhatsApp:
-        </p>
-        <div class="space-y-3">
-          <button id="share-whatsapp" class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2">
+      <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-lg w-full mx-4">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
+            <span class="text-2xl">📱</span>
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              Compartilhar Resumo
+            </h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+              Enviar resumo financeiro via WhatsApp
+            </p>
+          </div>
+        </div>
+        
+        <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-6">
+          <h4 class="font-medium text-green-800 dark:text-green-200 mb-2">O que será compartilhado:</h4>
+          <ul class="text-sm text-green-700 dark:text-green-300 space-y-1">
+            <li>• 📊 Progresso do orçamento (porcentagem e valores)</li>
+            <li>• 💰 Métricas principais (receitas, despesas, saldo)</li>
+            <li>• 📈 Resumo detalhado com metas diárias</li>
+            <li>• 📅 Período e data de exportação</li>
+          </ul>
+        </div>
+        
+        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-6">
+          <p class="text-sm text-blue-700 dark:text-blue-300">
+            <span class="font-medium">💡 Dica:</span> O resumo será formatado de forma organizada e fácil de entender, perfeito para compartilhar com familiares ou para controle pessoal.
+          </p>
+        </div>
+        
+        <div class="flex gap-3">
+          <button id="share-whatsapp" class="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2">
             <span>📱</span>
             Enviar para WhatsApp
           </button>
-        </div>
-        <div class="mt-4 flex justify-end">
-          <button id="close-export-modal" class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
+          <button id="close-export-modal" class="flex-1 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 px-4 py-2 rounded-lg font-medium transition-colors">
             Cancelar
           </button>
         </div>
