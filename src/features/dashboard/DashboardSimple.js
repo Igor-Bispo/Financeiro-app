@@ -582,7 +582,8 @@ export function renderDashboard(container) {
     topRec.sort(function(a,b){ return b.total - a.total; });
     if (topRec.length > 5) topRec = topRec.slice(0,5);
 
-    html += '      <div class="mb-12">';
+    html += '      <div class="mb-12 draggable-card" data-card-type="top-recorrentes">';
+    html += '        <div class="drag-handle"></div>';
     html += '        <div class="flex items-center gap-2 mb-4">';
     html += '          <div class="w-1 h-6 bg-gradient-to-b from-emerald-500 to-teal-500 rounded-full"></div>';
     html += '          <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">♻️ Top Recorrentes</h2>';
@@ -714,7 +715,8 @@ export function renderDashboard(container) {
       }
     }
 
-    html += '      <div class="mb-12">';
+    html += '      <div class="mb-12 draggable-card" data-card-type="categorias-inteligentes">';
+    html += '        <div class="drag-handle"></div>';
     html += '        <div class="flex items-center gap-2 mb-4">';
     html += '          <div class="w-1 h-6 bg-gradient-to-b from-purple-500 to-pink-500 rounded-full"></div>';
     html += '          <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">📊 Categorias Inteligentes</h2>';
@@ -809,7 +811,8 @@ export function renderDashboard(container) {
       var db = getTxDate(b) || new Date(0);
       return db - da;
     }).slice(0,5);
-    html += '      <div class="mb-12">';
+    html += '      <div class="mb-12 draggable-card" data-card-type="atividade-recente">';
+    html += '        <div class="drag-handle"></div>';
     html += '        <div class="flex items-center gap-2 mb-4">';
     html += '          <div class="w-1 h-6 bg-gradient-to-b from-green-500 to-blue-500 rounded-full"></div>';
     html += '          <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">💳 Atividade Recente</h2>';

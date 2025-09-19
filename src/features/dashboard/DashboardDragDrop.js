@@ -87,7 +87,14 @@ export class DashboardDragDrop {
 
   loadCardOrder() {
     const saved = localStorage.getItem('dashboard-card-order');
-    return saved ? JSON.parse(saved) : ['progress', 'metrics', 'summary'];
+    return saved ? JSON.parse(saved) : [
+      'progress', 
+      'metrics', 
+      'summary',
+      'top-recorrentes',
+      'categorias-inteligentes',
+      'atividade-recente'
+    ];
   }
 
   resetCardOrder() {
