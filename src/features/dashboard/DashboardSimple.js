@@ -305,10 +305,10 @@ export function renderDashboard(container) {
   html += '              <p class="text-sm text-gray-600 dark:text-gray-400">' + monthName + '/' + year + '</p>';
   html += '            </div>';
   html += '            <div class="flex gap-2">';
-  html += '              <button id="export-dashboard-btn" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1">';
-  html += '                <span>📤</span>';
-  html += '                Exportar Resumo';
-  html += '              </button>';
+                html += '              <button id="export-dashboard-btn" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1">';
+                html += '                <span>📱</span>';
+                html += '                Compartilhar';
+                html += '              </button>';
   html += '              <button id="reset-layout-btn" class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1">';
   html += '                <span>🔄</span>';
   html += '                Resetar Layout';
