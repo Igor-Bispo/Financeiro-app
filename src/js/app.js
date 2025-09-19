@@ -12,6 +12,7 @@ import * as invitationsRepo from '@data/repositories/invitationsRepo.js';
 import { FAB } from './ui/FAB.js';
 import { SwipeNavigation } from './ui/SwipeTabs.js';
 import { renderAnalytics } from './ui/AnalyticsRoute.js';
+import showAddTransactionModal from './showAddTransactionModal.js';
 import {
   getFirestore,
   collection,

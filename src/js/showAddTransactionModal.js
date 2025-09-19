@@ -395,3 +395,8 @@ window.editTransaction = function (transactionId) {
 
 // Export default para uso com import dinâmico
 export default showAddTransactionModal;
+
+// Exportar para uso global
+if (typeof window !== 'undefined') {
+  window.showAddTransactionModal = showAddTransactionModal;
+}
