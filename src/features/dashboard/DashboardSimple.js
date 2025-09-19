@@ -305,12 +305,12 @@ export function renderDashboard(container) {
   html += '              <p class="text-sm text-gray-600 dark:text-gray-400">' + monthName + '/' + year + '</p>';
   html += '            </div>';
   html += '            <div class="flex gap-2">';
-                html += '              <button id="export-dashboard-btn" class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-md text-xs font-medium transition-colors flex items-center gap-1">';
-                html += '                <span class="text-xs">📱</span>';
+                html += '              <button id="export-dashboard-btn" class="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-200 flex items-center gap-1.5 shadow-md hover:shadow-lg transform hover:scale-105">';
+                html += '                <span class="text-sm">📱</span>';
                 html += '                <span class="hidden sm:inline">Compartilhar</span>';
                 html += '              </button>';
-  html += '              <button id="reset-layout-btn" class="bg-gray-500 hover:bg-gray-600 text-white px-2 py-1 rounded-md text-xs font-medium transition-colors flex items-center gap-1">';
-  html += '                <span class="text-xs">🔄</span>';
+  html += '              <button id="reset-layout-btn" class="bg-gradient-to-r from-slate-500 to-slate-600 hover:from-slate-600 hover:to-slate-700 text-white px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-200 flex items-center gap-1.5 shadow-md hover:shadow-lg transform hover:scale-105">';
+  html += '                <span class="text-sm">🔄</span>';
   html += '                <span class="hidden sm:inline">Resetar</span>';
   html += '              </button>';
   html += '            </div>';
