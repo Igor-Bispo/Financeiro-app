@@ -7,7 +7,7 @@ async function loadTransactionModal() {
   }
 
   const importPaths = [
-    '@js/showAddTransactionModal.js',
+    './showAddTransactionModal.js',
     '../js/showAddTransactionModal.js',
     '../../js/showAddTransactionModal.js',
     './js/showAddTransactionModal.js'
