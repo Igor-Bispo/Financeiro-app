@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Servo Tech - Controle Financeiro</title>
+  <title>Servo Tech</title>
   <meta name="theme-color" content="#4F46E5">
   <meta name="description" content="Controle financeiro inteligente com reconhecimento de voz">
   
@@ -17,24 +17,36 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   
-  <!-- Styles -->
-  <link rel="stylesheet" href="/css/styles.css">
-  
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   
   <style>
+    /* Force login page to show */
+    body {
+      margin: 0;
+      padding: 0;
+    }
+    
+    #app-content {
+      display: none !important;
+    }
+    
     /* Login Page Styles */
     .login-page {
       min-height: 100vh;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      display: flex;
+      display: flex !important;
       align-items: center;
       justify-content: center;
       padding: 1rem;
       font-family: 'Inter', sans-serif;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      z-index: 9999;
     }
 
     .login-container {
@@ -243,10 +255,13 @@
   </div>
 
   <!-- Main App (hidden initially) -->
-  <main id="app-content" style="display: none;">
+  <main id="app-content" style="display: none !important;">
     <!-- App content will be loaded here -->
   </main>
 
+  <!-- Styles -->
+  <link rel="stylesheet" href="/css/styles.css?v=20250920093920">
+  
   <!-- App Scripts -->
   <script type="module" src="./app/entry.js"></script>
   
@@ -323,8 +338,13 @@
 
       // Show app function
       function showApp() {
-        loginPage.style.display = 'none';
-        appContent.style.display = 'block';
+        loginPage.style.display = 'none !important';
+        loginPage.style.visibility = 'hidden';
+        loginPage.style.opacity = '0';
+        
+        appContent.style.display = 'block !important';
+        appContent.style.visibility = 'visible';
+        appContent.style.opacity = '1';
         
         // Force app initialization
         setTimeout(() => {
@@ -341,10 +361,14 @@
         }, 100);
       }
 
+      // Force login page to show initially
+      loginPage.style.display = 'flex';
+      appContent.style.display = 'none';
+      
       // Check if user is already logged in
       firebase.auth().onAuthStateChanged(function(user) {
         if (user && loginPage.style.display !== 'none') {
-          showApp();
+          setTimeout(() => showApp(), 500);
         }
       });
     });
