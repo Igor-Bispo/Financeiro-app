@@ -611,7 +611,7 @@ window.confirmRestoreBackup = async function (backupData) {
   }
 };
 
-// Funcao para alternar entre pi¡gina de login e app
+// Funcao para alternar entre página de login e app
 function toggleLoginPage(show) {
   const loginPage = document.getElementById('login-page');
   const appContainer = document.querySelector('.app-container');
@@ -868,7 +868,7 @@ window.showCategoriasAlertaModal = function() {
     } else if (porcentagem >= 50) {
       corBarra = 'bg-orange-500';
       statusTexto = 'Moderado';
-      statusIcon = 'ðŸ"¶';
+      statusIcon = '🔍¶';
     }
 
     return `
@@ -1361,7 +1361,7 @@ async function router(path) {
     hash: window.location.hash
   });
 
-  // Atualizar ti­tulo da pi¡gina
+  // Atualizar título da página
   updatePageTitle(cleanPath);
 
   // Aplicar modo de compactacao
@@ -1452,7 +1452,7 @@ async function router(path) {
     console.log('✅ Recorrentes renderizadas');
     break;
   case '/notifications':
-    console.log('ðŸ"„ Renderizando notificacoes...');
+    console.log('🔍„ Renderizando notificacoes...');
     if (window.renderNotifications) {
       await window.loadNotifications();
       window.renderNotifications();
@@ -1480,7 +1480,7 @@ async function router(path) {
     console.log('✅ Notificacoes renderizadas');
     break;
   case '/settings':
-    console.log('ðŸ"„ Renderizando configuracoes...');
+    console.log('🔍„ Renderizando configuracoes...');
     if (window.renderSettings) {
       window.renderSettings();
     } else {
@@ -1505,7 +1505,7 @@ async function router(path) {
     console.log('✅ Configuracoes renderizadas');
     break;
   default:
-    console.log('ðŸ"„ Rota nao reconhecida, usando dashboard como fallback');
+    console.log('🔍„ Rota nao reconhecida, usando dashboard como fallback');
     await renderDashboard();
     renderBottomNav('/dashboard');
     console.log('✅ Dashboard renderizado (fallback)');
@@ -1529,7 +1529,7 @@ window.router = router;
 
 // Funcao para editar transacao
 window.editTransaction = function(transactionId) {
-  console.log('ðŸ"§ Editando transacao:', transactionId);
+  console.log('🔍§ Editando transacao:', transactionId);
 
   if (!transactionId) {
     console.error('âŒ ID da transacao nao fornecido');
@@ -1568,7 +1568,7 @@ window.editTransaction = function(transactionId) {
 
 // Funcao para editar categoria
 window.editCategory = function(categoryId) {
-  console.log('ðŸ"§ Editando categoria:', categoryId);
+  console.log('🔍§ Editando categoria:', categoryId);
 
   if (!categoryId) {
     console.error('âŒ ID da categoria nao fornecido');
@@ -1607,7 +1607,7 @@ window.editCategory = function(categoryId) {
 
 // Funcao para mostrar histi³rico da categoria
 window.showCategoryHistory = function(categoryId) {
-  console.log('ðŸ"¨ Mostrando histi³rico da categoria:', categoryId);
+  console.log('🔍¨ Mostrando histi³rico da categoria:', categoryId);
 
   if (!categoryId) {
     console.error('âŒ ID da categoria nao fornecido');
@@ -1636,7 +1636,7 @@ window.showCategoryHistory = function(categoryId) {
     const totalGasto = transactions.reduce((sum, t) => sum + parseFloat(t.valor), 0);
 
     window.Modal({
-      title: `ðŸ"¨ Histi³rico: ${category.nome}`,
+      title: `🔍¨ Histi³rico: ${category.nome}`,
       content: `
         <div class="space-y-4">
           <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
@@ -1655,7 +1655,7 @@ window.showCategoryHistory = function(categoryId) {
           <div class="max-h-96 overflow-y-auto space-y-2">
             ${transactions.length === 0 ? `
               <div class="text-center py-8">
-                <div class="text-4xl mb-2">ðŸ"¨</div>
+                <div class="text-4xl mb-2">🔍¨</div>
                 <p class="text-gray-500 dark:text-gray-400">Nenhuma transacao encontrada para esta categoria</p>
               </div>
             ` : transactions.map(t => {
@@ -1723,7 +1723,7 @@ const checkAuthState = async () => {
 
 // Inicializacao da aplicacao
 document.addEventListener('DOMContentLoaded', async () => {
-  console.log('ðŸš€ Iniciando aplicacao...');
+  console.log('🚀 Iniciando aplicação...');
 
   // Estado global da aplicacao
   window.appState = {
@@ -1744,11 +1744,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // Teste: Verificar se a navegacao esti¡ sendo renderizada
-  console.log('ðŸ" Teste: Verificando elementos de navegacao...');
+  console.log('🔍 Teste: Verificando elementos de navegacao...');
   const bottomNav = document.getElementById('bottom-nav');
-  console.log('ðŸ" Elemento bottom-nav encontrado:', !!bottomNav);
+  console.log('🔍 Elemento bottom-nav encontrado:', !!bottomNav);
   if (bottomNav) {
-    console.log('ðŸ" Conteiºdo do bottom-nav:', bottomNav.innerHTML);
+    console.log('🔍 Conteiºdo do bottom-nav:', bottomNav.innerHTML);
   }
 
   // Verificar estado de autenticacao
@@ -1763,7 +1763,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Carregar dados do usui¡rio
     try {
-      console.log('ðŸ"¨ Carregando dados do usui¡rio...');
+      console.log('🔍¨ Carregando dados do usui¡rio...');
       // Importar e chamar loadBudgets
       const { loadUserBudgets } = await import('@features/budgets/service.js');
       await loadUserBudgets(window.appState.currentUser.uid);
@@ -2019,12 +2019,12 @@ window.showExportOptions = async function () {
 
 // ===== CONFIGURAi‡iƒO DOS BOTi•ES DA TELA INICIAL =====
 window.setupHeaderButtons = function() {
-  console.log('ðŸ"§ Configurando botoes do header...');
+  console.log('🔍§ Configurando botoes do header...');
 
   // Verificar se os elementos existem
   const voiceModal = document.getElementById('voice-modal');
 
-  console.log('ðŸ"§ Elementos encontrados:', {
+  console.log('🔍§ Elementos encontrados:', {
     voiceModal: !!voiceModal
   });
 
@@ -2094,7 +2094,7 @@ function openVoiceModal() {
 
 // ===== CONFIGURAi‡iƒO DOS BOTi•ES DA TELA DE CATEGORIAS =====
 window.setupCategoryButtons = function() {
-  console.log('ðŸ"§ Configurando botoes da tela de categorias...');
+  console.log('🔍§ Configurando botoes da tela de categorias...');
 
   // Botao de adicionar categoria
   const addCategoryBtn = document.getElementById('add-category-btn');
@@ -2102,7 +2102,7 @@ window.setupCategoryButtons = function() {
     addCategoryBtn.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      console.log('ðŸ"‚ Add category button clicked');
+      console.log('🔍‚ Add category button clicked');
 
       if (window.showAddCategoryModal) {
         window.showAddCategoryModal();
@@ -2122,7 +2122,7 @@ window.setupCategoryButtons = function() {
     migrarBtn.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      console.log('ðŸ"„ Migrar button clicked');
+      console.log('🔍„ Migrar button clicked');
 
       if (window.migrarTransacoesAntigas) {
         window.migrarTransacoesAntigas();
@@ -2139,7 +2139,7 @@ window.setupCategoryButtons = function() {
     corrigirBtn.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      console.log('ðŸ"§ Corrigir button clicked');
+      console.log('🔍§ Corrigir button clicked');
 
       if (window.corrigirTipoCategoria) {
         window.corrigirTipoCategoria();
@@ -2153,7 +2153,7 @@ window.setupCategoryButtons = function() {
 
 // ===== CONFIGURAi‡iƒO DOS BOTi•ES DA TELA DE TRANSAi‡i•ES =====
 function setupTransactionButtons() {
-  console.log('ðŸ"§ Configurando botoes da tela de transacoes...');
+  console.log('🔍§ Configurando botoes da tela de transacoes...');
 
   // Botao de adicionar transacao
   const addTransactionBtn = document.getElementById('add-transaction-btn');
@@ -2161,7 +2161,7 @@ function setupTransactionButtons() {
     addTransactionBtn.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      console.log('ðŸ"‹ Add transaction button clicked');
+      console.log('🔍‹ Add transaction button clicked');
 
       if (window.showAddTransactionModal) {
         window.showAddTransactionModal();
@@ -2197,7 +2197,7 @@ function setupTransactionButtons() {
 
 // ===== CONFIGURAi‡iƒO DOS BOTi•ES DO DASHBOARD =====
 window.setupDashboardButtons = function() {
-  console.log('ðŸ"§ Configurando botoes do dashboard...');
+  console.log('🔍§ Configurando botoes do dashboard...');
 
   // Botao de exportar
   const exportBtn = document.getElementById('export-btn');
@@ -2205,7 +2205,7 @@ window.setupDashboardButtons = function() {
     exportBtn.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      console.log('ðŸ"¤ Export button clicked');
+      console.log('🔍¤ Export button clicked');
 
       if (window.showExportOptions) {
         window.showExportOptions();
@@ -2279,7 +2279,7 @@ window.setupDashboardButtons = function() {
 
 window.migrarTransacoesAntigas = async function () {
   try {
-    console.log('ðŸ"„ Iniciando migracao de transacoes antigas...');
+    console.log('🔍„ Iniciando migracao de transacoes antigas...');
     const user = window.appState.currentUser;
     if (!user) {
       Snackbar({ message: 'Usui¡rio nao autenticado', type: 'error' });
@@ -2342,7 +2342,7 @@ window.migrarTransacoesAntigas = async function () {
 
 window.corrigirTipoCategoria = async function () {
   try {
-    console.log('ðŸ"§ Iniciando correcao de tipos de categoria...');
+    console.log('🔍§ Iniciando correcao de tipos de categoria...');
     const user = window.appState.currentUser;
     if (!user) {
       Snackbar({ message: 'Usui¡rio nao autenticado', type: 'error' });
@@ -2400,7 +2400,7 @@ async function loadNotifications() {
     const { listByRecipient } = await import('@data/repositories/notificationsRepo.js');
     const notifications = await listByRecipient(user.uid, 50);
     window.appState.notifications = notifications;
-    console.log('ðŸ"§ Notificacoes carregadas:', notifications.length);
+    console.log('🔍§ Notificacoes carregadas:', notifications.length);
     updateNotificationBadge();
     return notifications;
   } catch (error) {
@@ -2453,7 +2453,7 @@ async function markAllNotificationsAsRead() {
 
     Snackbar({ message: `${unreadNotifications.length} notificacoes marcadas como lidas`, type: 'success' });
 
-    // Re-renderizar se estiver na pi¡gina de notificacoes
+    // Re-renderizar se estiver na página de notificações
     if (window.location.hash === '#/notifications') {
       renderNotifications();
     }
@@ -2513,12 +2513,12 @@ async function listenNotifications() {
   try {
     const { listenByRecipient } = await import('@data/repositories/notificationsRepo.js');
     unsubscribeNotifications = listenByRecipient(user.uid, (notifications) => {
-      console.log('ðŸ"§ Listener de notificacoes executado!');
+      console.log('🔍§ Listener de notificacoes executado!');
       const prev = window.appState.notifications || [];
       const prevIds = new Set(prev.map(n => n.id));
 
       window.appState.notifications = notifications;
-      console.log('ðŸ"§ Notificacoes atualizadas:', notifications.length);
+      console.log('🔍§ Notificacoes atualizadas:', notifications.length);
 
       // Re-renderizar página se aberta
       if (window.location.hash === '#/notifications') {
@@ -2536,7 +2536,7 @@ async function listenNotifications() {
           if (toastsEnabled && newOnes.length > 0 && typeof Snackbar === 'function' && window.location.hash !== '#/notifications') {
             newOnes.forEach(n => {
               const who = n.senderName || 'Usui¡rio';
-              let message = `ðŸ"" ${who} `;
+              let message = `🔍" ${who} `;
               let type = 'info';
               switch (n.type) {
               case 'deleted_transaction':
@@ -2576,7 +2576,7 @@ async function listenNotifications() {
         console.warn('Falha ao exibir toast de notificacao:', toastErr);
       }
 
-      // Se estiver na pi¡gina de notificacoes, re-renderizar
+      // Se estiver na página de notificações, re-renderizar
       if (window.location.hash === '#/notifications') {
         renderNotifications();
       }
@@ -2624,7 +2624,7 @@ async function renderNotifications() {
           <div class="mb-8">
             <div class="flex items-center gap-2 mb-4">
               <div class="w-1 h-6 bg-gradient-to-b from-blue-500 to-indigo-500 rounded-full"></div>
-              <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">ðŸ"¨ Visao Geral</h2>
+              <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">🔍¨ Visao Geral</h2>
             </div>
             
             <div class="bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 rounded-2xl shadow-xl p-6 md:p-8 text-white">
@@ -2645,13 +2645,13 @@ async function renderNotifications() {
               <!-- Grid de Mi©tricas -->
               <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div class="bg-white bg-opacity-15 backdrop-blur-sm rounded-xl p-4 text-center">
-                  <div class="text-2xl mb-2">ðŸ"§</div>
+                  <div class="text-2xl mb-2">🔍§</div>
                   <div class="text-2xl md:text-3xl font-bold">${totalNotificacoes}</div>
                   <div class="text-sm opacity-90">Total</div>
                 </div>
                 
                 <div class="bg-white bg-opacity-15 backdrop-blur-sm rounded-xl p-4 text-center">
-                  <div class="text-2xl mb-2">ðŸ"¬</div>
+                  <div class="text-2xl mb-2">🔍¬</div>
                   <div class="text-2xl md:text-3xl font-bold text-yellow-200">${notificacoesNaoLidas}</div>
                   <div class="text-sm opacity-90">Nao lidas</div>
                 </div>
@@ -2663,7 +2663,7 @@ async function renderNotifications() {
                 </div>
                 
                 <div class="bg-white bg-opacity-15 backdrop-blur-sm rounded-xl p-4 text-center">
-                  <div class="text-2xl mb-2">ðŸ"…</div>
+                  <div class="text-2xl mb-2">🔍…</div>
                   <div class="text-2xl md:text-3xl font-bold">${notificacoesHoje}</div>
                   <div class="text-sm opacity-90">Hoje</div>
                 </div>
@@ -2675,7 +2675,7 @@ async function renderNotifications() {
           <div class="mb-8">
             <div class="flex items-center gap-2 mb-4">
               <div class="w-1 h-6 bg-gradient-to-b from-green-500 to-teal-500 rounded-full"></div>
-              <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">ðŸ"§ Acoes & Controles</h2>
+              <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">🔍§ Acoes & Controles</h2>
             </div>
             
             <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -2703,7 +2703,7 @@ async function renderNotifications() {
                       ðŸ—'ï¸ Apagar lidas
                     </button>
                     <button onclick="window.renderNotifications()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 shadow-md hover:shadow-lg">
-                      ðŸ"„ Atualizar
+                      🔍„ Atualizar
                     </button>
                   </div>
                 </div>
@@ -2750,7 +2750,7 @@ async function renderNotifications() {
           <div class="mb-8">
             <div class="flex items-center gap-2 mb-4">
               <div class="w-1 h-6 bg-gradient-to-b from-purple-500 to-pink-500 rounded-full"></div>
-              <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">ðŸ"‹ Todas as Notificacoes</h2>
+              <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">🔍‹ Todas as Notificacoes</h2>
             </div>
             
             <div class="space-y-6">
@@ -2849,7 +2849,7 @@ async function renderNotifications() {
                           ✅ Marcar como lida
                         </button>
                         <button onclick="window.openNotificationTarget('${notification.id}','${notification.type || ''}')" class="flex-1 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-100 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2">
-                          ðŸ"— Ver no app
+                          🔍— Ver no app
                         </button>
                       </div>
                     </div>
@@ -2867,7 +2867,7 @@ async function renderNotifications() {
                           🗑️ Apagar
                         </button>
                         <button onclick="window.openNotificationTarget('${notification.id}','${notification.type || ''}')" class="flex-1 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-100 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2">
-                          ðŸ"— Ver no app
+                          🔍— Ver no app
                         </button>
                       </div>
                     </div>
@@ -2879,11 +2879,11 @@ async function renderNotifications() {
               `).join('') : `
                 <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
                   <div class="text-center py-12">
-                    <div class="text-6xl mb-4">ðŸ""</div>
+                    <div class="text-6xl mb-4">🔍"</div>
                     <div class="text-xl font-semibold text-gray-800 dark:text-white mb-2">Nenhuma notificacao</div>
                     <div class="text-gray-600 dark:text-gray-400 mb-4">Vociª nao tem notificacoes no momento</div>
                     <button onclick="window.renderNotifications()" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-xl font-medium transition-all duration-200 shadow-lg">
-                      ðŸ"„ Atualizar
+                      🔍„ Atualizar
                     </button>
                   </div>
                 </div>
@@ -3219,9 +3219,9 @@ window.leaveBudgetWithConfirmation = function(budgetId, budgetName = 'orcamento'
 
 // Funcao para mostrar opcoes de exportacao
 window.showExportOptions = function () {
-  console.log('ðŸ" showExportOptions chamada');
-  console.log('ðŸ" window.Modal disponi­vel:', !!window.Modal);
-  console.log('ðŸ" window.Modal tipo:', typeof window.Modal);
+  console.log('🔍 showExportOptions chamada');
+  console.log('🔍 window.Modal disponi­vel:', !!window.Modal);
+  console.log('🔍 window.Modal tipo:', typeof window.Modal);
 
   if (!window.Modal) {
     console.error('❌ Modal nao esti¡ disponi­vel');
@@ -3229,7 +3229,7 @@ window.showExportOptions = function () {
     return;
   }
 
-  console.log('ðŸ" Tentando abrir modal de exportacao...');
+  console.log('🔍 Tentando abrir modal de exportacao...');
 
   try {
     const modalElement = window.Modal({
@@ -3237,13 +3237,13 @@ window.showExportOptions = function () {
       content: `
         <div class="space-y-4">
           <button onclick="window.exportToExcel()" class="w-full bg-green-500 text-white py-2 rounded-lg font-semibold hover:bg-green-600 flex items-center justify-center gap-2 text-base">
-            <span>ðŸ"¨</span> Relati³rio Excel
+            <span>🔍¨</span> Relati³rio Excel
           </button>
           <button onclick="window.exportToPDF()" class="w-full bg-red-500 text-white py-2 rounded-lg font-semibold hover:bg-red-600 flex items-center justify-center gap-2 text-base">
-            <span>ðŸ"„</span> Relati³rio PDF
+            <span>🔍„</span> Relati³rio PDF
           </button>
           <button onclick="window.exportReadmePDF()" class="w-full bg-blue-500 text-white py-2 rounded-lg font-semibold hover:bg-blue-600 flex items-center justify-center gap-2 text-base">
-            <span>ðŸ"–</span> Guia de Uso (PDF)
+            <span>🔍–</span> Guia de Uso (PDF)
           </button>
           <button onclick="window.downloadBackup()" class="w-full bg-purple-500 text-white py-2 rounded-lg font-semibold hover:bg-purple-600 flex items-center justify-center gap-2 text-base">
             <span>ðŸ'¾</span> Backup Completo (JSON)
@@ -3251,14 +3251,14 @@ window.showExportOptions = function () {
         </div>
       `,
       onClose: () => {
-        console.log('ðŸ" Modal fechado');
+        console.log('🔍 Modal fechado');
         document.querySelector('.modal')?.remove();
       }
     });
 
-    console.log('ðŸ" Modal criado com sucesso:', modalElement);
+    console.log('🔍 Modal criado com sucesso:', modalElement);
     document.body.appendChild(modalElement);
-    console.log('ðŸ" Modal adicionado ao DOM');
+    console.log('🔍 Modal adicionado ao DOM');
 
   } catch (error) {
     console.error('âŒ Erro ao criar modal:', error);
@@ -3274,11 +3274,11 @@ window.exportToExcel = function () {
       console.error('âŒ Biblioteca XLSX nao esti¡ disponi­vel');
       if (window.Snackbar) {
         window.Snackbar({
-          message: 'Erro: Biblioteca XLSX nao esti¡ carregada. Tente recarregar a pi¡gina.',
+          message: 'Erro: Biblioteca XLSX não está carregada. Tente recarregar a página.',
           type: 'error'
         });
       } else {
-        alert('Erro: Biblioteca XLSX nao esti¡ carregada. Tente recarregar a pi¡gina.');
+        alert('Erro: Biblioteca XLSX não está carregada. Tente recarregar a página.');
       }
       return;
     }
@@ -3371,11 +3371,11 @@ window.exportToPDF = function () {
       console.error('âŒ Biblioteca jsPDF nao esti¡ disponi­vel');
       if (window.Snackbar) {
         window.Snackbar({
-          message: 'Erro: Biblioteca jsPDF nao esti¡ carregada. Tente recarregar a pi¡gina.',
+          message: 'Erro: Biblioteca jsPDF não está carregada. Tente recarregar a página.',
           type: 'error'
         });
       } else {
-        alert('Erro: Biblioteca jsPDF nao esti¡ carregada. Tente recarregar a pi¡gina.');
+        alert('Erro: Biblioteca jsPDF não está carregada. Tente recarregar a página.');
       }
       return;
     }
@@ -3415,7 +3415,7 @@ window.exportToPDF = function () {
     y = 50;
 
     // Resumo
-    y = addText('ðŸ"¨ RESUMO FINANCEIRO', 20, y);
+    y = addText('🔍¨ RESUMO FINANCEIRO', 20, y);
     y += 10;
 
     const totalReceitas = window.appState.transactions
@@ -3434,7 +3434,7 @@ window.exportToPDF = function () {
     y += 15;
 
     // Transacoes recentes
-    y = addText('ðŸ"‹ ŠLTIMAS TRANSAi‡i•ES', 20, y);
+    y = addText('🔍‹ ŠLTIMAS TRANSAi‡i•ES', 20, y);
     y += 10;
 
     const transacoesRecentes = window.appState.transactions
@@ -3534,11 +3534,11 @@ window.exportReadmePDF = function () {
       console.error('âŒ Biblioteca jsPDF nao esti¡ disponi­vel');
       if (window.Snackbar) {
         window.Snackbar({
-          message: 'Erro: Biblioteca jsPDF nao esti¡ carregada. Tente recarregar a pi¡gina.',
+          message: 'Erro: Biblioteca jsPDF não está carregada. Tente recarregar a página.',
           type: 'error'
         });
       } else {
-        alert('Erro: Biblioteca jsPDF nao esti¡ carregada. Tente recarregar a pi¡gina.');
+        alert('Erro: Biblioteca jsPDF não está carregada. Tente recarregar a página.');
       }
       return;
     }
@@ -3578,7 +3578,7 @@ window.exportReadmePDF = function () {
     y = 50;
 
     // Conteiºdo do guia
-    y = addText('ðŸ"± COMO USAR O APLICATIVO', 20, y);
+    y = addText('🔍± COMO USAR O APLICATIVO', 20, y);
     y += 10;
 
     y = addText('1. DASHBOARD - Visualize seu resumo financeiro, saldo atual, gastos por categoria e alertas de limite.', 20, y);
@@ -3601,7 +3601,7 @@ window.exportReadmePDF = function () {
     y = addText('â€¢ Instalacao como PWA', 20, y);
     y += 15;
 
-    y = addText('ðŸ"§ DICAS DE USO', 20, y);
+    y = addText('🔍§ DICAS DE USO', 20, y);
     y += 10;
 
     y = addText('â€¢ Use as setas do teclado para navegar entre abas', 20, y);
@@ -3634,9 +3634,9 @@ window.exportReadmePDF = function () {
 
 // Funcao para mostrar notificacoes
 function showNotification(title, body, options = {}) {
-  console.log('ðŸ"" Tentando enviar notificacao:', title, body);
-  console.log('ðŸ"" Permissao:', Notification.permission);
-  console.log('ðŸ"" Habilitada:', localStorage.getItem('notifications-enabled'));
+  console.log('🔍" Tentando enviar notificacao:', title, body);
+  console.log('🔍" Permissao:', Notification.permission);
+  console.log('🔍" Habilitada:', localStorage.getItem('notifications-enabled'));
 
   if (
     Notification.permission === 'granted' &&
@@ -3655,14 +3655,14 @@ function showNotification(title, body, options = {}) {
       console.log('✅ Notificacao criada com sucesso:', notification);
 
       notification.onclick = () => {
-        console.log('ðŸ"" Notificacao clicada');
+        console.log('🔍" Notificacao clicada');
         window.focus();
         notification.close();
       };
 
       setTimeout(() => {
         notification.close();
-        console.log('ðŸ"" Notificacao fechada automaticamente');
+        console.log('🔍" Notificacao fechada automaticamente');
       }, 5000);
 
       console.log('✅ Notificacao enviada com sucesso!');
@@ -3697,8 +3697,8 @@ function checkRecorrentesPendentes() {
 
 // Funcao para verificar limites de categoria
 function checkLimitesCategoria() {
-  console.log('ðŸ" Iniciando verificacao de limites de categoria...');
-  console.log('ðŸ" Notificacoes habilitadas:', localStorage.getItem('notifications-enabled') === 'true');
+  console.log('🔍 Iniciando verificacao de limites de categoria...');
+  console.log('🔍 Notificacoes habilitadas:', localStorage.getItem('notifications-enabled') === 'true');
 
   if (localStorage.getItem('notifications-enabled') !== 'true') {
     console.log('âŒ Notificacoes desabilitadas, pulando verificacao');
@@ -3708,8 +3708,8 @@ function checkLimitesCategoria() {
   const categories = window.appState.categories || [];
   const transactions = window.appState.transactions || [];
 
-  console.log('ðŸ" Categorias encontradas:', categories.length);
-  console.log('ðŸ" Transacoes encontradas:', transactions.length);
+  console.log('🔍 Categorias encontradas:', categories.length);
+  console.log('🔍 Transacoes encontradas:', transactions.length);
 
   categories.forEach(cat => {
     if (cat.limite) {
@@ -3720,7 +3720,7 @@ function checkLimitesCategoria() {
       const limite = parseFloat(cat.limite);
       const percentual = (gasto / limite) * 100;
 
-      console.log(`ðŸ" ${cat.nome}: R$ ${gasto.toFixed(2)} / R$ ${limite.toFixed(2)} (${percentual.toFixed(1)}%)`);
+      console.log(`🔍 ${cat.nome}: R$ ${gasto.toFixed(2)} / R$ ${limite.toFixed(2)} (${percentual.toFixed(1)}%)`);
 
       if (percentual >= 80) {
         console.log(`âš ï¸ ${cat.nome} atingiu ${percentual.toFixed(1)}% do limite!`);
@@ -3744,16 +3744,16 @@ function checkLimitesCategoria() {
 
 // Funcao global para forcar atualizacao da interface
 window.forceUIUpdate = function () {
-  console.log('ðŸ"„ Forcando atualizacao da UI...');
+  console.log('🔍„ Forcando atualizacao da UI...');
   const currentTab = document
     .querySelector('.nav-btn.active')
     ?.getAttribute('data-route');
-  console.log('ðŸ" Aba atual:', currentTab);
+  console.log('🔍 Aba atual:', currentTab);
 
   // Usar requestAnimationFrame para otimizar a renderizacao
   requestAnimationFrame(() => {
     if (currentTab && window.router) {
-      console.log('ðŸ"„ Recarregando aba:', currentTab);
+      console.log('🔍„ Recarregando aba:', currentTab);
       window.router(currentTab);
     }
   });
@@ -3791,7 +3791,7 @@ window.testNotification = function () {
   if (permission === 'granted' && enabled) {
     console.log('âœ… Notificacoes ativadas - enviando teste...');
     showNotification(
-      'ðŸ"" Teste de Notificacao',
+      '🔍" Teste de Notificacao',
       'As notificacoes estao funcionando perfeitamente!'
     );
 
@@ -3842,7 +3842,7 @@ window.testBottomNav = function() {
     const bottomNav = document.getElementById('bottom-nav');
     if (bottomNav) {
       console.log('✅ Navegacao renderizada com sucesso');
-      console.log('ðŸ"‹ Conteiºdo:', bottomNav.innerHTML);
+      console.log('🔍‹ Conteiºdo:', bottomNav.innerHTML);
     } else {
       console.error('âŒ Navegacao nao foi renderizada');
     }
@@ -3867,7 +3867,7 @@ async function listenCurrentBudget(budgetId) {
   unsubscribeBudget = onSnapshot(ref, snap => {
     if (snap.exists()) {
       window.appState.currentBudget = { id: snap.id, ...snap.data() };
-      console.log('ðŸ"„ Orcamento atualizado:', snap.data().nome);
+      console.log('🔍„ Orcamento atualizado:', snap.data().nome);
 
       // Forcar atualizacao imediata
       setTimeout(async () => {
@@ -3952,17 +3952,17 @@ async function listenTransactions(budgetId) {
       });
 
       window.appState.transactions = transactions;
-      console.log('ðŸ"„ Transacoes atualizadas:', transactions.length, 'itens');
-      console.log('ðŸ"„ Houve mudanca?', hasChanged);
+      console.log('🔍„ Transacoes atualizadas:', transactions.length, 'itens');
+      console.log('🔍„ Houve mudanca?', hasChanged);
 
       if (hasChanged) {
         console.log('ðŸŽ¯ Atualizando UI api³s mudanca nas transacoes...');
         if (window.renderDashboard) {
-          console.log('ðŸ"¨ Executando renderDashboard...');
+          console.log('🔍¨ Executando renderDashboard...');
           window.renderDashboard();
         }
         if (window.renderTransactions) {
-          console.log('ðŸ"‹ Executando renderTransactions...');
+          console.log('🔍‹ Executando renderTransactions...');
           window.renderTransactions();
         }
 
@@ -3972,7 +3972,7 @@ async function listenTransactions(budgetId) {
           setTimeout(() => window.forceUIUpdate(), 200);
         }
       } else {
-        console.log('ðŸ"¨ Nenhuma mudanca detectada, pulando atualizacao');
+        console.log('🔍¨ Nenhuma mudanca detectada, pulando atualizacao');
       }
     },
     error => {
@@ -4019,17 +4019,17 @@ async function listenCategories(budgetId) {
       const hasChanged = idsChanged || contentChanged;
 
       window.appState.categories = categories;
-      console.log('ðŸ"„ Categorias atualizadas:', categories.length, 'itens');
-      console.log('ðŸ"„ Houve mudanca?', hasChanged);
+      console.log('🔍„ Categorias atualizadas:', categories.length, 'itens');
+      console.log('🔍„ Houve mudanca?', hasChanged);
 
       if (hasChanged) {
         console.log('ðŸŽ¯ Atualizando UI api³s mudanca nas categorias...');
         if (window.renderDashboard) {
-          console.log('ðŸ"¨ Executando renderDashboard...');
+          console.log('🔍¨ Executando renderDashboard...');
           window.renderDashboard();
         }
         if (window.renderCategories) {
-          console.log('ðŸ"‚ Executando renderCategories...');
+          console.log('🔍‚ Executando renderCategories...');
           window.renderCategories();
         }
 
@@ -4039,7 +4039,7 @@ async function listenCategories(budgetId) {
           setTimeout(() => window.forceUIUpdate(), 200);
         }
       } else {
-        console.log('ðŸ"¨ Nenhuma mudanca detectada, pulando atualizacao');
+        console.log('🔍¨ Nenhuma mudanca detectada, pulando atualizacao');
       }
     },
     error => {
@@ -4098,17 +4098,17 @@ async function listenRecorrentes(budgetId) {
       const hasChanged = idsChanged || contentChanged;
 
       window.appState.recorrentes = recorrentes;
-      console.log('ðŸ"„ Recorrentes atualizados:', recorrentes.length, 'itens');
-      console.log('ðŸ"„ Houve mudanca?', hasChanged);
+      console.log('🔍„ Recorrentes atualizados:', recorrentes.length, 'itens');
+      console.log('🔍„ Houve mudanca?', hasChanged);
 
       if (hasChanged) {
         console.log('ðŸŽ¯ Atualizando UI api³s mudanca nos recorrentes...');
         if (window.renderDashboard) {
-          console.log('ðŸ"¨ Executando renderDashboard...');
+          console.log('🔍¨ Executando renderDashboard...');
           window.renderDashboard();
         }
         if (window._renderRecorrentes) {
-          console.log('ðŸ"„ Executando _renderRecorrentes...');
+          console.log('🔍„ Executando _renderRecorrentes...');
           window._renderRecorrentes();
         }
 
@@ -4118,7 +4118,7 @@ async function listenRecorrentes(budgetId) {
           setTimeout(() => window.forceUIUpdate(), 200);
         }
       } else {
-        console.log('ðŸ"¨ Nenhuma mudanca detectada, pulando atualizacao');
+        console.log('🔍¨ Nenhuma mudanca detectada, pulando atualizacao');
       }
     },
     error => {
@@ -4129,8 +4129,8 @@ async function listenRecorrentes(budgetId) {
 
 // Funcao para iniciar todos os listeners
 async function startAllListeners(budgetId) {
-  console.log('ðŸš€ Iniciando listeners para orcamento:', budgetId);
-  console.log('ðŸ" Estado atual:', {
+  console.log('🚀 Iniciando listeners para orçamento:', budgetId);
+  console.log('🔍 Estado atual:', {
     currentUser: window.appState.currentUser?.uid,
     currentBudget: window.appState.currentBudget?.id,
     budgetId: budgetId
@@ -4146,7 +4146,7 @@ async function startAllListeners(budgetId) {
   await listenNotifications();
 
   console.log('âœ… Todos os listeners iniciados');
-  console.log('ðŸ" Verificando se listeners estao ativos:', {
+  console.log('🔍 Verificando se listeners estao ativos:', {
     unsubscribeBudget: !!unsubscribeBudget,
     unsubscribeTransactions: !!unsubscribeTransactions,
     unsubscribeCategories: !!unsubscribeCategories,
@@ -4203,11 +4203,11 @@ window.listenRecorrentes = listenRecorrentes;
 
 // Funcao para migrar transacoes antigas
 window.migrarTransacoesAntigas = function() {
-  console.log('ðŸ"„ Iniciando migracao de transacoes antigas...');
+  console.log('🔍„ Iniciando migracao de transacoes antigas...');
 
   if (window.Snackbar) {
     window.Snackbar({
-      message: 'ðŸ"„ Migracao iniciada...',
+      message: '🔍„ Migracao iniciada...',
       type: 'info'
     });
   }
@@ -4225,11 +4225,11 @@ window.migrarTransacoesAntigas = function() {
 
 // Funcao para corrigir tipo de categoria
 window.corrigirTipoCategoria = function() {
-  console.log('ðŸ"§ Iniciando correcao de tipos de categoria...');
+  console.log('🔍§ Iniciando correcao de tipos de categoria...');
 
   if (window.Snackbar) {
     window.Snackbar({
-      message: 'ðŸ"§ Correcao iniciada...',
+      message: '🔍§ Correcao iniciada...',
       type: 'info'
     });
   }
@@ -4247,7 +4247,7 @@ window.corrigirTipoCategoria = function() {
 
 // Funcao para mostrar histi³rico de categoria
 window.showCategoryHistory = function(categoryId) {
-  console.log('ðŸ"¨ Mostrando histi³rico da categoria:', categoryId);
+  console.log('🔍¨ Mostrando histi³rico da categoria:', categoryId);
 
   const category = window.appState.categories.find(c => c.id === categoryId);
   if (!category) {
@@ -4365,7 +4365,7 @@ window.calcularStatusRecorrente = calcularStatusRecorrente;
 
 // Funcao para mostrar modal
 window.showModal = function(content, title = '') {
-  console.log('ðŸ"§ showModal chamada com:', { title, content: content.substring(0, 100) + '...' });
+  console.log('🔍§ showModal chamada com:', { title, content: content.substring(0, 100) + '...' });
 
   if (!window.Modal) {
     console.error('❌ Modal nao esti¡ disponi­vel');
@@ -4386,7 +4386,7 @@ window.showModal = function(content, title = '') {
 
 // Funcao para fechar modal
 window.closeModal = function() {
-  console.log('ðŸ"§ closeModal chamada');
+  console.log('🔍§ closeModal chamada');
   const modal = document.getElementById('app-modal');
   if (modal) {
     modal.remove();
@@ -4466,7 +4466,7 @@ window.showConfirmationModal = function(options) {
 
 // Funcao para mostrar modal de criar novo orcamento
 window.showAddBudgetModal = function () {
-  console.log('ðŸ"§ Abrindo modal de criar orcamento...');
+  console.log('🔍§ Abrindo modal de criar orcamento...');
 
   const modalContent = `
     <div class="modal-content max-w-md mx-auto">

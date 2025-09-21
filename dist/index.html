@@ -1,349 +1,501 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no, shrink-to-fit=no" />
-    <title>Servo Tech Finanças</title>
-  <meta name="theme-color" content="#4F46E5" />
-  <meta name="theme-color" content="#111827" media="(prefers-color-scheme: dark)" />
-  <meta name="color-scheme" content="light dark" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta
-      name="apple-mobile-web-app-status-bar-style"
-      content="black-translucent"
-    />
-          <meta name="apple-mobile-web-app-title" content="Servo Tech Finanças" />
-    <meta name="format-detection" content="telephone=no" />
-    
-    <!-- Meta tags específicas para Android -->
-    <meta name="application-name" content="Servo Tech Finanças" />
-    <meta name="msapplication-TileColor" content="#4F46E5" />
-    <meta name="msapplication-tap-highlight" content="no" />
-    <meta name="msapplication-tap-highlight" content="no" />
-    <meta name="apple-touch-fullscreen" content="yes" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="description" content="Aplicativo PWA de controle financeiro pessoal com reconhecimento de voz, categorização inteligente e orçamentos compartilhados. Funciona offline." />
-  <meta name="keywords" content="finanças, controle financeiro, orçamento, despesas, receitas, PWA, planejamento, recorrentes" />
-          <meta name="author" content="Servo Tech Finanças" />
-  <!-- SEO: permitir indexação (ajuste conforme ambiente) -->
-  <meta name="robots" content="index, follow" />
-  <link rel="canonical" href="https://controle-financeiro-b98ec.web.app/" />
-  <!-- Open Graph / Twitter -->
-  <meta property="og:type" content="website" />
-  <meta property="og:title" content="Servo Tech Finanças" />
-  <meta property="og:description" content="Gerencie suas finanças de forma inteligente. PWA rápido, offline e com voz." />
-  <meta property="og:url" content="https://controle-financeiro-b98ec.web.app/" />
-  <meta property="og:image" content="/icon-512.png" />
-  <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="Servo Tech Finanças" />
-  <meta name="twitter:description" content="Gerencie suas finanças de forma inteligente no seu navegador." />
-  <meta name="twitter:image" content="/icon-512.png" />
-    <meta name="apple-itunes-app" content="app-argument=controle-financeiro-b98ec.web.app" />
-    <link rel="manifest" href="/manifest.json" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/icon-512.png" />
-  <link rel="icon" sizes="192x192" href="/icon-192.png" />
-  <link rel="icon" sizes="512x512" href="/icon-512.png" />
-  <link rel="icon" type="image/png" href="/favicon.ico" />
-  <link rel="mask-icon" href="/icon-512.png" color="#4F46E5" />
-    <!-- Performance: preconnect for Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <!-- Tailwind CSS carregado via PostCSS -->
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
-      rel="stylesheet"
-    />
-    <!-- Estilos customizados para login -->
-    <style>
-      @keyframes float {
-        0%, 100% { transform: translateY(0px); }
-        50% { transform: translateY(-10px); }
-      }
-      
-      @keyframes glow {
-        0%, 100% { box-shadow: 0 0 20px rgba(139, 92, 246, 0.3); }
-        50% { box-shadow: 0 0 40px rgba(139, 92, 246, 0.6), 0 0 60px rgba(139, 92, 246, 0.3); }
-      }
-      
-      @keyframes shimmer {
-        0% { transform: translateX(-100%); }
-        100% { transform: translateX(100%); }
-      }
-      
-      .login-card {
-        animation: float 6s ease-in-out infinite;
-      }
-      
-      .login-icon {
-        animation: glow 3s ease-in-out infinite;
-      }
-      
-      .shimmer-effect {
-        position: relative;
-        overflow: hidden;
-      }
-      
-      .shimmer-effect::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-        animation: shimmer 2s infinite;
-      }
-      
-      .gradient-text {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-      }
-      
-      .glass-effect {
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        background: rgba(255, 255, 255, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-      }
-    </style>
-  <!-- Google tag (gtag.js) -->
-    <script
-      async
-      src="https://www.googletagmanager.com/gtag/js?id=G-7RW2F269V6"
-    ></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag() {
-        dataLayer.push(arguments);
-      }
-      gtag('js', new Date());
-      gtag('config', 'G-7RW2F269V6');
-    </script>
-  <!-- DNS prefetch/preconnect -->
-  <link rel="dns-prefetch" href="https://www.gstatic.com" />
-  <link rel="dns-prefetch" href="https://www.googleapis.com" />
-  <!-- Scripts pesados removidos; bibliotecas serão carregadas sob demanda pelo BackupService -->
-  <!-- App Principal -->
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Servo Tech</title>
+  <meta name="theme-color" content="#4F46E5">
+  <meta name="description" content="Controle financeiro inteligente com reconhecimento de voz">
   
-    <script type="module" crossorigin src="/assets/main-BxMd2v3z.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/main-Nl9vEH5P.css">
-  </head>
-  <body
-  class="min-h-screen bg-white dark:bg-gray-900 font-sans font-inter antialiased flex flex-col"
-  >
-    <!-- Página de Loading -->
-    <div
-      id="loading-page"
-      class="fixed inset-0 flex items-center justify-center bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-400 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 z-[9998] hidden pointer-events-auto"
-    >
-      <div class="text-center">
-        <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-white mx-auto mb-4"></div>
-        <p class="text-white text-lg">Carregando...</p>
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/icon-512.png">
+  <link rel="icon" type="image/png" href="/favicon.ico">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  
+  <style>
+    /* Global Styles */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f8fafc;
+    }
+    
+    /* Login Page Styles */
+    #login-page {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      z-index: 9999;
+    }
+
+    .login-container {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      padding: 2rem;
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    .app-icon {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.5rem;
+      font-size: 2rem;
+    }
+
+    .app-title {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #1f2937;
+      margin-bottom: 0.5rem;
+    }
+
+    .app-subtitle {
+      color: #6b7280;
+      margin-bottom: 2rem;
+      font-size: 0.9rem;
+    }
+
+    .login-btn {
+      width: 100%;
+      padding: 0.875rem 1.5rem;
+      border-radius: 12px;
+      border: none;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .login-btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    .login-btn.loading::after {
+      content: '';
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      border: 2px solid transparent;
+      border-top: 2px solid currentColor;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-left: 8px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    #btn-entrar {
+      background: #4285f4;
+      color: white;
+    }
+
+    #btn-entrar:hover:not(:disabled) {
+      background: #3367d6;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(66, 133, 244, 0.3);
+    }
+
+    .demo-btn {
+      background: #10b981;
+      color: white;
+    }
+
+    .demo-btn:hover:not(:disabled) {
+      background: #059669;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .guest-btn {
+      background: #f3f4f6;
+      color: #374151;
+      border: 1px solid #d1d5db;
+    }
+
+    .guest-btn:hover:not(:disabled) {
+      background: #e5e7eb;
+      transform: translateY(-1px);
+    }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      margin: 1.5rem 0;
+      color: #9ca3af;
+      font-size: 0.875rem;
+    }
+
+    .divider::before,
+    .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #e5e7eb;
+    }
+
+    .divider span {
+      padding: 0 1rem;
+    }
+
+    /* Dark mode */
+    @media (prefers-color-scheme: dark) {
+      #login-page {
+        background: linear-gradient(135deg, #1e3a8a 0%, #7c3aed 100%);
+      }
+      
+      .login-container {
+        background: #1f2937;
+        color: #f9fafb;
+      }
+      
+      .app-title {
+        color: #f9fafb;
+      }
+      
+      .app-subtitle {
+        color: #9ca3af;
+      }
+      
+      .guest-btn {
+        background: #374151;
+        color: #f9fafb;
+        border-color: #4b5563;
+      }
+      
+      .guest-btn:hover:not(:disabled) {
+        background: #4b5563;
+      }
+    }
+
+    /* Mobile responsive */
+    @media (max-width: 640px) {
+      .login-container {
+        padding: 1.5rem;
+        margin: 1rem;
+      }
+      
+      .app-icon {
+        width: 60px;
+        height: 60px;
+        font-size: 1.5rem;
+      }
+      
+      .app-title {
+        font-size: 1.5rem;
+      }
+    }
+  </style>
+  <script type="module" crossorigin src="/assets/main-BXUJHJVH.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/main-6ahFnZtK.css">
+</head>
+<body>
+  <!-- Login Page -->
+  <div id="login-page">
+    <div class="login-container">
+      <div class="app-icon">
+        💰
       </div>
+      
+      <h1 class="app-title">Servo Tech</h1>
+      <p class="app-subtitle">Sua vida financeira organizada</p>
+      
+      <button id="btn-entrar" class="login-btn">
+        <span>🚀</span>
+        Começar agora
+      </button>
+      
+      <div class="divider">
+        <span>ou</span>
+      </div>
+      
+      <button id="demo-btn" class="login-btn demo-btn">
+        <span>📊</span>
+        Ver demonstração
+      </button>
+      
+      <button id="guest-btn" class="login-btn guest-btn">
+        <span>👤</span>
+        Continuar como convidado
+      </button>
     </div>
+  </div>
 
-    <!-- Página de Login dedicada -->
-    <div
-      id="login-page"
-      class="fixed inset-0 flex items-center justify-center bg-gradient-to-br from-violet-600 via-purple-700 to-fuchsia-600 dark:from-slate-900 dark:via-purple-900 dark:to-indigo-900 z-[9999] pointer-events-auto overflow-hidden"
-    >
-      <!-- Elementos decorativos de fundo -->
-      <div class="absolute inset-0 overflow-hidden">
-        <div class="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-pink-400/20 to-purple-600/20 rounded-full blur-3xl animate-pulse"></div>
-        <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-cyan-600/20 rounded-full blur-3xl animate-pulse" style="animation-delay: 2s;"></div>
-        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-br from-violet-500/10 to-fuchsia-500/10 rounded-full blur-3xl animate-pulse" style="animation-delay: 4s;"></div>
-      </div>
-      <div
-        class="u-card bg-white/95 dark:bg-gray-900/95 backdrop-blur-2xl rounded-3xl shadow-2xl p-8 md:p-12 flex flex-col items-center gap-8 max-w-md w-full mx-6 border border-white/20 dark:border-gray-700/30 transform hover:scale-[1.02] transition-all duration-500 relative overflow-hidden login-card glass-effect"
-      >
-        <!-- Efeito de brilho no card -->
-        <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent transform -skew-x-12 -translate-x-full hover:translate-x-full transition-transform duration-1000 shimmer-effect"></div>
-        <div class="text-center space-y-4 relative z-10">
-          <div
-            class="w-24 h-24 bg-gradient-to-br from-violet-500 via-purple-600 to-fuchsia-500 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-2xl transform hover:scale-110 hover:rotate-3 transition-all duration-500 relative overflow-hidden login-icon"
-          >
-            <!-- Efeito de brilho no ícone -->
-            <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent transform -skew-x-12 -translate-x-full hover:translate-x-full transition-transform duration-1000"></div>
-            <span class="text-4xl relative z-10">🚀</span>
-            <!-- Partículas decorativas -->
-            <div class="absolute -top-2 -right-2 w-3 h-3 bg-yellow-400 rounded-full animate-ping"></div>
-            <div class="absolute -bottom-1 -left-1 w-2 h-2 bg-blue-400 rounded-full animate-ping" style="animation-delay: 1s;"></div>
-          </div>
-          <h1
-            class="text-3xl md:text-4xl font-black text-gray-800 dark:text-white text-center leading-tight mb-2"
-          >
-            Bem-vindo ao<br/><span class="bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 bg-clip-text text-transparent animate-pulse">Servo Tech Finanças</span>
-          </h1>
-          <p
-            class="text-gray-600 dark:text-gray-300 text-center text-lg md:text-xl leading-relaxed font-medium"
-          >
-            Sua plataforma completa de<br/><span class="font-bold text-gray-800 dark:text-gray-100 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">controle financeiro inteligente</span>
-          </p>
-        </div>
-
-        <div class="w-full space-y-5 relative z-10">
-          <button
-            id="btn-entrar"
-            class="btn btn-primary w-full text-lg md:text-xl flex items-center justify-center gap-4 btn-login-google py-5 rounded-2xl shadow-xl hover:shadow-2xl transform hover:scale-[1.03] hover:-translate-y-1 transition-all duration-500 bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 hover:from-blue-600 hover:via-indigo-600 hover:to-purple-600 relative overflow-hidden group"
-          >
-            <!-- Efeito de brilho no botão -->
-            <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-            <svg width="28" height="28" fill="none" viewBox="0 0 24 24" class="flex-shrink-0 relative z-10">
-              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-            </svg>
-            <span class="btn-login-text font-bold text-lg relative z-10">Entrar com Google</span>
-          </button>
-
-          <button
-            id="biometric-login-btn"
-            class="btn btn-outline w-full text-lg md:text-xl flex items-center justify-center gap-4 btn-login-bio hidden py-5 rounded-2xl border-2 border-gray-300 dark:border-gray-600 hover:border-violet-500 dark:hover:border-violet-400 transform hover:scale-[1.03] hover:-translate-y-1 transition-all duration-500 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 hover:from-violet-50 hover:to-purple-50 dark:hover:from-violet-900/20 dark:hover:to-purple-900/20 relative overflow-hidden group"
-          >
-            <!-- Efeito de brilho no botão -->
-            <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-            <span class="text-2xl relative z-10">🔐</span>
-            <span class="btn-login-text font-bold text-lg relative z-10">Entrar com Biometria</span>
-          </button>
-          
-          <!-- Informações adicionais melhoradas -->
-          <div class="text-center mt-8 pt-6 border-t border-gradient-to-r from-transparent via-gray-300 dark:via-gray-600 to-transparent">
-            <div class="flex items-center justify-center gap-2 mb-2">
-              <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <div class="w-2 h-2 bg-blue-500 rounded-full animate-pulse" style="animation-delay: 0.5s;"></div>
-              <div class="w-2 h-2 bg-purple-500 rounded-full animate-pulse" style="animation-delay: 1s;"></div>
-            </div>
-            <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">
-              🛡️ Seus dados estão seguros e protegidos
-            </p>
-            <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">
-              Criptografia de ponta a ponta • Conformidade LGPD
-            </p>
-          </div>
-        </div>
-      </div>
+  <!-- Loading Page -->
+  <div id="loading-page" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: #f8fafc; display: flex; align-items: center; justify-content: center; z-index: 10000;">
+    <div style="text-align: center;">
+      <div style="width: 40px; height: 40px; border: 3px solid #e5e7eb; border-top: 3px solid #4285f4; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem;"></div>
+      <p style="color: #6b7280; font-size: 0.9rem;">Carregando...</p>
     </div>
-    <div
-      class="app-container bg-transparent dark:bg-transparent flex flex-col min-h-screen flex-1"
-    >
+  </div>
 
+  <!-- Main App Container -->
+  <div class="app-container" style="display: none;">
+    <!-- App content will be loaded here -->
+    <main id="app-content"></main>
+  </div>
 
-      <!-- Drawer removido - funcionalidades movidas para as abas do rodapé -->
+  <!-- Styles -->
+  
+  <!-- App Scripts -->
+  
+  <script>
+    // Firebase Configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyCbBmmxn4Qj4CU6ymfG4MY5VGqCPSo13HY",
+      authDomain: "controle-financeiro-b98ec.firebaseapp.com",
+      projectId: "controle-financeiro-b98ec",
+      storageBucket: "controle-financeiro-b98ec.firebasestorage.app",
+      messagingSenderId: "418109336597",
+      appId: "1:418109336597:web:871b262a76e57455ebb21c",
+      measurementId: "G-7RW2F269V6"
+    };
 
-      <!-- Modal de Voz Super Amigável -->
-      <div 
-        id="voice-modal" 
-        class="voice-modal fixed inset-0 z-50 flex items-center justify-center pointer-events-none transition-all duration-300 ease-in-out voice-modal-overlay"
-      >
-        <div 
-          class="voice-content bg-white/98 dark:bg-gray-800/98 backdrop-blur-xl rounded-3xl shadow-2xl p-6 max-w-md w-full mx-4 pointer-events-auto transform scale-95 opacity-0 transition-all duration-300 ease-in-out voice-content-styles"
-        >
-          <div class="text-center">
-            <!-- Ícone de Microfone Animado -->
-            <div class="voice-icon mb-4">
-              <div class="w-16 h-16 bg-gradient-to-r from-green-400 to-blue-500 rounded-full flex items-center justify-center mx-auto animate-pulse shadow-lg">
-                <svg width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="text-white">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                </svg>
-              </div>
-            </div>
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+
+    // Global toggle function (used by the existing system)
+    window.toggleLoginPage = function(show) {
+      const loginPage = document.getElementById('login-page');
+      const appContainer = document.querySelector('.app-container');
+      const loadingPage = document.getElementById('loading-page');
+
+      if (show) {
+        loginPage.style.display = 'flex';
+        if (appContainer) appContainer.style.display = 'none';
+        if (loadingPage) loadingPage.style.display = 'none';
+      } else {
+        loginPage.style.display = 'none';
+        if (appContainer) appContainer.style.display = 'flex';
+        if (loadingPage) loadingPage.style.display = 'none';
+      }
+    };
+
+    // Show loading function
+    window.showLoading = function(show) {
+      const loadingPage = document.getElementById('loading-page');
+      if (show) {
+        loadingPage.style.display = 'flex';
+      } else {
+        loadingPage.style.display = 'none';
+      }
+    };
+
+    // Login with Google
+    async function loginWithGoogle() {
+      try {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        provider.addScope('profile');
+        provider.addScope('email');
+        
+        const result = await firebase.auth().signInWithPopup(provider);
+        console.log('✅ Login Google bem-sucedido:', result.user.email);
+        return result.user;
+      } catch (error) {
+        console.error('❌ Erro no login Google:', error);
+        throw error;
+      }
+    }
+
+    // Demo login
+    async function demoLogin() {
+      try {
+        const result = await firebase.auth().signInAnonymously();
+        console.log('✅ Demo login bem-sucedido:', result.user.uid);
+        localStorage.setItem('demoMode', 'true');
+        return result.user;
+      } catch (error) {
+        console.error('❌ Erro no demo login:', error);
+        throw error;
+      }
+    }
+
+    // Guest login
+    async function guestLogin() {
+      try {
+        const result = await firebase.auth().signInAnonymously();
+        console.log('✅ Guest login bem-sucedido:', result.user.uid);
+        localStorage.setItem('guestMode', 'true');
+        return result.user;
+      } catch (error) {
+        console.error('❌ Erro no guest login:', error);
+        throw error;
+      }
+    }
+
+    // Setup login handlers
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('🔧 Configurando handlers de login...');
+      
+      const btnEntrar = document.getElementById('btn-entrar');
+      const demoBtn = document.getElementById('demo-btn');
+      const guestBtn = document.getElementById('guest-btn');
+
+      if (btnEntrar) {
+        btnEntrar.addEventListener('click', async function() {
+          console.log('🚀 Login Google clicado');
+          const btn = this;
+          btn.disabled = true;
+          btn.classList.add('loading');
+
+          try {
+            window.showLoading(true);
+            const user = await loginWithGoogle();
             
-            <!-- Título Principal -->
-            <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-2">
-              🎤 Estou te ouvindo!
-            </h3>
-            
-            <!-- Descrição Amigável -->
-            <p class="text-gray-600 dark:text-gray-400 mb-4 text-sm leading-relaxed">
-              Fale naturalmente como você gastou ou recebeu dinheiro
-            </p>
-            
-            <!-- Status Visual -->
-            <div class="voice-status mb-4">
-              <div class="flex justify-center space-x-1 mb-2">
-                <div class="w-2 h-2 bg-green-500 rounded-full animate-bounce"></div>
-                <div class="w-2 h-2 bg-blue-500 rounded-full animate-bounce anim-delay-100"></div>
-                <div class="w-2 h-2 bg-green-500 rounded-full animate-bounce anim-delay-200"></div>
-              </div>
-              <p class="text-xs text-green-600 dark:text-green-400 font-medium">Microfone ativo</p>
-            </div>
-            
-            <!-- Exemplos Práticos e Claros -->
-            <div class="voice-commands bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-700 dark:to-gray-600 rounded-2xl p-4 mb-4 text-left">
-              <p class="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3 text-center">
-                💡 Exemplos do que você pode falar:
-              </p>
+            if (user) {
+              // Set user in global state
+              if (!window.appState) window.appState = {};
+              window.appState.currentUser = user;
               
-              <div class="space-y-2 text-xs">
-                <div class="bg-white dark:bg-gray-800 rounded-lg p-2 border-l-4 border-red-400">
-                  <p class="text-red-600 dark:text-red-400 font-medium">💸 Para gastos:</p>
-                  <p class="text-gray-600 dark:text-gray-400">"Gastei cem reais com alimentação"</p>
-                  <p class="text-gray-600 dark:text-gray-400">"Paguei cinquenta reais de gasolina"</p>
-                </div>
-                
-                <div class="bg-white dark:bg-gray-800 rounded-lg p-2 border-l-4 border-green-400">
-                  <p class="text-green-600 dark:text-green-400 font-medium">💰 Para receitas:</p>
-                  <p class="text-gray-600 dark:text-gray-400">"Recebi mil reais de salário"</p>
-                  <p class="text-gray-600 dark:text-gray-400">"Ganhei duzentos reais freelance"</p>
-                </div>
-                
-                <div class="bg-white dark:bg-gray-800 rounded-lg p-2 border-l-4 border-blue-400">
-                  <p class="text-blue-600 dark:text-blue-400 font-medium">📝 Formato simples:</p>
-                  <p class="text-gray-600 dark:text-gray-400">"Cem reais supermercado"</p>
-                  <p class="text-gray-600 dark:text-gray-400">"Trezentos reais farmácia"</p>
-                </div>
-              </div>
-            </div>
+              // Use the existing system's toggle function
+              window.toggleLoginPage(false);
+              
+              // Navigate to dashboard
+              setTimeout(() => {
+                window.location.hash = '#/dashboard';
+              }, 100);
+            }
+          } catch (error) {
+            console.error('❌ Erro no login:', error);
+            alert('Erro no login. Tente novamente.');
+          } finally {
+            btn.disabled = false;
+            btn.classList.remove('loading');
+            window.showLoading(false);
+          }
+        });
+      }
+
+      if (demoBtn) {
+        demoBtn.addEventListener('click', async function() {
+          console.log('🚀 Demo clicado');
+          const btn = this;
+          btn.disabled = true;
+          btn.classList.add('loading');
+
+          try {
+            window.showLoading(true);
+            const user = await demoLogin();
             
-            <!-- Dicas Importantes -->
-            <div class="bg-yellow-50 dark:bg-yellow-900/30 rounded-xl p-3 mb-4">
-              <p class="text-xs text-yellow-700 dark:text-yellow-300 font-medium mb-1">
-                ⚡ Dicas importantes:
-              </p>
-              <ul class="text-xs text-yellow-600 dark:text-yellow-400 text-left space-y-1">
-                <li>• Fale o valor por extenso (cem, mil, etc.)</li>
-                <li>• Mencione a categoria (alimentação, transporte...)</li>
-                <li>• Fale de forma natural e clara</li>
-              </ul>
-            </div>
+            if (user) {
+              if (!window.appState) window.appState = {};
+              window.appState.currentUser = user;
+              
+              window.toggleLoginPage(false);
+              
+              setTimeout(() => {
+                window.location.hash = '#/dashboard';
+              }, 100);
+            }
+          } catch (error) {
+            console.error('❌ Erro no demo:', error);
+            alert('Erro ao iniciar demonstração. Tente novamente.');
+          } finally {
+            btn.disabled = false;
+            btn.classList.remove('loading');
+            window.showLoading(false);
+          }
+        });
+      }
 
-            <!-- Botão de Cancelar -->
-            <button
-              id="close-voice-modal"
-              class="btn btn-ghost w-full"
-            >
-              ❌ Cancelar
-            </button>
-          </div>
-        </div>
-      </div>
+      if (guestBtn) {
+        guestBtn.addEventListener('click', async function() {
+          console.log('🚀 Guest clicado');
+          const btn = this;
+          btn.disabled = true;
+          btn.classList.add('loading');
 
-      <!-- Conteúdo Dinâmico SPA -->
-      <main
-        id="app-content"
-        class="content-area"
-      >
-        <!-- As telas serão carregadas dinamicamente aqui pelo roteador SPA -->
-      </main>
+          try {
+            window.showLoading(true);
+            const user = await guestLogin();
+            
+            if (user) {
+              if (!window.appState) window.appState = {};
+              window.appState.currentUser = user;
+              
+              window.toggleLoginPage(false);
+              
+              setTimeout(() => {
+                window.location.hash = '#/dashboard';
+              }, 100);
+            }
+          } catch (error) {
+            console.error('❌ Erro no guest login:', error);
+            alert('Erro no login. Tente novamente.');
+          } finally {
+            btn.disabled = false;
+            btn.classList.remove('loading');
+            window.showLoading(false);
+          }
+        });
+      }
 
-      <!-- FAB Container -->
-      <div id="fab-container" class="fab-container"></div>
+      // Check authentication state
+      firebase.auth().onAuthStateChanged(function(user) {
+        if (user) {
+          console.log('✅ Usuário autenticado:', user.email || user.uid);
+          if (!window.appState) window.appState = {};
+          window.appState.currentUser = user;
+          
+          // Hide login page if it's showing
+          const loginPage = document.getElementById('login-page');
+          if (loginPage && loginPage.style.display !== 'none') {
+            window.toggleLoginPage(false);
+            setTimeout(() => {
+              if (!window.location.hash || window.location.hash === '#') {
+                window.location.hash = '#/dashboard';
+              }
+            }, 100);
+          }
+        } else {
+          console.log('❌ Usuário não autenticado');
+          window.toggleLoginPage(true);
+        }
+      });
 
-      <!-- Bottom Navigation -->
-      <div id="bottom-nav" class="bottom-nav-container"></div>
-
-      
-
-      <!-- Drawer/Sidebar -->
-      <div id="drawer" class="drawer"></div>
-      
-      <!-- Removido: Modal de Voz estático que causava bug de exibição automática -->
-      
-    </div>
-  </body>
+      console.log('✅ Handlers de login configurados');
+    });
+  </script>
+</body>
 </html>
