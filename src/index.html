@@ -262,6 +262,63 @@
   <!-- Styles -->
   <link rel="stylesheet" href="/css/styles.css?v=20250920093920">
   
+  <!-- Force login screen first -->
+  <script>
+    // Block any attempt to show dashboard before login
+    window.addEventListener('DOMContentLoaded', function() {
+      const loginPage = document.getElementById('login-page');
+      const appContent = document.getElementById('app-content');
+      
+      // Force login to be visible
+      if (loginPage) {
+        loginPage.style.display = 'flex';
+        loginPage.style.position = 'fixed';
+        loginPage.style.top = '0';
+        loginPage.style.left = '0';
+        loginPage.style.width = '100%';
+        loginPage.style.height = '100%';
+        loginPage.style.zIndex = '99999';
+      }
+      
+      // Force app to be hidden
+      if (appContent) {
+        appContent.style.display = 'none';
+        appContent.style.visibility = 'hidden';
+      }
+      
+      // Hide any existing dashboard content
+      const existingDashboard = document.querySelector('.tab-container, .bottom-nav, main:not(#app-content)');
+      if (existingDashboard) {
+        existingDashboard.style.display = 'none';
+      }
+      
+      // Monitor for any attempts to show dashboard content
+      const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+          if (mutation.type === 'childList') {
+            mutation.addedNodes.forEach(function(node) {
+              if (node.nodeType === 1) { // Element node
+                if (node.classList && (node.classList.contains('tab-container') || 
+                    node.classList.contains('bottom-nav') || 
+                    node.classList.contains('dashboard-content'))) {
+                  node.style.display = 'none';
+                }
+              }
+            });
+          }
+        });
+      });
+      
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true
+      });
+      
+      // Store observer globally so it can be stopped later
+      window.loginObserver = observer;
+    });
+  </script>
+  
   <!-- App Scripts -->
   <script type="module" src="./app/entry.js"></script>
   
@@ -338,6 +395,11 @@
 
       // Show app function
       function showApp() {
+        // Stop the mutation observer
+        if (window.loginObserver) {
+          window.loginObserver.disconnect();
+        }
+        
         loginPage.style.display = 'none !important';
         loginPage.style.visibility = 'hidden';
         loginPage.style.opacity = '0';
@@ -345,6 +407,12 @@
         appContent.style.display = 'block !important';
         appContent.style.visibility = 'visible';
         appContent.style.opacity = '1';
+        
+        // Allow dashboard content to show
+        const hiddenElements = document.querySelectorAll('.tab-container, .bottom-nav');
+        hiddenElements.forEach(el => {
+          el.style.display = '';
+        });
         
         // Force app initialization
         setTimeout(() => {
