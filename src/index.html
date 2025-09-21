@@ -23,29 +23,32 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   
   <style>
-    /* Force login page to show */
-    body {
+    /* Global Styles */
+    * {
+      box-sizing: border-box;
       margin: 0;
       padding: 0;
     }
     
-    #app-content {
-      display: none !important;
+    body {
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f8fafc;
     }
     
     /* Login Page Styles */
-    .login-page {
-      min-height: 100vh;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      display: flex !important;
-      align-items: center;
-      justify-content: center;
-      padding: 1rem;
-      font-family: 'Inter', sans-serif;
+    #login-page {
       position: fixed;
       top: 0;
       left: 0;
       width: 100%;
+      height: 100vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
       z-index: 9999;
     }
 
@@ -98,17 +101,51 @@
       align-items: center;
       justify-content: center;
       gap: 0.5rem;
+      position: relative;
+      overflow: hidden;
     }
 
-    .google-btn {
+    .login-btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    .login-btn.loading::after {
+      content: '';
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      border: 2px solid transparent;
+      border-top: 2px solid currentColor;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-left: 8px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    #btn-entrar {
       background: #4285f4;
       color: white;
     }
 
-    .google-btn:hover {
+    #btn-entrar:hover:not(:disabled) {
       background: #3367d6;
       transform: translateY(-1px);
       box-shadow: 0 4px 12px rgba(66, 133, 244, 0.3);
+    }
+
+    .demo-btn {
+      background: #10b981;
+      color: white;
+    }
+
+    .demo-btn:hover:not(:disabled) {
+      background: #059669;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
     }
 
     .guest-btn {
@@ -117,20 +154,9 @@
       border: 1px solid #d1d5db;
     }
 
-    .guest-btn:hover {
+    .guest-btn:hover:not(:disabled) {
       background: #e5e7eb;
       transform: translateY(-1px);
-    }
-
-    .demo-btn {
-      background: #10b981;
-      color: white;
-    }
-
-    .demo-btn:hover {
-      background: #059669;
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
     }
 
     .divider {
@@ -153,29 +179,9 @@
       padding: 0 1rem;
     }
 
-    .loading {
-      opacity: 0.7;
-      pointer-events: none;
-    }
-
-    .loading::after {
-      content: '';
-      width: 16px;
-      height: 16px;
-      border: 2px solid transparent;
-      border-top: 2px solid currentColor;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin-left: 8px;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
     /* Dark mode */
     @media (prefers-color-scheme: dark) {
-      .login-page {
+      #login-page {
         background: linear-gradient(135deg, #1e3a8a 0%, #7c3aed 100%);
       }
       
@@ -198,7 +204,7 @@
         border-color: #4b5563;
       }
       
-      .guest-btn:hover {
+      .guest-btn:hover:not(:disabled) {
         background: #4b5563;
       }
     }
@@ -224,7 +230,7 @@
 </head>
 <body>
   <!-- Login Page -->
-  <div id="login-page" class="login-page">
+  <div id="login-page">
     <div class="login-container">
       <div class="app-icon">
         💰
@@ -233,7 +239,7 @@
       <h1 class="app-title">Servo Tech</h1>
       <p class="app-subtitle">Sua vida financeira organizada</p>
       
-      <button id="google-login-btn" class="login-btn google-btn">
+      <button id="btn-entrar" class="login-btn">
         <span>🚀</span>
         Começar agora
       </button>
@@ -242,82 +248,34 @@
         <span>ou</span>
       </div>
       
-      <button id="demo-login-btn" class="login-btn demo-btn">
+      <button id="demo-btn" class="login-btn demo-btn">
         <span>📊</span>
         Ver demonstração
       </button>
       
-      <button id="guest-login-btn" class="login-btn guest-btn">
+      <button id="guest-btn" class="login-btn guest-btn">
         <span>👤</span>
         Continuar como convidado
       </button>
     </div>
   </div>
 
-  <!-- Main App (hidden initially) -->
-  <main id="app-content" style="display: none !important;">
+  <!-- Loading Page -->
+  <div id="loading-page" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: #f8fafc; display: flex; align-items: center; justify-content: center; z-index: 10000;">
+    <div style="text-align: center;">
+      <div style="width: 40px; height: 40px; border: 3px solid #e5e7eb; border-top: 3px solid #4285f4; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem;"></div>
+      <p style="color: #6b7280; font-size: 0.9rem;">Carregando...</p>
+    </div>
+  </div>
+
+  <!-- Main App Container -->
+  <div class="app-container" style="display: none;">
     <!-- App content will be loaded here -->
-  </main>
+    <main id="app-content"></main>
+  </div>
 
   <!-- Styles -->
-  <link rel="stylesheet" href="/css/styles.css?v=20250920093920">
-  
-  <!-- Force login screen first -->
-  <script>
-    // Block any attempt to show dashboard before login
-    window.addEventListener('DOMContentLoaded', function() {
-      const loginPage = document.getElementById('login-page');
-      const appContent = document.getElementById('app-content');
-      
-      // Force login to be visible
-      if (loginPage) {
-        loginPage.style.display = 'flex';
-        loginPage.style.position = 'fixed';
-        loginPage.style.top = '0';
-        loginPage.style.left = '0';
-        loginPage.style.width = '100%';
-        loginPage.style.height = '100%';
-        loginPage.style.zIndex = '99999';
-      }
-      
-      // Force app to be hidden
-      if (appContent) {
-        appContent.style.display = 'none';
-        appContent.style.visibility = 'hidden';
-      }
-      
-      // Hide any existing dashboard content
-      const existingDashboard = document.querySelector('.tab-container, .bottom-nav, main:not(#app-content)');
-      if (existingDashboard) {
-        existingDashboard.style.display = 'none';
-      }
-      
-      // Monitor for any attempts to show dashboard content
-      const observer = new MutationObserver(function(mutations) {
-        mutations.forEach(function(mutation) {
-          if (mutation.type === 'childList') {
-            mutation.addedNodes.forEach(function(node) {
-              if (node.nodeType === 1) { // Element node
-                if (node.classList && (node.classList.contains('tab-container') || 
-                    node.classList.contains('bottom-nav') || 
-                    node.classList.contains('dashboard-content'))) {
-                  node.style.display = 'none';
-                }
-              }
-            });
-          }
-        });
-      });
-      
-      observer.observe(document.body, {
-        childList: true,
-        subtree: true
-      });
-      
-      // Store observer globally so it can be stopped later
-      window.loginObserver = observer;
-    });
-  </script>
+  <link rel="stylesheet" href="/css/styles.css">
   
   <!-- App Scripts -->
   <script type="module" src="./app/entry.js"></script>
@@ -337,145 +295,206 @@
     // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
 
-    // Login handlers
-    document.addEventListener('DOMContentLoaded', function() {
+    // Global toggle function (used by the existing system)
+    window.toggleLoginPage = function(show) {
       const loginPage = document.getElementById('login-page');
-      const appContent = document.getElementById('app-content');
+      const appContainer = document.querySelector('.app-container');
+      const loadingPage = document.getElementById('loading-page');
+
+      if (show) {
+        loginPage.style.display = 'flex';
+        if (appContainer) appContainer.style.display = 'none';
+        if (loadingPage) loadingPage.style.display = 'none';
+      } else {
+        loginPage.style.display = 'none';
+        if (appContainer) appContainer.style.display = 'flex';
+        if (loadingPage) loadingPage.style.display = 'none';
+      }
+    };
+
+    // Show loading function
+    window.showLoading = function(show) {
+      const loadingPage = document.getElementById('loading-page');
+      if (show) {
+        loadingPage.style.display = 'flex';
+      } else {
+        loadingPage.style.display = 'none';
+      }
+    };
+
+    // Login with Google
+    async function loginWithGoogle() {
+      try {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        provider.addScope('profile');
+        provider.addScope('email');
+        
+        const result = await firebase.auth().signInWithPopup(provider);
+        console.log('✅ Login Google bem-sucedido:', result.user.email);
+        return result.user;
+      } catch (error) {
+        console.error('❌ Erro no login Google:', error);
+        throw error;
+      }
+    }
+
+    // Demo login
+    async function demoLogin() {
+      try {
+        const result = await firebase.auth().signInAnonymously();
+        console.log('✅ Demo login bem-sucedido:', result.user.uid);
+        localStorage.setItem('demoMode', 'true');
+        return result.user;
+      } catch (error) {
+        console.error('❌ Erro no demo login:', error);
+        throw error;
+      }
+    }
+
+    // Guest login
+    async function guestLogin() {
+      try {
+        const result = await firebase.auth().signInAnonymously();
+        console.log('✅ Guest login bem-sucedido:', result.user.uid);
+        localStorage.setItem('guestMode', 'true');
+        return result.user;
+      } catch (error) {
+        console.error('❌ Erro no guest login:', error);
+        throw error;
+      }
+    }
+
+    // Setup login handlers
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('🔧 Configurando handlers de login...');
       
-      console.log('🔧 Login handlers carregados');
-      console.log('🔧 Login page:', loginPage);
-      console.log('🔧 App content:', appContent);
-      
-      // Check if buttons exist
-      const googleBtn = document.getElementById('google-login-btn');
-      const demoBtn = document.getElementById('demo-login-btn');
-      const guestBtn = document.getElementById('guest-login-btn');
-      
-      console.log('🔧 Botões encontrados:', {
-        google: !!googleBtn,
-        demo: !!demoBtn,
-        guest: !!guestBtn
-      });
-      
-      // Google Login
-      if (googleBtn) {
-        googleBtn.addEventListener('click', async function() {
-          console.log('🚀 Google login clicked');
+      const btnEntrar = document.getElementById('btn-entrar');
+      const demoBtn = document.getElementById('demo-btn');
+      const guestBtn = document.getElementById('guest-btn');
+
+      if (btnEntrar) {
+        btnEntrar.addEventListener('click', async function() {
+          console.log('🚀 Login Google clicado');
           const btn = this;
+          btn.disabled = true;
           btn.classList.add('loading');
-          
+
           try {
-            const provider = new firebase.auth.GoogleAuthProvider();
-            const result = await firebase.auth().signInWithPopup(provider);
-            console.log('✅ Login bem-sucedido:', result.user.email);
-            showApp();
+            window.showLoading(true);
+            const user = await loginWithGoogle();
+            
+            if (user) {
+              // Set user in global state
+              if (!window.appState) window.appState = {};
+              window.appState.currentUser = user;
+              
+              // Use the existing system's toggle function
+              window.toggleLoginPage(false);
+              
+              // Navigate to dashboard
+              setTimeout(() => {
+                window.location.hash = '#/dashboard';
+              }, 100);
+            }
           } catch (error) {
             console.error('❌ Erro no login:', error);
             alert('Erro no login. Tente novamente.');
           } finally {
+            btn.disabled = false;
             btn.classList.remove('loading');
+            window.showLoading(false);
           }
         });
       }
-      
-      // Demo Login
+
       if (demoBtn) {
         demoBtn.addEventListener('click', async function() {
-          console.log('🚀 Demo login clicked');
+          console.log('🚀 Demo clicado');
           const btn = this;
+          btn.disabled = true;
           btn.classList.add('loading');
-          
+
           try {
-            const result = await firebase.auth().signInAnonymously();
-            console.log('✅ Demo login bem-sucedido:', result.user.uid);
-            localStorage.setItem('demoMode', 'true');
-            showApp();
+            window.showLoading(true);
+            const user = await demoLogin();
+            
+            if (user) {
+              if (!window.appState) window.appState = {};
+              window.appState.currentUser = user;
+              
+              window.toggleLoginPage(false);
+              
+              setTimeout(() => {
+                window.location.hash = '#/dashboard';
+              }, 100);
+            }
           } catch (error) {
             console.error('❌ Erro no demo:', error);
             alert('Erro ao iniciar demonstração. Tente novamente.');
           } finally {
+            btn.disabled = false;
             btn.classList.remove('loading');
+            window.showLoading(false);
           }
         });
       }
-      
-      // Guest Login
+
       if (guestBtn) {
         guestBtn.addEventListener('click', async function() {
-          console.log('🚀 Guest login clicked');
+          console.log('🚀 Guest clicado');
           const btn = this;
+          btn.disabled = true;
           btn.classList.add('loading');
-          
+
           try {
-            const result = await firebase.auth().signInAnonymously();
-            console.log('✅ Guest login bem-sucedido:', result.user.uid);
-            localStorage.setItem('guestMode', 'true');
-            showApp();
+            window.showLoading(true);
+            const user = await guestLogin();
+            
+            if (user) {
+              if (!window.appState) window.appState = {};
+              window.appState.currentUser = user;
+              
+              window.toggleLoginPage(false);
+              
+              setTimeout(() => {
+                window.location.hash = '#/dashboard';
+              }, 100);
+            }
           } catch (error) {
-            console.error('❌ Erro no login convidado:', error);
+            console.error('❌ Erro no guest login:', error);
             alert('Erro no login. Tente novamente.');
           } finally {
+            btn.disabled = false;
             btn.classList.remove('loading');
+            window.showLoading(false);
           }
         });
       }
 
-      // Show app function
-      function showApp() {
-        console.log('🎯 showApp() chamada');
-        
-        // Stop the mutation observer
-        if (window.loginObserver) {
-          console.log('🔧 Parando mutation observer');
-          window.loginObserver.disconnect();
-        }
-        
-        console.log('🔧 Ocultando login page');
-        loginPage.style.display = 'none !important';
-        loginPage.style.visibility = 'hidden';
-        loginPage.style.opacity = '0';
-        
-        console.log('🔧 Mostrando app content');
-        appContent.style.display = 'block !important';
-        appContent.style.visibility = 'visible';
-        appContent.style.opacity = '1';
-        
-        // Allow dashboard content to show
-        const hiddenElements = document.querySelectorAll('.tab-container, .bottom-nav');
-        console.log('🔧 Restaurando elementos ocultos:', hiddenElements.length);
-        hiddenElements.forEach(el => {
-          el.style.display = '';
-        });
-        
-        // Force app initialization
-        console.log('🔧 Forçando inicialização do app');
-        setTimeout(() => {
-          if (window.router && window.router.navigate) {
-            console.log('✅ Navegando via router para /dashboard');
-            window.router.navigate('/dashboard');
-          } else {
-            console.log('✅ Navegando via hash para #/dashboard');
-            window.location.hash = '#/dashboard';
-          }
-          
-          // Trigger app render
-          if (window.renderDashboard) {
-            console.log('✅ Renderizando dashboard');
-            window.renderDashboard();
-          }
-        }, 100);
-      }
-
-      // Force login page to show initially
-      loginPage.style.display = 'flex';
-      appContent.style.display = 'none';
-      
-      // Check if user is already logged in
+      // Check authentication state
       firebase.auth().onAuthStateChanged(function(user) {
-        if (user && loginPage.style.display !== 'none') {
-          setTimeout(() => showApp(), 500);
+        if (user) {
+          console.log('✅ Usuário autenticado:', user.email || user.uid);
+          if (!window.appState) window.appState = {};
+          window.appState.currentUser = user;
+          
+          // Hide login page if it's showing
+          const loginPage = document.getElementById('login-page');
+          if (loginPage && loginPage.style.display !== 'none') {
+            window.toggleLoginPage(false);
+            setTimeout(() => {
+              if (!window.location.hash || window.location.hash === '#') {
+                window.location.hash = '#/dashboard';
+              }
+            }, 100);
+          }
+        } else {
+          console.log('❌ Usuário não autenticado');
+          window.toggleLoginPage(true);
         }
       });
+
+      console.log('✅ Handlers de login configurados');
     });
   </script>
 </body>
