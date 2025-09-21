@@ -342,88 +342,125 @@
       const loginPage = document.getElementById('login-page');
       const appContent = document.getElementById('app-content');
       
-      // Google Login
-      document.getElementById('google-login-btn').addEventListener('click', async function() {
-        const btn = this;
-        btn.classList.add('loading');
-        
-        try {
-          const provider = new firebase.auth.GoogleAuthProvider();
-          await firebase.auth().signInWithPopup(provider);
-          showApp();
-        } catch (error) {
-          console.error('Erro no login:', error);
-          alert('Erro no login. Tente novamente.');
-        } finally {
-          btn.classList.remove('loading');
-        }
+      console.log('🔧 Login handlers carregados');
+      console.log('🔧 Login page:', loginPage);
+      console.log('🔧 App content:', appContent);
+      
+      // Check if buttons exist
+      const googleBtn = document.getElementById('google-login-btn');
+      const demoBtn = document.getElementById('demo-login-btn');
+      const guestBtn = document.getElementById('guest-login-btn');
+      
+      console.log('🔧 Botões encontrados:', {
+        google: !!googleBtn,
+        demo: !!demoBtn,
+        guest: !!guestBtn
       });
+      
+      // Google Login
+      if (googleBtn) {
+        googleBtn.addEventListener('click', async function() {
+          console.log('🚀 Google login clicked');
+          const btn = this;
+          btn.classList.add('loading');
+          
+          try {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            const result = await firebase.auth().signInWithPopup(provider);
+            console.log('✅ Login bem-sucedido:', result.user.email);
+            showApp();
+          } catch (error) {
+            console.error('❌ Erro no login:', error);
+            alert('Erro no login. Tente novamente.');
+          } finally {
+            btn.classList.remove('loading');
+          }
+        });
+      }
       
       // Demo Login
-      document.getElementById('demo-login-btn').addEventListener('click', async function() {
-        const btn = this;
-        btn.classList.add('loading');
-        
-        try {
-          await firebase.auth().signInAnonymously();
-          localStorage.setItem('demoMode', 'true');
-          showApp();
-        } catch (error) {
-          console.error('Erro no demo:', error);
-          alert('Erro ao iniciar demonstração. Tente novamente.');
-        } finally {
-          btn.classList.remove('loading');
-        }
-      });
+      if (demoBtn) {
+        demoBtn.addEventListener('click', async function() {
+          console.log('🚀 Demo login clicked');
+          const btn = this;
+          btn.classList.add('loading');
+          
+          try {
+            const result = await firebase.auth().signInAnonymously();
+            console.log('✅ Demo login bem-sucedido:', result.user.uid);
+            localStorage.setItem('demoMode', 'true');
+            showApp();
+          } catch (error) {
+            console.error('❌ Erro no demo:', error);
+            alert('Erro ao iniciar demonstração. Tente novamente.');
+          } finally {
+            btn.classList.remove('loading');
+          }
+        });
+      }
       
       // Guest Login
-      document.getElementById('guest-login-btn').addEventListener('click', async function() {
-        const btn = this;
-        btn.classList.add('loading');
-        
-        try {
-          await firebase.auth().signInAnonymously();
-          localStorage.setItem('guestMode', 'true');
-          showApp();
-        } catch (error) {
-          console.error('Erro no login convidado:', error);
-          alert('Erro no login. Tente novamente.');
-        } finally {
-          btn.classList.remove('loading');
-        }
-      });
+      if (guestBtn) {
+        guestBtn.addEventListener('click', async function() {
+          console.log('🚀 Guest login clicked');
+          const btn = this;
+          btn.classList.add('loading');
+          
+          try {
+            const result = await firebase.auth().signInAnonymously();
+            console.log('✅ Guest login bem-sucedido:', result.user.uid);
+            localStorage.setItem('guestMode', 'true');
+            showApp();
+          } catch (error) {
+            console.error('❌ Erro no login convidado:', error);
+            alert('Erro no login. Tente novamente.');
+          } finally {
+            btn.classList.remove('loading');
+          }
+        });
+      }
 
       // Show app function
       function showApp() {
+        console.log('🎯 showApp() chamada');
+        
         // Stop the mutation observer
         if (window.loginObserver) {
+          console.log('🔧 Parando mutation observer');
           window.loginObserver.disconnect();
         }
         
+        console.log('🔧 Ocultando login page');
         loginPage.style.display = 'none !important';
         loginPage.style.visibility = 'hidden';
         loginPage.style.opacity = '0';
         
+        console.log('🔧 Mostrando app content');
         appContent.style.display = 'block !important';
         appContent.style.visibility = 'visible';
         appContent.style.opacity = '1';
         
         // Allow dashboard content to show
         const hiddenElements = document.querySelectorAll('.tab-container, .bottom-nav');
+        console.log('🔧 Restaurando elementos ocultos:', hiddenElements.length);
         hiddenElements.forEach(el => {
           el.style.display = '';
         });
         
         // Force app initialization
+        console.log('🔧 Forçando inicialização do app');
         setTimeout(() => {
           if (window.router && window.router.navigate) {
+            console.log('✅ Navegando via router para /dashboard');
             window.router.navigate('/dashboard');
           } else {
+            console.log('✅ Navegando via hash para #/dashboard');
             window.location.hash = '#/dashboard';
           }
           
           // Trigger app render
           if (window.renderDashboard) {
+            console.log('✅ Renderizando dashboard');
             window.renderDashboard();
           }
         }, 100);
