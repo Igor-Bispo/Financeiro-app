@@ -196,11 +196,31 @@ export async function initializeApp() {
     } catch (e) { logger.warn('Falha ao iniciar fluxo de SW update:', e); }
 
 
-    // Aguardar autenticação
-    const user = await authService.waitForAuth();
+    // Aguardar autenticação com timeout
+    let user = null;
+    try {
+      const authPromise = authService.waitForAuth();
+      const timeoutPromise = new Promise((resolve) => {
+        setTimeout(() => {
+          console.log('⏰ Timeout aguardando auth no bootstrap - continuando...');
+          resolve(null);
+        }, 5000);
+      });
+      
+      user = await Promise.race([authPromise, timeoutPromise]);
+    } catch (error) {
+      logger.warn('Erro ao aguardar autenticação:', error);
+      user = null;
+    }
+    
     if (!user) {
-      // Em dev, permitir navegação básica mesmo sem autenticação
-      logger.warn('Usuário não autenticado — seguindo com modo limitado');
+      // Verificar se há usuário no estado global (fallback)
+      if (window.appState && window.appState.currentUser) {
+        user = window.appState.currentUser;
+        logger.info('Usuário encontrado no estado global:', user.email);
+      } else {
+        logger.warn('Usuário não autenticado — seguindo com modo limitado');
+      }
     }
 
     appState.user = user;

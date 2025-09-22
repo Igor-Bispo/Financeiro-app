@@ -48,7 +48,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       const { setupLoginButton, checkAuthState } = await import('@features/index.js');
       setupLoginButton();
-      await checkAuthState();
+      
+      // Aguardar verificação de autenticação com timeout
+      const authPromise = checkAuthState();
+      const timeoutPromise = new Promise((resolve) => {
+        setTimeout(() => {
+          console.log('⏰ Timeout na verificação de auth - continuando...');
+          resolve(false);
+        }, 3000);
+      });
+      
+      await Promise.race([authPromise, timeoutPromise]);
     } catch (authWireErr) {
       logger.warn('Falha ao configurar login/estado de auth:', authWireErr);
     }

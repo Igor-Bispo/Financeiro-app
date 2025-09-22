@@ -71,9 +71,26 @@ export function setupLoginButton() {
 export function checkAuthState() {
   return new Promise((resolve) => {
     let isFirstCall = true;
+    let authChecked = false;
+
+    // Aguardar um pouco para o Firebase Auth verificar o estado persistido
+    const checkTimeout = setTimeout(() => {
+      if (!authChecked) {
+        console.log('⏰ Timeout aguardando autenticação - assumindo não autenticado');
+        authChecked = true;
+        window.appState.currentUser = null;
+        toggleLoginPage(true);
+        resolve(false);
+      }
+    }, 2000); // Aguardar 2 segundos
 
     // Manter listener permanente para detectar mudanças de autenticação
     auth.onAuthStateChanged((user) => {
+      if (authChecked) return; // Evitar múltiplas chamadas
+      
+      clearTimeout(checkTimeout);
+      authChecked = true;
+
       if (user) {
         console.log('✅ Usuário autenticado:', user.email);
         window.appState.currentUser = user;
