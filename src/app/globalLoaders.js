@@ -2,6 +2,7 @@
 import * as transactionsService from '../features/transactions/service.js';
 import * as categoriesService from '../features/categories/service.js';
 import { loadRecorrentes } from '../features/recorrentes/service.js';
+import showAddCategoryModal from '../js/showAddCategoryModal.js';
 
 window.loadTransactions = async function() {
   const budgetId = window.appState?.currentBudget?.id;
@@ -18,3 +19,6 @@ window.loadCategories = async function() {
 window.loadRecorrentes = async function() {
   return loadRecorrentes();
 };
+
+// Expor função de modal de categoria globalmente
+window.showAddCategoryModal = showAddCategoryModal;
