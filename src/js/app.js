@@ -13,6 +13,7 @@ import { FAB } from './ui/FAB.js';
 import { SwipeNavigation } from './ui/SwipeTabs.js';
 import { renderAnalytics } from './ui/AnalyticsRoute.js';
 import showAddTransactionModal from './showAddTransactionModal.js';
+import showAddCategoryModal from './showAddCategoryModal.js';
 import {
   getFirestore,
   collection,
@@ -38,9 +39,10 @@ import {
 } from 'firebase/firestore';
 import { loginWithGoogle } from './auth.js';
 
-// Tornar Modal disponível globalmente para utilitários que usam window.Modal
+// Tornar Modal e funções disponíveis globalmente
 if (typeof window !== 'undefined') {
   window.Modal = Modal;
+  window.showAddCategoryModal = showAddCategoryModal;
 }
 
 // Lint/compat helpers for legacy global calls

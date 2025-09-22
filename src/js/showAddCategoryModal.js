@@ -148,3 +148,8 @@ window.editCategory = function (categoryId) {
 
 // Export default para uso com import dinâmico
 export default showAddCategoryModal;
+
+// Exportar globalmente para uso no dashboard
+if (typeof window !== 'undefined') {
+  window.showAddCategoryModal = showAddCategoryModal;
+}
