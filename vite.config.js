@@ -82,7 +82,15 @@ export default defineConfig({
     minify: true,
     // Análise de bundle
     reportCompressedSize: true,
-    chunkSizeWarningLimit: 1000
+    chunkSizeWarningLimit: 2000, // Aumentado para app complexo
+    target: 'es2020', // Otimizar para navegadores modernos
+    minify: 'terser', // Melhor compressão
+    terserOptions: {
+      compress: {
+        drop_console: !process.env.DEBUG, // Remover console.log em produção
+        drop_debugger: true
+      }
+    }
   },
   resolve: {
     alias: {
@@ -119,10 +127,17 @@ export default defineConfig({
   optimizeDeps: {
     include: [
       'firebase/app',
-  'firebase/auth',
+      'firebase/auth',
       'firebase/firestore',
       '@core/events/eventBus',
       '@core/store/createStore'
-    ]
+    ],
+    exclude: ['@core/logger/logger.js'] // Excluir logger para evitar problemas de import
+  },
+  
+  // Configurações de desenvolvimento
+  define: {
+    __DEV__: JSON.stringify(process.env.NODE_ENV === 'development'),
+    __VERSION__: JSON.stringify(process.env.npm_package_version || '1.0.0')
   }
 });

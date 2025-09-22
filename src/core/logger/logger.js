@@ -1,48 +1,82 @@
-// core/logger/logger.js
-// Logger centralizado (com níveis) — pronto para integrar com UI/LogAplicacoes
-const levelOrder = { debug: 10, info: 20, warn: 30, error: 40 };
-let currentLevel = 'info';
+// Sistema de Logging Condicional
+// Versão 2.0.0 - Logging inteligente baseado em ambiente
 
-export function setLevel(level) {
-  if (level in levelOrder) {
-    currentLevel = level;
+class Logger {
+  constructor() {
+    this.isDev = import.meta.env.DEV;
+    this.isDebug = import.meta.env.VITE_DEBUG_MODE === 'true';
+    this.enabled = this.isDev || this.isDebug;
+    
+    // Configurações por nível
+    this.levels = {
+      ERROR: 0,
+      WARN: 1,
+      INFO: 2,
+      DEBUG: 3
+    };
+    
+    this.currentLevel = this.isDev ? this.levels.DEBUG : this.levels.ERROR;
+  }
+
+  _shouldLog(level) {
+    return this.enabled && level <= this.currentLevel;
+  }
+
+  _formatMessage(level, message, ...args) {
+    const timestamp = new Date().toISOString();
+    const prefix = `[${timestamp}] [${level}]`;
+    return [prefix, message, ...args];
+  }
+
+  error(message, ...args) {
+    if (this._shouldLog(this.levels.ERROR)) {
+      console.error(...this._formatMessage('ERROR', message, ...args));
+    }
+  }
+
+  warn(message, ...args) {
+    if (this._shouldLog(this.levels.WARN)) {
+      console.warn(...this._formatMessage('WARN', message, ...args));
+    }
+  }
+
+  info(message, ...args) {
+    if (this._shouldLog(this.levels.INFO)) {
+      console.info(...this._formatMessage('INFO', message, ...args));
+    }
+  }
+
+  debug(message, ...args) {
+    if (this._shouldLog(this.levels.DEBUG)) {
+      console.log(...this._formatMessage('DEBUG', message, ...args));
+    }
+  }
+
+  // Métodos específicos para diferentes contextos
+  auth(message, ...args) {
+    this.debug(`[AUTH] ${message}`, ...args);
+  }
+
+  firebase(message, ...args) {
+    this.debug(`[FIREBASE] ${message}`, ...args);
+  }
+
+  ui(message, ...args) {
+    this.debug(`[UI] ${message}`, ...args);
+  }
+
+  performance(message, ...args) {
+    this.debug(`[PERF] ${message}`, ...args);
+  }
+
+  // Método para logs críticos (sempre exibidos)
+  critical(message, ...args) {
+    console.error('🚨 CRITICAL:', message, ...args);
   }
 }
-export function getLevel() {
-  return currentLevel;
-}
 
-function shouldLog(level) {
-  return levelOrder[level] >= levelOrder[currentLevel];
-}
+// Instância singleton
+export const logger = new Logger();
 
-function fmt(level, msg, args) {
-  const time = new Date().toISOString();
-  return [`[${time}] [${level.toUpperCase()}]`, msg, ...args];
-}
-
-const logger = {
-  debug(msg, ...args) {
-    if (shouldLog('debug')) {
-      console.debug(...fmt('debug', msg, args));
-    }
-  },
-  info(msg, ...args) {
-    if (shouldLog('info')) {
-      console.info(...fmt('info', msg, args));
-    }
-  },
-  warn(msg, ...args) {
-    if (shouldLog('warn')) {
-      console.warn(...fmt('warn', msg, args));
-    }
-  },
-  error(msg, ...args) {
-    if (shouldLog('error')) {
-      console.error(...fmt('error', msg, args));
-    }
-  },
-};
-
-export { logger };
+// Exportar também como default para compatibilidade
 export default logger;

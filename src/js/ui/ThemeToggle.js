@@ -15,22 +15,32 @@ export function setupThemeToggle(buttonId = 'theme-toggle-btn') {
     const newBtn = btn.cloneNode(true);
     btn.parentNode.replaceChild(newBtn, btn);
 
+    // Melhorar acessibilidade
+    newBtn.setAttribute('aria-label', isDark ? 'Alternar para tema claro' : 'Alternar para tema escuro');
+    newBtn.setAttribute('role', 'button');
+    newBtn.setAttribute('tabindex', '0');
+    
     // Adicionar novo listener
     newBtn.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
 
-      console.log('🔧 Clique no botão de tema detectado');
-      console.log('🔧 Classes antes:', root.classList.toString());
-
       const isDarkNow = root.classList.toggle('dark');
       localStorage.setItem('theme', isDarkNow ? 'dark' : 'light');
-
-      console.log('🔧 Classes depois:', root.classList.toString());
-      console.log('🔧 isDarkNow:', isDarkNow);
+      
+      // Atualizar ARIA label
+      newBtn.setAttribute('aria-label', isDarkNow ? 'Alternar para tema claro' : 'Alternar para tema escuro');
       console.log('🔧 localStorage theme:', localStorage.getItem('theme'));
 
       updateIcon();
+
+      // Suporte a navegação por teclado
+      newBtn.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          newBtn.click();
+        }
+      });
 
       // Forçar atualização de todas as abas para sincronizar o tema
       forceThemeUpdate();

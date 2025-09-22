@@ -142,6 +142,7 @@ if (syncChannel) {
   });
 }
 import { logger } from '@core/logger/logger.js';
+import { errorBoundary } from '@core/error/ErrorBoundary.js';
 import { setupEventListeners, cleanupEventListeners } from '@core/events/eventConfig.js';
 import * as authService from '@features/auth/service.js';
 import * as budgetsService from '@features/budgets/service.js';
@@ -166,6 +167,9 @@ export const appState = {
 // Inicializar serviços e listeners
 export async function initializeApp() {
   try {
+    // Configurar error boundary primeiro
+    errorBoundary.setupGlobalErrorHandlers();
+    
     logger.info('Inicializando aplicação...');
     
     // Disponibilizar funções PWA globalmente
