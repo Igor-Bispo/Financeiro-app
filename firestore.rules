@@ -11,6 +11,26 @@ service cloud.firestore {
       allow update, delete: if request.auth != null && request.auth.uid == resource.data.recipientUid;
     }
     
+    // Convites de orçamento: permitir acesso para proprietário e convidado
+    match /budgetInvitations/{invitationId} {
+      // Ler se for o proprietário do orçamento ou o usuário convidado
+      allow get, list: if request.auth != null && (
+        request.auth.uid == resource.data.ownerId ||
+        request.auth.uid == resource.data.invitedUserId ||
+        request.auth.token.email == resource.data.invitedUserEmail
+      );
+      // Criar apenas se for o proprietário do orçamento
+      allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
+      // Atualizar se for o proprietário ou o convidado
+      allow update: if request.auth != null && (
+        request.auth.uid == resource.data.ownerId ||
+        request.auth.uid == resource.data.invitedUserId ||
+        request.auth.token.email == resource.data.invitedUserEmail
+      );
+      // Excluir apenas o proprietário
+      allow delete: if request.auth != null && request.auth.uid == resource.data.ownerId;
+    }
+    
     // Regras existentes para outras coleções
     match /{document=**} {
       allow read, write: if request.auth != null;

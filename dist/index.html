@@ -22,6 +22,8 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   
+  <!-- Sistema Biométrico -->
+  
   <style>
     /* Global Styles */
     * {
@@ -472,7 +474,7 @@
       }
     }
   </style>
-  <script type="module" crossorigin src="/assets/main-DmtUKqp0.js"></script>
+  <script type="module" crossorigin src="/assets/main-Dlio5rBP.js"></script>
   <link rel="stylesheet" crossorigin href="/assets/main-6ahFnZtK.css">
 </head>
 <body>
@@ -508,6 +510,12 @@
       <button id="guest-btn" class="login-btn guest-btn">
         <span>📊</span>
         Ver demonstração
+      </button>
+      
+      <!-- Botão de Login Biométrico (aparece apenas se disponível) -->
+      <button id="biometric-login-btn" class="login-btn" style="display: none; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white; border: none;">
+        <span>🔐</span>
+        Entrar com Biometria
       </button>
     </div>
   </div>
@@ -772,6 +780,7 @@
       const btnEntrar = document.getElementById('btn-entrar');
       const demoBtn = document.getElementById('demo-btn');
       const guestBtn = document.getElementById('guest-btn');
+      const biometricBtn = document.getElementById('biometric-login-btn');
 
       if (btnEntrar) {
         btnEntrar.addEventListener('click', async function() {
@@ -905,7 +914,75 @@
         }
       });
 
+      // Botão de Login Biométrico
+      if (biometricBtn) {
+        biometricBtn.addEventListener('click', async function() {
+          console.log('🔐 Login biométrico clicado');
+          const btn = this;
+          const originalText = btn.innerHTML;
+          
+          // Mostrar estado de carregamento
+          btn.disabled = true;
+          btn.innerHTML = '<span>⏳</span> Verificando...';
+          btn.style.opacity = '0.7';
+
+          try {
+            // Verificar se o sistema biométrico está disponível
+            if (window.authenticateWithBiometric) {
+              const success = await window.authenticateWithBiometric();
+              if (success) {
+                // Login bem-sucedido, redirecionar para dashboard
+                window.toggleLoginPage(false);
+                setTimeout(() => {
+                  window.location.hash = '#/dashboard';
+                }, 100);
+              }
+            } else {
+              showErrorModal(
+                'Sistema Biométrico',
+                'O sistema de autenticação biométrica não está disponível.<br><br><strong>Para usar:</strong><br>• Configure primeiro nas configurações do app<br>• Certifique-se de que seu dispositivo suporta biometria',
+                'warning'
+              );
+            }
+          } catch (error) {
+            console.error('❌ Erro no login biométrico:', error);
+            showErrorModal(
+              'Erro na Biometria',
+              'Ocorreu um erro na autenticação biométrica.<br><br><strong>Para resolver:</strong><br>• Verifique se a biometria está configurada<br>• Tente novamente<br>• Ou use outro método de login',
+              'error'
+            );
+          } finally {
+            // Resetar botão
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            btn.style.opacity = '1';
+          }
+        });
+      }
+
       console.log('✅ Handlers de login configurados');
+      
+      // Verificar disponibilidade biométrica após carregamento
+      setTimeout(async () => {
+        try {
+          if (window.biometricAuth) {
+            const isAvailable = await window.biometricAuth.checkAvailability();
+            const hasCredentials = window.biometricAuth.hasSavedCredentials();
+            
+            console.log('🔐 Verificação biométrica:', { isAvailable, hasCredentials });
+            
+            if (isAvailable && hasCredentials && biometricBtn) {
+              biometricBtn.style.display = 'block';
+              console.log('🔐 Botão biométrico ativado');
+            } else if (biometricBtn) {
+              biometricBtn.style.display = 'none';
+              console.log('🔐 Botão biométrico oculto - não disponível ou sem credenciais');
+            }
+          }
+        } catch (error) {
+          console.warn('⚠️ Erro ao verificar biometria:', error);
+        }
+      }, 2000);
     });
   </script>
 </body>

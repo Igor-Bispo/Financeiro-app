@@ -64,6 +64,13 @@ export async function loadBudgetInvitations(userId) {
     return invitations;
   } catch (error) {
     console.error('Erro ao carregar convites de orçamento:', error);
+    
+    // Se for erro de permissão, retornar array vazio em vez de falhar
+    if (error.code === 'permission-denied') {
+      console.warn('Permissões insuficientes para carregar convites, retornando array vazio');
+      return [];
+    }
+    
     throw error;
   }
 }
@@ -81,6 +88,13 @@ export async function loadSentBudgetInvitations(budgetId) {
     return snapshot.docs.map(d => ({ id: d.id, ...d.data() })).filter(inv => inv.status === 'pending');
   } catch (error) {
     console.error('Erro ao carregar convites enviados:', error);
+    
+    // Se for erro de permissão, retornar array vazio em vez de falhar
+    if (error.code === 'permission-denied') {
+      console.warn('Permissões insuficientes para carregar convites enviados, retornando array vazio');
+      return [];
+    }
+    
     throw error;
   }
 }
