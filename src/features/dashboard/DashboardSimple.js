@@ -730,7 +730,7 @@ export function renderDashboard(container) {
     html += '                <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">🎯 Visão Inteligente</h3>';
     html += '                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Limites prioritários + maiores gastos</p>';
         html += '              </div>';
-    html += '              <button id="add-category-dashboard-btn" onclick="window.showAddCategoryModal()" class="btn btn-primary btn-sm">+ Nova</button>';
+    html += '              <button id="add-category-dashboard-btn" class="btn btn-primary btn-sm">+ Nova</button>';
     html += '            </div>';
     html += '          </div>';
     html += '          <div class="p-4">';
