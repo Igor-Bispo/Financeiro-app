@@ -67,17 +67,63 @@
     .app-icon {
       width: 72px;
       height: 72px;
-      background: #22c55e;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
       border-radius: 18px;
       display: flex;
       align-items: center;
       justify-content: center;
       margin: 0 auto 1.5rem;
       font-size: 1.75rem;
-      box-shadow: 0 4px 12px rgba(34, 197, 94, 0.25);
+      box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
       position: relative;
       top: -36px;
       margin-bottom: -36px;
+      overflow: hidden;
+      animation: iconGlow 3s ease-in-out infinite;
+    }
+
+    .app-icon::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+      animation: shine 2.5s ease-in-out infinite;
+      transform: rotate(45deg);
+    }
+
+    .app-icon::after {
+      content: '';
+      position: absolute;
+      inset: 2px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      z-index: -1;
+    }
+
+    @keyframes iconGlow {
+      0%, 100% {
+        box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+        filter: brightness(1);
+      }
+      50% {
+        box-shadow: 0 12px 30px rgba(16, 185, 129, 0.6);
+        filter: brightness(1.1);
+      }
+    }
+
+    @keyframes shine {
+      0% {
+        transform: translateX(-100%) translateY(-100%) rotate(45deg);
+      }
+      50% {
+        transform: translateX(100%) translateY(100%) rotate(45deg);
+      }
+      100% {
+        transform: translateX(100%) translateY(100%) rotate(45deg);
+      }
     }
 
     .app-title {
@@ -270,7 +316,7 @@
   <div id="login-page">
     <div class="login-container">
       <div class="app-icon">
-        💰
+        <span style="position: relative; z-index: 10; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">💰</span>
       </div>
       
       <h1 class="app-title">Controle Financeiro</h1>
