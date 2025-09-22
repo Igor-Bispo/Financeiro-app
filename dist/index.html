@@ -52,6 +52,168 @@
       z-index: 9999;
     }
 
+    /* Error Modal Styles */
+    .error-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100000;
+      -webkit-backdrop-filter: blur(4px);
+              backdrop-filter: blur(4px);
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    .error-modal {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+      max-width: 400px;
+      width: 90%;
+      margin: 20px;
+      overflow: hidden;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    .error-modal-header {
+      padding: 24px 24px 16px;
+      text-align: center;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .error-icon {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      margin: 0 auto 16px;
+      background: #fef2f2;
+      border: 3px solid #fecaca;
+    }
+
+    .error-icon.warning {
+      background: #fffbeb;
+      border-color: #fed7aa;
+    }
+
+    .error-icon.info {
+      background: #eff6ff;
+      border-color: #bfdbfe;
+    }
+
+    .error-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0;
+    }
+
+    .error-modal-body {
+      padding: 20px 24px;
+    }
+
+    .error-message {
+      color: #6b7280;
+      line-height: 1.6;
+      margin: 0;
+      font-size: 15px;
+    }
+
+    .error-message strong {
+      color: #374151;
+      font-weight: 600;
+    }
+
+    .error-modal-footer {
+      padding: 16px 24px 24px;
+      text-align: center;
+    }
+
+    .error-modal-btn {
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      color: white;
+      border: none;
+      padding: 12px 32px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+    }
+
+    .error-modal-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(79, 70, 229, 0.4);
+    }
+
+    .error-modal-btn:active {
+      transform: translateY(0);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes slideIn {
+      from { 
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+      }
+      to { 
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    /* Dark mode support */
+    @media (prefers-color-scheme: dark) {
+      .error-modal {
+        background: #1f2937;
+        border: 1px solid #374151;
+      }
+
+      .error-modal-header {
+        border-bottom-color: #374151;
+      }
+
+      .error-title {
+        color: #f9fafb;
+      }
+
+      .error-message {
+        color: #d1d5db;
+      }
+
+      .error-message strong {
+        color: #f3f4f6;
+      }
+
+      .error-icon {
+        background: #374151;
+        border-color: #4b5563;
+      }
+
+      .error-icon.warning {
+        background: #451a03;
+        border-color: #92400e;
+      }
+
+      .error-icon.info {
+        background: #1e3a8a;
+        border-color: #1d4ed8;
+      }
+    }
+
     .login-container {
       background: white;
       border-radius: 28px;
@@ -463,6 +625,48 @@
       }
     }
 
+    // Modal customizado para erros
+    function showErrorModal(title, message, type = 'error') {
+      const modal = document.createElement('div');
+      modal.className = 'error-modal-overlay';
+      modal.innerHTML = `
+        <div class="error-modal">
+          <div class="error-modal-header">
+            <div class="error-icon ${type}">
+              ${type === 'error' ? '⚠️' : type === 'warning' ? '⚠️' : 'ℹ️'}
+            </div>
+            <h3 class="error-title">${title}</h3>
+          </div>
+          <div class="error-modal-body">
+            <p class="error-message">${message}</p>
+          </div>
+          <div class="error-modal-footer">
+            <button class="error-modal-btn primary" onclick="this.closest('.error-modal-overlay').remove()">
+              Entendi
+            </button>
+          </div>
+        </div>
+      `;
+      
+      document.body.appendChild(modal);
+      
+      // Fechar ao clicar fora
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          modal.remove();
+        }
+      });
+      
+      // Fechar com ESC
+      const handleEsc = (e) => {
+        if (e.key === 'Escape') {
+          modal.remove();
+          document.removeEventListener('keydown', handleEsc);
+        }
+      };
+      document.addEventListener('keydown', handleEsc);
+    }
+
     // Login with Google - com tratamento robusto de erros
     async function loginWithGoogle() {
       try {
@@ -495,15 +699,35 @@
         
         // Tratamento específico de erros
         if (error.code === 'auth/popup-blocked') {
-          alert('⚠️ Popup bloqueado pelo navegador.\n\nPor favor:\n1. Permita popups para este site\n2. Ou use o modo "Ver demonstração"');
+          showErrorModal(
+            'Popup Bloqueado',
+            'O navegador bloqueou a janela de login do Google.<br><br><strong>Para resolver:</strong><br>• Permita popups para este site<br>• Ou use o modo "Ver demonstração"',
+            'warning'
+          );
         } else if (error.code === 'auth/network-request-failed') {
-          alert('⚠️ Erro de conexão com Google.\n\nPor favor:\n1. Verifique sua conexão com a internet\n2. Tente novamente em alguns segundos\n3. Ou use o modo "Ver demonstração"');
+          showErrorModal(
+            'Erro de Conexão',
+            'Não foi possível conectar com o Google.<br><br><strong>Para resolver:</strong><br>• Verifique sua conexão com a internet<br>• Tente novamente em alguns segundos<br>• Ou use o modo "Ver demonstração"',
+            'error'
+          );
         } else if (error.message.includes('Timeout')) {
-          alert('⚠️ Login demorou muito.\n\nPor favor:\n1. Verifique sua conexão\n2. Tente novamente\n3. Ou use o modo "Ver demonstração"');
+          showErrorModal(
+            'Login Demorou Muito',
+            'O login está demorando mais que o esperado.<br><br><strong>Para resolver:</strong><br>• Verifique sua conexão<br>• Tente novamente<br>• Ou use o modo "Ver demonstração"',
+            'warning'
+          );
         } else if (error.message.includes('Sem conexão')) {
-          alert('⚠️ Sem conexão com a internet.\n\nPor favor:\n1. Verifique sua conexão\n2. Tente novamente\n3. Ou use o modo "Ver demonstração"');
+          showErrorModal(
+            'Sem Conexão',
+            'Não foi possível verificar a conexão com a internet.<br><br><strong>Para resolver:</strong><br>• Verifique sua conexão<br>• Tente novamente<br>• Ou use o modo "Ver demonstração"',
+            'error'
+          );
         } else {
-          alert('⚠️ Erro no login Google.\n\nPor favor:\n1. Tente novamente\n2. Ou use o modo "Ver demonstração"');
+          showErrorModal(
+            'Erro no Login',
+            'Ocorreu um erro inesperado no login do Google.<br><br><strong>Para resolver:</strong><br>• Tente novamente<br>• Ou use o modo "Ver demonstração"',
+            'error'
+          );
         }
         
         throw error;
