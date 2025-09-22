@@ -423,12 +423,26 @@
         event.preventDefault();
         return false;
       }
+      
+      // Tratar erro de popup bloqueado
+      if (event.message && event.message.includes('auth/popup-blocked')) {
+        console.warn('⚠️ Popup bloqueado - usando redirect automaticamente');
+        event.preventDefault();
+        return false;
+      }
     });
 
     // Tratamento de erros não capturados
     window.addEventListener('unhandledrejection', function(event) {
       if (event.reason && event.reason.message && event.reason.message.includes('u[v] is not a function')) {
         console.warn('⚠️ Promise rejeitada do Google API ignorada:', event.reason.message);
+        event.preventDefault();
+        return false;
+      }
+      
+      // Tratar promise rejeitada de popup bloqueado
+      if (event.reason && event.reason.code === 'auth/popup-blocked') {
+        console.warn('⚠️ Popup bloqueado - usando redirect automaticamente');
         event.preventDefault();
         return false;
       }
@@ -447,7 +461,12 @@
           console.log('✅ Login Google bem-sucedido (popup):', result.user.email);
           return result.user;
         } catch (popupError) {
-          console.log('⚠️ Popup bloqueado, usando redirect...');
+          // Verificar se é erro de popup bloqueado
+          if (popupError.code === 'auth/popup-blocked') {
+            console.log('⚠️ Popup bloqueado pelo navegador, usando redirect...');
+          } else {
+            console.log('⚠️ Erro no popup, usando redirect...', popupError.message);
+          }
           
           // Salvar que estamos fazendo login para detectar quando voltar
           localStorage.setItem('authInProgress', 'google');

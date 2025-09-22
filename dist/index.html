@@ -416,6 +416,24 @@
       }
     };
 
+    // Tratamento global de erros do Google API
+    window.addEventListener('error', function(event) {
+      if (event.message && event.message.includes('u[v] is not a function')) {
+        console.warn('⚠️ Erro do Google API ignorado:', event.message);
+        event.preventDefault();
+        return false;
+      }
+    });
+
+    // Tratamento de erros não capturados
+    window.addEventListener('unhandledrejection', function(event) {
+      if (event.reason && event.reason.message && event.reason.message.includes('u[v] is not a function')) {
+        console.warn('⚠️ Promise rejeitada do Google API ignorada:', event.reason.message);
+        event.preventDefault();
+        return false;
+      }
+    });
+
     // Login with Google - usando redirect para evitar popup bloqueado
     async function loginWithGoogle() {
       try {
