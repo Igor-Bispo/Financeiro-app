@@ -730,7 +730,7 @@ export function renderDashboard(container) {
     html += '                <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">🎯 Visão Inteligente</h3>';
     html += '                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Limites prioritários + maiores gastos</p>';
         html += '              </div>';
-    html += '              <button onclick="window.showAddCategoryModal && window.showAddCategoryModal()" class="btn btn-primary btn-sm">+ Nova</button>';
+    html += '              <button id="add-category-dashboard-btn" onclick="window.showAddCategoryModal()" class="btn btn-primary btn-sm">+ Nova</button>';
     html += '            </div>';
     html += '          </div>';
     html += '          <div class="p-4">';
@@ -955,4 +955,28 @@ export function renderDashboard(container) {
   
   // Inicializar handlers do Dashboard
   setupDashboardHandlers();
+  
+  // Configurar botão de adicionar categoria no dashboard
+  setTimeout(() => {
+    const addCategoryBtn = document.getElementById('add-category-dashboard-btn');
+    if (addCategoryBtn) {
+      console.log('🔧 Configurando botão + Nova categoria no dashboard');
+      addCategoryBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('🔧 Botão + Nova categoria clicado');
+        
+        if (window.showAddCategoryModal) {
+          console.log('🔧 Abrindo modal de categoria...');
+          window.showAddCategoryModal();
+        } else {
+          console.error('❌ window.showAddCategoryModal não está disponível');
+          alert('Função de adicionar categoria não está disponível');
+        }
+      });
+      console.log('✅ Botão + Nova categoria configurado');
+    } else {
+      console.warn('⚠️ Botão add-category-dashboard-btn não encontrado');
+    }
+  }, 100);
 }

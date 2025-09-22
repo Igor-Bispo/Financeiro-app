@@ -310,7 +310,7 @@
       }
     }
   </style>
-  <script type="module" crossorigin src="/assets/main-BXUJHJVH.js"></script>
+  <script type="module" crossorigin src="/assets/main-2jpgV3_S.js"></script>
   <link rel="stylesheet" crossorigin href="/assets/main-6ahFnZtK.css">
 </head>
 <body>
@@ -416,16 +416,28 @@
       }
     };
 
-    // Login with Google
+    // Login with Google - usando redirect para evitar popup bloqueado
     async function loginWithGoogle() {
       try {
         const provider = new firebase.auth.GoogleAuthProvider();
         provider.addScope('profile');
         provider.addScope('email');
         
-        const result = await firebase.auth().signInWithPopup(provider);
-        console.log('✅ Login Google bem-sucedido:', result.user.email);
-        return result.user;
+        // Tentar popup primeiro, se falhar usar redirect
+        try {
+          const result = await firebase.auth().signInWithPopup(provider);
+          console.log('✅ Login Google bem-sucedido (popup):', result.user.email);
+          return result.user;
+        } catch (popupError) {
+          console.log('⚠️ Popup bloqueado, usando redirect...');
+          
+          // Salvar que estamos fazendo login para detectar quando voltar
+          localStorage.setItem('authInProgress', 'google');
+          
+          // Usar redirect
+          await firebase.auth().signInWithRedirect(provider);
+          return null; // Redirect não retorna imediatamente
+        }
       } catch (error) {
         console.error('❌ Erro no login Google:', error);
         throw error;
@@ -462,6 +474,28 @@
     document.addEventListener('DOMContentLoaded', function() {
       console.log('🔧 Configurando handlers de login...');
       
+      // Verificar se voltamos de um redirect
+      firebase.auth().getRedirectResult().then((result) => {
+        if (result && result.user) {
+          console.log('✅ Login Google bem-sucedido (redirect):', result.user.email);
+          localStorage.removeItem('authInProgress');
+          
+          if (!window.appState) window.appState = {};
+          window.appState.currentUser = result.user;
+          
+          window.toggleLoginPage(false);
+          setTimeout(() => {
+            window.location.hash = '#/dashboard';
+          }, 100);
+        } else if (localStorage.getItem('authInProgress')) {
+          // Se estava fazendo login mas não há resultado, limpar flag
+          localStorage.removeItem('authInProgress');
+        }
+      }).catch((error) => {
+        console.error('❌ Erro ao processar redirect:', error);
+        localStorage.removeItem('authInProgress');
+      });
+      
       const btnEntrar = document.getElementById('btn-entrar');
       const demoBtn = document.getElementById('demo-btn');
       const guestBtn = document.getElementById('guest-btn');
@@ -489,6 +523,10 @@
               setTimeout(() => {
                 window.location.hash = '#/dashboard';
               }, 100);
+            } else if (localStorage.getItem('authInProgress') === 'google') {
+              // Redirect em progresso, mostrar loading
+              window.showLoading(true);
+              console.log('🔄 Redirecionando para Google Auth...');
             }
           } catch (error) {
             console.error('❌ Erro no login:', error);
