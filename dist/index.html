@@ -448,35 +448,25 @@
       }
     });
 
-    // Login with Google - usando redirect para evitar popup bloqueado
+    // Login with Google - apenas popup, sem redirect
     async function loginWithGoogle() {
       try {
         const provider = new firebase.auth.GoogleAuthProvider();
         provider.addScope('profile');
         provider.addScope('email');
         
-        // Tentar popup primeiro, se falhar usar redirect
-        try {
-          const result = await firebase.auth().signInWithPopup(provider);
-          console.log('✅ Login Google bem-sucedido (popup):', result.user.email);
-          return result.user;
-        } catch (popupError) {
-          // Verificar se é erro de popup bloqueado
-          if (popupError.code === 'auth/popup-blocked') {
-            console.log('⚠️ Popup bloqueado pelo navegador, usando redirect...');
-          } else {
-            console.log('⚠️ Erro no popup, usando redirect...', popupError.message);
-          }
-          
-          // Salvar que estamos fazendo login para detectar quando voltar
-          localStorage.setItem('authInProgress', 'google');
-          
-          // Usar redirect
-          await firebase.auth().signInWithRedirect(provider);
-          return null; // Redirect não retorna imediatamente
-        }
+        // Usar apenas popup - mais confiável
+        const result = await firebase.auth().signInWithPopup(provider);
+        console.log('✅ Login Google bem-sucedido (popup):', result.user.email);
+        return result.user;
       } catch (error) {
         console.error('❌ Erro no login Google:', error);
+        
+        // Se popup for bloqueado, mostrar instrução para o usuário
+        if (error.code === 'auth/popup-blocked') {
+          alert('⚠️ Popup bloqueado pelo navegador.\n\nPor favor:\n1. Permita popups para este site\n2. Ou use o modo "Ver demonstração"');
+        }
+        
         throw error;
       }
     }
@@ -511,27 +501,10 @@
     document.addEventListener('DOMContentLoaded', function() {
       console.log('🔧 Configurando handlers de login...');
       
-      // Verificar se voltamos de um redirect
-      firebase.auth().getRedirectResult().then((result) => {
-        if (result && result.user) {
-          console.log('✅ Login Google bem-sucedido (redirect):', result.user.email);
-          localStorage.removeItem('authInProgress');
-          
-          if (!window.appState) window.appState = {};
-          window.appState.currentUser = result.user;
-          
-          window.toggleLoginPage(false);
-          setTimeout(() => {
-            window.location.hash = '#/dashboard';
-          }, 100);
-        } else if (localStorage.getItem('authInProgress')) {
-          // Se estava fazendo login mas não há resultado, limpar flag
-          localStorage.removeItem('authInProgress');
-        }
-      }).catch((error) => {
-        console.error('❌ Erro ao processar redirect:', error);
+      // Limpar flags de auth antigas se existirem
+      if (localStorage.getItem('authInProgress')) {
         localStorage.removeItem('authInProgress');
-      });
+      }
       
       const btnEntrar = document.getElementById('btn-entrar');
       const demoBtn = document.getElementById('demo-btn');
