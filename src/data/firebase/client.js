@@ -6,15 +6,15 @@ import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore';
 import { getAnalytics } from 'firebase/analytics';
 
-// Config via env; fallback para desenvolvimento local
+// Config via env; fallback para valores padrão do projeto
 const firebaseConfig = {
-  apiKey: import.meta?.env?.VITE_FIREBASE_API_KEY || (import.meta.env.DEV ? 'AIzaSyCbBmmxn4Qj4CU6ymfG4MY5VGqCPSo13HY' : ''),
-  authDomain: import.meta?.env?.VITE_FIREBASE_AUTH_DOMAIN || (import.meta.env.DEV ? 'controle-financeiro-b98ec.firebaseapp.com' : ''),
-  projectId: import.meta?.env?.VITE_FIREBASE_PROJECT_ID || (import.meta.env.DEV ? 'controle-financeiro-b98ec' : ''),
-  storageBucket: import.meta?.env?.VITE_FIREBASE_STORAGE_BUCKET || (import.meta.env.DEV ? 'controle-financeiro-b98ec.firebasestorage.app' : ''),
-  messagingSenderId: import.meta?.env?.VITE_FIREBASE_MESSAGING_SENDER_ID || (import.meta.env.DEV ? '418109336597' : ''),
-  appId: import.meta?.env?.VITE_FIREBASE_APP_ID || (import.meta.env.DEV ? '1:418109336597:web:871b262a76e57455ebb21c' : ''),
-  measurementId: import.meta?.env?.VITE_FIREBASE_MEASUREMENT_ID || (import.meta.env.DEV ? 'G-7RW2F269V6' : ''),
+  apiKey: import.meta?.env?.VITE_FIREBASE_API_KEY || 'AIzaSyCbBmmxn4Qj4CU6ymfG4MY5VGqCPSo13HY',
+  authDomain: import.meta?.env?.VITE_FIREBASE_AUTH_DOMAIN || 'controle-financeiro-b98ec.firebaseapp.com',
+  projectId: import.meta?.env?.VITE_FIREBASE_PROJECT_ID || 'controle-financeiro-b98ec',
+  storageBucket: import.meta?.env?.VITE_FIREBASE_STORAGE_BUCKET || 'controle-financeiro-b98ec.firebasestorage.app',
+  messagingSenderId: import.meta?.env?.VITE_FIREBASE_MESSAGING_SENDER_ID || '418109336597',
+  appId: import.meta?.env?.VITE_FIREBASE_APP_ID || '1:418109336597:web:871b262a76e57455ebb21c',
+  measurementId: import.meta?.env?.VITE_FIREBASE_MEASUREMENT_ID || 'G-7RW2F269V6',
 };
 
 // Validar configuração em produção
