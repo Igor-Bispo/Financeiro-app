@@ -1482,9 +1482,8 @@ document.addEventListener('click', (ev) => {
       console.log('[DEBUG] ✅ Executando onclick do botão:', onclickAttr.substring(0, 100) + '...');
       try {
         // Executar o código onclick com o contexto correto do elemento
-        // Criar uma função que preserva o contexto 'this'
-        const fnCode = `(function() { ${onclickAttr} })`;
-        const fn = eval(fnCode);
+        // Usar Function constructor em vez de eval para maior segurança
+        const fn = new Function(onclickAttr);
         fn.call(buttonToExecute); // Chamar com o contexto correto
         console.log('[DEBUG] ✅ onclick executado com sucesso!');
         // Não retornar aqui - permitir que outros handlers sejam executados também
