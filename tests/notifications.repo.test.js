@@ -76,7 +76,7 @@ vi.mock('firebase/firestore', () => {
       const id = docRef._id;
       if (store[col]?.[id]) delete store[col][id];
     },
-    writeBatch: (db) => {
+    writeBatch: (_db) => {
       const ops = [];
       return {
         update: (docRef, payload) => ops.push({ type: 'update', docRef, payload }),

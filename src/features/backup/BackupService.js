@@ -379,44 +379,44 @@ export function exportReadmePDF() {
     y = addText('• "mostrar transações"', 25, y);
     y += 10;
 
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  y = addText('📊 Funcionalidades Principais', 20, y);
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    y = addText('📊 Funcionalidades Principais', 20, y);
 
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  y = addText('• Dashboard com resumo financeiro', 25, y);
-  y = addText('• Gestão de transações e categorias', 25, y);
-  y = addText('• Sistema de despesas recorrentes', 25, y);
-  y = addText('• Alertas de limite de categoria', 25, y);
-  y = addText('• Backup e exportação de dados', 25, y);
-  y = addText('• Interface responsiva para mobile', 25, y);
-  y += 10;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    y = addText('• Dashboard com resumo financeiro', 25, y);
+    y = addText('• Gestão de transações e categorias', 25, y);
+    y = addText('• Sistema de despesas recorrentes', 25, y);
+    y = addText('• Alertas de limite de categoria', 25, y);
+    y = addText('• Backup e exportação de dados', 25, y);
+    y = addText('• Interface responsiva para mobile', 25, y);
+    y += 10;
 
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  y = addText('💾 Backup e Exportação', 20, y);
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    y = addText('💾 Backup e Exportação', 20, y);
 
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  y = addText('• Exportação em JSON para backup completo', 25, y);
-  y = addText('• Exportação em Excel para relatórios', 25, y);
-  y = addText('• Exportação em PDF para documentação', 25, y);
-  y = addText('• Restauração de dados de backup', 25, y);
-  y += 10;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    y = addText('• Exportação em JSON para backup completo', 25, y);
+    y = addText('• Exportação em Excel para relatórios', 25, y);
+    y = addText('• Exportação em PDF para documentação', 25, y);
+    y = addText('• Restauração de dados de backup', 25, y);
+    y += 10;
 
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  y = addText('🔧 Suporte e Contato', 20, y);
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    y = addText('🔧 Suporte e Contato', 20, y);
 
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  y = addText('Para dúvidas ou problemas:', 25, y);
-  y = addText('• Verifique os logs do console (F12)', 30, y);
-  y = addText('• Teste em diferentes navegadores', 30, y);
-  y = addText('• Consulte a documentação técnica', 30, y);
-  // Garantir leitura de y para satisfazer o linter (no-unused-vars)
-  if (y) { /* noop: posição final Y */ }
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    y = addText('Para dúvidas ou problemas:', 25, y);
+    y = addText('• Verifique os logs do console (F12)', 30, y);
+    y = addText('• Teste em diferentes navegadores', 30, y);
+    y = addText('• Consulte a documentação técnica', 30, y);
+    // Garantir leitura de y para satisfazer o linter (no-unused-vars)
+    if (y) { /* noop: posição final Y */ }
 
     doc.save('guia-servo-tech-financas.pdf');
 

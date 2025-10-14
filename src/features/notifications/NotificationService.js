@@ -140,17 +140,17 @@ export async function sendTransactionNotification(budgetId, senderUid, transacti
 
     // Enviar notificação para todos os usuários do orçamento
     const rawRecipients = [...(budgetData.usuariosPermitidos || [])];
-    
+
     // Incluir o proprietário do orçamento (userId) se não estiver na lista
     if (budgetData.userId && !rawRecipients.includes(budgetData.userId)) {
       rawRecipients.push(budgetData.userId);
     }
-    
+
     // Incluir o criadoPor se não estiver na lista (compatibilidade)
     if (budgetData.criadoPor && !rawRecipients.includes(budgetData.criadoPor)) {
       rawRecipients.push(budgetData.criadoPor);
     }
-    
+
     const recipients = rawRecipients.filter((uid, idx) => !!uid && rawRecipients.indexOf(uid) === idx && uid !== senderUid);
 
     console.log('[DEBUG] sendTransactionNotification - budgetData.usuariosPermitidos:', budgetData.usuariosPermitidos);
@@ -234,19 +234,19 @@ export async function sendTransactionDeletedNotification(budgetId, senderUid, tr
 
     // Enviar notificação para todos os usuários do orçamento
     const rawRecipients = [...(budgetData.usuariosPermitidos || [])];
-    
+
     // Incluir o proprietário do orçamento (userId) se não estiver na lista
     if (budgetData.userId && !rawRecipients.includes(budgetData.userId)) {
       rawRecipients.push(budgetData.userId);
     }
-    
+
     // Incluir o criadoPor se não estiver na lista (compatibilidade)
     if (budgetData.criadoPor && !rawRecipients.includes(budgetData.criadoPor)) {
       rawRecipients.push(budgetData.criadoPor);
     }
-    
+
     const recipients = rawRecipients.filter((uid, idx) => !!uid && rawRecipients.indexOf(uid) === idx && uid !== senderUid);
-    
+
     console.log('[DEBUG] sendTransactionDeletedNotification - budgetData.usuariosPermitidos:', budgetData.usuariosPermitidos);
     console.log('[DEBUG] sendTransactionDeletedNotification - budgetData.criadoPor:', budgetData.criadoPor);
     console.log('[DEBUG] sendTransactionDeletedNotification - budgetData.userId:', budgetData.userId);
@@ -348,17 +348,17 @@ export async function sendTransactionUpdatedNotification(budgetId, senderUid, tr
     };
 
     const rawRecipients = [...(budgetData.usuariosPermitidos || [])];
-    
+
     // Incluir o proprietário do orçamento (userId) se não estiver na lista
     if (budgetData.userId && !rawRecipients.includes(budgetData.userId)) {
       rawRecipients.push(budgetData.userId);
     }
-    
+
     // Incluir o criadoPor se não estiver na lista (compatibilidade)
     if (budgetData.criadoPor && !rawRecipients.includes(budgetData.criadoPor)) {
       rawRecipients.push(budgetData.criadoPor);
     }
-    
+
     const recipients = rawRecipients.filter((uid, idx) => !!uid && rawRecipients.indexOf(uid) === idx && uid !== senderUid);
 
     console.log('[DEBUG] sendTransactionUpdatedNotification - budgetData.usuariosPermitidos:', budgetData.usuariosPermitidos);
@@ -451,10 +451,10 @@ export async function sendRecorrenteChangeNotification(budgetId, senderUid, reco
 
     // Enviar para todos os usuários do orçamento
     const { create } = await import('@data/repositories/notificationsRepo.js');
-    
+
     // Verificar se há outros usuários além do remetente
     const otherUsers = budgetData.usuariosPermitidos.filter(uid => uid !== senderUid);
-    
+
     if (otherUsers.length === 0) {
       // Se não há outros usuários, enviar para o próprio usuário (modo de teste)
       console.log(`[NotificationService] Nenhum outro usuário no orçamento, enviando notificação para o próprio usuário (${senderUid})`);
@@ -544,17 +544,17 @@ export async function sendCategoryChangeNotification(budgetId, senderUid, catego
     };
 
     const rawRecipients = [...(budgetData.usuariosPermitidos || [])];
-    
+
     // Incluir o proprietário do orçamento (userId) se não estiver na lista
     if (budgetData.userId && !rawRecipients.includes(budgetData.userId)) {
       rawRecipients.push(budgetData.userId);
     }
-    
+
     // Incluir o criadoPor se não estiver na lista (compatibilidade)
     if (budgetData.criadoPor && !rawRecipients.includes(budgetData.criadoPor)) {
       rawRecipients.push(budgetData.criadoPor);
     }
-    
+
     const recipients = rawRecipients.filter((uid, idx) => !!uid && rawRecipients.indexOf(uid) === idx && uid !== senderUid);
 
     const { create: createNotification } = await import('@data/repositories/notificationsRepo.js');

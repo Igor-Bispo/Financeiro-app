@@ -1,0 +1,242 @@
+/* ========================================
+   CORREÇÃO DE CONTRASTE - DASHBOARD MODO ESCURO
+   ======================================== */
+
+/* === CORREÇÃO DOS CARDS DE META DIÁRIA === */
+.dark .bg-gradient-to-r.from-blue-50.to-indigo-50,
+.dark .bg-gradient-to-r.from-green-50.to-emerald-50,
+.dark .bg-gradient-to-r.from-yellow-50.to-orange-50,
+.dark .bg-gradient-to-r.from-red-50.to-orange-50 {
+  /* Remover gradientes escuros e usar fundos mais claros */
+  background: #2d3748 !important; /* Cinza médio para melhor contraste */
+  border: 1px solid #4a5568 !important;
+}
+
+/* === TEXTOS DAS METAS DIÁRIAS - FORÇAR BRANCO === */
+.dark .text-blue-800,
+.dark .dark\:text-blue-300,
+.dark .text-blue-700 {
+  color: #ffffff !important; /* Branco puro para melhor contraste */
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8) !important;
+}
+
+.dark .text-green-800,
+.dark .dark\:text-green-300,
+.dark .text-green-700 {
+  color: #ffffff !important; /* Branco puro para melhor contraste */
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8) !important;
+}
+
+.dark .text-yellow-800,
+.dark .dark\:text-yellow-300,
+.dark .text-orange-700 {
+  color: #ffffff !important; /* Branco puro para melhor contraste */
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8) !important;
+}
+
+/* === ÍCONES DAS METAS DIÁRIAS === */
+.dark .bg-blue-50 .text-blue-800,
+.dark .bg-green-50 .text-green-800,
+.dark .bg-yellow-50 .text-yellow-800,
+.dark .bg-orange-50 .text-orange-800 {
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8) !important;
+}
+
+/* === CORREÇÃO DOS ALERTAS DE ANÁLISE === */
+.dark .bg-gradient-to-r.from-red-50.to-orange-50 {
+  background: #2d3748 !important; /* Fundo neutro claro */
+  border: 1px solid #e53e3e !important;
+}
+
+.dark .bg-gradient-to-r.from-orange-50.to-yellow-50 {
+  background: #2d3748 !important; /* Fundo neutro claro */
+  border: 1px solid #d69e2e !important;
+}
+
+/* === TEXTOS DOS ALERTAS - FORÇAR BRANCO === */
+.dark .text-red-700,
+.dark .dark\:text-red-300,
+.dark .text-orange-700,
+.dark .dark\:text-orange-300 {
+  color: #ffffff !important; /* Branco puro para alertas */
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8) !important;
+}
+
+/* === CORREÇÃO PARA TODOS OS GRADIENTES ESCUROS === */
+.dark .from-gray-800,
+.dark .to-gray-900,
+.dark .from-gray-900,
+.dark .to-gray-800,
+.dark .bg-gradient-to-r,
+.dark .bg-gradient-to-br,
+.dark .bg-gradient-to-bl {
+  background: #2d3748 !important; /* Fundo neutro claro */
+  border: 1px solid #4a5568 !important;
+}
+
+/* === FORÇAR CONTRASTE EM TODOS OS ELEMENTOS DE COR === */
+.dark [class*="text-blue-"],
+.dark [class*="text-green-"],
+.dark [class*="text-yellow-"],
+.dark [class*="text-orange-"],
+.dark [class*="text-red-"] {
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8) !important;
+}
+
+/* === EXCEÇÕES PARA ELEMENTOS QUE DEVEM MANTER SUAS CORES === */
+.dark .text-green-600,
+.dark .dark\:text-green-400 {
+  color: #68d391 !important; /* Verde claro para valores positivos */
+  text-shadow: none !important;
+}
+
+.dark .text-red-600,
+.dark .dark\:text-red-400 {
+  color: #fc8181 !important; /* Vermelho claro para valores negativos */
+  text-shadow: none !important;
+}
+
+/* === CORREÇÃO ESPECÍFICA PARA CARDS COM BORDAS COLORIDAS === */
+.dark .border-blue-500,
+.dark .border-green-500,
+.dark .border-yellow-500,
+.dark .border-orange-500,
+.dark .border-red-500 {
+  border-color: #718096 !important; /* Bordas neutras */
+}
+
+/* === FUNDOS DE CARDS COM GRADIENTES PROBLEMÁTICOS === */
+.dark .bg-gradient-to-r,
+.dark .bg-gradient-to-br,
+.dark .bg-gradient-to-bl {
+  background: #4a5568 !important; /* Fundo neutro claro */
+  border: 1px solid #718096 !important;
+}
+
+/* === CORREÇÃO PARA ELEMENTOS ESPECÍFICOS DO DASHBOARD === */
+.dark .dashboard-metric .text-blue-800,
+.dark .dashboard-metric .text-green-800,
+.dark .dashboard-metric .text-yellow-800,
+.dark .dashboard-metric .text-orange-800,
+.dark .dashboard-metric .text-red-800 {
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8) !important;
+}
+
+/* === CORREÇÃO PARA BADGES E TAGS === */
+.dark .badge,
+.dark .tag,
+.dark .status-badge {
+  background-color: #4a5568 !important;
+  color: #ffffff !important;
+  border: 1px solid #718096 !important;
+}
+
+/* === CORREÇÃO PARA ÍCONES EM FUNDOS ESCUROS === */
+.dark .icon,
+.dark .emoji,
+.dark .symbol {
+  filter: brightness(1.2) !important; /* Clarear ícones */
+}
+
+/* === CORREÇÃO PARA BOTÕES COM CORES ESCURAS === */
+.dark .btn-blue,
+.dark .btn-green,
+.dark .btn-yellow,
+.dark .btn-orange,
+.dark .btn-red {
+  background-color: #4a5568 !important;
+  color: #ffffff !important;
+  border: 1px solid #718096 !important;
+}
+
+/* === CORREÇÃO PARA ELEMENTOS COM OPACIDADE === */
+.dark .opacity-75,
+.dark .opacity-80,
+.dark .opacity-90 {
+  opacity: 1 !important; /* Remover opacidade para melhor contraste */
+}
+
+/* === CORREÇÃO PARA TEXTOS EM FUNDOS GRADIENTES === */
+.dark .gradient-text,
+.dark .text-on-gradient {
+  color: #ffffff !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8) !important;
+  font-weight: 600 !important;
+}
+
+/* === CORREÇÃO ESPECÍFICA PARA CARDS DE RECOMENDAÇÕES === */
+.dark .recommendation-card,
+.dark .alert-card {
+  background: #4a5568 !important;
+  border: 1px solid #718096 !important;
+  color: #ffffff !important;
+}
+
+.dark .recommendation-card .text-blue-700,
+.dark .recommendation-card .text-green-700,
+.dark .recommendation-card .text-yellow-700,
+.dark .alert-card .text-red-700,
+.dark .alert-card .text-orange-700 {
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8) !important;
+}
+
+/* === CORREÇÃO PARA ELEMENTOS COM CLASSES TAILWIND ESPECÍFICAS === */
+.dark .text-blue-800.dark\:text-blue-300,
+.dark .text-green-800.dark\:text-green-300,
+.dark .text-yellow-800.dark\:text-yellow-300,
+.dark .text-orange-700.dark\:text-orange-300,
+.dark .text-red-700.dark\:text-red-300 {
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8) !important;
+}
+
+/* === FORÇA APLICAÇÃO EM ELEMENTOS RESISTENTES === */
+.dark .bg-blue-50,
+.dark .bg-green-50,
+.dark .bg-yellow-50,
+.dark .bg-orange-50,
+.dark .bg-red-50 {
+  background: #4a5568 !important;
+  border: 1px solid #718096 !important;
+}
+
+/* === CORREÇÃO PARA ELEMENTOS COM MÚLTIPLAS CLASSES === */
+.dark .text-blue-800.dark\:text-blue-300.bg-blue-50,
+.dark .text-green-800.dark\:text-green-300.bg-green-50,
+.dark .text-yellow-800.dark\:text-yellow-300.bg-yellow-50 {
+  background: #4a5568 !important;
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8) !important;
+}
+
+/* === CORREÇÃO PARA ELEMENTOS COM BORDAS COLORIDAS === */
+.dark .border-l-4.border-blue-500,
+.dark .border-l-4.border-green-500,
+.dark .border-l-4.border-yellow-500,
+.dark .border-l-4.border-orange-500,
+.dark .border-l-4.border-red-500 {
+  border-left-color: #718096 !important;
+}
+
+/* === MELHORIA PARA ELEMENTOS COM SHADOW === */
+.dark .shadow-sm,
+.dark .shadow-md,
+.dark .shadow-lg {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* === CORREÇÃO FINAL PARA ELEMENTOS QUE AINDA ESTÃO ESCUROS === */
+.dark *[class*="bg-"][class*="text-"] {
+  /* Força aplicação em elementos com fundo e texto escuros */
+}
+
+.dark *[class*="from-"][class*="to-"][class*="text-"] {
+  /* Força aplicação em elementos com gradiente e texto escuros */
+  background: #4a5568 !important;
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8) !important;
+}

@@ -16,11 +16,11 @@ function copyPWAFiles() {
         'public/icon-512.png',
         'public/offline.html'
       ];
-      
+
       filesToCopy.forEach(file => {
         const sourcePath = join(__dirname, file);
         const destPath = join(__dirname, 'dist', file.replace('public/', ''));
-        
+
         if (existsSync(sourcePath)) {
           copyFileSync(sourcePath, destPath);
           console.log(`📱 PWA: Copiado ${file} para dist/`);
@@ -28,31 +28,47 @@ function copyPWAFiles() {
           console.warn(`⚠️ PWA: Arquivo ${file} não encontrado`);
         }
       });
-      
-      // Corrigir HTML para incluir o script principal
+
+      // Corrigir HTML para incluir o script e CSS corretos
       const htmlPath = join(__dirname, 'dist', 'index.html');
-      
+
       if (existsSync(htmlPath)) {
         let htmlContent = readFileSync(htmlPath, 'utf8');
+        const assetsDir = join(__dirname, 'dist', 'assets');
         
-        // Verificar se o script já está incluído
-        if (!htmlContent.includes('<script type="module" src="./assets/')) {
-          // Encontrar o arquivo JS gerado
-          const assetsDir = join(__dirname, 'dist', 'assets');
-          if (existsSync(assetsDir)) {
-            const files = readdirSync(assetsDir);
-            const jsFile = files.find(f => f.endsWith('.js') && f.startsWith('main-'));
-            
-            if (jsFile) {
-              const scriptTag = `    <script type="module" src="./assets/${jsFile}"></script>`;
-              htmlContent = htmlContent.replace(
-                '    <!-- App Principal -->',
-                `    <!-- App Principal -->\n${scriptTag}`
-              );
-              writeFileSync(htmlPath, htmlContent);
-              console.log(`✅ Script ${jsFile} adicionado ao HTML`);
-            }
+        if (existsSync(assetsDir)) {
+          const files = readdirSync(assetsDir);
+          
+          // Encontrar o arquivo JS main gerado
+          const jsFile = files.find(f => f.endsWith('.js') && f.startsWith('main-'));
+          
+          // Encontrar o arquivo CSS main gerado
+          const cssFile = files.find(f => f.endsWith('.css') && f.startsWith('main-'));
+          
+          // Remover referências antigas de CSS que não existem
+          htmlContent = htmlContent.replace(/<link[^>]+main-[^>]+\.css[^>]*>/g, '');
+          
+          // Adicionar CSS correto se encontrado
+          if (cssFile) {
+            const cssLink = `    <link rel="stylesheet" href="./assets/${cssFile}">`;
+            htmlContent = htmlContent.replace(
+              '</head>',
+              `${cssLink}\n    </head>`
+            );
+            console.log(`✅ CSS ${cssFile} adicionado ao HTML`);
           }
+          
+          // Adicionar JS se não estiver incluído
+          if (jsFile && !htmlContent.includes(jsFile)) {
+            const scriptTag = `    <script type="module" src="./assets/${jsFile}"></script>`;
+            htmlContent = htmlContent.replace(
+              '    <!-- App Principal -->',
+              `    <!-- App Principal -->\n${scriptTag}`
+            );
+            console.log(`✅ Script ${jsFile} adicionado ao HTML`);
+          }
+          
+          writeFileSync(htmlPath, htmlContent);
         }
       }
     }
@@ -75,7 +91,14 @@ export default defineConfig({
         // Configurações básicas de output
         chunkFileNames: 'assets/[name]-[hash].js',
         entryFileNames: 'assets/[name]-[hash].js',
-        assetFileNames: 'assets/[name]-[hash].[ext]'
+        assetFileNames: 'assets/[name]-[hash].[ext]',
+        // Apenas vendor separado - deixar Vite gerenciar o resto
+        manualChunks(id) {
+          // Separar apenas node_modules grandes que não são Firebase
+          if (id.includes('node_modules') && !id.includes('firebase')) {
+            return 'vendor';
+          }
+        }
       }
     },
     // Otimizações de build
@@ -107,8 +130,8 @@ export default defineConfig({
   server: {
     open: true,
     host: true,
-  port: 5176,
-  strictPort: true,
+    port: 5176,
+    strictPort: true,
   },
   plugins: [
     viteCompression({

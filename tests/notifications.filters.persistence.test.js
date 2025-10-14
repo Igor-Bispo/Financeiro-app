@@ -15,7 +15,7 @@ describe('Notifications filters persistence', () => {
 
   it('loads defaults when localStorage is empty', () => {
     const f = getFilters();
-    expect(f).toEqual({ types: ['new_transaction','updated_transaction','deleted_transaction','category_added','category_updated','category_deleted','test_notification'], period: 'all', unreadOnly: false });
+    expect(f).toEqual({ types: ['new_transaction','updated_transaction','deleted_transaction','category_added','category_updated','category_deleted','test_notification'], period: 'all', unreadOnly: true });
   });
 
   it('loads from localStorage when present', () => {

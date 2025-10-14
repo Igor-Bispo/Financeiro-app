@@ -16,13 +16,17 @@ let listeners = new Map();
 // Carregar orçamentos do usuário
 export async function loadUserBudgets(userId) {
   try {
+    console.log('🔍 [BudgetsService] loadUserBudgets - Iniciando para userId:', userId);
     budgetsStore.setState({ loading: true, error: null });
 
     // Carregar orçamentos próprios e compartilhados
+    console.log('🔍 [BudgetsService] loadUserBudgets - Carregando orçamentos...');
     const [own, shared] = await Promise.all([
       budgetsRepo.listOwn(userId),
       budgetsRepo.listShared(userId)
     ]);
+    
+    console.log('📊 [BudgetsService] loadUserBudgets - Own:', own.length, 'Shared:', shared.length);
 
     // Anotar propriedade de dono; desduplicar por id e ordenar por createdAt desc
     const normalize = (arr, _isOwnerFlag) =>
@@ -48,6 +52,9 @@ export async function loadUserBudgets(userId) {
     const toDate = (v) => v?.toDate ? v.toDate() : (v?.seconds ? new Date(v.seconds * 1000) : (v ? new Date(v) : new Date(0)));
     const combined = Array.from(byId.values()).sort((a, b) => toDate(b.createdAt) - toDate(a.createdAt));
 
+    console.log('📊 [BudgetsService] loadUserBudgets - Combined:', combined.length, 'orçamentos');
+    console.log('📋 [BudgetsService] loadUserBudgets - Dados finais:', combined);
+
     // Atualizar stores e estado global legado
     budgetsStore.setState({ budgets: combined, loading: false });
     if (typeof window !== 'undefined') {
@@ -55,8 +62,11 @@ export async function loadUserBudgets(userId) {
       window.appState.budgets = combined;
     }
 
+    console.log('✅ [BudgetsService] loadUserBudgets - Concluído!');
     return combined;
   } catch (error) {
+    console.error('❌ [BudgetsService] loadUserBudgets - ERRO:', error);
+    console.error('❌ [BudgetsService] loadUserBudgets - Stack:', error.stack);
     budgetsStore.setState({ error: error.message, loading: false });
     throw error;
   }
@@ -123,10 +133,10 @@ export async function updateBudget(id, data) {
   }
 }
 
-export async function deleteBudget(id) {
+export async function deleteBudget(budgetId, _userId) {
   try {
-    await budgetsRepo.remove(id);
-    eventBus.emit('budget:deleted', { id });
+    await budgetsRepo.remove(budgetId);
+    eventBus.emit('budget:deleted', { id: budgetId });
   } catch (error) {
     eventBus.emit('error:budget', error);
     throw error;
@@ -148,7 +158,7 @@ export async function selectDefaultBudget(userId) {
     if (budgets && budgets.length > 0) {
       // Primeiro, tentar usar o orçamento salvo no localStorage
       let defaultBudget = budgets[0]; // fallback para o primeiro
-      
+
       try {
         const savedBudgetId = localStorage.getItem('currentBudgetId');
         if (savedBudgetId) {
@@ -163,7 +173,7 @@ export async function selectDefaultBudget(userId) {
       } catch (e) {
         console.warn('Erro ao restaurar orçamento do localStorage:', e);
       }
-      
+
       setCurrentBudget(defaultBudget);
 
       // Atualizar estado global da aplicação
@@ -236,15 +246,15 @@ export function ensureBudgetPersistence(budget) {
   try {
     // Salvar no localStorage
     localStorage.setItem('currentBudgetId', budget.id);
-    
+
     // Atualizar estado global
     if (window.appState) {
       window.appState.currentBudget = budget;
     }
-    
+
     // Emitir evento de mudança
     eventBus.emit('budget:changed', budget);
-    
+
     console.log('✅ Orçamento persistido:', budget.nome, budget.id);
     return true;
   } catch (error) {
@@ -254,7 +264,7 @@ export function ensureBudgetPersistence(budget) {
 }
 
 // Função para restaurar orçamento do localStorage
-export async function restoreBudgetFromStorage(userId) {
+export async function restoreBudgetFromStorage(_userId) {
   try {
     const savedBudgetId = localStorage.getItem('currentBudgetId');
     if (!savedBudgetId) {

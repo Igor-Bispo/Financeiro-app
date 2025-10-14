@@ -202,18 +202,16 @@ export class ConfirmModal {
     if (!this.modal) return;
 
     const overlay = this.modal.parentElement;
-    
+
     // Animar saída
     overlay.style.opacity = '0';
     this.modal.style.transform = 'scale(0.95)';
 
     setTimeout(() => {
       this.removeModal();
-      if (result) {
-        this.resolve?.(true);
-      } else {
-        this.reject?.(false);
-      }
+      // SEMPRE resolver a promise, nunca rejeitar
+      // result = true (confirmado) ou false (cancelado)
+      this.resolve?.(result);
     }, 200);
   }
 
@@ -224,7 +222,7 @@ export class ConfirmModal {
         // Remover listeners
         const cancelBtn = this.modal.querySelector('.confirm-modal-cancel');
         const confirmBtn = this.modal.querySelector('.confirm-modal-confirm');
-        
+
         if (cancelBtn && this.listeners?.cancel) {
           cancelBtn.removeEventListener('click', this.listeners.cancel);
         }
@@ -256,7 +254,7 @@ export function confirm(options) {
 
 // Funções específicas para diferentes tipos de confirmação
 export function confirmTransaction(transactionData) {
-  const { descricao, valor, tipo } = transactionData;
+  const { descricao, valor } = transactionData;
   const formattedValue = new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL'
@@ -272,7 +270,7 @@ export function confirmTransaction(transactionData) {
   });
 }
 
-export function confirmDelete(itemName, itemType = 'item') {
+export function confirmDelete(itemName, _itemType = 'item') {
   return confirm({
     title: 'Confirmar Exclusão',
     message: `Tem certeza que deseja excluir "${itemName}"? Esta ação não pode ser desfeita.`,
@@ -283,7 +281,7 @@ export function confirmDelete(itemName, itemType = 'item') {
   });
 }
 
-export function confirmUpdate(itemName, itemType = 'item') {
+export function confirmUpdate(itemName, _itemType = 'item') {
   return confirm({
     title: 'Salvar Alterações',
     message: `Tem certeza que deseja salvar as alterações em "${itemName}"?`,

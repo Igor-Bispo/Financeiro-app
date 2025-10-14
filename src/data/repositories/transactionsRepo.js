@@ -128,7 +128,7 @@ export async function createFromRecurring({ userId, budgetId, rec, createdDate, 
     parcelaAtualRecebida: parcelaAtual,
     createdDate: createdDate.toISOString()
   });
-  
+
   const data = {
     userId,
     budgetId,
@@ -142,7 +142,7 @@ export async function createFromRecurring({ userId, budgetId, rec, createdDate, 
     parcelaAtual: parcelaAtual ?? null,
     parcelasTotal: rec.parcelasTotal ?? null,
   };
-  
+
   // Debug: verificar dados que serão salvos
   console.log('🔧 [CreateFromRecurring] Dados que serão salvos:', {
     parcelaAtual: data.parcelaAtual,
@@ -150,7 +150,7 @@ export async function createFromRecurring({ userId, budgetId, rec, createdDate, 
     descricao: data.descricao,
     valor: data.valor
   });
-  
+
   const ref = await addDoc(collection(db, COL), data);
   console.log('✅ [CreateFromRecurring] Transação criada com ID:', ref.id);
   return { id: ref.id };

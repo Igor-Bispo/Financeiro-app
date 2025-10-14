@@ -40,7 +40,7 @@ export async function loadCategories(budgetId) {
         window.appState.categories = categories;
       }
     } catch {}
-      console.log('[DEBUG] Categorias carregadas para o orçamento', budgetId, categories);
+    console.log('[DEBUG] Categorias carregadas para o orçamento', budgetId, categories);
     return categories;
   } catch (error) {
     categoriesStore.setState({ error: error.message, loading: false });

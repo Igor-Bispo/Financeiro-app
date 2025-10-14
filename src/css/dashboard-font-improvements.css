@@ -1,0 +1,374 @@
+/* ========================================
+   MELHORIAS E PADRONIZAÇÃO DE FONTES - DASHBOARD
+   ======================================== */
+
+/* === FONTE PRINCIPAL DO DASHBOARD === */
+
+/* Aplicar fonte Inter em todo o dashboard */
+#app-content,
+#app-content * {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+  font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1 !important;
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+  text-rendering: optimizeLegibility !important;
+}
+
+/* === HIERARQUIA DE TÍTULOS PADRONIZADA - CLEAN === */
+
+/* Títulos principais do dashboard (h2) - CLEAN E COMPACTO */
+#app-content h2,
+#app-content h2.text-xl,
+#app-content h2.md\:text-2xl,
+#app-content h2.font-bold,
+#app-content h2.text-gray-900,
+#app-content h2.dark\:text-gray-100 {
+  font-weight: 600 !important; /* Semi-bold ao invés de bold */
+  font-size: 1rem !important; /* text-base - 16px */
+  line-height: 1.4 !important;
+  letter-spacing: -0.01em !important;
+  margin-bottom: 0.5rem !important;
+  color: #111827 !important; /* text-gray-900 */
+}
+
+/* Títulos secundários (h3) - CLEAN */
+#app-content h3 {
+  font-weight: 500 !important; /* Medium */
+  font-size: 0.9375rem !important; /* 15px */
+  line-height: 1.4 !important;
+  letter-spacing: 0 !important;
+  margin-bottom: 0.375rem !important;
+}
+
+/* Títulos terciários (h4, h5, h6) - CLEAN */
+#app-content h4,
+#app-content h5,
+#app-content h6 {
+  font-weight: 500 !important;
+  font-size: 0.875rem !important; /* text-sm - 14px */
+  line-height: 1.5 !important;
+  letter-spacing: 0 !important;
+  margin-bottom: 0.25rem !important;
+}
+
+/* === RESPONSIVIDADE PARA TÍTULOS - CLEAN === */
+
+/* Desktop - tamanhos sutilmente maiores */
+@media (min-width: 768px) {
+  #app-content h2,
+  #app-content h2.text-xl,
+  #app-content h2.md\:text-2xl,
+  #app-content h2.font-bold {
+    font-size: 1.0625rem !important; /* 17px - apenas um pouco maior */
+    line-height: 1.4 !important;
+    letter-spacing: -0.01em !important;
+  }
+  
+  #app-content h3 {
+    font-size: 1rem !important; /* 16px */
+  }
+  
+  #app-content h4,
+  #app-content h5,
+  #app-content h6 {
+    font-size: 0.9375rem !important; /* 15px */
+  }
+}
+
+/* === PADRÃO PARA TEXTOS COMUNS - CLEAN === */
+
+/* Textos de corpo - CLEAN E COMPACTO */
+#app-content p,
+#app-content span,
+#app-content div,
+#app-content label,
+#app-content .text-sm,
+#app-content .text-xs,
+#app-content .text-base {
+  font-weight: 400 !important;
+  font-size: 0.8125rem !important; /* 13px - mais compacto */
+  line-height: 1.5 !important;
+  color: #6B7280 !important; /* text-gray-500 */
+}
+
+/* Textos de descrição e labels - CLEAN */
+#app-content .text-gray-600,
+#app-content .text-gray-500,
+#app-content .text-gray-400,
+#app-content .dark\:text-gray-400,
+#app-content .dark\:text-gray-500 {
+  font-weight: 400 !important;
+  font-size: 0.8125rem !important; /* 13px */
+  color: #6B7280 !important; /* text-gray-500 */
+}
+
+/* === VALORES MONETÁRIOS PADRONIZADOS - CLEAN === */
+
+/* Valores em destaque - CLEAN */
+#app-content .text-lg,
+#app-content .text-xl,
+#app-content .text-2xl {
+  font-weight: 500 !important; /* Medium ao invés de semi-bold */
+  line-height: 1.3 !important;
+  letter-spacing: -0.01em !important;
+}
+
+/* Valores monetários específicos - CLEAN */
+#app-content .text-green-600,
+#app-content .text-red-600,
+#app-content .text-blue-600,
+#app-content .text-yellow-600,
+#app-content .dark\:text-green-400,
+#app-content .dark\:text-red-400,
+#app-content .dark\:text-blue-400,
+#app-content .dark\:text-yellow-400 {
+  font-weight: 500 !important; /* Medium */
+  font-size: 0.9375rem !important; /* 15px - mais compacto */
+}
+
+/* === BOTÕES PADRONIZADOS - CLEAN === */
+
+/* Todos os botões do dashboard - CLEAN */
+#app-content button,
+#app-content .btn,
+#app-content .u-btn {
+  font-weight: 400 !important; /* Normal weight para clean look */
+  font-size: 0.8125rem !important; /* 13px */
+  line-height: 1.4 !important;
+  letter-spacing: 0 !important;
+}
+
+/* Botões pequenos - CLEAN */
+#app-content .btn-sm,
+#app-content button.text-xs {
+  font-size: 0.75rem !important; /* 12px */
+  font-weight: 400 !important;
+}
+
+/* === CARDS E COMPONENTES - CLEAN === */
+
+/* Títulos de cards - CLEAN */
+#app-content .card-title,
+#app-content .u-card h3,
+#app-content .u-card h4,
+#app-content .u-card h5 {
+  font-weight: 500 !important; /* Medium */
+  font-size: 0.875rem !important; /* 14px - mais compacto */
+  line-height: 1.4 !important;
+  margin-bottom: 0.375rem !important;
+}
+
+/* Textos dentro de cards - CLEAN */
+#app-content .u-card p,
+#app-content .u-card span,
+#app-content .u-card div:not(.card-title):not(h1):not(h2):not(h3):not(h4):not(h5):not(h6) {
+  font-weight: 400 !important;
+  font-size: 0.8125rem !important; /* 13px */
+  line-height: 1.5 !important;
+}
+
+/* === LISTAS E ITENS - CLEAN === */
+
+/* Itens de lista - CLEAN */
+#app-content .list-item,
+#app-content .item,
+#app-content .entry,
+#app-content .transaction-item,
+#app-content .category-item {
+  font-weight: 400 !important;
+  font-size: 0.8125rem !important; /* 13px */
+  line-height: 1.5 !important;
+}
+
+/* Nomes de itens em listas - CLEAN */
+#app-content .item-name,
+#app-content .transaction-description,
+#app-content .category-name {
+  font-weight: 400 !important; /* Normal weight */
+  font-size: 0.8125rem !important; /* 13px */
+}
+
+/* === STATUS E BADGES - CLEAN === */
+
+/* Badges e tags - CLEAN */
+#app-content .badge,
+#app-content .tag,
+#app-content .status {
+  font-weight: 400 !important; /* Normal weight */
+  font-size: 0.6875rem !important; /* 11px - mais compacto */
+  line-height: 1.3 !important;
+  letter-spacing: 0 !important;
+}
+
+/* === MÉTRICAS E ESTATÍSTICAS - CLEAN === */
+
+/* Valores de métricas - CLEAN */
+#app-content .metric-value,
+#app-content .dashboard-metric,
+#app-content .dashboard-value {
+  font-weight: 500 !important; /* Medium */
+  font-size: 0.9375rem !important; /* 15px - mais compacto */
+  line-height: 1.3 !important;
+}
+
+/* Labels de métricas - CLEAN */
+#app-content .metric-label,
+#app-content .dashboard-label {
+  font-weight: 400 !important;
+  font-size: 0.6875rem !important; /* 11px */
+  line-height: 1.3 !important;
+  color: #6B7280 !important; /* text-gray-500 */
+}
+
+/* === PROGRESS BARS E INDICADORES - CLEAN === */
+
+/* Textos em barras de progresso - CLEAN */
+#app-content .progress-text,
+#app-content .progress-label {
+  font-weight: 400 !important; /* Normal weight */
+  font-size: 0.6875rem !important; /* 11px */
+  line-height: 1.3 !important;
+}
+
+/* === FORMULÁRIOS - CLEAN === */
+
+/* Labels de formulário - CLEAN */
+#app-content label,
+#app-content .form-label {
+  font-weight: 400 !important; /* Normal weight */
+  font-size: 0.8125rem !important; /* 13px */
+  line-height: 1.4 !important;
+  margin-bottom: 0.25rem !important;
+}
+
+/* Inputs e controles - CLEAN */
+#app-content input,
+#app-content select,
+#app-content textarea {
+  font-weight: 400 !important;
+  font-size: 0.8125rem !important; /* 13px */
+  line-height: 1.5 !important;
+}
+
+/* === TEMA ESCURO === */
+
+@media (prefers-color-scheme: dark) {
+  /* Manter hierarquia de cores no tema escuro */
+  #app-content h2,
+  #app-content h3,
+  #app-content h4,
+  #app-content h5,
+  #app-content h6 {
+    color: #F9FAFB !important; /* dark:text-gray-100 */
+  }
+  
+  #app-content p,
+  #app-content span,
+  #app-content div,
+  #app-content .text-gray-600,
+  #app-content .text-gray-500 {
+    color: #9CA3AF !important; /* dark:text-gray-400 */
+  }
+  
+  #app-content .text-gray-400 {
+    color: #6B7280 !important; /* dark:text-gray-500 */
+  }
+}
+
+/* === CORREÇÕES ESPECÍFICAS PARA DASHBOARD === */
+
+/* Garantir que títulos do dashboard mantenham consistência */
+#app-content .tab-container h2 {
+  font-size: 1.25rem !important; /* text-xl */
+  font-weight: 700 !important;
+  line-height: 1.3 !important;
+  margin-bottom: 1rem !important;
+}
+
+@media (min-width: 768px) {
+  #app-content .tab-container h2 {
+    font-size: 1.5rem !important; /* md:text-2xl */
+    line-height: 1.25 !important;
+  }
+}
+
+/* Seções específicas do dashboard */
+#app-content .dashboard-section h2 {
+  font-size: 1.125rem !important; /* text-lg */
+  font-weight: 600 !important;
+  margin-bottom: 0.75rem !important;
+}
+
+/* === MELHORIAS DE LEGIBILIDADE === */
+
+/* Espaçamento melhorado entre elementos */
+#app-content h1 + *,
+#app-content h2 + *,
+#app-content h3 + *,
+#app-content h4 + *,
+#app-content h5 + *,
+#app-content h6 + * {
+  margin-top: 0.5rem !important;
+}
+
+/* Melhor contraste para textos pequenos */
+#app-content .text-xs {
+  color: #374151 !important; /* text-gray-700 */
+  font-weight: 400 !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  #app-content .text-xs {
+    color: #D1D5DB !important; /* dark:text-gray-300 */
+  }
+}
+
+/* === OTIMIZAÇÕES PARA MOBILE - CLEAN === */
+
+@media (max-width: 768px) {
+  /* Tamanhos compactos no mobile - CLEAN */
+  #app-content h2 {
+    font-size: 0.9375rem !important; /* 15px */
+    line-height: 1.4 !important;
+  }
+  
+  #app-content h3 {
+    font-size: 0.875rem !important; /* 14px */
+  }
+  
+  #app-content .text-lg,
+  #app-content .text-xl {
+    font-size: 0.875rem !important; /* 14px */
+  }
+  
+  /* Espaçamento compacto no mobile */
+  #app-content .tab-container {
+    padding: 0.5rem !important;
+  }
+  
+  #app-content .u-card {
+    margin-bottom: 0.75rem !important;
+  }
+}
+
+/* === CORREÇÕES DE ESPECIFICIDADE - CLEAN === */
+
+/* Garantir que regras específicas tenham prioridade - CLEAN */
+#app-content .font-bold:not(h1):not(h2):not(h3):not(h4):not(h5):not(h6) {
+  font-weight: 500 !important; /* Medium para clean look */
+}
+
+#app-content .font-semibold:not(h1):not(h2):not(h3):not(h4):not(h5):not(h6) {
+  font-weight: 400 !important; /* Normal para clean look */
+}
+
+#app-content .font-medium:not(h1):not(h2):not(h3):not(h4):not(h5):not(h6) {
+  font-weight: 400 !important; /* Normal */
+}
+
+/* === FINALIZAÇÃO === */
+
+/* Garantir que todas as fontes usem a mesma família */
+#app-content * {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+}

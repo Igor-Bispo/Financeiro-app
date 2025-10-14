@@ -94,9 +94,9 @@ export async function render(container) {
   } catch {}
 
   // Garantir indicador após render
-  try { 
+  try {
     console.log('🔧 Montando indicador de período em categorias');
-    mountPeriodIndicator('#cat-period-indicator'); 
+    mountPeriodIndicator('#cat-period-indicator');
   } catch (error) {
     console.error('❌ Erro ao montar indicador:', error);
   }
@@ -108,22 +108,22 @@ export async function render(container) {
     console.log('🔍 ANTES da limpeza - verificando indicador...');
     const periodIndicator = container.querySelector('#cat-period-indicator');
     console.log('🔍 Indicador encontrado antes da limpeza:', periodIndicator);
-    
+
     container.innerHTML = '';
     container.appendChild(root);
-    
+
     console.log('🔍 APÓS limpeza - verificando estrutura...');
     const header = container.querySelector('.tab-header');
     console.log('🔍 Header encontrado:', header);
-    
+
     if (header) {
       const headerContent = header.querySelector('.bg-white');
       console.log('🔍 Header content encontrado:', headerContent);
-      
+
       if (headerContent) {
         const rightSide = headerContent.querySelector('.flex.items-center.justify-between');
         console.log('🔍 Right side encontrado:', rightSide);
-        
+
         if (rightSide && periodIndicator) {
           console.log('🔍 Re-adicionando indicador...');
           rightSide.appendChild(periodIndicator);
@@ -143,9 +143,9 @@ export async function render(container) {
 
   // Carregar categorias reais
   await loadCategories();
-  try { 
+  try {
     console.log('🔧 Re-montando indicador após loadCategories');
-    mountPeriodIndicator('#cat-period-indicator'); 
+    mountPeriodIndicator('#cat-period-indicator');
   } catch (error) {
     console.error('❌ Erro ao re-montar indicador:', error);
   }
@@ -164,21 +164,21 @@ async function loadCategories() {
 // Função para atualizar apenas os dados das categorias sem re-renderizar o header
 async function updateCategoriesData() {
   console.log('🔄 updateCategoriesData - Atualizando dados sem re-renderizar header');
-  
+
   try {
     // Garantir dados necessários disponíveis
     await loadTransactions();
     await loadRecorrentes();
-    
+
     // Calcular gastos por categoria no mês selecionado
     const { year: anoAtual, month: mesAtual } = getSelectedPeriod();
     console.log('📅 Período selecionado para atualização:', { anoAtual, mesAtual });
 
     // Recalcular e atualizar os dados das categorias
     await updateCategoriesContent(anoAtual, mesAtual);
-    
+
     console.log('✅ Dados das categorias atualizados sem re-renderizar header');
-    
+
   } catch (error) {
     console.error('❌ Erro ao atualizar dados das categorias:', error);
   }
@@ -235,14 +235,14 @@ function calcularGastosCategoria(cat, anoAtual, mesAtual) {
 // Função para atualizar o conteúdo das categorias com os dados do novo período
 async function updateCategoriesContent(anoAtual, mesAtual) {
   console.log('🔄 updateCategoriesContent - Recalculando dados para período:', { anoAtual, mesAtual });
-  
+
   try {
     // Obter categorias do orçamento atual
     const currentBudgetId = window.appState?.currentBudget?.id;
     const budgets = window.appState?.budgets || [];
     const isMultiBudget = Array.isArray(budgets) && budgets.length > 1;
     const categorias = (window.appState.categories || []).filter(cat => !currentBudgetId || cat.budgetId === currentBudgetId || (!isMultiBudget && !cat.budgetId));
-    
+
     // Debug: Log das categorias disponíveis
     console.log('🔍 DEBUG Categorias disponíveis:', categorias.map(c => ({ nome: c.nome, limite: c.limite })));
 
@@ -251,35 +251,50 @@ async function updateCategoriesContent(anoAtual, mesAtual) {
       .map(cat => {
         // Usar função auxiliar para calcular gastos corretamente
         const gastos = calcularGastosCategoria(cat, anoAtual, mesAtual);
-        const { totalGasto, totalGastoTransacoes, totalGastoRecorrentes, transacoesCategoria, recorrentesAplicadas } = gastos;
+        const { totalGasto, totalGastoTransacoes, totalGastoRecorrentes, transacoesCategoria, recorrentesAplicadas: _recorrentesAplicadas } = gastos;
 
-      
-      // Debug: Log dos cálculos para esta categoria
-      if (cat.nome === 'igor300' || cat.nome === 'salario') {
-        console.log('🔍 DEBUG Categoria:', {
-          nome: cat.nome,
-          transacoesCategoria: transacoesCategoria.length,
-          totalGastoTransacoes,
-          totalGastoRecorrentes,
-          totalGasto,
-          limite: cat.limite,
-          saldo: limite - totalGasto,
-          transacoesDetalhes: transacoesCategoria.map(t => ({ valor: t.valor, descricao: t.descricao }))
-        });
-      }
+
+        // Debug: Log dos cálculos para esta categoria
+        if (cat.nome === 'igor300' || cat.nome === 'salario') {
+          console.log('🔍 DEBUG Categoria:', {
+            nome: cat.nome,
+            transacoesCategoria: transacoesCategoria.length,
+            totalGastoTransacoes,
+            totalGastoRecorrentes,
+            totalGasto,
+            limite: cat.limite,
+            saldo: limite - totalGasto,
+            transacoesDetalhes: transacoesCategoria.map(t => ({ valor: t.valor, descricao: t.descricao }))
+          });
+        }
 
         const limite = Number(cat.limite) || 0;
         const saldo = limite - totalGasto;
-        const porcentagem = limite > 0 ? Math.min((totalGasto / limite) * 100, 100) : 0;
+        // Para receitas: permitir porcentagem > 100% (superar meta é bom)
+        // Para despesas: limitar a 100% (exceder limite é sempre ruim na visualização)
+        const porcentagem = limite > 0 ?
+          (cat.tipo === 'receita' ? (totalGasto / limite) * 100 : Math.min((totalGasto / limite) * 100, 100)) : 0;
 
         // Determinar cor da barra baseada na porcentagem
         let corBarra = 'bg-green-500';
-        if (porcentagem >= 90) {
-          corBarra = 'bg-red-500';
-        } else if (porcentagem >= 75) {
-          corBarra = 'bg-yellow-500';
-        } else if (porcentagem >= 50) {
-          corBarra = 'bg-orange-500';
+        if (cat.tipo === 'receita') {
+          // Para receitas: verde quando ≥100% (meta atingida), amarelo 80-99%, vermelho <80%
+          if (porcentagem >= 100) {
+            corBarra = 'bg-green-500';
+          } else if (porcentagem >= 80) {
+            corBarra = 'bg-yellow-500';
+          } else {
+            corBarra = 'bg-red-500';
+          }
+        } else {
+          // Para despesas: lógica original (verde baixo, vermelho alto)
+          if (porcentagem >= 90) {
+            corBarra = 'bg-red-500';
+          } else if (porcentagem >= 75) {
+            corBarra = 'bg-yellow-500';
+          } else if (porcentagem >= 50) {
+            corBarra = 'bg-orange-500';
+          }
         }
 
         return {
@@ -298,9 +313,9 @@ async function updateCategoriesContent(anoAtual, mesAtual) {
     // Atualizar elementos na tela com os novos dados
     updateCategoryCards(categoriasComGastos, anoAtual, mesAtual);
     updateCategoryStatistics(categoriasComGastos, anoAtual, mesAtual);
-    
+
     console.log('✅ Conteúdo das categorias atualizado com sucesso');
-    
+
   } catch (error) {
     console.error('❌ Erro ao atualizar conteúdo das categorias:', error);
   }
@@ -309,7 +324,7 @@ async function updateCategoriesContent(anoAtual, mesAtual) {
 // Função para atualizar os cards das categorias
 function updateCategoryCards(categoriasComGastos, anoAtual, mesAtual) {
   console.log('🔄 Atualizando cards das categorias...');
-  
+
   // Atualizar cada card de categoria
   categoriasComGastos.forEach(cat => {
     const cardElement = document.querySelector(`[data-category-id="${cat.id}"]`);
@@ -318,27 +333,28 @@ function updateCategoryCards(categoriasComGastos, anoAtual, mesAtual) {
       const valorElement = cardElement.querySelector('.category-value');
       const porcentagemElement = cardElement.querySelector('.category-percentage');
       const barraElement = cardElement.querySelector('.category-progress-bar');
-      
+
       if (valorElement) {
         valorElement.textContent = `R$ ${cat.totalGasto.toFixed(2)}`;
       }
-      
+
       if (porcentagemElement) {
         porcentagemElement.textContent = `${cat.porcentagem.toFixed(1)}%`;
       }
-      
+
       if (barraElement) {
-        barraElement.style.width = `${cat.porcentagem}%`;
+        // Limitar largura da barra a 100% mesmo quando porcentagem > 100%
+        barraElement.style.width = `${Math.min(cat.porcentagem, 100)}%`;
         barraElement.className = `category-progress-bar ${cat.corBarra}`;
       }
-      
+
       // Atualizar período no cabeçalho
       const periodoElement = cardElement.querySelector('.text-sm.text-gray-500');
       if (periodoElement) {
         const isReceita = cat.tipo === 'receita';
         periodoElement.textContent = `${isReceita ? 'Receita' : 'Despesa'} • ${String(mesAtual).padStart(2,'0')}/${anoAtual}`;
       }
-      
+
       // Atualizar meta diária se existir
       const metaDiariaElement = cardElement.querySelector('.text-blue-600');
       if (metaDiariaElement && cat.limite > 0 && cat.saldo > 0) {
@@ -353,17 +369,17 @@ function updateCategoryCards(categoriasComGastos, anoAtual, mesAtual) {
 // Função para atualizar estatísticas das categorias
 function updateCategoryStatistics(categoriasComGastos, anoAtual, mesAtual) {
   console.log('📊 Atualizando estatísticas para período:', { anoAtual, mesAtual });
-  
+
   // Calcular categorias em alerta
   const categoriasEmAlerta = categoriasComGastos.filter(cat => cat.limite > 0 && cat.totalGasto > cat.limite).length;
-  
+
   // Atualizar contador de alertas
   const alertElement = document.querySelector('.categories-alert-count');
   if (alertElement) {
     alertElement.textContent = categoriasEmAlerta;
     alertElement.className = `categories-alert-count ${categoriasEmAlerta > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`;
   }
-  
+
   // Atualizar texto do período
   const periodElements = document.querySelectorAll('[data-period-text]');
   periodElements.forEach(el => {
@@ -371,7 +387,7 @@ function updateCategoryStatistics(categoriasComGastos, anoAtual, mesAtual) {
   });
 }
 
-// Função para renderizar categorias (movida do app.js)
+// Função para renderizar categorias (movida do app.js) - BOTÕES ATUALIZADOS v4.54.0
 export async function renderCategories() {
   console.log('🚀 renderCategories chamada - INÍCIO');
   console.log('📅 Período atual:', getSelectedPeriod());
@@ -460,7 +476,7 @@ export async function renderCategories() {
 
       // Total geral (transações diretas + transações de recorrentes)
       const totalGasto = totalGastoTransacoes + totalGastoRecorrentes;
-      
+
       // Calcular limite (se existir)
       const limite = cat.limite ? parseFloat(cat.limite) : 0;
 
@@ -528,7 +544,8 @@ export async function renderCategories() {
   const totalRecebidoReceitas = (categoriasComGastos
     .filter(c => c.tipo === 'receita')
     .reduce((sum, c) => sum + (Number(c.totalGasto) || 0), 0)) || 0;
-  const saldoReceitas = totalMetaReceitas - totalRecebidoReceitas;
+  // Para receitas: saldo positivo = excesso (bom), saldo negativo = déficit (ruim)
+  const saldoReceitas = totalRecebidoReceitas - totalMetaReceitas;
 
   // Seletor de mês/ano
   const selYear = window.appState?.selectedYear || new Date().getFullYear();
@@ -630,9 +647,9 @@ export async function renderCategories() {
                       <span class="font-medium text-red-600 dark:text-red-400">R$ ${totalGastoDespesas.toFixed(2)}</span>
                     </div>
                     <div class="flex justify-between text-xs border-t border-gray-200 dark:border-gray-600 pt-1">
-                      <span class="text-gray-600 dark:text-gray-400">Saldo:</span>
+                      <span class="text-gray-600 dark:text-gray-400">${saldoDespesas < 0 ? 'Excesso:' : 'Restante:'}</span>
                       <span class="font-bold ${saldoDespesas < 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}">
-                        R$ ${saldoDespesas.toFixed(2)}
+                        R$ ${Math.abs(saldoDespesas).toFixed(2)}
                       </span>
                     </div>
                   </div>
@@ -654,9 +671,9 @@ export async function renderCategories() {
                       <span class="font-medium text-green-600 dark:text-green-400">R$ ${totalRecebidoReceitas.toFixed(2)}</span>
                     </div>
                     <div class="flex justify-between text-xs border-t border-gray-200 dark:border-gray-600 pt-1">
-                      <span class="text-gray-600 dark:text-gray-400">Saldo:</span>
-                      <span class="font-bold ${saldoReceitas < 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}">
-                        R$ ${saldoReceitas.toFixed(2)}
+                      <span class="text-gray-600 dark:text-gray-400">${saldoReceitas >= 0 ? 'Excesso:' : 'Déficit:'}</span>
+                      <span class="font-bold ${saldoReceitas >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}">
+                        R$ ${Math.abs(saldoReceitas).toFixed(2)}
                       </span>
                     </div>
                   </div>
@@ -734,10 +751,13 @@ ${categorias.length === 0 ? `
                 ${categoriasComGastos.map(cat => {
     const isReceita = cat.tipo === 'receita';
     const temLimite = cat.limite > 0;
+    // Para receitas: "exceder" é bom (atingiu meta), para despesas é ruim (gastou demais)
     const excedeuLimite = temLimite && cat.totalGasto > cat.limite;
+    const problematicoReceita = isReceita && temLimite && cat.totalGasto < cat.limite * 0.8; // Receita abaixo de 80% da meta
+    const problematicoDespesa = !isReceita && excedeuLimite; // Despesa que excedeu limite
 
     return `
-                    <div class="u-card bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-2xl transition-all duration-300 group ${excedeuLimite ? 'ring-2 ring-red-200 dark:ring-red-800' : ''}" data-category-id="${cat.id}">
+                    <div class="u-card bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-2xl transition-all duration-300 group ${problematicoDespesa ? 'ring-2 ring-red-200 dark:ring-red-800' : problematicoReceita ? 'ring-2 ring-yellow-200 dark:ring-yellow-800' : ''}" data-category-id="${cat.id}">
                       <!-- Header da Categoria -->
                       <div class="bg-gradient-to-r ${isReceita ? 'from-green-50 to-emerald-50 dark:from-gray-800 dark:to-gray-800' : 'from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-800'} p-4 border-b border-gray-200 dark:border-gray-700">
                         <div class="flex items-center justify-between">
@@ -750,7 +770,7 @@ ${categorias.length === 0 ? `
                               <p class="text-sm text-gray-500 dark:text-gray-400">${isReceita ? 'Receita' : 'Despesa'} • ${String(mesAtual).padStart(2,'0')}/${anoAtual}</p>
                             </div>
                           </div>
-                          ${excedeuLimite ? '<div class="text-2xl">🚨</div>' : temLimite && cat.porcentagem >= 90 ? '<div class="text-2xl">⚠️</div>' : ''}
+                          ${problematicoDespesa ? '<div class="text-2xl">🚨</div>' : problematicoReceita ? '<div class="text-2xl">⚠️</div>' : isReceita && cat.porcentagem >= 100 ? '<div class="text-2xl">🎉</div>' : temLimite && cat.porcentagem >= 90 ? '<div class="text-2xl">⚠️</div>' : ''}
                         </div>
                   </div>
                       
@@ -759,48 +779,162 @@ ${categorias.length === 0 ? `
                         ${temLimite ? `
                           <div class="mb-4">
                             <div class="flex justify-between items-center mb-2">
-                              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Limite: R$ ${cat.limite.toFixed(2)}</span>
-                              <span class="text-sm font-medium category-percentage ${excedeuLimite ? 'text-red-600 dark:text-red-400' : cat.porcentagem >= 90 ? 'text-yellow-600 dark:text-yellow-400' : 'text-green-600 dark:text-green-400'}">
+                              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                ${isReceita ? '🎯 Meta de Receita' : '📊 Limite de Gasto'}: R$ ${cat.limite.toFixed(2)}
+                              </span>
+                              <span class="text-sm font-bold category-percentage ${isReceita ? (cat.porcentagem >= 100 ? 'text-green-600 dark:text-green-400' : cat.porcentagem >= 80 ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400') : (problematicoDespesa ? 'text-red-600 dark:text-red-400' : cat.porcentagem >= 90 ? 'text-yellow-600 dark:text-yellow-400' : 'text-green-600 dark:text-green-400')}">
                                 ${cat.porcentagem.toFixed(1)}%
                               </span>
                             </div>
-                            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                              <div class="h-2 rounded-full category-progress-bar ${cat.corBarra} transition-all duration-300" style="width: ${cat.porcentagem}%"></div>
+                            
+                            <!-- Barra de progresso melhorada -->
+                            <div class="relative">
+                              <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
+                                <div class="h-3 rounded-full category-progress-bar ${cat.corBarra} transition-all duration-500 ease-out relative" style="width: ${Math.min(cat.porcentagem, 100)}%">
+                                  ${isReceita && cat.porcentagem >= 100 ? `
+                                    <div class="absolute inset-0 bg-gradient-to-r from-green-400 to-green-600 animate-pulse"></div>
+                                  ` : ''}
                             </div>
-                            <div class="flex justify-between items-center mt-2 text-xs text-gray-600 dark:text-gray-400">
-                              <span>R$ 0</span>
-                              <span>R$ ${cat.limite.toFixed(2)}</span>
                             </div>
+                              
+                              <!-- Indicador de 100% para receitas -->
+                              ${isReceita ? `
+                                <div class="absolute top-0 left-0 w-full h-3 pointer-events-none">
+                                  <div class="absolute top-0 right-0 w-0.5 h-3 bg-green-500 opacity-50"></div>
+                                </div>
+                              ` : ''}
+                            </div>
+                            
+                            <div class="flex justify-between items-center mt-2 text-xs">
+                              <div class="flex items-center gap-1">
+                                <span class="text-gray-600 dark:text-gray-400">${isReceita ? 'Recebido' : 'Gasto'}:</span>
+                                <span class="font-medium text-gray-700 dark:text-gray-300">R$ ${cat.totalGasto.toFixed(2)}</span>
+                              </div>
+                              <div class="flex items-center gap-1">
+                                <span class="text-gray-600 dark:text-gray-400">${isReceita ? 'Meta' : 'Limite'}:</span>
+                                <span class="font-medium text-gray-700 dark:text-gray-300">R$ ${cat.limite.toFixed(2)}</span>
+                              </div>
+                            </div>
+                            
+                            ${isReceita && cat.porcentagem >= 100 ? `
+                              <div class="mt-2 text-center">
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                  🎉 Meta superada em ${(cat.porcentagem - 100).toFixed(1)}%!
+                                </span>
+                              </div>
+                            ` : ''}
                           </div>
                           
                           <div class="space-y-2 mb-4">
                             ${cat.totalGasto > 0 ? `
-                              <div class="flex justify-between items-center">
-                                <span class="text-gray-600 dark:text-gray-400">${cat.tipo === 'receita' ? 'Receita' : 'Gasto'} do mês:</span>
-                                <span class="font-medium category-value ${cat.tipo === 'receita' ? 'text-green-600' : 'text-gray-900 dark:text-gray-100'}">R$ ${cat.totalGasto.toFixed(2)}</span>
+                              <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-600">
+                                <div class="flex justify-between items-center mb-2">
+                                  <span class="text-sm font-medium text-gray-700 dark:text-gray-300">${cat.tipo === 'receita' ? '💰 Receita do mês' : '💸 Gasto do mês'}:</span>
+                                  <span class="font-bold text-lg category-value ${cat.tipo === 'receita' ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-gray-100'}">R$ ${cat.totalGasto.toFixed(2)}</span>
                               </div>
-                              <div class="text-xs text-gray-500 dark:text-gray-400 pl-2">
+                                
+                                <div class="space-y-1">
                                 ${cat.totalGastoTransacoes > 0 && cat.totalGastoRecorrentes > 0 ? `
-                                  • ${cat.totalGastoTransacoes > 0 ? 'Transações' : '0 transações'}: R$ ${cat.totalGastoTransacoes.toFixed(2)}<br>
-                                  • ${cat.totalGastoRecorrentes > 0 ? 'Recorrentes' : '0 recorrentes'}: R$ ${cat.totalGastoRecorrentes.toFixed(2)}
+                                    <div class="flex justify-between text-xs">
+                                      <span class="text-gray-600 dark:text-gray-400">• Transações:</span>
+                                      <span class="font-medium text-gray-700 dark:text-gray-300">R$ ${cat.totalGastoTransacoes.toFixed(2)}</span>
+                                    </div>
+                                    <div class="flex justify-between text-xs">
+                                      <span class="text-gray-600 dark:text-gray-400">• Recorrentes:</span>
+                                      <span class="font-medium text-gray-700 dark:text-gray-300">R$ ${cat.totalGastoRecorrentes.toFixed(2)}</span>
+                                    </div>
                                 ` : cat.totalGastoTransacoes > 0 ? `
-                                  • Transações: R$ ${cat.totalGastoTransacoes.toFixed(2)}
-                                ` : `
-                                  • Recorrentes: R$ ${cat.totalGastoRecorrentes.toFixed(2)}
-                                `}
+                                    <div class="flex justify-between text-xs">
+                                      <span class="text-gray-600 dark:text-gray-400">• Transações:</span>
+                                      <span class="font-medium text-gray-700 dark:text-gray-300">R$ ${cat.totalGastoTransacoes.toFixed(2)}</span>
+                                    </div>
+                                  ` : `
+                                    <div class="flex justify-between text-xs">
+                                      <span class="text-gray-600 dark:text-gray-400">• Recorrentes:</span>
+                                      <span class="font-medium text-gray-700 dark:text-gray-300">R$ ${cat.totalGastoRecorrentes.toFixed(2)}</span>
+                                    </div>
+                                  `}
+                                  
+                                  ${isReceita && temLimite ? `
+                                    <div class="mt-2 pt-2 border-t border-gray-200 dark:border-gray-600">
+                                      <div class="flex justify-between text-xs">
+                                        <span class="text-gray-600 dark:text-gray-400">📈 Progresso da meta:</span>
+                                        <span class="font-medium ${cat.porcentagem >= 100 ? 'text-green-600 dark:text-green-400' : cat.porcentagem >= 80 ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400'}">
+                                          ${cat.porcentagem.toFixed(1)}%
+                                        </span>
+                                      </div>
+                                    </div>
+                                  ` : ''}
+                                </div>
                               </div>
                             ` : `
-                              <div class="text-center text-gray-500 dark:text-gray-400 py-2">
+                              <div class="text-center text-gray-500 dark:text-gray-400 py-4">
+                                <div class="text-2xl mb-2">${isReceita ? '💰' : '💸'}</div>
                                 <span class="text-sm">Nenhum ${cat.tipo === 'receita' ? 'receita' : 'gasto'} este mês</span>
+                                <div class="text-xs mt-1">Adicione transações para começar</div>
                               </div>
                             `}
                             
-                            ${temLimite && cat.saldo > 0 ? `
+                            ${temLimite ? `
+                              <div class="space-y-2">
+                                ${isReceita ? `
+                                  <!-- Informações específicas para RECEITA -->
+                                  <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 border border-green-200 dark:border-green-800">
+                                    <div class="flex justify-between items-center mb-2">
+                                      <span class="text-sm font-medium text-green-800 dark:text-green-200">Status da Meta</span>
+                                      <span class="text-sm font-bold ${cat.porcentagem >= 100 ? 'text-green-600 dark:text-green-400' : cat.porcentagem >= 80 ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400'}">
+                                        ${cat.porcentagem >= 100 ? '🎉 Meta Atingida!' : cat.porcentagem >= 80 ? '⚡ Quase lá!' : '📈 Em andamento'}
+                                      </span>
+                                    </div>
+                                    
+                                    ${cat.totalGasto >= cat.limite ? `
+                                      <div class="text-sm text-green-700 dark:text-green-300">
+                                        <div class="flex justify-between">
+                                          <span>✅ Meta superada:</span>
+                                          <span class="font-bold">+R$ ${Math.abs(cat.saldo).toFixed(2)}</span>
+                                        </div>
+                                        <div class="text-xs text-green-600 dark:text-green-400 mt-1">
+                                          🚀 Excelente! Você ultrapassou sua meta de receita
+                                        </div>
+                                      </div>
+                                    ` : `
+                                      <div class="text-sm text-gray-700 dark:text-gray-300">
+                                        <div class="flex justify-between">
+                                          <span>📊 Falta para meta:</span>
+                                          <span class="font-bold text-orange-600 dark:text-orange-400">R$ ${Math.abs(cat.saldo).toFixed(2)}</span>
+                                        </div>
+                                        <div class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                          ${cat.porcentagem >= 80 ? 'Quase lá! Faltam apenas alguns reais' : 
+                                            cat.porcentagem >= 50 ? 'Bom progresso! Continue assim' : 
+                                            'Ainda há tempo para atingir a meta'}
+                                        </div>
+                                      </div>
+                                    `}
+                                    
+                                    <div class="mt-2 pt-2 border-t border-green-200 dark:border-green-700">
+                                      <div class="flex justify-between text-xs">
+                                        <span class="text-green-600 dark:text-green-400">💡 Meta diária:</span>
+                                        <span class="font-medium text-green-700 dark:text-green-300">
+                                          R$ ${(cat.saldo / calcularDiasRestantesNoMes(anoAtual, mesAtual)).toFixed(2)}/dia
+                                        </span>
+                                      </div>
+                                      <div class="flex justify-between text-xs mt-1">
+                                        <span class="text-green-600 dark:text-green-400">📅 Dias restantes:</span>
+                                        <span class="font-medium text-green-700 dark:text-green-300">
+                                          ${calcularDiasRestantesNoMes(anoAtual, mesAtual)} dias
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ` : `
+                                  <!-- Informações para DESPESA -->
                               <div class="text-xs text-gray-500 dark:text-gray-400">
-                                ${excedeuLimite ? `🚨 Excedeu em R$ ${Math.abs(cat.saldo).toFixed(2)}` : `Saldo: R$ ${cat.saldo.toFixed(2)}`}
+                                    ${problematicoDespesa ? `🚨 Excedeu em R$ ${Math.abs(cat.saldo).toFixed(2)}` : `Restante: R$ ${cat.saldo.toFixed(2)}`}
                               </div>
                               <div class="text-xs text-blue-600 dark:text-blue-400 font-medium">
                                 💡 Meta diária: R$ ${(cat.saldo / calcularDiasRestantesNoMes(anoAtual, mesAtual)).toFixed(2)}/dia
+                                  </div>
+                                `}
                               </div>
                             ` : ''}
                           </div>
@@ -824,18 +958,18 @@ ${categorias.length === 0 ? `
                           </div>
                         `}
                         
-                        <div class="flex flex-wrap justify-end gap-1 sm:gap-2 mt-4">
-                          <button onclick="editCategory('${cat.id}')" class="btn btn-outline btn-sm">
-                            <span class="icon-standard">✏️</span>
-                            <span class="hidden sm:inline">Editar</span>
+                        <div class="flex items-center justify-end gap-2 mt-4">
+                          <button onclick="editCategory('${cat.id}')" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-200 dark:border-blue-800 transition-all duration-200" title="Editar categoria">
+                            <span>✏️</span>
+                            <span>Editar</span>
                           </button>
-                          <button onclick="window.deleteCategoryWithConfirmation('${cat.id}', '${cat.nome}')" class="btn btn-danger btn-sm">
-                            <span class="icon-standard">🗑️</span>
-                            <span class="hidden sm:inline">Excluir</span>
+                          <button onclick="showCategoryHistory('${cat.id}')" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/40 border border-purple-200 dark:border-purple-800 transition-all duration-200" title="Ver histórico">
+                            <span>📊</span>
+                            <span>Histórico</span>
                           </button>
-                          <button onclick="showCategoryHistory('${cat.id}')" class="btn btn-outline btn-sm">
-                            <span class="icon-standard">📊</span>
-                            <span class="hidden sm:inline">Histórico</span>
+                          <button onclick="window.deleteCategoryWithConfirmation('${cat.id}', '${cat.nome}')" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 border border-red-200 dark:border-red-800 transition-all duration-200" title="Excluir categoria">
+                            <span>🗑️</span>
+                            <span>Excluir</span>
                           </button>
                         </div>
                       </div>
@@ -897,7 +1031,7 @@ ${categorias.length === 0 ? `
           try {
             const content = document.getElementById('app-content');
             console.log('🔍 Conteúdo da página atual:', content ? content.innerHTML.substring(0, 200) + '...' : 'null');
-            
+
             // Verificação mais robusta - procurar por múltiplos indicadores da página de categorias
             const isCategoriesPage = content && (
               content.innerHTML.includes('📂 Categorias') ||
@@ -905,7 +1039,7 @@ ${categorias.length === 0 ? `
               content.innerHTML.includes('categories-page') ||
               content.querySelector('#cat-period-indicator') !== null
             );
-            
+
             if (isCategoriesPage) {
               console.log('✅ Página de categorias já carregada, ATUALIZANDO dados do período');
               console.log('🎯 Atualizando apenas os dados sem re-renderizar header');
@@ -935,29 +1069,29 @@ ${categorias.length === 0 ? `
       window.deleteCategoryWithConfirmation = async function(categoryId, categoryName = 'categoria') {
         try {
           const name = categoryName || 'categoria';
-          
+
           // Tentar usar o modal moderno de confirmação
           let proceed = false;
           if (typeof window.confirmDelete === 'function') {
             proceed = await window.confirmDelete(name, 'categoria');
           } else if (typeof window.showConfirmationModal === 'function') {
             proceed = await new Promise(resolve => {
-              window.showConfirmationModal({ 
-                title: 'Excluir Categoria', 
-                message: `Tem certeza que deseja excluir "${name}"? Esta ação não pode ser desfeita.`, 
-                confirmText: 'Sim, excluir', 
-                confirmColor: 'bg-red-500 hover:bg-red-600', 
-                onConfirm: () => resolve(true), 
-                onCancel: () => resolve(false) 
+              window.showConfirmationModal({
+                title: 'Excluir Categoria',
+                message: `Tem certeza que deseja excluir "${name}"? Esta ação não pode ser desfeita.`,
+                confirmText: 'Sim, excluir',
+                confirmColor: 'bg-red-500 hover:bg-red-600',
+                onConfirm: () => resolve(true),
+                onCancel: () => resolve(false)
               });
             });
           } else {
             // Fallback para confirm nativo
             proceed = confirm(`Excluir "${name}"? Esta ação não pode ser desfeita.`);
           }
-          
+
           if (!proceed) return;
-          
+
           const svc = await import('./service.js');
           await svc.deleteCategory(categoryId);
           try { window.Snackbar?.show?.('Categoria excluída', 'success'); } catch {}
@@ -976,7 +1110,7 @@ ${categorias.length === 0 ? `
           const cat = window.appState?.categories?.find(c => c.id === categoryId);
           console.log('🔧 Categoria encontrada:', cat);
           console.log('🔧 window.showAddCategoryModal disponível:', typeof window.showAddCategoryModal);
-          
+
           if (cat) {
             if (window.showAddCategoryModal) {
               console.log('✅ Chamando showAddCategoryModal');
@@ -1003,8 +1137,8 @@ ${categorias.length === 0 ? `
               window.Snackbar.show('Categoria não encontrada', 'error');
             }
           }
-        } catch (e) { 
-          console.warn('editCategory (fallback) falhou:', e); 
+        } catch (e) {
+          console.warn('editCategory (fallback) falhou:', e);
           if (window.Snackbar) {
             window.Snackbar.show('Erro ao editar categoria', 'error');
           }
@@ -1265,7 +1399,7 @@ export function renderAllCategories() {
 
       // Total geral (transações diretas + transações de recorrentes)
       const totalGasto = totalGastoTransacoes + totalGastoRecorrentes;
-      
+
       // Calcular limite (se existir)
       const limite = cat.limite ? parseFloat(cat.limite) : 0;
 
@@ -1382,23 +1516,23 @@ export function renderAllCategories() {
           `
 }
       
-      <div class="flex flex-wrap justify-end gap-1 sm:gap-2 mt-4">
-        <button onclick="editCategory('${cat.id}')" class="btn btn-outline btn-sm">
-          <span class="icon-standard">✏️</span>
-          <span class="hidden sm:inline">Editar</span>
+      <div class="flex items-center justify-end gap-2 mt-4">
+        <button onclick="editCategory('${cat.id}')" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-200 dark:border-blue-800 transition-all duration-200" title="Editar categoria">
+          <span>✏️</span>
+          <span>Editar</span>
         </button>
-  <button onclick="window.deleteCategoryWithConfirmation('${cat.id}', '${cat.nome}')" class="btn btn-danger btn-sm">
-          <span class="icon-standard">🗑️</span>
-          <span class="hidden sm:inline">Excluir</span>
+        <button onclick="showCategoryHistory('${cat.id}')" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/40 border border-purple-200 dark:border-purple-800 transition-all duration-200" title="Ver histórico">
+          <span>📊</span>
+          <span>Histórico</span>
         </button>
-  <button onclick="showCategoryHistory('${cat.id}')" class="btn btn-outline btn-sm">
-          <span class="icon-standard">📊</span>
-          <span class="hidden sm:inline">Histórico</span>
+        <button onclick="window.deleteCategoryWithConfirmation('${cat.id}', '${cat.nome}')" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 border border-red-200 dark:border-red-800 transition-all duration-200" title="Excluir categoria">
+          <span>🗑️</span>
+          <span>Excluir</span>
         </button>
       </div>
     </div>
   `).join('');
-  
+
   // Re-montar indicador de período após renderização
   try {
     console.log('🔧 Re-montando indicador após renderCategories');
@@ -1436,23 +1570,23 @@ export function renderFilteredCategories(filteredCategories) {
       <p class="list-item-subtitle">Tipo: ${cat.tipo}</p>
       ${cat.limite ? `<p class="text-xs text-gray-500 dark:text-gray-400">Limite: R$ ${cat.limite.toFixed(2)}</p>` : '<p class="text-xs text-gray-500 dark:text-gray-400">Sem limite definido</p>'}
       
-      <div class="flex flex-wrap justify-end gap-1 sm:gap-2 mt-4">
-        <button onclick="editCategory('${cat.id}')" class="btn btn-outline btn-sm">
-          <span class="icon-standard">✏️</span>
-          <span class="hidden sm:inline">Editar</span>
+      <div class="flex items-center justify-end gap-2 mt-4">
+        <button onclick="editCategory('${cat.id}')" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-200 dark:border-blue-800 transition-all duration-200" title="Editar categoria">
+          <span>✏️</span>
+          <span>Editar</span>
         </button>
-  <button onclick="window.deleteCategoryWithConfirmation('${cat.id}', '${cat.nome}')" class="btn btn-danger btn-sm">
-          <span class="icon-standard">🗑️</span>
-          <span class="hidden sm:inline">Excluir</span>
+        <button onclick="showCategoryHistory('${cat.id}')" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/40 border border-purple-200 dark:border-purple-800 transition-all duration-200" title="Ver histórico">
+          <span>📊</span>
+          <span>Histórico</span>
         </button>
-  <button onclick="showCategoryHistory('${cat.id}')" class="btn btn-outline btn-sm">
-          <span class="icon-standard">📊</span>
-          <span class="hidden sm:inline">Histórico</span>
+        <button onclick="window.deleteCategoryWithConfirmation('${cat.id}', '${cat.nome}')" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 border border-red-200 dark:border-red-800 transition-all duration-200" title="Excluir categoria">
+          <span>🗑️</span>
+          <span>Excluir</span>
         </button>
       </div>
     </div>
   `).join('');
-  
+
   // Re-montar indicador de período após renderização
   try {
     console.log('🔧 Re-montando indicador após renderCategories');

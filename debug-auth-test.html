@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Debug Auth Test</title>
+</head>
+<body>
+    <h1>Teste de Autenticação Firebase</h1>
+    <div id="status">Carregando...</div>
+    <button id="test-auth">Testar Auth Google</button>
+    <div id="logs" style="margin-top: 20px; padding: 10px; background: #f0f0f0; font-family: monospace; white-space: pre-wrap;"></div>
+
+    <script type="module">
+        const logs = document.getElementById('logs');
+        const status = document.getElementById('status');
+        
+        function log(message) {
+            console.log(message);
+            logs.textContent += new Date().toLocaleTimeString() + ': ' + message + '\n';
+        }
+
+        // Configuração Firebase - mesma do projeto
+        const firebaseConfig = {
+            apiKey: 'AIzaSyCbBmmxn4Qj4CU6ymfG4MY5VGqCPSo13HY',
+            authDomain: 'controle-financeiro-b98ec.firebaseapp.com',
+            projectId: 'controle-financeiro-b98ec',
+            storageBucket: 'controle-financeiro-b98ec.firebasestorage.app',
+            messagingSenderId: '418109336597',
+            appId: '1:418109336597:web:871b262a76e57455ebb21c',
+            measurementId: 'G-7RW2F269V6'
+        };
+
+        try {
+            // Importar Firebase
+            const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js');
+            const { getAuth, signInWithPopup, GoogleAuthProvider } = await import('https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js');
+            
+            log('Firebase modules carregados');
+            
+            // Inicializar Firebase
+            const app = initializeApp(firebaseConfig);
+            const auth = getAuth(app);
+            
+            log('Firebase inicializado');
+            log('Auth domain: ' + firebaseConfig.authDomain);
+            log('Project ID: ' + firebaseConfig.projectId);
+            
+            status.textContent = 'Firebase Auth carregado - clique no botão para testar';
+            
+            // Configurar botão de teste
+            document.getElementById('test-auth').addEventListener('click', async () => {
+                try {
+                    log('Iniciando teste de login...');
+                    
+                    const provider = new GoogleAuthProvider();
+                    provider.addScope('profile');
+                    provider.addScope('email');
+                    
+                    log('Provider Google configurado');
+                    
+                    const result = await signInWithPopup(auth, provider);
+                    
+                    log('Login bem-sucedido!');
+                    log('UID: ' + result.user.uid);
+                    log('Email: ' + result.user.email);
+                    log('Nome: ' + result.user.displayName);
+                    
+                    status.textContent = 'Login realizado com sucesso!';
+                    
+                } catch (error) {
+                    log('ERRO no login: ' + error.code);
+                    log('Mensagem: ' + error.message);
+                    log('Stack: ' + error.stack);
+                    
+                    status.textContent = 'Erro no login: ' + error.message;
+                }
+            });
+            
+        } catch (error) {
+            log('ERRO ao carregar Firebase: ' + error.message);
+            status.textContent = 'Erro ao carregar Firebase';
+        }
+    </script>
+</body>
+</html>

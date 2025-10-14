@@ -1,0 +1,310 @@
+/* ========================================
+   MELHORIAS ESPECÍFICAS DO DASHBOARD - MODO ESCURO
+   ======================================== */
+
+/* === CORES DE SALDO E VALORES MONETÁRIOS === */
+.dark .text-green-600,
+.dark .dark\:text-green-400 {
+  color: #68d391 !important;               /* Verde mais claro e visível */
+}
+
+.dark .text-red-600,
+.dark .dark\:text-red-400 {
+  color: #fc8181 !important;               /* Vermelho mais claro e visível */
+}
+
+.dark .text-blue-600,
+.dark .dark\:text-blue-400 {
+  color: #63b3ed !important;               /* Azul mais claro e visível */
+}
+
+.dark .text-yellow-600,
+.dark .dark\:text-yellow-400 {
+  color: #f6e05e !important;               /* Amarelo mais claro e visível */
+}
+
+.dark .text-orange-600,
+.dark .dark\:text-orange-400 {
+  color: #fbd38d !important;               /* Laranja mais claro e visível */
+}
+
+/* === CARDS DE MÉTRICAS === */
+.dark .dashboard-metric,
+.dark .metric-card {
+  background-color: #2d3748 !important;
+  border: 1px solid #4a5568 !important;
+  color: #ffffff !important;
+}
+
+.dark .dashboard-metric:hover,
+.dark .metric-card:hover {
+  background-color: #4a5568 !important;
+  border-color: #718096 !important;
+}
+
+/* === CARDS DE RESUMO === */
+.dark .card-resumo {
+  background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%) !important;
+  border: 1px solid #4a5568 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* === BARRAS DE PROGRESSO === */
+.dark .progress-bar {
+  background-color: #4a5568 !important;
+  border: 1px solid #718096 !important;
+}
+
+.dark .progress-fill {
+  background: linear-gradient(90deg, #3182ce 0%, #63b3ed 100%) !important;
+}
+
+.dark .progress-fill.green {
+  background: linear-gradient(90deg, #38a169 0%, #68d391 100%) !important;
+}
+
+.dark .progress-fill.red {
+  background: linear-gradient(90deg, #e53e3e 0%, #fc8181 100%) !important;
+}
+
+.dark .progress-fill.yellow {
+  background: linear-gradient(90deg, #d69e2e 0%, #f6e05e 100%) !important;
+}
+
+/* === ALERTAS E NOTIFICAÇÕES === */
+.dark .alert-card {
+  background: linear-gradient(135deg, #742a2a 0%, #9c2626 100%) !important;
+  border: 1px solid #e53e3e !important;
+  color: #ffffff !important;
+}
+
+.dark .alert-badge {
+  background-color: #e53e3e !important;
+  color: #ffffff !important;
+}
+
+/* === CATEGORIAS INTELIGENTES === */
+.dark .category-card {
+  background-color: #2d3748 !important;
+  border: 1px solid #4a5568 !important;
+  color: #ffffff !important;
+}
+
+.dark .category-card:hover {
+  background-color: #4a5568 !important;
+  border-color: #718096 !important;
+}
+
+/* === TOP RECORRENTES === */
+.dark .recurring-card {
+  background-color: #2d3748 !important;
+  border: 1px solid #4a5568 !important;
+  color: #ffffff !important;
+}
+
+.dark .recurring-item {
+  background-color: transparent !important;
+  border-bottom: 1px solid #4a5568 !important;
+  color: #ffffff !important;
+}
+
+.dark .recurring-item:hover {
+  background-color: #4a5568 !important;
+}
+
+/* === GRÁFICOS E CHARTJS === */
+.dark .chart-container {
+  background-color: #2d3748 !important;
+  border: 1px solid #4a5568 !important;
+}
+
+/* === SELEÇÃO DE PERÍODO === */
+.dark .period-selector {
+  background-color: #2d3748 !important;
+  border: 1px solid #4a5568 !important;
+  color: #ffffff !important;
+}
+
+.dark .period-selector select {
+  background-color: #4a5568 !important;
+  border: 1px solid #718096 !important;
+  color: #ffffff !important;
+}
+
+/* === HEADERS E TÍTULOS === */
+.dark .dashboard-header {
+  background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%) !important;
+  border-bottom: 1px solid #4a5568 !important;
+  color: #ffffff !important;
+}
+
+.dark .section-title {
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* === BOTÕES DE AÇÃO === */
+.dark .action-button {
+  background: linear-gradient(135deg, #3182ce 0%, #4299e1 100%) !important;
+  border: 1px solid #3182ce !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 4px rgba(49, 130, 206, 0.3) !important;
+}
+
+.dark .action-button:hover {
+  background: linear-gradient(135deg, #2c5aa0 0%, #3182ce 100%) !important;
+  border-color: #2c5aa0 !important;
+  box-shadow: 0 4px 8px rgba(49, 130, 206, 0.4) !important;
+}
+
+/* === ESTADOS VAZIOS === */
+.dark .empty-dashboard {
+  background-color: #2d3748 !important;
+  border: 1px solid #4a5568 !important;
+  color: #ffffff !important;
+}
+
+.dark .empty-dashboard .empty-icon {
+  color: #718096 !important;
+}
+
+.dark .empty-dashboard .empty-text {
+  color: #e2e8f0 !important;
+}
+
+.dark .empty-dashboard .empty-description {
+  color: #cbd5e1 !important;
+}
+
+/* === BADGES E TAGS === */
+.dark .status-badge {
+  background-color: #4a5568 !important;
+  color: #ffffff !important;
+  border: 1px solid #718096 !important;
+}
+
+.dark .status-badge.active {
+  background-color: #38a169 !important;
+  border-color: #68d391 !important;
+}
+
+.dark .status-badge.inactive {
+  background-color: #e53e3e !important;
+  border-color: #fc8181 !important;
+}
+
+.dark .status-badge.pending {
+  background-color: #d69e2e !important;
+  border-color: #f6e05e !important;
+}
+
+/* === TOOLTIPS === */
+.dark .tooltip {
+  background-color: #1a202c !important;
+  border: 1px solid #4a5568 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* === LOADING STATES === */
+.dark .loading-skeleton {
+  background: linear-gradient(90deg, #2d3748 25%, #4a5568 50%, #2d3748 75%) !important;
+  background-size: 200% 100% !important;
+  animation: loading 1.5s infinite !important;
+}
+
+@keyframes loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* === MELHORIAS PARA ELEMENTOS ESPECÍFICOS DO DASHBOARD === */
+.dark .dashboard-grid {
+  background-color: transparent !important;
+}
+
+.dark .dashboard-widget {
+  background-color: #2d3748 !important;
+  border: 1px solid #4a5568 !important;
+  color: #ffffff !important;
+}
+
+.dark .dashboard-widget:hover {
+  background-color: #4a5568 !important;
+  border-color: #718096 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* === CORREÇÃO PARA GRADIENTES ESPECÍFICOS === */
+.dark .bg-gradient-to-r.from-blue-50.to-indigo-50 {
+  background: linear-gradient(to right, #2b6cb0, #3182ce) !important;
+}
+
+.dark .bg-gradient-to-r.from-green-50.to-emerald-50 {
+  background: linear-gradient(to right, #22543d, #38a169) !important;
+}
+
+.dark .bg-gradient-to-r.from-red-50.to-orange-50 {
+  background: linear-gradient(to right, #742a2a, #e53e3e) !important;
+}
+
+.dark .bg-gradient-to-r.from-yellow-50.to-orange-50 {
+  background: linear-gradient(to right, #744210, #d69e2e) !important;
+}
+
+/* === MELHORIAS PARA TEXTOS SOBRE GRADIENTES === */
+.dark .text-blue-800,
+.dark .dark\:text-blue-300 {
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.dark .text-green-800,
+.dark .dark\:text-green-300 {
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.dark .text-red-700,
+.dark .dark\:text-red-300 {
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.dark .text-yellow-800,
+.dark .dark\:text-yellow-300 {
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* === SCROLLBARS ESPECÍFICOS === */
+.dark .dashboard-content::-webkit-scrollbar {
+  width: 6px;
+  background-color: #2d3748;
+}
+
+.dark .dashboard-content::-webkit-scrollbar-thumb {
+  background-color: #4a5568;
+  border-radius: 3px;
+}
+
+.dark .dashboard-content::-webkit-scrollbar-thumb:hover {
+  background-color: #718096;
+}
+
+/* === ANIMAÇÕES SUAVES === */
+.dark .dashboard-widget,
+.dark .metric-card,
+.dark .category-card,
+.dark .recurring-card {
+  transition: all 0.3s ease !important;
+}
+
+.dark .dashboard-widget:hover,
+.dark .metric-card:hover,
+.dark .category-card:hover,
+.dark .recurring-card:hover {
+  transition: all 0.3s ease !important;
+}

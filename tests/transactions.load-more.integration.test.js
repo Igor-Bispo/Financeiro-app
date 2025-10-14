@@ -35,7 +35,7 @@ describe('TransactionsPage: loadMoreDayGroups integration (no IO)', () => {
   });
 
   it('insere primeiro chunk e avança nextIndex; segundo chunk idem; oculta sentinel no fim', () => {
-  const cache = seedState();
+    const cache = seedState();
 
     // Simula ambiente de tela pequena/memória baixa para chunk=10
     Object.defineProperty(window, 'innerHeight', { value: 650, configurable: true });
@@ -55,11 +55,11 @@ describe('TransactionsPage: loadMoreDayGroups integration (no IO)', () => {
     mod.loadMoreDayGroups(ym);
     expect(cache[ym].nextIndex).toBe(25);
 
-  // Sentinel some ao terminar
-  const sen = document.getElementById(`scroll-sentinel-${ym}`);
-  expect(sen.style.display).toBe('none');
+    // Sentinel some ao terminar
+    const sen = document.getElementById(`scroll-sentinel-${ym}`);
+    expect(sen.style.display).toBe('none');
 
-  // cleanup propriedades mockadas
-  delete global.navigator;
+    // cleanup propriedades mockadas
+    delete global.navigator;
   });
 });

@@ -414,14 +414,14 @@ export class AnalyticsPage {
       `;
       const sectionsRoot = container.querySelector('#analytics-sections') || container;
       sectionsRoot.appendChild(resumoSection);
-      
+
       // Adicionar botão de análises avançadas após o resumo
       const toggleBtn = document.createElement('button');
       toggleBtn.id = 'analytics-advanced-toggle';
       toggleBtn.className = 'btn btn-outline btn-sm w-full mt-4';
       toggleBtn.textContent = 'Mostrar análises avançadas';
       sectionsRoot.appendChild(toggleBtn);
-      
+
       // Criar container para análises avançadas (gráficos, previsões, detalhado)
       const advancedRoot = document.createElement('div');
       advancedRoot.id = 'analytics-advanced';
@@ -514,9 +514,9 @@ export class AnalyticsPage {
         console.warn('MTD progress render skipped:', mtdErr?.message || mtdErr);
       }
 
-  // ========== SEÇÃO 2: GRÁFICOS E ANÁLISES ==========
-  const chartsSection = document.createElement('div');
-  chartsSection.className = 'mb-8';
+      // ========== SEÇÃO 2: GRÁFICOS E ANÁLISES ==========
+      const chartsSection = document.createElement('div');
+      chartsSection.className = 'mb-8';
       chartsSection.innerHTML = `
         <div class="flex items-center gap-2 mb-4">
           <div class="w-1 h-6 bg-gradient-to-b from-green-500 to-teal-500 rounded-full"></div>
@@ -549,12 +549,12 @@ export class AnalyticsPage {
           </div>
         </div>
       `;
-  // Mover para bloco avançado
-  advancedRoot.appendChild(chartsSection);
+      // Mover para bloco avançado
+      advancedRoot.appendChild(chartsSection);
 
-  // ========== SEÇÃO 3: PREVISÕES E TENDÊNCIAS ==========
-  const previsaoSection = document.createElement('div');
-  previsaoSection.className = 'mb-8';
+      // ========== SEÇÃO 3: PREVISÕES E TENDÊNCIAS ==========
+      const previsaoSection = document.createElement('div');
+      previsaoSection.className = 'mb-8';
       previsaoSection.innerHTML = `
         <div class="flex items-center gap-2 mb-4">
           <div class="w-1 h-6 bg-gradient-to-b from-purple-500 to-pink-500 rounded-full"></div>
@@ -601,12 +601,12 @@ export class AnalyticsPage {
           </div>
         </div>
       `;
-  // Inserir dentro do bloco avançado
-  advancedRoot.appendChild(previsaoSection);
+      // Inserir dentro do bloco avançado
+      advancedRoot.appendChild(previsaoSection);
 
-  // ========== SEÇÃO 3.5: TELEMETRIA LOCAL (se habilitada) ==========
-  // Telemetria deve respeitar o mesmo wrapper de conteúdo
-  renderTelemetrySection(advancedRoot, { year: selYear, month: selMonth });
+      // ========== SEÇÃO 3.5: TELEMETRIA LOCAL (se habilitada) ==========
+      // Telemetria deve respeitar o mesmo wrapper de conteúdo
+      renderTelemetrySection(advancedRoot, { year: selYear, month: selMonth });
 
       // ========== SEÇÃO 3.7: MAIORES TRANSAÇÕES DO MÊS ==========
       try {
@@ -708,9 +708,9 @@ export class AnalyticsPage {
         }
       } catch {}
 
-  // ========== SEÇÃO 4: ANÁLISE DETALHADA ==========
-  const gastosSection = document.createElement('div');
-  gastosSection.className = 'mb-8';
+      // ========== SEÇÃO 4: ANÁLISE DETALHADA ==========
+      const gastosSection = document.createElement('div');
+      gastosSection.className = 'mb-8';
       gastosSection.innerHTML = `
         <div class="flex items-center gap-2 mb-4">
           <div class="w-1 h-6 bg-gradient-to-b from-orange-500 to-red-500 rounded-full"></div>
@@ -771,8 +771,8 @@ export class AnalyticsPage {
           </div>
         </div>
       `;
-  // Inserir dentro do bloco avançado
-  advancedRoot.appendChild(gastosSection);
+      // Inserir dentro do bloco avançado
+      advancedRoot.appendChild(gastosSection);
 
       // Renderizar gráficos usando as funções da classe Analytics
       // Função para verificar e renderizar gráficos com retry

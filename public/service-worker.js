@@ -1,14 +1,15 @@
 // Service Worker avançado para PWA (produção)
 // Versão do Service Worker - atualize sempre que modificar este arquivo
-// 4.50.0: melhorias de segurança e performance
-const VERSION = 'v4.50.0';
+// 4.82.0: FAB ULTRA SIMPLES - botão FIXO impossível de se mover
+const VERSION = 'v4.82.0';
 const STATIC_CACHE = `financeiro-static-${VERSION}`;
 const DYNAMIC_CACHE = `financeiro-dynamic-${VERSION}`;
 const FALLBACK_CACHE = `financeiro-fallback-${VERSION}`;
 const MAX_CACHE_ITEMS = 100;
 
-// Ativar modo debug durante desenvolvimento
-const DEBUG = false; // Desabilitado para produção
+// Verificar se estamos em desenvolvimento
+const IS_DEVELOPMENT = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+const DEBUG = IS_DEVELOPMENT; // Ativar debug em desenvolvimento
 function log(...args) {
   if (DEBUG) {console.log('[SW]', ...args);}
 }
@@ -27,20 +28,15 @@ const ASSETS = [
 // Função para limpar caches antigos e evitar loops
 async function clearOldCaches() {
   try {
+    // Limpar caches corrompidos que podem causar problemas de MIME type
     const cacheNames = await caches.keys();
-    const oldCaches = cacheNames.filter(name => 
-      name.startsWith('financeiro-') && !name.includes(VERSION)
-    );
-    
-    console.log(`[SW ${VERSION}] Limpando ${oldCaches.length} caches antigos:`, oldCaches);
-    
-    await Promise.all(
-      oldCaches.map(cacheName => {
-        console.log(`[SW ${VERSION}] Removendo cache antigo: ${cacheName}`);
-        return caches.delete(cacheName);
-      })
-    );
-    
+    for (const cacheName of cacheNames) {
+      if (cacheName.includes('financeiro-') && !cacheName.includes(VERSION)) {
+        log('🗑️ Removendo cache antigo:', cacheName);
+        await caches.delete(cacheName);
+      }
+    }
+
     console.log(`[SW ${VERSION}] Limpeza de cache concluída`);
   } catch (error) {
     console.error(`[SW ${VERSION}] Erro ao limpar caches antigos:`, error);
@@ -88,7 +84,10 @@ const NETWORK_ONLY_ROUTES = [
   '/api/',
   '/auth/',
   'https://www.googleapis.com/',
-  'https://identitytoolkit.googleapis.com/'
+  'https://identitytoolkit.googleapis.com/',
+  'https://securetoken.googleapis.com/',
+  'https://accounts.google.com/',
+  '__/auth/'
 ];
 
 // Instalação - Pré-cache de assets críticos
@@ -165,6 +164,30 @@ self.addEventListener('fetch', (e) => {
   const { request } = e;
   const url = new URL(request.url);
 
+  // Em desenvolvimento, só interceptar recursos específicos
+  if (IS_DEVELOPMENT) {
+    // Não interceptar Firebase Auth
+    if (url.href.includes('identitytoolkit.googleapis.com') ||
+        url.href.includes('securetoken.googleapis.com') ||
+        url.href.includes('accounts.google.com') ||
+        url.href.includes('www.googleapis.com')) {
+      return;
+    }
+    
+    // Não interceptar recursos do Vite
+    if (url.pathname.includes('/@vite/') ||
+        url.pathname.includes('/@fs/') ||
+        url.pathname.includes('/node_modules/') ||
+        url.pathname.includes('.ts') ||
+        url.pathname.includes('.js') ||
+        url.pathname.includes('.css') ||
+        url.pathname.includes('.vue') ||
+        url.pathname.includes('.jsx') ||
+        url.pathname.includes('.tsx')) {
+      return;
+    }
+  }
+
   // Ignorar requisições não-GET
   if (request.method !== 'GET') {
     return;
@@ -194,11 +217,25 @@ function isStaleWhileRevalidate(pathname) {
 
 // Verificar se é uma rota que deve ignorar o cache
 function isNetworkOnly(url) {
+  // Firebase Auth e Google APIs nunca devem ser interceptados
+  const firebaseAuthDomains = [
+    'identitytoolkit.googleapis.com',
+    'securetoken.googleapis.com',
+    'accounts.google.com',
+    'www.googleapis.com'
+  ];
+  
+  // Verificar se é domínio do Firebase Auth
+  if (firebaseAuthDomains.some(domain => url.href.includes(domain))) {
+    return true;
+  }
+  
   // Considera tanto pathname quanto href para cobrir absolutos
   return (
     NETWORK_ONLY_ROUTES.some(route => url.pathname.includes(route) || url.href.includes(route)) ||
     url.pathname.includes('/@vite/') ||
-    url.pathname.includes('/@fs/')
+    url.pathname.includes('/@fs/') ||
+    url.pathname.includes('__/auth/')
   );
 }
 
@@ -216,11 +253,11 @@ async function networkFirstWithFallback(request) {
         log('Erro ao adicionar ao cache:', cacheError);
       }
     }
-    
+
     return networkResponse;
   } catch (error) {
     log('Network falhou, tentando cache:', error);
-    
+
     // Fallback para caches ATUAIS (static/dynamic) apenas
     try {
       const staticCache = await caches.open(STATIC_CACHE);
@@ -228,12 +265,12 @@ async function networkFirstWithFallback(request) {
       const cachedResponse = (await staticCache.match(request)) || (await dynCache.match(request));
       if (cachedResponse) return cachedResponse;
     } catch {}
-    
+
     // Fallback para página offline
     if (request.destination === 'document') {
       return caches.match('/offline.html');
     }
-    
+
     throw error;
   }
 }
@@ -243,7 +280,7 @@ async function cacheFirst(request) {
   try {
     const cache = await caches.open(STATIC_CACHE);
     const cachedResponse = await cache.match(request);
-    
+
     if (cachedResponse) {
       return cachedResponse;
     }
@@ -279,7 +316,7 @@ async function staleWhileRevalidate(request) {
     // Tentar cache primeiro
     const cache = await caches.open(DYNAMIC_CACHE);
     const cachedResponse = await cache.match(request);
-    
+
     // Iniciar atualização em background
     const updatePromise = fetch(request, { cache: 'no-cache' })
       .then(networkResponse => {
@@ -296,7 +333,7 @@ async function staleWhileRevalidate(request) {
         log('Falha na atualização:', request.url, error);
         throw error;
       });
-    
+
     // Retornar resposta do cache se disponível
     return cachedResponse || updatePromise;
   } catch (error) {
@@ -310,7 +347,7 @@ async function addToCache(cacheName, request, response) {
   try {
     const cache = await caches.open(cacheName);
     await cache.put(request, response);
-    
+
     // Limpar cache se necessário
     if (cacheName === DYNAMIC_CACHE) {
       trimCache(cacheName);
@@ -362,7 +399,7 @@ async function syncData() {
 self.addEventListener('message', (e) => {
   // Verificar se há port para resposta
   const hasPort = e.ports && e.ports.length > 0;
-  
+
   // Mensagens de tipo (legacy)
   if (e.data && e.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
@@ -371,7 +408,7 @@ self.addEventListener('message', (e) => {
     }
     return;
   }
-  
+
   if (e.data && e.data.type === 'UPDATE_CONTENT') {
     updateContent();
     if (hasPort) {
@@ -379,7 +416,7 @@ self.addEventListener('message', (e) => {
     }
     return;
   }
-  
+
   // Mensagens de ação (novo formato)
   if (e.data && e.data.action) {
     switch (e.data.action) {
@@ -419,7 +456,7 @@ self.addEventListener('message', (e) => {
         });
       }
       break;
-      
+
     default:
       if (hasPort) {
         e.ports[0].postMessage({ success: false, error: 'Unknown action', action: e.data.action });

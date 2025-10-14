@@ -347,11 +347,11 @@ export const globalFunctions = {
       // Usar o shim para carregar o modal
       const { showTransactionModal } = await import('@js/TransactionModalShim.js');
       const success = await showTransactionModal(data || {});
-      
+
       if (success) {
         return;
       }
-      
+
       // Fallback: emitir evento de modal com tipo
       eventBus.emit('modal:show', { type: 'transaction', data, title: 'Nova Transação' });
     } catch (e) {
@@ -392,18 +392,18 @@ if (typeof window !== 'undefined') {
   // Substituir funções do window por versões modernas
   window.getSelectedPeriod = getSelectedPeriod;
   window.setSelectedPeriod = setSelectedPeriod;
-  
+
   // Definir showAddTransactionModal globalmente usando o shim
   window.showAddTransactionModal = async (data) => {
     try {
       // Usar o shim para carregar o modal
       const { showTransactionModal } = await import('@js/TransactionModalShim.js');
       const success = await showTransactionModal(data || {});
-      
+
       if (success) {
         return;
       }
-      
+
       // Fallback: emitir evento de modal com tipo
       eventBus.emit('modal:show', { type: 'transaction', data, title: 'Nova Transação' });
     } catch (e) {
@@ -411,7 +411,7 @@ if (typeof window !== 'undefined') {
       eventBus.emit('modal:show', { type: 'transaction', data, title: 'Nova Transação' });
     }
   };
-  
+
   // window.showAddCategoryModal será definido dinamicamente quando necessário
   window.showAddRecorrenteModal = globalFunctions.showAddRecorrenteModal;
   window.closeModal = globalFunctions.closeModal;

@@ -1,7 +1,7 @@
 // src/js/config/settings.ui.js
 
 function renderEmptyState(icon, title, description) {
-    return `
+  return `
         <div class="empty-state">
             <div class="empty-icon">${icon}</div>
             <div class="empty-text">${title}</div>
@@ -11,14 +11,14 @@ function renderEmptyState(icon, title, description) {
 }
 
 function renderSharedWithMe(budgets, currentUser, currentBudget) {
-    const me = currentUser?.uid;
-    const shared = (budgets || []).filter(b => b && (b.isOwner === false || (me && b.userId && b.userId !== me)));
-    
-    if (!shared.length) {
-        return renderEmptyState('🤝', 'Nenhum orçamento compartilhado', 'Convites que você aceitar aparecerão aqui.');
-    }
+  const me = currentUser?.uid;
+  const shared = (budgets || []).filter(b => b && (b.isOwner === false || (me && b.userId && b.userId !== me)));
 
-    return `
+  if (!shared.length) {
+    return renderEmptyState('🤝', 'Nenhum orçamento compartilhado', 'Convites que você aceitar aparecerão aqui.');
+  }
+
+  return `
         <div class="space-y-4">
             ${shared.map(budget => `
                 <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -49,14 +49,14 @@ function renderSharedWithMe(budgets, currentUser, currentBudget) {
 }
 
 function renderMyBudgets(budgets, currentUser, currentBudget) {
-    const me = currentUser?.uid;
-    const owned = (budgets || []).filter(b => b && (b.isOwner !== false) && (!me || b.userId === me));
+  const me = currentUser?.uid;
+  const owned = (budgets || []).filter(b => b && (b.isOwner !== false) && (!me || b.userId === me));
 
-    if (!owned.length) {
-        return renderEmptyState('🗂️', 'Nenhum orçamento próprio', 'Crie um novo orçamento para começar.');
-    }
+  if (!owned.length) {
+    return renderEmptyState('🗂️', 'Nenhum orçamento próprio', 'Crie um novo orçamento para começar.');
+  }
 
-    return `
+  return `
         <div class="space-y-4">
             ${owned.map(budget => `
                 <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border ${budget.id === currentBudget?.id ? 'border-blue-500' : 'border-gray-200 dark:border-gray-700'} overflow-hidden">
@@ -86,22 +86,22 @@ function renderMyBudgets(budgets, currentUser, currentBudget) {
 }
 
 export function generateSettingsHTML(state) {
-    const {
-        currentUser,
-        currentBudget,
-        budgets,
-        usersWithAccess,
-        ownerDisplay,
-        pendingInvitations,
-        sentInvitations,
-        appVersion,
-        hasNewChangelog,
-        lastUpdateLabel,
-        txChunkOverride,
-        perfEnabled
-    } = state;
+  const {
+    currentUser,
+    currentBudget,
+    budgets,
+    usersWithAccess,
+    ownerDisplay,
+    pendingInvitations,
+    sentInvitations,
+    appVersion,
+    hasNewChangelog: _hasNewChangelog,
+    lastUpdateLabel,
+    txChunkOverride: _txChunkOverride,
+    perfEnabled: _perfEnabled
+  } = state;
 
-    return `
+  return `
     <div class="tab-container">
         <div class="tab-header">
             <h2 class="tab-title-highlight">⚙️ Configurações</h2>
@@ -120,7 +120,7 @@ export function generateSettingsHTML(state) {
                                 <div class="text-sm text-gray-600 dark:text-gray-400">Conectado como</div>
                                 <div class="font-medium text-gray-900 dark:text-gray-100 truncate" title="${currentUser.email || ''}">${currentUser.email || 'Usuário'}</div>
                             </div>
-                            <button id="btn-logout" class="btn btn-danger btn-sm">Sair</button>
+                            <button id="btn-logout" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 border border-red-200 dark:border-red-800 transition-all duration-200" title="Sair da conta">Sair</button>
                         </div>
                     </div>
                     ` : ''}
@@ -295,7 +295,7 @@ export function generateSettingsHTML(state) {
                         <h2 class="section-title blue-border">📁 Meus Orçamentos</h2>
                         <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-4">
                             ${renderMyBudgets(budgets, currentUser, currentBudget)}
-                            <button id="create-new-budget-btn" class="create-button btn btn-primary btn-sm mt-5 w-full">➕ Criar Novo Orçamento</button>
+                            <button id="create-new-budget-btn" class="create-button inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-200 dark:border-blue-800 transition-all duration-200 mt-5 w-full" title="Criar novo orçamento">➕ Criar Novo Orçamento</button>
                         </div>
                     </div>
 
@@ -304,21 +304,21 @@ export function generateSettingsHTML(state) {
                         <h2 class="section-title red-border">💾 Dados e Privacidade</h2>
                         <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-4">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <button id="export-data-btn" class="btn btn-primary btn-sm flex items-center justify-center gap-2 p-4">
+                                <button id="export-data-btn" class="inline-flex items-center justify-center gap-2 p-4 rounded-lg text-sm font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-200 dark:border-blue-800 transition-all duration-200" title="Exportar dados">
                                     <span class="text-xl">📤</span>
                                     <div class="text-left">
                                         <div class="font-medium">Exportar Dados</div>
                                         <div class="text-xs opacity-75">Backup completo</div>
                                     </div>
                                 </button>
-                                <button id="import-data-btn" class="btn btn-secondary btn-sm flex items-center justify-center gap-2 p-4">
+                                <button id="import-data-btn" class="inline-flex items-center justify-center gap-2 p-4 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-900/20 hover:bg-gray-100 dark:hover:bg-gray-900/40 border border-gray-200 dark:border-gray-800 transition-all duration-200" title="Importar dados">
                                     <span class="text-xl">📥</span>
                                     <div class="text-left">
                                         <div class="font-medium">Importar Dados</div>
                                         <div class="text-xs opacity-75">Restaurar backup</div>
                                     </div>
                                 </button>
-                                <button id="clear-data-btn" class="btn btn-danger btn-sm flex items-center justify-center gap-2 p-4">
+                                <button id="clear-data-btn" class="inline-flex items-center justify-center gap-2 p-4 rounded-lg text-sm font-medium text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 border border-red-200 dark:border-red-800 transition-all duration-200" title="Limpar dados">
                                     <span class="text-xl">🗑️</span>
                                     <div class="text-left">
                                         <div class="font-medium">Limpar Dados</div>
@@ -378,7 +378,7 @@ export function generateSettingsHTML(state) {
                                         <div class="font-medium text-gray-900 dark:text-gray-100">Modo Escuro</div>
                                         <div class="text-sm text-gray-500 dark:text-gray-400">Alternar tema escuro/claro</div>
                                     </div>
-                                    <button id="toggle-theme-btn" class="btn btn-primary btn-sm">
+                                    <button id="toggle-theme-btn" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/40 border border-purple-200 dark:border-purple-800 transition-all duration-200" title="Alternar tema">
                                         🌙 Alternar
                                     </button>
                                 </div>
@@ -456,19 +456,19 @@ export function generateSettingsHTML(state) {
                                     <div class="text-xs text-gray-400 dark:text-gray-500 mt-1">Última atualização: ${lastUpdateLabel}</div>
                                 </div>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    <button id="check-updates-btn" class="btn btn-primary btn-sm flex items-center justify-center gap-2 p-3">
+                                    <button id="check-updates-btn" class="inline-flex items-center justify-center gap-2 p-3 rounded-lg text-sm font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-200 dark:border-blue-800 transition-all duration-200" title="Verificar atualizações">
                                         <span>🔄</span>
                                         <span>Verificar Atualizações</span>
                                     </button>
-                                    <button id="help-support-btn" class="btn btn-secondary btn-sm flex items-center justify-center gap-2 p-3">
+                                    <button id="help-support-btn" class="inline-flex items-center justify-center gap-2 p-3 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-900/20 hover:bg-gray-100 dark:hover:bg-gray-900/40 border border-gray-200 dark:border-gray-800 transition-all duration-200" title="Ajuda e suporte">
                                         <span>❓</span>
                                         <span>Ajuda e Suporte</span>
                                     </button>
-                                    <button id="rate-app-btn" class="btn btn-primary btn-sm flex items-center justify-center gap-2 p-3">
+                                    <button id="rate-app-btn" class="inline-flex items-center justify-center gap-2 p-3 rounded-lg text-sm font-medium text-yellow-700 dark:text-yellow-300 bg-yellow-50 dark:bg-yellow-900/20 hover:bg-yellow-100 dark:hover:bg-yellow-900/40 border border-yellow-200 dark:border-yellow-800 transition-all duration-200" title="Avaliar aplicativo">
                                         <span>⭐</span>
                                         <span>Avaliar App</span>
                                     </button>
-                                    <button id="about-app-btn" class="btn btn-ghost btn-sm flex items-center justify-center gap-2 p-3">
+                                    <button id="about-app-btn" class="inline-flex items-center justify-center gap-2 p-3 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-900/20 hover:bg-gray-100 dark:hover:bg-gray-900/40 border border-gray-200 dark:border-gray-800 transition-all duration-200" title="Sobre o aplicativo">
                                         <span>ℹ️</span>
                                         <span>Sobre o App</span>
                                     </button>

@@ -613,22 +613,7 @@ window.confirmRestoreBackup = async function (backupData) {
   }
 };
 
-// Funcao para alternar entre página de login e app
-function toggleLoginPage(show) {
-  const loginPage = document.getElementById('login-page');
-  const appContainer = document.querySelector('.app-container');
-  const loadingPage = document.getElementById('loading-page');
-
-  if (show) {
-    loginPage.style.display = 'flex';
-    if (appContainer) appContainer.style.display = 'none';
-    if (loadingPage) loadingPage.style.display = 'none';
-  } else {
-    loginPage.style.display = 'none';
-    if (appContainer) appContainer.style.display = 'flex';
-    if (loadingPage) loadingPage.style.display = 'none';
-  }
-}
+// Função toggleLoginPage movida para AuthService.js para evitar duplicação
 
 // Funcao para logout
 function logout() {
@@ -1094,7 +1079,7 @@ window.setupTransactionSearch = function() {
       clearTimeout(this._debounceTimer);
     }
     this._debounceTimer = setTimeout(async () => {
-  const searchTerm = __norm(this.value);
+      const searchTerm = __norm(this.value);
 
       if (searchTerm === '') {
         // Mostrar todas as transacoes
@@ -1298,7 +1283,7 @@ window.setupCategorySearch = function() {
   searchInput.dataset.bound = '1';
 
   searchInput.addEventListener('input', function() {
-  const searchTerm = __norm(this.value);
+    const searchTerm = __norm(this.value);
 
     if (searchTerm === '') {
       // Mostrar todas as categorias
@@ -1862,7 +1847,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.appState.isInitialized = true;
   }
 
-  setupLoginButton();
+  // setupLoginButton() removido - já é chamado em entry.js para evitar duplicação
 
   console.log('✅ Aplicacao iniciada com sucesso!');
 });
@@ -3175,9 +3160,9 @@ window.deleteCategoryWithConfirmation = async function(categoryId, categoryName 
       // Fallback para confirm nativo
       proceed = confirm(`Tem certeza que deseja excluir a categoria "${categoryName}"?`);
     }
-    
+
     if (!proceed) return;
-    
+
     if (window.deleteCategory) {
       await window.deleteCategory(categoryId);
     }

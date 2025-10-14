@@ -40,13 +40,13 @@ describe('Analytics Telemetria Local UI', () => {
     const eventSel = container.querySelector('[data-testid="telem-event-filter"]');
     expect(eventSel).toBeTruthy();
     eventSel.value = 'tx:render';
-  eventSel.dispatchEvent(new window.Event('change'));
+    eventSel.dispatchEvent(new window.Event('change'));
     expect(countEl.textContent).toBe('2');
 
     // Filter by min duration (>= 60ms leaves only the 80ms entry)
     const minInput = container.querySelector('[data-testid="telem-min-duration"]');
     minInput.value = '60';
-  minInput.dispatchEvent(new window.Event('input'));
+    minInput.dispatchEvent(new window.Event('input'));
     expect(countEl.textContent).toBe('1');
 
     // Export CSV should populate window.__lastExportCsv and include header + event data

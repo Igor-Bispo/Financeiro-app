@@ -5,13 +5,13 @@
 
 export function showCategoriasAlertaModal() {
   const categoriasEmAlerta = window.categoriasEmAlerta || [];
-  
+
   if (categoriasEmAlerta.length === 0) {
     // Se não há categorias em alerta, mostrar mensagem informativa
     showModalSemAlertas();
     return;
   }
-  
+
   // Criar modal com categorias em alerta
   showModalComAlertas(categoriasEmAlerta);
 }
@@ -63,10 +63,10 @@ function showModalSemAlertas() {
       </div>
     </div>
   `;
-  
+
   // Inserir modal no DOM
   document.body.insertAdjacentHTML('beforeend', modalHTML);
-  
+
   // Adicionar event listeners
   addModalEventListeners();
 }
@@ -74,13 +74,13 @@ function showModalSemAlertas() {
 function showModalComAlertas(categoriasEmAlerta) {
   // Ordenar categorias por percentual (maior primeiro)
   categoriasEmAlerta.sort((a, b) => b.percentual - a.percentual);
-  
+
   const categoriasHTML = categoriasEmAlerta.map(categoria => {
     const isOverLimit = categoria.percentual >= 1.0;
     const statusColor = isOverLimit ? 'red' : 'orange';
     const statusIcon = isOverLimit ? '🚨' : '⚠️';
     const statusText = isOverLimit ? 'Limite ultrapassado' : 'Próximo do limite';
-    
+
     return `
       <div class="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
         <div class="flex items-center justify-between mb-3">
@@ -114,15 +114,15 @@ function showModalComAlertas(categoriasEmAlerta) {
         
         <!-- Informações adicionais -->
         <div class="text-xs text-gray-500 dark:text-gray-400">
-          ${isOverLimit 
-            ? `Ultrapassou o limite em R$ ${(categoria.gasto - categoria.limite).toFixed(2)}`
-            : `Restam R$ ${(categoria.limite - categoria.gasto).toFixed(2)} do limite`
-          }
+          ${isOverLimit
+    ? `Ultrapassou o limite em R$ ${(categoria.gasto - categoria.limite).toFixed(2)}`
+    : `Restam R$ ${(categoria.limite - categoria.gasto).toFixed(2)} do limite`
+}
         </div>
       </div>
     `;
   }).join('');
-  
+
   const modalHTML = `
     <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-hidden">
@@ -176,52 +176,80 @@ function showModalComAlertas(categoriasEmAlerta) {
       </div>
     </div>
   `;
-  
+
   // Inserir modal no DOM
   document.body.insertAdjacentHTML('beforeend', modalHTML);
-  
+
   // Adicionar event listeners
   addModalEventListeners();
 }
+
+// Flag para prevenir múltiplos fechamentos
+let isClosing = false;
 
 function addModalEventListeners() {
   // Event listener para fechar modal
   const closeButtons = document.querySelectorAll('.close-modal-btn');
   closeButtons.forEach(btn => {
-    btn.addEventListener('click', closeModal);
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      closeModal();
+    }, { once: true }); // Executar apenas uma vez
   });
-  
+
   // Event listener para fechar ao clicar fora do modal
   const modal = document.querySelector('.fixed.inset-0');
   if (modal) {
     modal.addEventListener('click', (e) => {
+      e.stopPropagation();
       if (e.target === modal) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
         closeModal();
       }
-    });
+    }, { once: true }); // Executar apenas uma vez
   }
-  
+
   // Event listener para ESC
   const handleEsc = (e) => {
     if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
       closeModal();
     }
   };
   document.addEventListener('keydown', handleEsc);
-  
+
   // Armazenar função para remover event listener
   window.currentModalEscHandler = handleEsc;
 }
 
 function closeModal() {
+  // Prevenir múltiplos fechamentos
+  if (isClosing) {
+    console.log('⚠️ [Modal] Já está fechando, ignorando...');
+    return;
+  }
+
+  isClosing = true;
+  console.log('🔒 [Modal] Fechando modal de categorias em alerta...');
+
   const modal = document.querySelector('.fixed.inset-0');
   if (modal) {
     modal.remove();
   }
-  
+
   // Remover event listener do ESC
   if (window.currentModalEscHandler) {
     document.removeEventListener('keydown', window.currentModalEscHandler);
     window.currentModalEscHandler = null;
   }
+
+  // Resetar flag após um pequeno delay
+  setTimeout(() => {
+    isClosing = false;
+    console.log('✅ [Modal] Modal fechado com sucesso');
+  }, 300);
 }

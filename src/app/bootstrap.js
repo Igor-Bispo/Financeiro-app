@@ -1,7 +1,9 @@
 // Importa e registra as funções globais de carregamento de dados para orçamentos
 import './globalLoaders.js';
+// Importa e força carregamento da função de modal de transação
+import showAddTransactionModal from '@js/showAddTransactionModal.js';
 // Importa o Snackbar para disponibilizar globalmente
-import { Snackbar } from '@js/ui/Snackbar.js';
+import { Snackbar as _Snackbar } from '@js/ui/Snackbar.js';
 // Importa o sistema simplificado de configuração do Snackbar
 import '@js/config/simple-snackbar-config.js';
 // Importa as funções de debug de notificações para disponibilizar globalmente
@@ -13,8 +15,18 @@ import { authReady } from '@data/firebase/client.js';
 // Importa o EventBus para configuração do listener
 import { eventBus } from '@core/events/eventBus.js';
 // Importa o gerenciador de cache
-import { checkAndClearCache, checkServiceWorker } from '../utils/cacheManager.js';
+import { checkAndClearCache, checkServiceWorker as _checkServiceWorker } from '../utils/cacheManager.js';
+// Importa o sistema de permissões para APK
+import '@js/permissions/PermissionManager.js';
 console.log('🚀 bootstrap.js carregado e executando!');
+
+// Garantir que showAddTransactionModal e Snackbar estejam disponíveis globalmente
+if (typeof window !== 'undefined') {
+  window.showAddTransactionModal = showAddTransactionModal;
+  window.Snackbar = _Snackbar; // Expor Snackbar globalmente para evitar minificação
+  console.log('🔧 [Bootstrap] showAddTransactionModal forçada globalmente:', typeof window.showAddTransactionModal);
+  console.log('🔧 [Bootstrap] Snackbar forçada globalmente:', typeof window.Snackbar);
+}
 
 // Verificar e limpar cache se necessário (primeira coisa a fazer)
 if (typeof window !== 'undefined') {
@@ -36,21 +48,21 @@ if (typeof window !== 'undefined' && window.eventBus && typeof window.eventBus.o
   if (!window.__notificationModalListenerBound) {
     window.__notificationModalListenerBound = true;
     console.log('🎧 [Bootstrap] Configurando listener global para notification:show-modal...');
-    
+
     window.eventBus.on('notification:show-modal', async (notification) => {
       try {
         console.log('📱 [Bootstrap] Evento notification:show-modal recebido:', notification.type);
         console.log('📱 [Bootstrap] Dados da notificação:', notification);
         console.log('📱 [Bootstrap] 🔧 DEBUG: EventBus listener funcionando!');
-        
+
         // Importar dinamicamente o modal
         console.log('📱 [Bootstrap] 🔧 DEBUG: Importando NotificationModal...');
         const { getNotificationModal } = await import('@features/notifications/ui/NotificationModal.js');
         console.log('📱 [Bootstrap] 🔧 DEBUG: NotificationModal importado:', !!getNotificationModal);
-        
+
         const modal = getNotificationModal();
         console.log('📱 [Bootstrap] Modal obtido:', !!modal);
-        
+
         if (modal) {
           console.log('📱 [Bootstrap] 🔧 DEBUG: Chamando modal.show()...');
           modal.show(notification);
@@ -63,7 +75,7 @@ if (typeof window !== 'undefined' && window.eventBus && typeof window.eventBus.o
         console.error('❌ [Bootstrap] Stack trace:', e.stack);
       }
     });
-    
+
     console.log('✅ [Bootstrap] Listener notification:show-modal configurado globalmente');
   }
 }
@@ -142,7 +154,6 @@ if (syncChannel) {
   });
 }
 import { logger } from '@core/logger/logger.js';
-import { errorBoundary } from '@core/error/ErrorBoundary.js';
 import { setupEventListeners, cleanupEventListeners } from '@core/events/eventConfig.js';
 import * as authService from '@features/auth/service.js';
 import * as budgetsService from '@features/budgets/service.js';
@@ -166,57 +177,120 @@ export const appState = {
 
 // Inicializar serviços e listeners
 export async function initializeApp() {
+  // 🛡️ INICIALIZAR SISTEMA DE RESILÊNCIA **PRIMEIRO** - ANTES DE TUDO
+  console.log('🛡️🛡️🛡️ [Bootstrap] INICIANDO SISTEMA DE RESILÊNCIA PRIMEIRO!');
+  
   try {
-    // Configurar error boundary primeiro
-    errorBoundary.setupGlobalErrorHandlers();
-    
-    logger.info('Inicializando aplicação...');
-    
+    // Importar e inicializar componentes de resilência IMEDIATAMENTE
+    console.log('🛡️ [Bootstrap] Carregando NetworkHandler...');
+    await import('../core/network/networkHandler.js'); // NetworkHandler inicializa automaticamente
+    console.log('✅ [Bootstrap] NetworkHandler carregado');
+
+    console.log('🛡️ [Bootstrap] Carregando NetworkPatch...');
+    const { default: NetworkPatch } = await import('../core/network/networkPatch.js');
+    NetworkPatch.initialize();
+    console.log('✅ [Bootstrap] NetworkPatch inicializado');
+
+    // Em produção, não inicializar ExtensionHandler para evitar interferir em chamadas Firebase (CORS)
+    if (import.meta?.env?.DEV) {
+      console.log('🛡️ [Bootstrap] Carregando ExtensionHandler (DEV)...');
+    const { default: ExtensionHandler } = await import('../core/security/extensionHandler.js');
+    ExtensionHandler.initialize();
+      console.log('✅ [Bootstrap] ExtensionHandler inicializado (DEV)');
+    } else {
+      console.log('🛡️ [Bootstrap] ExtensionHandler desativado em PROD');
+    }
+
+    console.log('🛡️ [Bootstrap] Sistema de resilência ATIVO - prosseguindo com app...');
+  } catch (error) {
+    console.error('❌ [Bootstrap] ERRO CRÍTICO ao inicializar resilência:', error);
+    // Continuar mesmo com erro - não bloquear app
+  }
+
+  try {
     // Disponibilizar funções PWA globalmente
     window.checkForUpdates = checkForUpdates;
     window.clearAppCaches = clearAppCaches;
     window.performHardRefresh = performHardRefresh;
 
     // Registrar SW update flow cedo (não bloqueia restante)
-    try {
-      registerServiceWorker({
-        onNewVersion: ({ skipWaiting }) => {
-          try {
-            const promptFn = () => skipWaiting();
-            if (typeof window.Snackbar === 'function') {
-              window.Snackbar({
-                message: 'Nova versão disponível. Toque para atualizar.',
-                type: 'info',
-                action: { label: 'Atualizar', handler: promptFn },
-                duration: 10000
-              });
-            } else if (confirm('Nova versão disponível. Atualizar agora?')) {
-              promptFn();
-            }
-          } catch {}
+    // DESABILITAR Service Worker em ambiente APK para evitar cache de versões antigas
+    const isAPK = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
+    
+    if (!isAPK) {
+      // Apenas registrar SW em ambiente web
+      try {
+        console.log('🌐 [Bootstrap] Ambiente WEB - registrando Service Worker...');
+        registerServiceWorker({
+          onNewVersion: ({ skipWaiting }) => {
+            try {
+              const promptFn = () => skipWaiting();
+              if (typeof window.Snackbar === 'function') {
+                window.Snackbar({
+                  message: 'Nova versão disponível. Toque para atualizar.',
+                  type: 'info',
+                  action: { label: 'Atualizar', handler: promptFn },
+                  duration: 10000
+                });
+              } else if (confirm('Nova versão disponível. Atualizar agora?')) {
+                promptFn();
+              }
+            } catch {}
+          }
+        });
+        listenForControllerChange();
+      } catch (e) { logger.warn('Falha ao iniciar fluxo de SW update:', e); }
+    } else {
+      // APK: Desabilitar SW e limpar cache existente
+      console.log('📱 [Bootstrap] Ambiente APK - DESABILITANDO Service Worker...');
+      
+      try {
+        // Desregistrar todos os Service Workers
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(registrations => {
+            registrations.forEach(registration => {
+              console.log('🗑️ [Bootstrap] Desregistrando Service Worker:', registration.scope);
+              registration.unregister();
+            });
+          });
         }
-      });
-      listenForControllerChange();
-    } catch (e) { logger.warn('Falha ao iniciar fluxo de SW update:', e); }
+        
+        // Limpar todos os caches
+        if ('caches' in window) {
+          caches.keys().then(cacheNames => {
+            cacheNames.forEach(cacheName => {
+              console.log('🗑️ [Bootstrap] Removendo cache:', cacheName);
+              caches.delete(cacheName);
+            });
+          });
+        }
+        
+        console.log('✅ [Bootstrap] Service Worker desabilitado e cache limpo no APK');
+      } catch (e) {
+        console.warn('⚠️ [Bootstrap] Erro ao desabilitar SW:', e);
+      }
+    }
 
 
-    // Aguardar autenticação com timeout
+    // Aguardar autenticação com timeout REDUZIDO para evitar loops
     let user = null;
     try {
+      console.log('🔍 [Bootstrap] Iniciando verificação de autenticação...');
       const authPromise = authService.waitForAuth();
       const timeoutPromise = new Promise((resolve) => {
         setTimeout(() => {
-          console.log('⏰ Timeout aguardando auth no bootstrap - continuando...');
+          console.log('⏰ [Bootstrap] Timeout aguardando auth (2s) - continuando...');
           resolve(null);
-        }, 5000);
+        }, 2000); // Reduzido de 5s para 2s
       });
-      
+
       user = await Promise.race([authPromise, timeoutPromise]);
+      console.log('🔍 [Bootstrap] Resultado da auth:', user ? `usuário ${user.email}` : 'sem usuário');
     } catch (error) {
-      logger.warn('Erro ao aguardar autenticação:', error);
+      logger.warn('❌ [Bootstrap] Erro ao aguardar autenticação:', error);
       user = null;
     }
-    
+
     if (!user) {
       // Verificar se há usuário no estado global (fallback)
       if (window.appState && window.appState.currentUser) {
@@ -237,6 +311,37 @@ export async function initializeApp() {
     } catch {}
     if (user) {
       logger.info('Usuário autenticado:', user.uid);
+      // Garantir que o container do app esteja visível
+      try {
+        const appContainer = document.querySelector('.app-container');
+        const loginPage = document.getElementById('login-page');
+        const loadingPage = document.getElementById('loading-page');
+        if (appContainer) appContainer.style.display = 'flex';
+        if (loginPage) loginPage.style.display = 'none';
+        if (loadingPage) loadingPage.style.display = 'none';
+      } catch {}
+      
+      // 🔥 Inicializar clientes Firebase resilientes agora que temos usuário
+      try {
+        console.log('🛡️ [Bootstrap] Inicializando clientes Firebase resilientes...');
+        const { default: ResilientFirebaseClient } = await import('../data/firebase/resilientClient.js');
+        const { default: ResilientAuthService } = await import('../features/auth/ResilientAuthService.js');
+        
+        try {
+          await ResilientFirebaseClient.initialize();
+        } catch (e) {
+          console.warn('⚠️ [Bootstrap] Falha ao inicializar ResilientFirebaseClient (modular):', e?.message || e);
+        }
+        try {
+          const { auth } = await import('@data/firebase/client.js');
+          await ResilientAuthService.initialize(auth);
+          console.log('✅ [Bootstrap] Clientes Firebase resilientes inicializados (modular)');
+        } catch (e) {
+          console.warn('⚠️ [Bootstrap] Falha ao inicializar ResilientAuthService (modular):', e?.message || e);
+        }
+      } catch (error) {
+        console.error('❌ [Bootstrap] Erro ao inicializar clientes Firebase resilientes:', error);
+      }
     } else {
       logger.info('Sem usuário autenticado');
     }
@@ -244,16 +349,28 @@ export async function initializeApp() {
     // Carregar dados iniciais apenas se autenticado
     if (user) {
       try {
-        await loadInitialData(user.uid);
+        console.log('📊 [Bootstrap] Carregando dados iniciais...');
+        // Timeout para carregar dados iniciais
+        const loadDataPromise = loadInitialData(user.uid);
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => {
+            reject(new Error('Timeout ao carregar dados iniciais'));
+          }, 10000); // 10s timeout
+        });
+        
+        await Promise.race([loadDataPromise, timeoutPromise]);
+        console.log('✅ [Bootstrap] Dados iniciais carregados');
       } catch (e) {
-        logger.warn('Falha ao carregar dados iniciais (possível permission-denied):', e?.message || e);
-        try { if (window?.Snackbar) window.Snackbar({ message: 'Sem permissão para ler dados. Verifique acesso ao orçamento.', type: 'warning' }); } catch {}
+        logger.warn('❌ [Bootstrap] Falha ao carregar dados iniciais:', e?.message || e);
+        try { if (window?.Snackbar) window.Snackbar({ message: 'Falha ao carregar dados. Tentando continuar...', type: 'warning' }); } catch {}
       }
       // Iniciar listeners em tempo real
       try {
+        console.log('🎧 [Bootstrap] Iniciando listeners de tempo real...');
         startRealtimeListeners(user.uid);
+        console.log('✅ [Bootstrap] Listeners iniciados');
       } catch (e) {
-        logger.warn('Falha ao iniciar listeners (possível permission-denied):', e?.message || e);
+        logger.warn('❌ [Bootstrap] Falha ao iniciar listeners:', e?.message || e);
       }
     }
 
@@ -278,7 +395,7 @@ async function loadInitialData(userId) {
     const budgets = await budgetsService.loadUserBudgets(userId);
     if (budgets.length > 0) {
       let chosen = budgets[0]; // fallback para o primeiro
-      
+
       // Tentar restaurar o orçamento salvo no localStorage
       try {
         const lastId = localStorage.getItem('currentBudgetId');
@@ -294,7 +411,7 @@ async function loadInitialData(userId) {
       } catch (e) {
         logger.warn('Erro ao restaurar orçamento do localStorage:', e);
       }
-      
+
       appState.currentBudget = chosen;
       try {
         if (typeof window !== 'undefined') {
@@ -343,13 +460,13 @@ async function startRealtimeListeners(userId) {
     try { budgetsService.startBudgetsListener(userId); } catch (e) { logger.warn('Listener budgets falhou:', e?.message || e); }
     try { transactionsService.startTransactionsListener(budgetId, userId); } catch (e) { logger.warn('Listener transactions falhou:', e?.message || e); }
     try { categoriesService.startCategoriesListener(budgetId); } catch (e) { logger.warn('Listener categories falhou:', e?.message || e); }
-    
+
     // Iniciar listener de notificações
-    try { 
+    try {
       startNotificationsFor(userId);
       logger.info('Listener de notificações iniciado');
-    } catch (e) { 
-      logger.warn('Listener notifications falhou:', e?.message || e); 
+    } catch (e) {
+      logger.warn('Listener notifications falhou:', e?.message || e);
     }
 
     // Inicializar sistema de catch-up de notificações
@@ -379,34 +496,38 @@ export async function activateRealtimeAfterLogin(user) {
     // Garantir orçamento atual - só se realmente não houver nenhum
     if (!appState.currentBudget) {
       try {
-        // Primeiro, tentar restaurar o orçamento salvo no localStorage
-        const restoredBudget = await budgetsService.restoreBudgetFromStorage(user.uid);
-        if (restoredBudget) {
-          appState.currentBudget = restoredBudget;
+        // SEMPRE carregar a lista de orçamentos do Firestore primeiro
+        console.log('🔍 [Bootstrap] Carregando orçamentos do Firestore...');
+        const budgets = await budgetsService.loadUserBudgets(user.uid);
+        console.log('📊 [Bootstrap] Orçamentos carregados:', budgets.length);
+        
+        if (budgets.length > 0) {
+          // Tentar restaurar o orçamento salvo no localStorage
+          const savedBudgetId = localStorage.getItem('currentBudgetId');
+          let chosen = budgets[0]; // fallback para o primeiro
+          
+          if (savedBudgetId) {
+            const found = budgets.find(b => b.id === savedBudgetId);
+            if (found) {
+              chosen = found;
+              logger.info('Orçamento restaurado:', chosen.nome);
+            } else {
+              logger.warn('Orçamento salvo não encontrado, usando primeiro disponível');
+            }
+          }
+          
+          appState.currentBudget = chosen;
           try {
             if (typeof window !== 'undefined') {
               window.appState = window.appState || {};
-              window.appState.currentBudget = restoredBudget;
+              window.appState.currentBudget = chosen;
             }
           } catch {}
-        }
-        
-        // Se ainda não há orçamento, usar o padrão
-        if (!appState.currentBudget) {
-          const defaultBudget = await budgetsService.selectDefaultBudget(user.uid);
-          if (defaultBudget) {
-            appState.currentBudget = defaultBudget;
-            try {
-              if (typeof window !== 'undefined') {
-                window.appState = window.appState || {};
-                window.appState.currentBudget = defaultBudget;
-              }
-            } catch {}
-            logger.info('Orçamento padrão selecionado:', defaultBudget.nome);
-          }
+          budgetsService.setCurrentBudget(chosen);
+          console.log('✅ [Bootstrap] Orçamento selecionado:', chosen.nome);
         }
       } catch (e) {
-        logger.warn('Falha ao selecionar orçamento pós-login:', e?.message || e);
+        logger.warn('Falha ao carregar orçamentos pós-login:', e?.message || e);
       }
     }
 
@@ -436,11 +557,11 @@ export async function activateRealtimeAfterLogin(user) {
     }
 
     // Iniciar listener de notificações mesmo sem orçamento
-    try { 
+    try {
       startNotificationsFor(user.uid);
       logger.info('Listener de notificações iniciado após login');
-    } catch (e) { 
-      logger.warn('Listener notifications falhou após login:', e?.message || e); 
+    } catch (e) {
+      logger.warn('Listener notifications falhou após login:', e?.message || e);
     }
 
     // Inicializar sistema de catch-up de notificações após login
@@ -451,8 +572,7 @@ export async function activateRealtimeAfterLogin(user) {
       logger.warn('Sistema de catch-up falhou após login:', e?.message || e);
     }
 
-    // Sinalizar app pronta com usuário autenticado
-    try { eventBus.emit('app:ready', appState); } catch {}
+    // app:ready já foi emitido na inicialização - não duplicar
     logger.info('Realtime ativado após login');
   } catch (error) {
     logger.error('Erro ao ativar realtime pós-login:', error);

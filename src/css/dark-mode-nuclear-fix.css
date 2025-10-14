@@ -1,0 +1,280 @@
+/* ========================================
+   CORREÇÃO NUCLEAR - MODO ESCURO
+   Força contraste em TODO o aplicativo
+   ======================================== */
+
+/* === FORÇA FUNDOS MAIS CLAROS EM TUDO === */
+.dark {
+  background-color: #1a202c !important;
+}
+
+.dark * {
+  /* Força fundos mais claros para cards e containers */
+}
+
+.dark .bg-white,
+.dark .bg-gray-50,
+.dark .bg-gray-100,
+.dark .bg-gray-200,
+.dark .bg-gray-300 {
+  background-color: #2d3748 !important;
+  border: 1px solid #4a5568 !important;
+}
+
+.dark .bg-gray-800,
+.dark .bg-gray-900 {
+  background-color: #2d3748 !important;
+}
+
+/* === FORÇA TEXTOS BRANCOS EM TUDO === */
+.dark * {
+  color: #ffffff !important;
+}
+
+/* === EXCEÇÕES PARA VALORES MONETÁRIOS === */
+.dark .text-green-600,
+.dark .text-green-500,
+.dark .text-green-400,
+.dark .dark\:text-green-400 {
+  color: #68d391 !important;
+}
+
+.dark .text-red-600,
+.dark .text-red-500,
+.dark .text-red-400,
+.dark .dark\:text-red-400 {
+  color: #fc8181 !important;
+}
+
+.dark .text-blue-600,
+.dark .text-blue-500,
+.dark .text-blue-400,
+.dark .dark\:text-blue-400 {
+  color: #63b3ed !important;
+}
+
+.dark .text-yellow-600,
+.dark .text-yellow-500,
+.dark .text-yellow-400,
+.dark .dark\:text-yellow-400 {
+  color: #f6e05e !important;
+}
+
+.dark .text-orange-600,
+.dark .text-orange-500,
+.dark .text-orange-400,
+.dark .dark\:text-orange-400 {
+  color: #fbd38d !important;
+}
+
+/* === FORÇA GRADIENTES PARA FUNDOS NEUTROS === */
+.dark [class*="bg-gradient-to"],
+.dark [class*="from-"],
+.dark [class*="to-"] {
+  background: #2d3748 !important;
+  border: 1px solid #4a5568 !important;
+}
+
+/* === FORÇA BORDAS NEUTRAS === */
+.dark [class*="border-"] {
+  border-color: #4a5568 !important;
+}
+
+/* === FORÇA APLICAÇÃO ESPECÍFICA PARA DASHBOARD === */
+.dark #app-content * {
+  color: #ffffff !important;
+}
+
+.dark #app-content .text-green-600,
+.dark #app-content .text-green-500,
+.dark #app-content .text-green-400 {
+  color: #68d391 !important;
+}
+
+.dark #app-content .text-red-600,
+.dark #app-content .text-red-500,
+.dark #app-content .text-red-400 {
+  color: #fc8181 !important;
+}
+
+.dark #app-content .text-blue-600,
+.dark #app-content .text-blue-500,
+.dark #app-content .text-blue-400 {
+  color: #63b3ed !important;
+}
+
+/* === FORÇA APLICAÇÃO EM TODAS AS PÁGINAS === */
+.dark .tab-container * {
+  color: #ffffff !important;
+}
+
+.dark .tab-container .text-green-600,
+.dark .tab-container .text-green-500,
+.dark .tab-container .text-green-400 {
+  color: #68d391 !important;
+}
+
+.dark .tab-container .text-red-600,
+.dark .tab-container .text-red-500,
+.dark .tab-container .text-red-400 {
+  color: #fc8181 !important;
+}
+
+.dark .tab-container .text-blue-600,
+.dark .tab-container .text-blue-500,
+.dark .tab-container .text-blue-400 {
+  color: #63b3ed !important;
+}
+
+/* === FORÇA APLICAÇÃO EM CARDS === */
+.dark .u-card * {
+  color: #ffffff !important;
+}
+
+.dark .u-card .text-green-600,
+.dark .u-card .text-green-500,
+.dark .u-card .text-green-400 {
+  color: #68d391 !important;
+}
+
+.dark .u-card .text-red-600,
+.dark .u-card .text-red-500,
+.dark .u-card .text-red-400 {
+  color: #fc8181 !important;
+}
+
+.dark .u-card .text-blue-600,
+.dark .u-card .text-blue-500,
+.dark .u-card .text-blue-400 {
+  color: #63b3ed !important;
+}
+
+/* === FORÇA APLICAÇÃO EM MODAIS === */
+.dark .modal-content * {
+  color: #ffffff !important;
+}
+
+.dark .modal-content .text-green-600,
+.dark .modal-content .text-green-500,
+.dark .modal-content .text-green-400 {
+  color: #68d391 !important;
+}
+
+.dark .modal-content .text-red-600,
+.dark .modal-content .text-red-500,
+.dark .modal-content .text-red-400 {
+  color: #fc8181 !important;
+}
+
+.dark .modal-content .text-blue-600,
+.dark .modal-content .text-blue-500,
+.dark .modal-content .text-blue-400 {
+  color: #63b3ed !important;
+}
+
+/* === FORÇA APLICAÇÃO EM INPUTS === */
+.dark input,
+.dark select,
+.dark textarea {
+  background-color: #4a5568 !important;
+  border: 1px solid #718096 !important;
+  color: #ffffff !important;
+}
+
+.dark input::placeholder,
+.dark select::placeholder,
+.dark textarea::placeholder {
+  color: #cbd5e1 !important;
+}
+
+/* === FORÇA APLICAÇÃO EM BOTÕES === */
+.dark button,
+.dark .btn {
+  background-color: #4a5568 !important;
+  border: 1px solid #718096 !important;
+  color: #ffffff !important;
+}
+
+.dark button:hover,
+.dark .btn:hover {
+  background-color: #718096 !important;
+}
+
+/* === FORÇA APLICAÇÃO EM NAVEGAÇÃO === */
+.dark .bottom-nav {
+  background-color: #2d3748 !important;
+  border-top: 1px solid #4a5568 !important;
+}
+
+.dark .bottom-nav * {
+  color: #ffffff !important;
+}
+
+/* === FORÇA APLICAÇÃO EM TODOS OS ELEMENTOS === */
+.dark span,
+.dark div,
+.dark p,
+.dark h1,
+.dark h2,
+.dark h3,
+.dark h4,
+.dark h5,
+.dark h6,
+.dark label,
+.dark li,
+.dark td,
+.dark th {
+  color: #ffffff !important;
+}
+
+/* === EXCEÇÕES ESPECÍFICAS PARA VALORES MONETÁRIOS === */
+.dark span[class*="text-green"],
+.dark div[class*="text-green"],
+.dark p[class*="text-green"] {
+  color: #68d391 !important;
+}
+
+.dark span[class*="text-red"],
+.dark div[class*="text-red"],
+.dark p[class*="text-red"] {
+  color: #fc8181 !important;
+}
+
+.dark span[class*="text-blue"],
+.dark div[class*="text-blue"],
+.dark p[class*="text-blue"] {
+  color: #63b3ed !important;
+}
+
+/* === FORÇA APLICAÇÃO COM !IMPORTANT MÁXIMO === */
+.dark *:not(.text-green-600):not(.text-green-500):not(.text-green-400):not(.text-red-600):not(.text-red-500):not(.text-red-400):not(.text-blue-600):not(.text-blue-500):not(.text-blue-400):not(.dark\:text-green-400):not(.dark\:text-red-400):not(.dark\:text-blue-400) {
+  color: #ffffff !important;
+}
+
+/* === CORREÇÃO PARA ELEMENTOS COM STYLE INLINE === */
+.dark *[style*="color"] {
+  color: #ffffff !important;
+}
+
+/* === FORÇA APLICAÇÃO EM ELEMENTOS DINÂMICOS === */
+.dark .content-spacing * {
+  color: #ffffff !important;
+}
+
+.dark .content-spacing .text-green-600,
+.dark .content-spacing .text-green-500,
+.dark .content-spacing .text-green-400 {
+  color: #68d391 !important;
+}
+
+.dark .content-spacing .text-red-600,
+.dark .content-spacing .text-red-500,
+.dark .content-spacing .text-red-400 {
+  color: #fc8181 !important;
+}
+
+.dark .content-spacing .text-blue-600,
+.dark .content-spacing .text-blue-500,
+.dark .content-spacing .text-blue-400 {
+  color: #63b3ed !important;
+}

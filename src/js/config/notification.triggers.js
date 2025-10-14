@@ -38,7 +38,7 @@ async function sendRecorrenteReminder(recorrente) {
     const user = getCurrentUser();
     const budget = getCurrentBudget();
     if (!user || !budget) return;
-    
+
     // Verificar se a função existe antes de importar
     try {
       const notificationModule = await import('@features/notifications/NotificationService.js');
@@ -59,8 +59,8 @@ async function sendRecorrenteReminder(recorrente) {
         window.Snackbar.show(`🔄 Lembrete: ${recorrente.nome || 'Despesa recorrente'} - R$ ${recorrente.valor || 0}`, 'warning', 5000);
       }
     }
-  } catch (e) { 
-    console.warn('[NotificationTriggers] Falha ao enviar lembrete recorrente', e); 
+  } catch (e) {
+    console.warn('[NotificationTriggers] Falha ao enviar lembrete recorrente', e);
     // Fallback final: mostrar lembrete via console
     console.log('🔄 Lembrete de recorrente:', recorrente);
   }
@@ -71,7 +71,7 @@ async function sendWeeklySummary(summaryData) {
     const user = getCurrentUser();
     const budget = getCurrentBudget();
     if (!user || !budget) return;
-    
+
     // Verificar se a função existe antes de importar
     try {
       const notificationModule = await import('@features/notifications/NotificationService.js');
@@ -92,8 +92,8 @@ async function sendWeeklySummary(summaryData) {
         window.Snackbar.show(`📊 ${summaryData.resumo}`, 'info', 5000);
       }
     }
-  } catch (e) { 
-    console.warn('[NotificationTriggers] Falha ao enviar resumo semanal', e); 
+  } catch (e) {
+    console.warn('[NotificationTriggers] Falha ao enviar resumo semanal', e);
     // Fallback final: mostrar resumo via console
     console.log('📊 Resumo semanal:', summaryData);
   }

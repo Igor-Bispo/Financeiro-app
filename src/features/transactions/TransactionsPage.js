@@ -261,72 +261,79 @@ export function renderTransactions() {
         <div class="content-spacing">
           
           
-          <!-- ========== SEÇÃO 1: RESUMO COMPACTO ========== -->
+          <!-- ========== SEÇÃO 1: RESUMO MELHORADO ========== -->
           <div class="mb-12">
-            <div class="flex items-center gap-2 mb-4">
-              <div class="w-1 h-6 bg-gradient-to-b from-blue-500 to-green-500 rounded-full"></div>
-              <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">💰 Resumo</h2>
+            <div class="flex items-center justify-between gap-2 mb-6">
+              <div class="flex items-center gap-2">
+                <div class="w-1 h-6 bg-gradient-to-b from-blue-500 to-green-500 rounded-full"></div>
+                <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">💰 Resumo</h2>
+              </div>
+              <div class="text-sm text-gray-500 dark:text-gray-400">
+                <span class="font-medium">${totalTransacoes}</span> ${totalTransacoes === 1 ? 'transação' : 'transações'}
+              </div>
             </div>
             
-            <div class="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 rounded-2xl shadow-lg border border-blue-200 dark:border-gray-600 p-4 mb-6">
-              <!-- Header Compacto -->
-              <div class="flex items-center justify-between mb-4 gap-4">
-                <div>
-                  <h3 class="text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-                    <span class="text-xl">💸</span>
-                    Controle de Transações
-                  </h3>
-                  <p class="text-sm text-gray-600 dark:text-gray-400">${totalTransacoes} transações • ${String(selMonth).padStart(2,'0')}/${selYear}</p>
-                </div>
-                <div class="text-right">
-                  <div class="text-lg font-bold ${saldo >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}">
-                    R$ ${saldo.toFixed(2)}
+            <div class="bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 rounded-2xl shadow-xl border border-green-200 dark:border-gray-600 overflow-hidden">
+              <!-- Header Principal -->
+              <div class="bg-gradient-to-r from-green-100 to-emerald-100 dark:from-gray-700 dark:to-gray-700 p-4 border-b border-green-200 dark:border-gray-600">
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+                  <div>
+                    <h3 class="text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                      <span class="text-xl">📊</span>
+                      ${String(selMonth).padStart(2,'0')}/${selYear}
+                    </h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Resumo financeiro do período</p>
                   </div>
-                  <p class="text-xs text-gray-500 dark:text-gray-400">${saldo >= 0 ? 'Positivo' : 'Negativo'}</p>
+                  <div class="text-right">
+                    <div class="text-2xl font-bold ${saldo >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}">
+                      R$ ${saldo.toFixed(2)}
+                    </div>
+                    <div class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${saldo >= 0 ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' : 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'}">
+                      ${saldo >= 0 ? '✅ Saldo Positivo' : '⚠️ Saldo Negativo'}
+                    </div>
+                  </div>
                 </div>
               </div>
               
-              <!-- Métricas Compactas -->
-              <div class="grid grid-cols-3 gap-3 mb-4">
-                <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm border border-gray-200 dark:border-gray-600">
-                  <div class="text-lg mb-1">💚</div>
-                  <div class="text-lg font-bold text-green-600 dark:text-green-400">R$ ${receitas.toFixed(2)}</div>
-                  <div class="text-xs text-gray-600 dark:text-gray-400">Receitas</div>
+              <!-- Métricas Detalhadas -->
+              <div class="p-4">
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                  <div class="bg-white dark:bg-gray-800 rounded-xl p-4 text-center shadow-sm border border-gray-200 dark:border-gray-600 hover:shadow-md hover:scale-105 transition-all duration-200 cursor-pointer" onclick="event.stopPropagation(); event.preventDefault(); window.filterTransactionsByType('receita');" title="Clique para filtrar apenas receitas">
+                    <div class="text-2xl mb-2">💰</div>
+                    <div class="text-xl font-bold text-green-600 dark:text-green-400">R$ ${receitas.toFixed(2)}</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-400">Receitas</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-500 mt-1">Clique para filtrar</div>
+                  </div>
+                  
+                  <div class="bg-white dark:bg-gray-800 rounded-xl p-4 text-center shadow-sm border border-gray-200 dark:border-gray-600 hover:shadow-md hover:scale-105 transition-all duration-200 cursor-pointer" onclick="event.stopPropagation(); event.preventDefault(); window.filterTransactionsByType('despesa');" title="Clique para filtrar apenas despesas">
+                    <div class="text-2xl mb-2">💸</div>
+                    <div class="text-xl font-bold text-red-600 dark:text-red-400">R$ ${despesas.toFixed(2)}</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-400">Despesas</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-500 mt-1">Clique para filtrar</div>
+                  </div>
                 </div>
                 
-                <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm border border-gray-200 dark:border-gray-600">
-                  <div class="text-lg mb-1">💸</div>
-                  <div class="text-lg font-bold text-red-600 dark:text-red-400">R$ ${despesas.toFixed(2)}</div>
-                  <div class="text-xs text-gray-600 dark:text-gray-400">Despesas</div>
-                </div>
-                
-                <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm border border-gray-200 dark:border-gray-600">
-                  <div class="text-lg mb-1">📊</div>
-                  <div class="text-lg font-bold text-gray-800 dark:text-gray-200">${totalTransacoes}</div>
-                  <div class="text-xs text-gray-600 dark:text-gray-400">Total</div>
-                </div>
-              </div>
-
-              <!-- Resumo Financeiro Compacto -->
-              <div class="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm border border-gray-200 dark:border-gray-600">
-                <h5 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-1">
-                  <span>📈</span>
-                  Resumo Financeiro
-                </h5>
-                <div class="space-y-1">
-                  <div class="flex justify-between text-xs">
-                    <span class="text-gray-600 dark:text-gray-400">Receitas:</span>
-                    <span class="font-medium text-green-600 dark:text-green-400">R$ ${receitas.toFixed(2)}</span>
-                  </div>
-                  <div class="flex justify-between text-xs">
-                    <span class="text-gray-600 dark:text-gray-400">Despesas:</span>
-                    <span class="font-medium text-red-600 dark:text-red-400">R$ ${despesas.toFixed(2)}</span>
-                  </div>
-                  <div class="flex justify-between text-xs border-t border-gray-200 dark:border-gray-600 pt-1">
-                    <span class="text-gray-600 dark:text-gray-400">Saldo:</span>
-                    <span class="font-bold ${saldo >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}">
-                      R$ ${saldo.toFixed(2)}
+                <!-- Barra de Progresso Visual -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-600">
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1">
+                      📊 Distribuição do Saldo
+                      <span class="text-xs text-gray-500 dark:text-gray-400" title="Mostra a proporção entre receitas (verde) e despesas (vermelho)">ℹ️</span>
                     </span>
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs text-gray-500 dark:text-gray-400">${totalTransacoes} ${totalTransacoes === 1 ? 'transação' : 'transações'}</span>
+                      <button onclick="event.stopPropagation(); event.preventDefault(); window.clearTransactionFilter();" class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium" title="Limpar filtros">
+                        🔄 Limpar filtros
+                      </button>
+                    </div>
+                  </div>
+                  <div class="flex h-4 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden shadow-inner">
+                    <div class="bg-gradient-to-r from-green-500 to-green-600 h-full transition-all duration-500" style="width: ${receitas > 0 ? Math.min((receitas / (receitas + despesas)) * 100, 100) : 0}%"></div>
+                    <div class="bg-gradient-to-r from-red-500 to-red-600 h-full transition-all duration-500" style="width: ${despesas > 0 ? Math.min((despesas / (receitas + despesas)) * 100, 100) : 0}%"></div>
+                  </div>
+                  <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    <span>Receitas: ${receitas > 0 ? ((receitas / (receitas + despesas)) * 100).toFixed(1) : 0}%</span>
+                    <span>Despesas: ${despesas > 0 ? ((despesas / (receitas + despesas)) * 100).toFixed(1) : 0}%</span>
                   </div>
                 </div>
               </div>
@@ -726,33 +733,48 @@ export function renderMonthSectionHTML(mesAno, transacoesMes) {
 
   return `
   <div id="month-${mesAno}" class="u-card bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden mb-6" data-mes="${mesAno}" data-loaded="1">
-      <div class="bg-gradient-to-r from-green-50 to-teal-50 dark:from-gray-800 dark:to-gray-800 p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700">
-        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+      <div class="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 p-4 border-b border-gray-200 dark:border-gray-700">
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div class="order-2 sm:order-1">
-            <h3 class="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100">${nomeMes} ${ano} ${isMesAtual ? '<span class="ml-2 align-middle inline-flex items-center text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">Mês atual</span>' : ''} ${!isMesAtual && isMesSelecionado ? '<span class="ml-2 align-middle inline-flex items-center text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">Mês selecionado</span>' : ''}</h3>
-            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">${transacoesMes.length} transações</p>
-            <div class="mt-1 flex items-center gap-2 text-[11px] sm:text-xs text-gray-600 dark:text-gray-400">
-              <button class="hover:underline" onclick="window.expandAllDays && window.expandAllDays('${mesAno}')">Expandir todos</button>
-              <span class="text-gray-400">•</span>
-              <button class="hover:underline" onclick="window.collapseAllDays && window.collapseAllDays('${mesAno}')">Colapsar todos</button>
+            <div class="flex items-center gap-3 mb-2">
+              <h3 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100">${nomeMes} ${ano}</h3>
+              ${isMesAtual ? '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">Mês atual</span>' : ''}
+              ${!isMesAtual && isMesSelecionado ? '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300">Mês selecionado</span>' : ''}
+            </div>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">${transacoesMes.length} transações</p>
+            <div class="flex items-center gap-3 text-sm">
+              <button class="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors" onclick="window.expandAllDays && window.expandAllDays('${mesAno}')">
+                <span class="mr-1">📂</span> Expandir todos
+              </button>
+              <button class="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors" onclick="window.collapseAllDays && window.collapseAllDays('${mesAno}')">
+                <span class="mr-1">📁</span> Colapsar todos
+              </button>
             </div>
           </div>
           <div class="order-1 sm:order-2 sm:text-right">
-            <div class="text-base sm:text-lg font-bold ${saldoMes >= 0 ? 'text-green-600' : 'text-red-600'}">R$ ${saldoMes.toFixed(2)}</div>
-            <div class="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">+R$ ${receitasMes.toFixed(2)} • -R$ ${despesasMes.toFixed(2)}</div>
+            <div class="text-2xl font-bold ${saldoMes >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'} mb-1">
+              R$ ${saldoMes.toFixed(2)}
+            </div>
+            <div class="text-sm text-gray-600 dark:text-gray-400">
+              <span class="text-green-600 dark:text-green-400">+R$ ${receitasMes.toFixed(2)}</span>
+              <span class="mx-2">•</span>
+              <span class="text-red-600 dark:text-red-400">-R$ ${despesasMes.toFixed(2)}</span>
+            </div>
           </div>
         </div>
       </div>
-      <div class="p-3 sm:p-4">
+      <div class="p-4">
         ${transacoesMes.length === 0 ? `
-          <div class="text-center py-8">
-            <div class="text-5xl mb-3">🗓️</div>
-            <div class="font-medium mb-1">Nenhuma transação neste mês</div>
-            <div class="text-sm text-gray-600 dark:text-gray-400 mb-3">Adicione sua primeira transação de ${nomeMes}</div>
-            <button onclick="showAddTransactionModal && showAddTransactionModal()" class="btn btn-primary btn-sm">➕ Nova Transação</button>
+          <div class="text-center py-12">
+            <div class="text-6xl mb-4">🗓️</div>
+            <div class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">Nenhuma transação neste mês</div>
+            <div class="text-sm text-gray-600 dark:text-gray-400 mb-6">Adicione sua primeira transação de ${nomeMes}</div>
+            <button onclick="showAddTransactionModal && showAddTransactionModal()" class="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors">
+              <span class="mr-2">➕</span> Nova Transação
+            </button>
           </div>
         ` : `
-        <div class="space-y-2 sm:space-y-3" id="tx-day-items-${mesAno}">
+        <div class="space-y-4" id="tx-day-items-${mesAno}">
           ${renderDayGroupsVirtualized(mesAno, transacoesMes, parseInt(ano), parseInt(mes))}
         </div>
         `}
@@ -1024,19 +1046,32 @@ export function renderTransactionsGroupedByDay(transacoesMes, ano, mes) {
         const chevron = collapsed ? '▸' : '▾';
 
         return `
-          <div class="tx-day-group">
-            <div class="tx-day-header tx-day-header--clickable" data-day-key="${key}" onclick="window.toggleDayGroup && window.toggleDayGroup('${key}')">
-              <span class="tx-day-chevron" data-chev-key="${key}">${chevron}</span>
-              ${label}
+          <div class="tx-day-group bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-4 overflow-hidden">
+            <div class="tx-day-header bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 p-3 border-b border-gray-200 dark:border-gray-600 cursor-pointer hover:from-gray-100 hover:to-gray-200 dark:hover:from-gray-600 dark:hover:to-gray-500 transition-colors" data-day-key="${key}" onclick="window.toggleDayGroup && window.toggleDayGroup('${key}')">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <span class="tx-day-chevron text-lg text-gray-600 dark:text-gray-300 transition-transform duration-200" data-chev-key="${key}">${chevron}</span>
+                  <h4 class="font-semibold text-gray-800 dark:text-gray-200">${label}</h4>
+                </div>
+                <div class="text-right">
+                  <div class="text-sm font-bold ${saldo >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}">
+                    ${saldo >= 0 ? '+' : '-'}R$ ${Math.abs(saldo).toFixed(2)}
+                  </div>
+                </div>
+              </div>
+              <div class="tx-day-summary mt-2 flex items-center gap-2 text-sm">
+                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                  +R$ ${receitas.toFixed(2)}
+                </span>
+                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                  -R$ ${despesas.toFixed(2)}
+                </span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">
+                  ${dayEntries.length} transação${dayEntries.length !== 1 ? 'ões' : ''}
+                </span>
+              </div>
             </div>
-            <div class="tx-day-summary">
-              <span class="text-green-600">+R$ ${receitas.toFixed(2)}</span>
-              <span class="text-gray-400">•</span>
-              <span class="text-red-600">-R$ ${despesas.toFixed(2)}</span>
-              <span class="text-gray-400">•</span>
-              <span class="${saldo >= 0 ? 'text-green-700' : 'text-red-700'}">Saldo ${saldo >= 0 ? '' : '-'}R$ ${Math.abs(saldo).toFixed(2)}</span>
-            </div>
-            <div class="tx-day-items space-y-2 sm:space-y-3" data-day-key="${key}" style="display: ${collapsed ? 'none' : 'block'}">${items}</div>
+            <div class="tx-day-items p-3 space-y-3" data-day-key="${key}" style="display: ${collapsed ? 'none' : 'block'}">${items}</div>
           </div>
         `;
       })
@@ -1106,26 +1141,54 @@ export function renderTransactionItemHTML(t, ano, mes) {
   }
 
   return `
-    <div class="list-item p-3 sm:p-4 bg-gray-50 dark:bg-gray-800 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 group ${isReceita ? 'border-l-4 border-green-500' : 'border-l-4 border-red-500'}">
-      <div class="flex items-start justify-between gap-3">
-        <div class="flex items-center gap-3 flex-1 min-w-0">
-          <div class="flex flex-col items-center">
-            <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-base sm:text-lg ${isReceita ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}">${isReceita ? '💰' : '💸'}</div>
-            <div class="w-3 h-3 rounded-full mt-1" style="background-color: ${categoria?.cor || '#6B7280'}"></div>
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all duration-200 group overflow-hidden">
+      <div class="p-4">
+        <div class="flex items-start justify-between gap-4">
+          <div class="flex items-start gap-3 min-w-0 flex-1">
+            <div class="flex-shrink-0">
+              <div class="w-12 h-12 rounded-full flex items-center justify-center text-lg ${isReceita ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300' : 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300'}">
+                ${isReceita ? '💰' : '💸'}
+              </div>
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-2 mb-1">
+                <h4 class="font-semibold text-gray-900 dark:text-gray-100 truncate">${t.descricao}</h4>
+                ${t.recorrenteId ? '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">🔄</span>' : ''}
+              </div>
+              <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                <span class="font-medium">${categoria?.nome || 'Sem categoria'}</span>
+                <span>•</span>
+                <span>${dataFormatada}</span>
+                ${parcelaInfo ? `<span class="text-xs">${parcelaInfo}</span>` : ''}
+              </div>
+            </div>
           </div>
-          <div class="min-w-0 flex-1">
-            <p class="list-item-title font-medium text-gray-900 dark:text-gray-100 truncate">${t.descricao}</p>
+          <div class="text-right flex-shrink-0">
+            <div class="text-lg font-bold ${isReceita ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}">
+              ${isReceita ? '+' : '-'}R$ ${parseFloat(t.valor).toFixed(2)}
+            </div>
+            <div class="text-xs text-gray-500 dark:text-gray-400">${isReceita ? 'receita' : 'despesa'}</div>
           </div>
-        </div>
-        <div class="text-right mt-0.5 sm:mt-0">
-          <span class="font-bold text-base sm:text-lg ${isReceita ? 'text-green-600' : 'text-red-600'}">${isReceita ? '+' : '-'}R$ ${parseFloat(t.valor).toFixed(2)}</span>
         </div>
       </div>
-      <div class="mt-2 flex items-center justify-between gap-3">
-        <p class="list-item-subtitle text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 truncate">${categoria?.nome || 'Sem categoria'} • ${dataFormatada}${parcelaInfo}</p>
-        <div class="opacity-80 sm:opacity-60 group-hover:opacity-100 flex gap-1">
-          <button onclick="window.editTransaction && window.editTransaction('${t.id}')" class="text-blue-600 hover:text-blue-800 p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900 transition-all duration-200" title="Editar transação">✏️</button>
-          <button onclick="window.deleteTransactionWithConfirmation && window.deleteTransactionWithConfirmation('${t.id}', '${(t.descricao || '').replace(/'/g, "\\'")}')" class="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900 transition-all duration-200" title="Excluir transação">🗑️</button>
+      <div class="px-4 pb-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="w-3 h-3 rounded-full" style="background-color: ${categoria?.cor || '#6B7280'}"></div>
+            <span class="text-xs text-gray-500 dark:text-gray-400">Categoria</span>
+          </div>
+          <div class="opacity-60 group-hover:opacity-100 flex gap-1 transition-opacity">
+            <button onclick="window.editTransaction && window.editTransaction('${t.id}')" class="p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900 text-blue-600 hover:text-blue-800 transition-all duration-200" title="Editar transação">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+              </svg>
+            </button>
+            <button onclick="window.deleteTransactionWithConfirmation && window.deleteTransactionWithConfirmation('${t.id}', '${(t.descricao || '').replace(/'/g, "\\'")}')" class="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900 text-red-600 hover:text-red-800 transition-all duration-200" title="Excluir transação">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -1541,3 +1604,149 @@ try {
     window.__txTestHelpers = { ensureGroupCache, getDayGroupChunk };
   }
 } catch {}
+
+// Função global para filtrar transações por tipo
+window.filterTransactionsByType = function(tipo) {
+  console.log('🔍 [Filter] Filtrando transações por tipo:', tipo);
+  
+  try {
+    // Mostrar feedback visual
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: `Filtrando ${tipo === 'receita' ? 'receitas' : 'despesas'}...`,
+        type: 'info',
+        duration: 2000
+      });
+    }
+    
+    // Buscar todas as transações do mês atual
+    const { year: currentYear, month: currentMonth } = getSelectedPeriod();
+    const monthKey = `${currentYear}-${String(currentMonth).padStart(2, '0')}`;
+    
+    // Encontrar o container das transações
+    const monthSection = document.querySelector(`#month-${monthKey}`);
+    if (!monthSection) {
+      console.warn('🔍 [Filter] Seção do mês não encontrada:', monthKey);
+      return;
+    }
+    
+    // Buscar todos os cards de transação (bg-white dark:bg-gray-800 rounded-xl)
+    const transactionCards = monthSection.querySelectorAll('.bg-white.dark\\:bg-gray-800.rounded-xl');
+    console.log('🔍 [Filter] Cards encontrados:', transactionCards.length);
+    
+    let visibleCount = 0;
+    let hiddenCount = 0;
+    
+    transactionCards.forEach(card => {
+      // Buscar o texto do tipo dentro do card (linha 1170: "receita" ou "despesa")
+      const tipoElements = card.querySelectorAll('.text-xs.text-gray-500.dark\\:text-gray-400');
+      let cardTipo = null;
+      
+      // Procurar pelo elemento que contém "receita" ou "despesa"
+      tipoElements.forEach(el => {
+        const text = el.textContent.toLowerCase().trim();
+        if (text === 'receita' || text === 'despesa') {
+          cardTipo = text;
+        }
+      });
+      
+      console.log('🔍 [Filter] Card tipo encontrado:', cardTipo);
+      
+      if (cardTipo) {
+        if (cardTipo === tipo) {
+          card.style.display = 'block';
+          card.style.opacity = '1';
+          card.style.transform = 'scale(1)';
+          visibleCount++;
+        } else {
+          card.style.display = 'none';
+          card.style.opacity = '0';
+          card.style.transform = 'scale(0.95)';
+          hiddenCount++;
+        }
+      }
+    });
+    
+    // Mostrar resultado do filtro
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: `Filtro aplicado: ${visibleCount} ${tipo === 'receita' ? 'receitas' : 'despesas'} encontradas`,
+        type: 'success',
+        duration: 3000
+      });
+    }
+    
+    console.log(`🔍 [Filter] Filtro aplicado: ${visibleCount} visíveis, ${hiddenCount} ocultas`);
+    
+  } catch (error) {
+    console.error('🔍 [Filter] Erro ao filtrar transações:', error);
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: 'Erro ao aplicar filtro',
+        type: 'error',
+        duration: 3000
+      });
+    }
+  }
+};
+
+// Função global para limpar filtros de transações
+window.clearTransactionFilter = function() {
+  console.log('🔄 [Filter] Limpando filtros de transações');
+  
+  try {
+    // Mostrar feedback visual
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: 'Limpando filtros...',
+        type: 'info',
+        duration: 1500
+      });
+    }
+    
+    // Buscar todas as transações do mês atual
+    const { year: currentYear, month: currentMonth } = getSelectedPeriod();
+    const monthKey = `${currentYear}-${String(currentMonth).padStart(2, '0')}`;
+    
+    // Encontrar o container das transações
+    const monthSection = document.querySelector(`#month-${monthKey}`);
+    if (!monthSection) {
+      console.warn('🔄 [Filter] Seção do mês não encontrada');
+      return;
+    }
+    
+    // Buscar todos os cards de transação
+    const transactionCards = monthSection.querySelectorAll('.bg-white.dark\\:bg-gray-800.rounded-xl');
+    
+    let restoredCount = 0;
+    
+    transactionCards.forEach(card => {
+      // Restaurar visibilidade e opacidade
+      card.style.display = 'block';
+      card.style.opacity = '1';
+      card.style.transform = 'scale(1)';
+      restoredCount++;
+    });
+    
+    // Mostrar resultado
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: `Filtros removidos: ${restoredCount} transações restauradas`,
+        type: 'success',
+        duration: 2000
+      });
+    }
+    
+    console.log(`🔄 [Filter] Filtros removidos: ${restoredCount} itens restaurados`);
+    
+  } catch (error) {
+    console.error('🔄 [Filter] Erro ao limpar filtros:', error);
+    if (window.Snackbar) {
+      window.Snackbar({
+        message: 'Erro ao limpar filtros',
+        type: 'error',
+        duration: 3000
+      });
+    }
+  }
+};

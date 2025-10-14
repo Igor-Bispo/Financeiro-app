@@ -13,40 +13,75 @@ export class BiometricAuth {
 
   // Verificar se o dispositivo suporta autenticação biométrica
   checkSupport() {
+    // Apenas verificar se a API básica está disponível
     return (
       window.PublicKeyCredential &&
-      window.PublicKeyCredential
-        .isUserVerifyingPlatformAuthenticatorAvailable &&
-      window.PublicKeyCredential.isConditionalMediationAvailable
+      window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable
     );
   }
 
   // Verificar se a autenticação biométrica está disponível
   async checkAvailability() {
+    console.log('🔒 BiometricAuth: Iniciando verificação de disponibilidade...');
+    console.log('🔒 BiometricAuth: isSupported:', this.isSupported);
+    console.log('🔒 BiometricAuth: window.PublicKeyCredential:', !!window.PublicKeyCredential);
+    console.log('🔒 BiometricAuth: Capacitor.isNativePlatform:', window.Capacitor?.isNativePlatform());
+    
     if (!this.isSupported) {
-      console.log('🔒 BiometricAuth: Web Authentication API não suportada');
+      console.log('🔒 BiometricAuth: ❌ Web Authentication API não suportada');
+      // No Android WebView, a API pode não estar disponível
+      // Vamos retornar falso e informar o usuário
+      if (window.Capacitor?.isNativePlatform()) {
+        console.warn('🔒 BiometricAuth: ⚠️ Web Authentication API não disponível no WebView');
+        console.warn('🔒 BiometricAuth: 💡 A autenticação biométrica nativa requer API Level 28+ e configuração adicional');
+      }
       return false;
     }
 
     try {
-      const [userVerifying, conditionalMediation] = await Promise.all([
-        window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable(),
-        window.PublicKeyCredential.isConditionalMediationAvailable()
-      ]);
+      console.log('🔒 BiometricAuth: Verificando isUserVerifyingPlatformAuthenticatorAvailable...');
+      // Verificar se há autenticador biométrico (Face ID, impressão digital, etc.)
+      const userVerifying = await window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+      console.log('🔒 BiometricAuth: userVerifying:', userVerifying);
+      
+      // isConditionalMediationAvailable é opcional e não é suportado em todos os dispositivos
+      let conditionalMediation = true; // Assumir true por padrão
+      if (window.PublicKeyCredential.isConditionalMediationAvailable) {
+        try {
+          console.log('🔒 BiometricAuth: Verificando isConditionalMediationAvailable...');
+          conditionalMediation = await window.PublicKeyCredential.isConditionalMediationAvailable();
+          console.log('🔒 BiometricAuth: conditionalMediation:', conditionalMediation);
+        } catch (e) {
+          console.log('🔒 BiometricAuth: isConditionalMediationAvailable não disponível, mas não é crítico:', e);
+        }
+      } else {
+        console.log('🔒 BiometricAuth: isConditionalMediationAvailable não existe na API');
+      }
 
-      this.isAvailable = userVerifying && conditionalMediation;
-      console.log('🔒 BiometricAuth: Disponibilidade verificada:', {
+      // Se o dispositivo tem verificação biométrica, está disponível
+      this.isAvailable = userVerifying;
+      console.log('🔒 BiometricAuth: ✅ Disponibilidade verificada:', {
         userVerifying,
         conditionalMediation,
-        isAvailable: this.isAvailable
+        isAvailable: this.isAvailable,
+        platform: window.Capacitor?.getPlatform()
       });
+
+      if (!userVerifying && window.Capacitor?.isNativePlatform()) {
+        console.warn('🔒 BiometricAuth: ⚠️ userVerifying retornou false no dispositivo móvel');
+        console.warn('🔒 BiometricAuth: 💡 Possíveis causas:');
+        console.warn('   - Biometria não configurada no dispositivo');
+        console.warn('   - API Level < 28 (Android 9)');
+        console.warn('   - WebView não suporta Web Authentication API');
+        console.warn('   - Permissões não concedidas');
+      }
 
       return this.isAvailable;
     } catch (error) {
-      console.error(
-        '🔒 BiometricAuth: Erro ao verificar disponibilidade:',
-        error
-      );
+      console.error('🔒 BiometricAuth: ❌ Erro ao verificar disponibilidade:', error);
+      console.error('🔒 BiometricAuth: Error name:', error.name);
+      console.error('🔒 BiometricAuth: Error message:', error.message);
+      console.error('🔒 BiometricAuth: Error stack:', error.stack);
       return false;
     }
   }
@@ -65,11 +100,16 @@ export class BiometricAuth {
       window.crypto.getRandomValues(challenge);
 
       // Criar opções de registro
+      // Em APK, o hostname pode ser localhost ou vazio, então usar um ID fixo
+      const rpId = window.Capacitor?.isNativePlatform() 
+        ? undefined  // Não especificar rpId no APK (usa o domínio do app automaticamente)
+        : window.location.hostname;
+      
       const publicKeyOptions = {
         challenge: challenge,
         rp: {
-          name: 'Servo Tech Finanças',
-          id: window.location.hostname
+          name: 'Controle Financeiro',
+          ...(rpId && { id: rpId }) // Apenas adicionar 'id' se rpId não for undefined
         },
         user: {
           id: new Uint8Array(16),

@@ -2,20 +2,148 @@ import './bootstrap.js';
 import '../js/config/settings.handlers.js'; // Garante handlers globais no window (corrigido path)
 import '../js/config/notification.triggers.js'; // Inicializa gatilhos de notificações (recorrentes + resumo semanal)
 import '../js/ui/ConfirmModal.js'; // Modal de confirmação moderno
+import { setupAPKLoginHandler } from '../js/apk-login-handler.js'; // Handler específico para login no APK
 // Modal de transações será carregado dinamicamente quando necessário
 // Arquivo de entrada principal da aplicação
 // Substitui o app.js gigante com uma versão limpa e modular
 
 import '../css/styles.css';
 import { bootstrap } from './main.js';
-import { logger } from '@core/logger/logger.js';
+import { logger, setLevel } from '@core/logger/logger.js';
 import { applyThemeSettings, setupThemeToggle } from '@features/theme/ThemeService.js';
 import { eventBus } from '@core/events/eventBus.js';
+
+// Verificar resultado de redirect do Google (APENAS para APK real)
+async function checkRedirectResult() {
+  // Verificar se estamos em um APK real (não navegador em modo mobile)
+  const isAPK = window.Capacitor?.isNativePlatform();
+  
+  if (!isAPK) {
+    console.log('ℹ️ [REDIRECT] Navegador detectado - pulando verificação de redirect (usa popup)');
+    return false;
+  }
+  
+  try {
+    const { getRedirectResult, onAuthStateChanged } = await import('firebase/auth');
+    const { auth } = await import('@data/firebase/client.js');
+    const { ensureUserProfile } = await import('@features/auth/service.js');
+    const { activateRealtimeAfterLogin } = await import('./bootstrap.js');
+    
+    console.log('🔍 [REDIRECT] ✅ APK REAL detectado - processando redirect...');
+    console.log('🔍 [REDIRECT] Current URL:', window.location.href);
+    console.log('🔍 [REDIRECT] Capacitor Platform:', window.Capacitor?.getPlatform());
+    console.log('🔍 [REDIRECT] User Agent:', navigator.userAgent);
+    
+    console.log('🔍 [REDIRECT] Chamando getRedirectResult...');
+    const result = await getRedirectResult(auth);
+    console.log('🔍 [REDIRECT] getRedirectResult retornou:', result ? 'user encontrado' : 'null');
+    
+    if (result && result.user) {
+      console.log('🎉🎉🎉 [REDIRECT] ✅✅✅ LOGIN VIA REDIRECT BEM-SUCEDIDO! ✅✅✅ 🎉🎉🎉');
+      console.log('✅ [REDIRECT] User Email:', result.user.email);
+      console.log('✅ [REDIRECT] User ID:', result.user.uid);
+      console.log('✅ [REDIRECT] Display Name:', result.user.displayName);
+      console.log('✅ [REDIRECT] Photo URL:', result.user.photoURL);
+      console.log('✅ [REDIRECT] Provider:', result.providerId);
+      
+      try {
+        // Limpar flags de auth em progresso
+        console.log('🔧 [REDIRECT] Limpando flags de auth...');
+        localStorage.removeItem('authInProgress');
+        localStorage.removeItem('authTimestamp');
+        console.log('✅ [REDIRECT] Flags de auth limpas');
+        
+        // Criar perfil do usuário no Firestore
+        console.log('🔧 [REDIRECT] Criando/atualizando perfil no Firestore...');
+        await ensureUserProfile(result.user);
+        console.log('✅ [REDIRECT] Perfil do usuário criado/atualizado no Firestore');
+        
+        // Atualizar appState
+        console.log('🔧 [REDIRECT] Atualizando appState...');
+        window.appState = window.appState || {};
+        window.appState.currentUser = result.user;
+        console.log('✅ [REDIRECT] appState.currentUser definido:', result.user.email);
+        
+        // Ativar listeners de dados em tempo real
+        console.log('🔧 [REDIRECT] Ativando listeners de dados em tempo real...');
+        await activateRealtimeAfterLogin(result.user);
+        console.log('✅ [REDIRECT] Listeners de dados em tempo real ativados');
+        
+        // Forçar navegação para o dashboard após login via redirect
+        console.log('🔧 [REDIRECT] Navegando para dashboard...');
+        window.location.hash = '#/dashboard';
+        console.log('✅ [REDIRECT] Hash atualizado para #/dashboard');
+        
+        // Garantir que a UI está correta
+        console.log('🔧 [REDIRECT] Ajustando visibilidade da UI...');
+        const loginPage = document.getElementById('login-page');
+        const appContainer = document.querySelector('.app-container');
+        const loadingPage = document.getElementById('loading-page');
+        
+        if (loginPage) {
+          loginPage.style.display = 'none';
+          console.log('✅ [REDIRECT] Login page ocultada');
+        }
+        if (loadingPage) {
+          loadingPage.style.display = 'none';
+          console.log('✅ [REDIRECT] Loading page ocultada');
+        }
+        if (appContainer) {
+          appContainer.style.display = 'flex';
+          console.log('✅ [REDIRECT] App container exibido');
+        }
+        
+        console.log('🎉 [REDIRECT] ✅✅✅ REDIRECT PROCESSADO COM SUCESSO! ✅✅✅');
+        
+        return true;
+      } catch (processingError) {
+        console.error('❌❌❌ [REDIRECT] ERRO AO PROCESSAR REDIRECT:', processingError);
+        console.error('❌ [REDIRECT] Error message:', processingError.message);
+        console.error('❌ [REDIRECT] Error stack:', processingError.stack);
+        throw processingError;
+      }
+    }
+    
+    console.log('ℹ️ [REDIRECT] Sem resultado de redirect, verificando auth state...');
+    
+    // Verificar se já está logado
+    return new Promise((resolve) => {
+      const unsubscribe = onAuthStateChanged(auth, async (user) => {
+        unsubscribe();
+        if (user) {
+          console.log('✅ [REDIRECT] Usuário já está logado:', user.email);
+          
+          // Ativar listeners de dados em tempo real
+          await activateRealtimeAfterLogin(user);
+          
+          // NÃO forçar navegação aqui - deixar o onAuthStateChanged do AuthService cuidar disso
+          console.log('✅ [REDIRECT] Usuário já logado, aguardando AuthService processar...');
+          
+          resolve(true);
+        } else {
+          console.log('ℹ️ [REDIRECT] Usuário não está logado');
+          resolve(false);
+        }
+      });
+    });
+  } catch (error) {
+    console.error('❌ [REDIRECT] Erro ao verificar redirect:', error);
+    console.error('❌ [REDIRECT] Error code:', error.code);
+    console.error('❌ [REDIRECT] Error message:', error.message);
+    return false;
+  }
+}
 
 // Inicializar aplicação quando DOM estiver pronto
 document.addEventListener('DOMContentLoaded', async () => {
   try {
     logger.info('DOM carregado, iniciando aplicação...');
+    
+    // Verificar se voltamos de um redirect do Google (mobile/APK)
+    await checkRedirectResult();
+    
+    // Reduzir verbosidade em produção
+    try { if (import.meta.env && import.meta.env.PROD) { setLevel('warn'); } } catch {}
     // Segurança: garantir que o modal de voz comece fechado e sem eventos
     try {
       const vm = document.getElementById('voice-modal');
@@ -48,7 +176,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       const { setupLoginButton, checkAuthState } = await import('@features/index.js');
       setupLoginButton();
-      
+
       // Aguardar verificação de autenticação com timeout
       const authPromise = checkAuthState();
       const timeoutPromise = new Promise((resolve) => {
@@ -57,12 +185,49 @@ document.addEventListener('DOMContentLoaded', async () => {
           resolve(false);
         }, 3000);
       });
-      
+
       await Promise.race([authPromise, timeoutPromise]);
     } catch (authWireErr) {
       logger.warn('Falha ao configurar login/estado de auth:', authWireErr);
     }
-    await bootstrap();
+    // Bootstrap com timeout para evitar travamento
+    console.log('🚀 [Entry] Iniciando bootstrap...');
+    const bootstrapPromise = bootstrap();
+    const timeoutPromise = new Promise((resolve) => {
+      setTimeout(() => {
+        console.log('⏰ [Entry] Timeout no bootstrap - continuando...');
+        resolve();
+      }, 15000); // 15s timeout
+    });
+    
+    await Promise.race([bootstrapPromise, timeoutPromise]);
+    console.log('✅ [Entry] Bootstrap concluído (ou timeout atingido)');
+    
+    // Ocultar SplashScreen (Capacitor) após bootstrap para evitar flicker (somente em nativo)
+    try {
+      if (typeof window !== 'undefined' && window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
+        // Verificar se o plugin está disponível antes de importar
+        if (window.Capacitor.Plugins && window.Capacitor.Plugins.SplashScreen) {
+          try {
+            await window.Capacitor.Plugins.SplashScreen.hide({ fadeOutDuration: 200 });
+          } catch (hideError) {
+            console.log('SplashScreen hide error:', hideError);
+          }
+        }
+      }
+    } catch (capacitorError) {
+      console.log('Capacitor SplashScreen not available:', capacitorError);
+    }
+
+    // Garantir que a tela de loading seja ocultada
+    try {
+      if (window.showLoading) {
+        window.showLoading(false);
+        console.log('🎯 [Entry] Loading ocultado após bootstrap');
+      }
+    } catch (e) {
+      console.warn('⚠️ [Entry] Erro ao ocultar loading:', e);
+    }
     // Conectar toggle de tema após bootstrap quando o botão existir
     try {
       setupThemeToggle();
@@ -91,8 +256,8 @@ if (false && import.meta.env && import.meta.env.PROD && 'serviceWorker' in navig
       const registration = await navigator.serviceWorker.register('/service-worker.js');
       logger.info('Service Worker registrado:', registration.scope);
 
-      // Banner persistente para atualização
-      const showUpdateBanner = () => {
+      // Banner persistente para atualização (comentado - função não utilizada atualmente)
+      /* const _showUpdateBanner = () => {
         try {
           if (document.getElementById('update-banner')) return;
           const bar = document.createElement('div');
@@ -203,13 +368,13 @@ if (false && import.meta.env && import.meta.env.PROD && 'serviceWorker' in navig
             });
           }
         } catch {}
-      };
+      }; */
       const hideUpdateBanner = () => {
         try { const el = document.getElementById('update-banner'); if (el) el.remove(); } catch {}
       };
 
-      // Detectar atualização disponível e oferecer refresh
-      function promptUpdate() {
+      // Detectar atualização disponível e oferecer refresh (comentado - função não utilizada atualmente)
+      /* function _promptUpdate() {
         try {
           // Lazy import do Snackbar
           import('@js/ui/Snackbar.js').then(({ Snackbar }) => {
@@ -250,7 +415,7 @@ if (false && import.meta.env && import.meta.env.PROD && 'serviceWorker' in navig
             }
           });
         } catch {}
-      }
+      } */
 
       // DESABILITADO PARA EVITAR LOOP INFINITO
       // Se um novo SW foi instalado e está waiting, marca e sugere atualizar
@@ -399,3 +564,8 @@ try {
     };
   }
 } catch {}
+
+// ===== CONFIGURAR LOGIN APK =====
+// Executar handler de login específico para APK
+console.log('🚨 [Entry] Chamando setupAPKLoginHandler...');
+setupAPKLoginHandler();

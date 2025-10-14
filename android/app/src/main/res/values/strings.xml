@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Servo Tech Controle Financeiro</string>
+    <string name="title_activity_main">Servo Tech Controle Financeiro</string>
+    <string name="package_name">com.financeiro.app</string>
+    <string name="custom_url_scheme">com.financeiro.app</string>
+    <string name="server_client_id">418109336597-mi7u3efmc2g9854r7uboupcc9iru3v5h.apps.googleusercontent.com</string>
+</resources>

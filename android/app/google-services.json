@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "418109336597",
+    "project_id": "controle-financeiro-b98ec",
+    "storage_bucket": "controle-financeiro-b98ec.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:418109336597:android:b3efd7d93ea03862ebb21c",
+        "android_client_info": {
+          "package_name": "com.financeiro.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "418109336597-av0obso0lk8hf1ovb43rcje19kkb3pm7.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.financeiro.app",
+            "certificate_hash": "c23c103d8900bcb5e9a8ca99edb95fd5a4cd88ee"
+          }
+        },
+        {
+          "client_id": "418109336597-rvf9l9eevq8bd1tmtrcq2kfi3l9gmpdj.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.financeiro.app",
+            "certificate_hash": "82a15f70f1b1e05e65b27b55fd1fe8afd169111c"
+          }
+        },
+        {
+          "client_id": "418109336597-mi7u3efmc2g9854r7uboupcc9iru3v5h.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDmTxdU2W84wYqBH5nHD5VZuPf9lfuh_1Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "418109336597-mi7u3efmc2g9854r7uboupcc9iru3v5h.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

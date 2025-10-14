@@ -5,8 +5,9 @@ const DYNAMIC_CACHE = `financeiro-dynamic-${VERSION}`;
 const FALLBACK_CACHE = `financeiro-fallback-${VERSION}`;
 const MAX_CACHE_ITEMS = 100;
 
-// Ativar modo debug durante desenvolvimento
-const DEBUG = false; // Desabilitado para produção
+// Verificar se estamos em desenvolvimento
+const IS_DEVELOPMENT = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+const DEBUG = IS_DEVELOPMENT; // Ativar debug em desenvolvimento
 function log(...args) {
   if (DEBUG) {console.log('[SW]', ...args);}
 }
@@ -63,7 +64,10 @@ const NETWORK_ONLY_ROUTES = [
   '/api/',
   '/auth/',
   'https://www.googleapis.com/',
-  'https://identitytoolkit.googleapis.com/'
+  'https://identitytoolkit.googleapis.com/',
+  'https://securetoken.googleapis.com/',
+  'https://accounts.google.com/',
+  '__/auth/'
 ];
 
 // Instalação - Pré-cache de assets críticos
@@ -138,6 +142,30 @@ self.addEventListener('fetch', (e) => {
   const { request } = e;
   const url = new URL(request.url);
 
+  // Em desenvolvimento, só interceptar recursos específicos
+  if (IS_DEVELOPMENT) {
+    // Não interceptar Firebase Auth
+    if (url.href.includes('identitytoolkit.googleapis.com') ||
+        url.href.includes('securetoken.googleapis.com') ||
+        url.href.includes('accounts.google.com') ||
+        url.href.includes('www.googleapis.com')) {
+      return;
+    }
+    
+    // Não interceptar recursos do Vite
+    if (url.pathname.includes('/@vite/') ||
+        url.pathname.includes('/@fs/') ||
+        url.pathname.includes('/node_modules/') ||
+        url.pathname.includes('.ts') ||
+        url.pathname.includes('.js') ||
+        url.pathname.includes('.css') ||
+        url.pathname.includes('.vue') ||
+        url.pathname.includes('.jsx') ||
+        url.pathname.includes('.tsx')) {
+      return;
+    }
+  }
+
   // Ignorar requisições não-GET
   if (request.method !== 'GET') {
     return;
@@ -167,11 +195,35 @@ function isStaleWhileRevalidate(pathname) {
 
 // Verificar se é uma rota que deve ignorar o cache
 function isNetworkOnly(url) {
+  // Em desenvolvimento local, sempre passar Firebase Auth diretamente
+  if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
+    if (url.href.includes('identitytoolkit.googleapis.com') ||
+        url.href.includes('securetoken.googleapis.com') ||
+        url.href.includes('accounts.google.com') ||
+        url.href.includes('www.googleapis.com')) {
+      return true;
+    }
+  }
+  
+  // Firebase Auth e Google APIs nunca devem ser interceptados
+  const firebaseAuthDomains = [
+    'identitytoolkit.googleapis.com',
+    'securetoken.googleapis.com',
+    'accounts.google.com',
+    'www.googleapis.com'
+  ];
+  
+  // Verificar se é domínio do Firebase Auth
+  if (firebaseAuthDomains.some(domain => url.href.includes(domain))) {
+    return true;
+  }
+  
   // Considera tanto pathname quanto href para cobrir absolutos
   return (
     NETWORK_ONLY_ROUTES.some(route => url.pathname.includes(route) || url.href.includes(route)) ||
     url.pathname.includes('/@vite/') ||
-    url.pathname.includes('/@fs/')
+    url.pathname.includes('/@fs/') ||
+    url.pathname.includes('__/auth/')
   );
 }
 
@@ -227,7 +279,7 @@ async function addToCache(cacheName, request, response) {
   try {
     const cache = await caches.open(cacheName);
     await cache.put(request, response);
-    
+
     // Limpar cache se necessário
     if (cacheName === DYNAMIC_CACHE) {
       trimCache(cacheName);
@@ -280,7 +332,7 @@ self.addEventListener('message', (e) => {
   if (e.data && e.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
-  
+
   if (e.data && e.data.type === 'UPDATE_CONTENT') {
     updateContent();
   }

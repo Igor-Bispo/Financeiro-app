@@ -1,6 +1,64 @@
 // Changelog simples para exibir no modal de "O que mudou"
 // Adicione entradas conforme releases forem saindo
 export const CHANGELOG = {
+  '4.56.0': {
+    date: '2025-10-09',
+    title: '4.56.0 — Modais Modernizados e Experiência Premium',
+    items: [
+      '🎨 Modais Modernizados: Todos os 6 modais de configurações com design premium unificado',
+      '🔄 Verificar Atualizações: Modal com header verde e cards de novidades organizados',
+      '❓ Ajuda e Suporte: Modal com header roxo, canais de contato e recursos úteis',
+      '⭐ Avaliar App: Modal com header amarelo e links diretos para lojas',
+      '🗑️ Limpar Cache: Modal com header laranja, avisos claros e confirmação segura',
+      '📱 Instalar App: Modal com header azul, instruções detalhadas e benefícios',
+      '🚀 Novidades: Modal já moderno mantido com changelog atualizado',
+      '🎯 Design Unificado: Headers com ícones circulares, cards com gradientes, dark mode completo',
+      '📱 Responsividade: Mobile-first design com botões padronizados',
+      '⚡ UX Premium: Animações suaves, transições elegantes e feedback visual aprimorado'
+    ]
+  },
+  '4.55.0': {
+    date: '2025-10-09',
+    title: '4.55.0 — Correções Críticas e Funcionalidades',
+    items: [
+      '🔧 Botões Funcionais: Corrigidos botões Excluir e Copiar ID de orçamentos',
+      '💰 Saldo Negativo: Dashboard agora mostra saldo negativo em vermelho quando necessário',
+      '🎨 Cores Restauradas: Cores importantes do Dashboard restauradas e preservadas',
+      '📱 Modal de Voz: Otimizado para tamanho responsivo e conteúdo não cortado',
+      '⚡ Event Handlers: Handlers específicos para todos os botões de orçamento',
+      '🔒 Confirmações: Sistema de confirmação dupla para exclusões importantes',
+      '📋 Feedback Visual: Snackbars informativos para todas as ações',
+      '🛡️ Segurança: Validações aprimoradas e tratamento de erros robusto'
+    ]
+  },
+  '4.54.0': {
+    date: '2025-10-09',
+    title: '4.54.0 — Design Clean e Padronização',
+    items: [
+      '🎨 Botões Clean: Design minimalista e moderno para todas as listas',
+      '📝 Padronização de Fontes: Fontes uniformes em todo o aplicativo',
+      '📊 Dashboard Otimizado: Layout clean com melhor aproveitamento do espaço',
+      '🔄 Lista Recorrentes: Botões menores e mais elegantes',
+      '📂 Lista Categorias: Interface moderna com botões padronizados',
+      '⚙️ Configurações: Botões em todos os cards com design unificado',
+      '🎯 UX Melhorada: Interface mais limpa e profissional',
+      '📱 Mobile First: Otimizações específicas para dispositivos móveis'
+    ]
+  },
+  '4.53.0': {
+    date: '2025-10-09',
+    title: '4.53.0 — Google Auth APK Corrigido',
+    items: [
+      '🔐 Google Auth: Autenticação 100% funcional no APK Android',
+      '📱 Capacitor Integration: Plugin nativo GoogleAuth implementado corretamente',
+      '🔑 Credentials: Conversão automática Google → Firebase credentials',
+      '💾 Persistência: Sessão mantida após minimizar o app',
+      '🔄 Cache Clear: Limpeza automática de cache corrompido',
+      '⚡ Realtime: Ativação automática de listeners após login',
+      '🛡️ Segurança: Validação de tokens e tratamento de erros robusto',
+      '📊 Dados: Carregamento correto de orçamentos após autenticação'
+    ]
+  },
   '4.43.0': {
     date: '2025-01-15',
     title: '4.43.0 — Headers Harmonizados e Modal de Alertas Interativo',
@@ -105,19 +163,19 @@ export function getLatestChangeLog() {
   versions.sort((a, b) => {
     const pa = a.split('.').map(Number);
     const pb = b.split('.').map(Number);
-    
+
     // Compara major
     if (pa[0] !== pb[0]) return pb[0] - pa[0];
     // Compara minor
     if (pa[1] !== pb[1]) return pb[1] - pa[1];
     // Compara patch
     if (pa[2] !== pb[2]) return pb[2] - pa[2];
-    
+
     return 0;
   });
-  
+
   console.log('[DEBUG] Versões ordenadas:', versions);
   console.log('[DEBUG] Versão mais recente:', versions[0]);
-  
+
   return CHANGELOG[versions[0]];
 }

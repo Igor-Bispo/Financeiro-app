@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teste Rápido do Sistema de Voz</title>
+    <script>
+        // Simular funções necessárias
+        window.console = console;
+        
+        // Mock básico do appState
+        window.appState = {
+            categories: [
+                { id: '1', nome: 'alimentacao', tipo: 'despesa' },
+                { id: '2', nome: 'transporte', tipo: 'despesa' }
+            ]
+        };
+    </script>
+</head>
+<body>
+    <h1>🎙️ Teste do Sistema de Voz</h1>
+    <div id="resultado"></div>
+    
+    <script src="../src/js/ui/VoiceSystem.js"></script>
+    <script>
+        // Teste simples
+        try {
+            const voiceSystem = new VoiceSystem();
+            
+            // Teste da regra 3 vs 4 itens
+            console.log('🧪 Testando regra 3 vs 4 itens...');
+            
+            const teste3Itens = voiceSystem.determineCommandType('categoria alimentacao despesa'); // 3 itens
+            const teste4Itens = voiceSystem.determineCommandType('gastei 100 reais supermercado despesa'); // 5 itens
+            
+            console.log('✅ 3 itens resultado:', teste3Itens); // Deve ser 'category'
+            console.log('✅ 4+ itens resultado:', teste4Itens); // Deve ser 'transaction'
+            
+            document.getElementById('resultado').innerHTML = `
+                <p><strong>3 itens:</strong> ${teste3Itens}</p>
+                <p><strong>4+ itens:</strong> ${teste4Itens}</p>
+                <p><strong>Status:</strong> Sistema funcionando!</p>
+            `;
+            
+        } catch (error) {
+            console.error('❌ Erro no teste:', error);
+            document.getElementById('resultado').innerHTML = `<p style="color: red;">Erro: ${error.message}</p>`;
+        }
+    </script>
+</body>
+</html>

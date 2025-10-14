@@ -1,4 +1,5 @@
 import { addDoc, collection, doc, getDocs, onSnapshot, query, updateDoc, where, writeBatch } from 'firebase/firestore';
+import { db } from '../firebase/client.js';
 
 const COL = 'notifications';
 
@@ -21,15 +22,15 @@ export async function listByRecipient(recipientUid, max = 50) {
 }
 
 export async function listenByRecipient(recipientUid, onData, max = 50) {
-  if (!recipientUid || typeof onData !== 'function') { 
-    console.log('[NotificationsRepo] ❌ listenByRecipient - Parâmetros inválidos:', { recipientUid, onData: typeof onData }); 
-    return () => {}; 
+  if (!recipientUid || typeof onData !== 'function') {
+    console.log('[NotificationsRepo] ❌ listenByRecipient - Parâmetros inválidos:', { recipientUid, onData: typeof onData });
+    return () => {};
   }
   console.log('[NotificationsRepo] 👂 listenByRecipient - Iniciando listener para:', recipientUid);
-  
+
   // Importar db dinamicamente para garantir que está inicializado
   const { db } = await import('@data/firebase/client.js');
-  
+
   const q = query(collection(db, COL), where('recipientUid', '==', recipientUid));
   return onSnapshot(q, (snap) => {
     let items = [];
@@ -43,16 +44,16 @@ export async function listenByRecipient(recipientUid, onData, max = 50) {
 
 // Cria uma notificação (documento único) e retorna o ID
 export async function create(notification) {
-  console.log('[NotificationsRepo] 📝 Criando notificação:', { 
-    type: notification.type, 
-    recipientUid: notification.recipientUid, 
+  console.log('[NotificationsRepo] 📝 Criando notificação:', {
+    type: notification.type,
+    recipientUid: notification.recipientUid,
     senderUid: notification.senderUid,
-    budgetId: notification.budgetId 
+    budgetId: notification.budgetId
   });
-  
+
   // Importar db dinamicamente
   const { db } = await import('@data/firebase/client.js');
-  
+
   const ref = await addDoc(collection(db, COL), notification);
   console.log('[NotificationsRepo] ✅ Notificação criada com ID:', ref.id);
   return ref.id;
@@ -61,20 +62,20 @@ export async function create(notification) {
 // Marca uma notificação como lida
 export async function markAsRead(notificationId) {
   if (!notificationId) { return; }
-  
+
   // Importar db dinamicamente
   const { db } = await import('@data/firebase/client.js');
-  
+
   await updateDoc(doc(db, COL, notificationId), { read: true });
 }
 
 // Marca várias notificações como lidas
 export async function markManyAsRead(notificationIds = []) {
   if (!Array.isArray(notificationIds) || notificationIds.length === 0) { return; }
-  
+
   // Importar db dinamicamente
   const { db } = await import('@data/firebase/client.js');
-  
+
   const batch = writeBatch(db);
   notificationIds.forEach((id) => {
     batch.update(doc(db, COL, id), { read: true });
@@ -85,10 +86,10 @@ export async function markManyAsRead(notificationIds = []) {
 // Apaga várias notificações pelos IDs
 export async function deleteMany(notificationIds = []) {
   if (!Array.isArray(notificationIds) || notificationIds.length === 0) { return; }
-  
+
   // Importar db dinamicamente
   const { db } = await import('@data/firebase/client.js');
-  
+
   const batch = writeBatch(db);
   notificationIds.forEach((id) => {
     batch.delete(doc(db, COL, id));
@@ -140,12 +141,12 @@ export async function archiveMany(notificationIds = []) {
 // Obtém notificações não lidas de um usuário
 export async function getUnreadNotifications(recipientUid, max = 50) {
   if (!recipientUid) { return []; }
-  
+
   // Importar db dinamicamente
   const { db } = await import('@data/firebase/client.js');
-  
+
   const q = query(
-    collection(db, COL), 
+    collection(db, COL),
     where('recipientUid', '==', recipientUid),
     where('read', '==', false)
   );

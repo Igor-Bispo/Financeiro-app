@@ -96,7 +96,7 @@ function getState() {
 export async function startNotificationsFor(userId) {
   console.log('[NotificationsController] 🚀 startNotificationsFor chamado para userId:', userId);
   console.log('[NotificationsController] 🔧 DEBUG: Estado atual:', getState());
-  
+
   const st = getState();
   if (!userId) {
     console.log('[NotificationsController] ❌ userId inválido, retornando');
@@ -106,9 +106,9 @@ export async function startNotificationsFor(userId) {
     console.log('[NotificationsController] ✅ Listener já ativo para este usuário');
     return st.unsub;
   }
-  if (st.unsub) { 
+  if (st.unsub) {
     console.log('[NotificationsController] 🔄 Parando listener anterior');
-    try { st.unsub(); } catch {} 
+    try { st.unsub(); } catch {}
   }
 
   console.log('[NotificationsController] 📡 Importando listenByRecipient...');
@@ -119,13 +119,13 @@ export async function startNotificationsFor(userId) {
 
   console.log('[NotificationsController] ⚙️ Obtendo preferências do usuário...');
   const prefs = await getUserPrefs(userId);
-  
+
   console.log('[NotificationsController] 👂 Iniciando listener listenByRecipient...');
   st.unsub = listenByRecipient(userId, (items) => {
     console.log('[NotificationsController] 📡 Dados recebidos do listener:', items.length, 'itens');
     console.log('[NotificationsController] 📡 Detalhes das notificações:', items.map(n => ({ id: n.id, type: n.type, read: n.read, recipientUid: n.recipientUid })));
     console.log('[NotificationsController] 🔧 DEBUG: Items completos:', items);
-    
+
     // Atualiza estado global
     window.appState = window.appState || {};
     window.appState.notifications = items;
@@ -146,10 +146,10 @@ export async function startNotificationsFor(userId) {
             if (!isToastAllowed(prefs, n)) {
               continue;
             }
-            
+
             // Verificar se deve usar modal ou snackbar
             const useModal = localStorage.getItem('notification_use_modal') !== 'false';
-            
+
             if (useModal) {
               // Usar modal para novas notificações
               try {

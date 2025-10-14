@@ -1,0 +1,521 @@
+/* ========================================
+   TIPOGRAFIA OTIMIZADA PARA MOBILE
+   Sistema de padronização para todas as abas
+   ======================================== */
+
+/* === TOKENS ESPECÍFICOS PARA MOBILE === */
+:root {
+  /* Tamanhos otimizados para telas mobile (320px - 428px) */
+  --mobile-text-xs: 0.6875rem;   /* 11px - Labels, badges pequenos */
+  --mobile-text-sm: 0.8125rem;   /* 13px - Descrições, metadados */
+  --mobile-text-base: 0.9375rem; /* 15px - Texto corpo padrão */
+  --mobile-text-lg: 1.0625rem;   /* 17px - Subtítulos, categorias */
+  --mobile-text-xl: 1.1875rem;   /* 19px - Títulos de card */
+  --mobile-text-2xl: 1.375rem;   /* 22px - Títulos de seção */
+  --mobile-text-3xl: 1.625rem;   /* 26px - Valores financeiros */
+  --mobile-text-4xl: 1.875rem;   /* 30px - Headers principais */
+  
+  /* Line heights otimizadas para legibilidade mobile */
+  --mobile-leading-tight: 1.3;
+  --mobile-leading-normal: 1.4;
+  --mobile-leading-relaxed: 1.5;
+  
+  /* Pesos de fonte mobile */
+  --mobile-font-regular: 400;
+  --mobile-font-medium: 500;
+  --mobile-font-semibold: 600;
+  --mobile-font-bold: 700;
+}
+
+/* === APLICAÇÃO AUTOMÁTICA EM MOBILE === */
+@media (max-width: 768px) {
+  /* === HIERARQUIA DE TIPOGRAFIA === */
+  
+  /* Títulos principais de página */
+  .page-title,
+  .section-header-title,
+  h1 {
+    font-size: var(--mobile-text-4xl) !important;
+    font-weight: var(--mobile-font-bold) !important;
+    line-height: var(--mobile-leading-tight) !important;
+    letter-spacing: -0.02em;
+  }
+  
+  /* Títulos de seção */
+  .section-title,
+  h2 {
+    font-size: var(--mobile-text-2xl) !important;
+    font-weight: var(--mobile-font-bold) !important;
+    line-height: var(--mobile-leading-tight) !important;
+    letter-spacing: -0.015em;
+  }
+  
+  /* Subtítulos e headers de card */
+  .card-header-title,
+  .subsection-title,
+  h3 {
+    font-size: var(--mobile-text-xl) !important;
+    font-weight: var(--mobile-font-semibold) !important;
+    line-height: var(--mobile-leading-normal) !important;
+  }
+  
+  /* Títulos de itens/transações */
+  .item-title,
+  .transaction-title,
+  .category-name {
+    font-size: var(--mobile-text-lg) !important;
+    font-weight: var(--mobile-font-medium) !important;
+    line-height: var(--mobile-leading-normal) !important;
+  }
+  
+  /* Valores monetários - destaque especial */
+  .money-value,
+  .financial-amount,
+  .balance-value {
+    font-size: var(--mobile-text-3xl) !important;
+    font-weight: var(--mobile-font-bold) !important;
+    line-height: var(--mobile-leading-tight) !important;
+    font-variant-numeric: tabular-nums;
+  }
+  
+  /* Valores monetários menores (em cards) */
+  .money-value-sm,
+  .card-money-value {
+    font-size: var(--mobile-text-xl) !important;
+    font-weight: var(--mobile-font-semibold) !important;
+    line-height: var(--mobile-leading-tight) !important;
+    font-variant-numeric: tabular-nums;
+  }
+  
+  /* Texto de corpo padrão */
+  .body-text,
+  p,
+  .text-base {
+    font-size: var(--mobile-text-base) !important;
+    font-weight: var(--mobile-font-regular) !important;
+    line-height: var(--mobile-leading-relaxed) !important;
+  }
+  
+  /* Descrições e metadados */
+  .meta-text,
+  .description-text,
+  .text-sm {
+    font-size: var(--mobile-text-sm) !important;
+    font-weight: var(--mobile-font-regular) !important;
+    line-height: var(--mobile-leading-normal) !important;
+  }
+  
+  /* Labels, badges e textos pequenos */
+  .label-text,
+  .badge-text,
+  .text-xs {
+    font-size: var(--mobile-text-xs) !important;
+    font-weight: var(--mobile-font-medium) !important;
+    line-height: var(--mobile-leading-normal) !important;
+    letter-spacing: 0.02em;
+  }
+  
+  /* === COMPONENTES ESPECÍFICOS === */
+  
+  /* Botões */
+  button,
+  .btn,
+  .u-btn {
+    font-size: var(--mobile-text-base) !important;
+    font-weight: var(--mobile-font-medium) !important;
+    line-height: var(--mobile-leading-tight) !important;
+    letter-spacing: 0.01em;
+    min-height: 44px; /* Touch target mínimo */
+  }
+  
+  /* Botões pequenos */
+  .btn-sm,
+  .u-btn-sm {
+    font-size: var(--mobile-text-sm) !important;
+    min-height: 36px;
+  }
+  
+  /* Botões grandes */
+  .btn-lg,
+  .u-btn-lg {
+    font-size: var(--mobile-text-lg) !important;
+    min-height: 52px;
+  }
+  
+  /* Input fields */
+  input,
+  textarea,
+  select {
+    font-size: var(--mobile-text-base) !important;
+    font-weight: var(--mobile-font-regular) !important;
+    line-height: var(--mobile-leading-normal) !important;
+    min-height: 44px; /* Touch target */
+  }
+  
+  /* Placeholders */
+  input::placeholder,
+  textarea::placeholder {
+    font-size: var(--mobile-text-sm) !important;
+    font-weight: var(--mobile-font-regular) !important;
+  }
+  
+  /* === NAVEGAÇÃO BOTTOM === */
+  .bottom-nav-label {
+    font-size: var(--mobile-text-xs) !important;
+    font-weight: var(--mobile-font-medium) !important;
+    line-height: var(--mobile-leading-tight) !important;
+    letter-spacing: 0.015em;
+  }
+  
+  /* === FAB === */
+  .fab-label {
+    font-size: var(--mobile-text-sm) !important;
+    font-weight: var(--mobile-font-medium) !important;
+  }
+  
+  /* === ESPECÍFICO POR ABA === */
+  
+  /* Dashboard */
+  .dashboard-period-title {
+    font-size: var(--mobile-text-sm) !important;
+    font-weight: var(--mobile-font-semibold) !important;
+  }
+  
+  .dashboard-summary-value {
+    font-size: var(--mobile-text-3xl) !important;
+    font-weight: var(--mobile-font-bold) !important;
+  }
+  
+  .dashboard-summary-label {
+    font-size: var(--mobile-text-xs) !important;
+    font-weight: var(--mobile-font-medium) !important;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  
+  .dashboard-category-name {
+    font-size: var(--mobile-text-base) !important;
+    font-weight: var(--mobile-font-medium) !important;
+  }
+  
+  .dashboard-category-amount {
+    font-size: var(--mobile-text-lg) !important;
+    font-weight: var(--mobile-font-semibold) !important;
+  }
+  
+  /* Transações */
+  .transaction-date-header {
+    font-size: var(--mobile-text-sm) !important;
+    font-weight: var(--mobile-font-semibold) !important;
+  }
+  
+  .transaction-item-title {
+    font-size: var(--mobile-text-base) !important;
+    font-weight: var(--mobile-font-medium) !important;
+  }
+  
+  .transaction-item-category {
+    font-size: var(--mobile-text-sm) !important;
+    font-weight: var(--mobile-font-regular) !important;
+  }
+  
+  .transaction-item-amount {
+    font-size: var(--mobile-text-xl) !important;
+    font-weight: var(--mobile-font-bold) !important;
+  }
+  
+  /* Categorias */
+  .category-card-title {
+    font-size: var(--mobile-text-lg) !important;
+    font-weight: var(--mobile-font-semibold) !important;
+  }
+  
+  .category-budget-value {
+    font-size: var(--mobile-text-2xl) !important;
+    font-weight: var(--mobile-font-bold) !important;
+  }
+  
+  .category-spent-value {
+    font-size: var(--mobile-text-lg) !important;
+    font-weight: var(--mobile-font-semibold) !important;
+  }
+  
+  .category-percentage {
+    font-size: var(--mobile-text-sm) !important;
+    font-weight: var(--mobile-font-medium) !important;
+  }
+  
+  /* Recorrentes */
+  .recorrente-card-title {
+    font-size: var(--mobile-text-base) !important;
+    font-weight: var(--mobile-font-medium) !important;
+  }
+  
+  .recorrente-amount {
+    font-size: var(--mobile-text-xl) !important;
+    font-weight: var(--mobile-font-bold) !important;
+  }
+  
+  .recorrente-parcels {
+    font-size: var(--mobile-text-sm) !important;
+    font-weight: var(--mobile-font-regular) !important;
+  }
+  
+  .recorrente-status {
+    font-size: var(--mobile-text-xs) !important;
+    font-weight: var(--mobile-font-medium) !important;
+  }
+  
+  /* Notificações */
+  .notification-title {
+    font-size: var(--mobile-text-base) !important;
+    font-weight: var(--mobile-font-medium) !important;
+  }
+  
+  .notification-message {
+    font-size: var(--mobile-text-sm) !important;
+    font-weight: var(--mobile-font-regular) !important;
+  }
+  
+  .notification-time {
+    font-size: var(--mobile-text-xs) !important;
+    font-weight: var(--mobile-font-regular) !important;
+  }
+  
+  /* === AJUSTES PARA TELAS PEQUENAS (< 375px) === */
+  @media (max-width: 375px) {
+    /* Reduzir um pouco mais para telas muito pequenas */
+    .page-title,
+    h1 {
+      font-size: 1.75rem !important; /* 28px */
+    }
+    
+    .section-title,
+    h2 {
+      font-size: 1.25rem !important; /* 20px */
+    }
+    
+    .money-value,
+    .financial-amount,
+    .balance-value {
+      font-size: 1.5rem !important; /* 24px */
+    }
+  }
+  
+  /* === AJUSTES PARA TELAS MÉDIAS (375px - 428px) === */
+  @media (min-width: 375px) and (max-width: 428px) {
+    /* Tamanhos ideais para iPhone/Android padrão */
+    .page-title,
+    h1 {
+      font-size: 1.875rem !important; /* 30px */
+    }
+    
+    .section-title,
+    h2 {
+      font-size: 1.375rem !important; /* 22px */
+    }
+  }
+}
+
+/* === REGRAS GLOBAIS (SEMPRE ATIVAS) === */
+
+/* Garantir legibilidade em todas as telas */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Valores monetários sempre com números tabulares */
+[class*="money"],
+[class*="amount"],
+[class*="value"],
+[class*="balance"] {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* Garantir contraste mínimo para acessibilidade */
+.text-gray-400 {
+  color: rgb(156 163 175 / 0.9) !important;
+}
+
+.text-gray-500 {
+  color: rgb(107 114 128) !important;
+}
+
+.text-gray-600 {
+  color: rgb(75 85 99) !important;
+}
+
+/* Modo escuro - ajustar contrastes */
+.dark .text-gray-400 {
+  color: rgb(156 163 175) !important;
+}
+
+.dark .text-gray-500 {
+  color: rgb(156 163 175 / 0.9) !important;
+}
+
+.dark .text-gray-600 {
+  color: rgb(209 213 219 / 0.8) !important;
+}
+
+/* === OTIMIZAÇÕES DE PERFORMANCE === */
+
+/* Preload de fontes para evitar FOIT (Flash of Invisible Text) */
+@supports (font-display: swap) {
+  @font-face {
+    font-family: 'Inter';
+    font-display: swap;
+  }
+}
+
+/* Evitar quebras de linha inadequadas em valores */
+.nowrap {
+  white-space: nowrap;
+}
+
+/* Truncar textos longos com reticências */
+.truncate-mobile {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+/* Limitar linhas de texto */
+.line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* === TOUCH TARGETS === */
+/* Garantir áreas de toque adequadas (mínimo 44x44px) */
+@media (max-width: 768px) {
+  button,
+  a.btn,
+  .touchable,
+  .clickable {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 12px 16px;
+  }
+  
+  /* Botões de ação inline (editar, deletar, etc) */
+  .action-btn,
+  .icon-btn {
+    min-height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* === ESPAÇAMENTO VERTICAL CONSISTENTE === */
+@media (max-width: 768px) {
+  /* Entre seções */
+  .section-spacing {
+    margin-bottom: 24px;
+  }
+  
+  /* Entre cards */
+  .card-spacing {
+    margin-bottom: 16px;
+  }
+  
+  /* Entre items de lista */
+  .item-spacing {
+    margin-bottom: 12px;
+  }
+  
+  /* Padding de cards */
+  .card-padding {
+    padding: 16px;
+  }
+  
+  /* Padding de seções */
+  .section-padding {
+    padding: 20px 16px;
+  }
+}
+
+/* === CLASSES HELPER === */
+
+/* Texto responsivo - ajusta automaticamente */
+.responsive-text-xs { font-size: var(--mobile-text-xs); }
+.responsive-text-sm { font-size: var(--mobile-text-sm); }
+.responsive-text-base { font-size: var(--mobile-text-base); }
+.responsive-text-lg { font-size: var(--mobile-text-lg); }
+.responsive-text-xl { font-size: var(--mobile-text-xl); }
+.responsive-text-2xl { font-size: var(--mobile-text-2xl); }
+.responsive-text-3xl { font-size: var(--mobile-text-3xl); }
+.responsive-text-4xl { font-size: var(--mobile-text-4xl); }
+
+/* Pesos responsivos */
+.responsive-font-regular { font-weight: var(--mobile-font-regular); }
+.responsive-font-medium { font-weight: var(--mobile-font-medium); }
+.responsive-font-semibold { font-weight: var(--mobile-font-semibold); }
+.responsive-font-bold { font-weight: var(--mobile-font-bold); }
+
+/* === ACESSIBILIDADE === */
+
+/* Aumentar tamanho mínimo para pessoas com baixa visão */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    font-size: 16px; /* Base size */
+  }
+}
+
+/* Respeitar preferências do sistema */
+@media (prefers-contrast: high) {
+  * {
+    font-weight: 500 !important; /* Fonte mais pesada para alto contraste */
+  }
+}
+
+/* === OTIMIZAÇÃO DE LEITURA === */
+
+/* Espaçamento entre parágrafos */
+p + p {
+  margin-top: 0.75em;
+}
+
+/* Listas */
+ul, ol {
+  padding-left: 1.5em;
+  line-height: var(--mobile-leading-relaxed);
+}
+
+li {
+  margin-bottom: 0.5em;
+}
+
+/* === DEBUG (REMOVER EM PRODUÇÃO) === */
+/* 
+.page-title::after { content: ' [4xl]'; opacity: 0.3; }
+.section-title::after { content: ' [2xl]'; opacity: 0.3; }
+.card-header-title::after { content: ' [xl]'; opacity: 0.3; }
+.item-title::after { content: ' [lg]'; opacity: 0.3; }
+.body-text::after { content: ' [base]'; opacity: 0.3; }
+.meta-text::after { content: ' [sm]'; opacity: 0.3; }
+.label-text::after { content: ' [xs]'; opacity: 0.3; }
+*/
+

@@ -55,7 +55,7 @@ export class SwipeNavigation {
 
   createSwipeIndicator() {
     console.log('🎨 SwipeNavigation: Criando indicador visual...');
-    
+
     // Criar indicador visual de swipe
     this.swipeIndicator = document.createElement('div');
     this.swipeIndicator.id = 'swipe-indicator';
@@ -151,7 +151,7 @@ export class SwipeNavigation {
     document.head.appendChild(style);
     document.body.appendChild(this.swipeIndicator);
     console.log('✅ SwipeNavigation: Indicador visual adicionado ao DOM');
-    
+
     // Mostrar o indicador por alguns segundos para o usuário ver
     setTimeout(() => {
       if (this.swipeIndicator) {
@@ -159,7 +159,7 @@ export class SwipeNavigation {
         console.log('👁️ SwipeNavigation: Indicador visual mostrado');
       }
     }, 1000);
-    
+
     // Esconder após 5 segundos
     setTimeout(() => {
       if (this.swipeIndicator) {
@@ -171,7 +171,7 @@ export class SwipeNavigation {
 
   bindEvents() {
     console.log('🔗 SwipeNavigation: Configurando eventos...');
-    
+
     // Verificar se não está na tela de login
     const loginPage = document.getElementById('login-page');
     if (loginPage && loginPage.style.display !== 'none') {
@@ -212,7 +212,7 @@ export class SwipeNavigation {
       capture: true
     });
     console.log('⌨️ SwipeNavigation: Eventos de teclado configurados');
-    
+
     // Listener leve para mudanças de rota
     this.observeRouteChanges();
     console.log('✅ SwipeNavigation: Todos os eventos configurados com sucesso!');
@@ -315,7 +315,7 @@ export class SwipeNavigation {
 
   handleKeydown(e) {
     console.log('⌨️ SwipeNavigation: Tecla pressionada:', e.key);
-    
+
     // Verificar se não está em um input ou textarea
     if (
       e.target.tagName === 'INPUT' ||

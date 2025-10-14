@@ -22,7 +22,7 @@ function createMockSWEnv() {
 describe('Service Worker update helper', () => {
   beforeEach(() => {
     global.navigator = { serviceWorker: undefined };
-  global.window = { location: { reload: vi.fn() }, __swUpdateState: {} };
+    global.window = { location: { reload: vi.fn() }, __swUpdateState: {} };
   });
 
   it('registerServiceWorker triggers onNewVersion when new worker installed', async () => {
@@ -48,8 +48,8 @@ describe('Service Worker update helper', () => {
   });
 
   it('listenForControllerChange reloads page once', () => {
-  const { listeners } = createMockSWEnv();
-  window.__swUpdateState = {};
+    const { listeners } = createMockSWEnv();
+    window.__swUpdateState = {};
     listenForControllerChange();
     listeners['sw:controllerchange'] && listeners['sw:controllerchange']();
     listeners['sw:controllerchange'] && listeners['sw:controllerchange']();

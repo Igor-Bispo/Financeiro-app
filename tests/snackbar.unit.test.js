@@ -16,8 +16,8 @@ describe('Snackbar', () => {
     // Element exists
     const el = await waitFor(() => document.querySelector('[data-snackbar="1"]'));
     expect(el).toBeTruthy();
-  // Auto-dismiss: aguarda até ser removido
-  await waitFor(() => !document.querySelector('[data-snackbar="1"]'), 600);
+    // Auto-dismiss: aguarda até ser removido
+    await waitFor(() => !document.querySelector('[data-snackbar="1"]'), 600);
   });
 
   it('deduplicates consecutive same messages', () => {
@@ -40,7 +40,7 @@ async function waitFor(check, timeout = 500) {
   const start = Date.now();
   while (Date.now() - start < timeout) {
     const res = check();
-  if (res) { return res; }
+    if (res) { return res; }
     await delay(10);
   }
   throw new Error('waitFor timeout');

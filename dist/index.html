@@ -17,12 +17,81 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <!-- FORÇA APLICAÇÃO DE FONTES - INJEÇÃO DIRETA -->
+  <style>
+    /* ========================================
+       PADRONIZAÇÃO DE FONTES - VERSÃO OTIMIZADA
+       ======================================== */
+    
+    /* === FONTE PADRÃO === */
+    
+    body, p, span, div, label, input, select, textarea, a {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+      font-weight: 400 !important;
+    }
+    
+    /* === TÍTULOS MANTÊM NEGRITO === */
+    
+    h1, h2 {
+      font-weight: 700 !important;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+    }
+    
+    h3, h4, h5, h6 {
+      font-weight: 600 !important;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+    }
+    
+    /* === BOTÕES - PESO NORMAL === */
+    
+    button, .btn, .u-btn, .mobile-btn {
+      font-weight: 400 !important;
+    }
+    
+    /* === REMOVER NEGRITO DE CLASSES TAILWIND === */
+    
+    .font-bold:not(h1):not(h2):not(h3):not(h4):not(h5):not(h6),
+    .font-semibold:not(h1):not(h2):not(h3):not(h4):not(h5):not(h6),
+    .font-medium:not(h1):not(h2):not(h3):not(h4):not(h5):not(h6) {
+      font-weight: 400 !important;
+    }
+    
+    /* === VALORES MONETÁRIOS - PESO NORMAL === */
+    
+    .text-lg.font-bold:not(h1):not(h2):not(h3):not(h4):not(h5):not(h6) {
+      font-weight: 400 !important;
+    }
+    
+    /* === DASHBOARD - GARANTIR CONSISTÊNCIA === */
+    
+    #app-content h2 {
+      font-weight: 700 !important;
+      font-size: 1.25rem !important;
+    }
+    
+    @media (min-width: 768px) {
+      #app-content h2 {
+        font-size: 1.5rem !important;
+      }
+    }
+    
+    /* === CARDS DO DASHBOARD - FORÇAR PESO NORMAL === */
+    
+    #app-content .text-lg.font-bold:not(h1):not(h2):not(h3):not(h4):not(h5):not(h6),
+    #app-content .text-sm.font-semibold:not(h1):not(h2):not(h3):not(h4):not(h5):not(h6),
+    #app-content .text-xs.font-medium:not(h1):not(h2):not(h3):not(h4):not(h5):not(h6),
+    #app-content .font-bold:not(h1):not(h2):not(h3):not(h4):not(h5):not(h6) {
+      font-weight: 400 !important;
+    }
+  </style>
   
-  <!-- Sistema Biométrico -->
+  <!-- Auth legado removido - usando API modular via AuthService -->
+  
+  <!-- Sistema Biométrico -->
+
+  
+  <!-- Handler de Login APK -->
+
   
   <style>
     /* Global Styles */
@@ -31,14 +100,12 @@
       margin: 0;
       padding: 0;
     }
-    
     body {
       font-family: 'Inter', sans-serif;
       margin: 0;
       padding: 0;
       background: #f8fafc;
     }
-    
     /* Login Page Styles */
     #login-page {
       position: fixed;
@@ -53,7 +120,6 @@
       padding: 1rem;
       z-index: 9999;
     }
-
     /* Error Modal Styles */
     .error-modal-overlay {
       position: fixed;
@@ -70,7 +136,6 @@
               backdrop-filter: blur(4px);
       animation: fadeIn 0.3s ease-out;
     }
-
     .error-modal {
       background: white;
       border-radius: 20px;
@@ -81,13 +146,11 @@
       overflow: hidden;
       animation: slideIn 0.3s ease-out;
     }
-
     .error-modal-header {
       padding: 24px 24px 16px;
       text-align: center;
       border-bottom: 1px solid #f0f0f0;
     }
-
     .error-icon {
       width: 60px;
       height: 60px;
@@ -100,45 +163,37 @@
       background: #fef2f2;
       border: 3px solid #fecaca;
     }
-
     .error-icon.warning {
       background: #fffbeb;
       border-color: #fed7aa;
     }
-
     .error-icon.info {
       background: #eff6ff;
       border-color: #bfdbfe;
     }
-
     .error-title {
       font-size: 20px;
       font-weight: 600;
       color: #1f2937;
       margin: 0;
     }
-
     .error-modal-body {
       padding: 20px 24px;
     }
-
     .error-message {
       color: #6b7280;
       line-height: 1.6;
       margin: 0;
       font-size: 15px;
     }
-
     .error-message strong {
       color: #374151;
       font-weight: 600;
     }
-
     .error-modal-footer {
       padding: 16px 24px 24px;
       text-align: center;
     }
-
     .error-modal-btn {
       background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
       color: white;
@@ -151,21 +206,17 @@
       transition: all 0.2s ease;
       box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
     }
-
     .error-modal-btn:hover {
       transform: translateY(-2px);
       box-shadow: 0 6px 16px rgba(79, 70, 229, 0.4);
     }
-
     .error-modal-btn:active {
       transform: translateY(0);
     }
-
     @keyframes fadeIn {
       from { opacity: 0; }
       to { opacity: 1; }
     }
-
     @keyframes slideIn {
       from { 
         opacity: 0;
@@ -176,7 +227,6 @@
         transform: translateY(0) scale(1);
       }
     }
-
     /* Dark mode support */
     @media (prefers-color-scheme: dark) {
       .error-modal {
@@ -215,7 +265,6 @@
         border-color: #1d4ed8;
       }
     }
-
     .login-container {
       background: white;
       border-radius: 28px;
@@ -227,7 +276,6 @@
       margin: 1rem;
       position: relative;
     }
-
     .app-icon {
       width: 72px;
       height: 72px;
@@ -245,7 +293,6 @@
       overflow: hidden;
       animation: iconGlow 3s ease-in-out infinite;
     }
-
     .app-icon::before {
       content: '';
       position: absolute;
@@ -257,7 +304,6 @@
       animation: shine 2.5s ease-in-out infinite;
       transform: rotate(45deg);
     }
-
     .app-icon::after {
       content: '';
       position: absolute;
@@ -266,7 +312,6 @@
       background: linear-gradient(135deg, #10b981 0%, #059669 100%);
       z-index: -1;
     }
-
     @keyframes iconGlow {
       0%, 100% {
         box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
@@ -277,7 +322,6 @@
         filter: brightness(1.1);
       }
     }
-
     @keyframes shine {
       0% {
         transform: translateX(-100%) translateY(-100%) rotate(45deg);
@@ -289,7 +333,6 @@
         transform: translateX(100%) translateY(100%) rotate(45deg);
       }
     }
-
     .app-title {
       font-size: 1.75rem;
       font-weight: 700;
@@ -298,32 +341,27 @@
       letter-spacing: -0.025em;
       margin-top: 1rem;
     }
-
     .app-subtitle {
       color: #6b7280;
       margin-bottom: 1.5rem;
       font-size: 0.9rem;
       font-weight: 400;
     }
-
     .welcome-section {
       margin-bottom: 1.75rem;
       padding-top: 0.5rem;
     }
-
     .welcome-title {
       font-size: 1.125rem;
       font-weight: 600;
       color: #1f2937;
       margin-bottom: 0.25rem;
     }
-
     .welcome-subtitle {
       font-size: 0.8rem;
       color: #6b7280;
       font-weight: 400;
     }
-
     .login-btn {
       width: 100%;
       padding: 1rem 1.5rem;
@@ -342,12 +380,10 @@
       overflow: hidden;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
-
     .login-btn:disabled {
       opacity: 0.7;
       cursor: not-allowed;
     }
-
     .login-btn.loading::after {
       content: '';
       position: absolute;
@@ -359,52 +395,46 @@
       animation: spin 1s linear infinite;
       margin-left: 8px;
     }
-
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
-
     /* Google Login Button */
-    #btn-entrar {
-      background: #f8f9fa;
-      color: #3c4043;
-      border: 1px solid #dadce0;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    #google-login-btn {
+      background: linear-gradient(135deg, #4285f4, #34a853, #fbbc05, #ea4335);
+      color: white;
+      border: none;
+      box-shadow: 0 4px 12px rgba(66, 133, 244, 0.3);
+      transition: all 0.3s ease;
     }
-
-    #btn-entrar:hover:not(:disabled) {
-      background: #f1f3f4;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    #google-login-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(66, 133, 244, 0.4);
     }
-
-    #btn-entrar span:first-child {
-      font-size: 1.1rem;
+    #google-login-btn span:first-child {
+      font-size: 1.3rem;
+      font-weight: bold;
+      margin-right: 8px;
     }
-
     /* Demo Button - Azul como no modelo */
     .demo-btn {
       background: #3b82f6;
       color: white;
       border: none;
     }
-
     .demo-btn:hover:not(:disabled) {
       background: #2563eb;
       box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
     }
-
     /* Guest Button - Verde como no modelo */
     .guest-btn {
       background: #22c55e;
       color: white;
       border: none;
     }
-
     .guest-btn:hover:not(:disabled) {
       background: #16a34a;
       box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
     }
-
     .divider {
       display: flex;
       align-items: center;
@@ -413,7 +443,6 @@
       font-size: 0.8rem;
       font-weight: 500;
     }
-
     .divider::before,
     .divider::after {
       content: '';
@@ -421,11 +450,9 @@
       height: 1px;
       background: #e5e7eb;
     }
-
     .divider span {
       padding: 0 1.25rem;
     }
-
     /* Dark mode */
     @media (prefers-color-scheme: dark) {
       #login-page {
@@ -455,7 +482,6 @@
         background: #4b5563;
       }
     }
-
     /* Mobile responsive */
     @media (max-width: 640px) {
       .login-container {
@@ -474,9 +500,14 @@
       }
     }
   </style>
-  <script type="module" crossorigin src="/assets/main-xBaVxV05.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/main-6ahFnZtK.css">
-</head>
+  
+  
+  <link rel="stylesheet" href="/src/css/fab-fixed.css">
+  <script type="module" crossorigin src="/assets/main-Biu3WX0Y.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/vendor-BXWtuYvb.js">
+  
+    <link rel="stylesheet" href="./assets/main-BcvL6rqM.css">
+    </head>
 <body>
   <!-- Login Page -->
   <div id="login-page">
@@ -493,23 +524,23 @@
         <p class="welcome-subtitle">Faça login para acessar seu painel</p>
       </div>
       
-      <button id="btn-entrar" class="login-btn">
+      <button id="google-login-btn" class="login-btn">
         <span style="color: #4285f4;">G</span>
-        Entrar com Google
+        <span>Login com Google</span>
       </button>
       
       <div class="divider">
         <span>ou</span>
       </div>
       
-      <button id="demo-btn" class="login-btn demo-btn">
+      <button id="guest-btn" class="login-btn guest-btn">
+        <span>👤</span>
+        <span>Entrar como Convidado</span>
+      </button>
+
+      <button id="demo-btn" class="login-btn demo-btn" style="display: none;">
         <span>→</span>
         Começar agora
-      </button>
-      
-      <button id="guest-btn" class="login-btn guest-btn">
-        <span>📊</span>
-        Ver demonstração
       </button>
       
       <!-- Botão de Login Biométrico (aparece apenas se disponível) -->
@@ -521,7 +552,7 @@
   </div>
 
   <!-- Loading Page -->
-  <div id="loading-page" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: #f8fafc; display: flex; align-items: center; justify-content: center; z-index: 10000;">
+  <div id="loading-page" style="position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: #f8fafc; display: none; align-items: center; justify-content: center; z-index: 10000;">
     <div style="text-align: center;">
       <div style="width: 40px; height: 40px; border: 3px solid #e5e7eb; border-top: 3px solid #4285f4; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem;"></div>
       <p style="color: #6b7280; font-size: 0.9rem;">Carregando...</p>
@@ -540,41 +571,14 @@
     <div id="fab-container" class="fab-container"></div>
   </div>
 
-  <!-- Styles -->
+  <!-- Styles -->
+
   
-  <!-- App Scripts -->
+  <!-- App Scripts -->
+
   
   <script>
-    // Firebase Configuration
-    const firebaseConfig = {
-      apiKey: "AIzaSyCbBmmxn4Qj4CU6ymfG4MY5VGqCPSo13HY",
-      authDomain: "controle-financeiro-b98ec.firebaseapp.com",
-      projectId: "controle-financeiro-b98ec",
-      storageBucket: "controle-financeiro-b98ec.firebasestorage.app",
-      messagingSenderId: "418109336597",
-      appId: "1:418109336597:web:871b262a76e57455ebb21c",
-      measurementId: "G-7RW2F269V6"
-    };
-
-    // Initialize Firebase
-    firebase.initializeApp(firebaseConfig);
-
-    // Global toggle function (used by the existing system)
-    window.toggleLoginPage = function(show) {
-      const loginPage = document.getElementById('login-page');
-      const appContainer = document.querySelector('.app-container');
-      const loadingPage = document.getElementById('loading-page');
-
-      if (show) {
-        loginPage.style.display = 'flex';
-        if (appContainer) appContainer.style.display = 'none';
-        if (loadingPage) loadingPage.style.display = 'none';
-      } else {
-        loginPage.style.display = 'none';
-        if (appContainer) appContainer.style.display = 'flex';
-        if (loadingPage) loadingPage.style.display = 'none';
-      }
-    };
+    // toggleLoginPage movida para AuthService.js para evitar duplicação
 
     // Show loading function
     window.showLoading = function(show) {
@@ -694,14 +698,14 @@
         provider.addScope('email');
         
         // Adicionar timeout para evitar travamento
-        const loginPromise = firebase.auth().signInWithPopup(provider);
-        const timeoutPromise = new Promise((_, reject) => {
+          const loginPromise = firebase.auth().signInWithPopup(provider);
+          const timeoutPromise = new Promise((_, reject) => {
           setTimeout(() => reject(new Error('Timeout: Login demorou muito')), 30000);
-        });
-        
-        const result = await Promise.race([loginPromise, timeoutPromise]);
+          });
+          
+          const result = await Promise.race([loginPromise, timeoutPromise]);
         console.log('✅ Login Google bem-sucedido (popup):', result.user.email);
-        return result.user;
+          return result.user;
       } catch (error) {
         console.error('❌ Erro no login Google:', error);
         
@@ -742,248 +746,17 @@
       }
     }
 
-    // Demo login
-    async function demoLogin() {
-      try {
-        const result = await firebase.auth().signInAnonymously();
-        console.log('✅ Demo login bem-sucedido:', result.user.uid);
-        localStorage.setItem('demoMode', 'true');
-        return result.user;
-      } catch (error) {
-        console.error('❌ Erro no demo login:', error);
-        throw error;
-      }
-    }
+    // Demo/Guest login removidos - gerenciados por AuthService.js
 
-    // Guest login
-    async function guestLogin() {
-      try {
-        const result = await firebase.auth().signInAnonymously();
-        console.log('✅ Guest login bem-sucedido:', result.user.uid);
-        localStorage.setItem('guestMode', 'true');
-        return result.user;
-      } catch (error) {
-        console.error('❌ Erro no guest login:', error);
-        throw error;
-      }
-    }
-
-    // Setup login handlers
+    // Setup login handlers - REMOVIDO
+    // Agora gerenciado por apk-login-handler.js (módulo separado)
     document.addEventListener('DOMContentLoaded', function() {
-      console.log('🔧 Configurando handlers de login...');
+      console.log('🔧 Handlers de login gerenciados por apk-login-handler.js');
       
       // Limpar flags de auth antigas se existirem
       if (localStorage.getItem('authInProgress')) {
         localStorage.removeItem('authInProgress');
       }
-      
-      const btnEntrar = document.getElementById('btn-entrar');
-      const demoBtn = document.getElementById('demo-btn');
-      const guestBtn = document.getElementById('guest-btn');
-      const biometricBtn = document.getElementById('biometric-login-btn');
-
-      if (btnEntrar) {
-        btnEntrar.addEventListener('click', async function() {
-          console.log('🚀 Login Google clicado');
-          const btn = this;
-          const originalText = btn.innerHTML;
-          
-          // Mostrar estado de carregamento
-          btn.disabled = true;
-          btn.innerHTML = '🔄 Conectando...';
-          btn.style.opacity = '0.7';
-
-          try {
-            window.showLoading(true);
-            const user = await loginWithGoogle();
-            
-            if (user) {
-              // Set user in global state
-              if (!window.appState) window.appState = {};
-              window.appState.currentUser = user;
-              
-              // Use the existing system's toggle function
-              window.toggleLoginPage(false);
-              
-              // Navigate to dashboard
-              setTimeout(() => {
-                window.location.hash = '#/dashboard';
-              }, 100);
-            } else if (localStorage.getItem('authInProgress') === 'google') {
-              // Redirect em progresso, mostrar loading
-              window.showLoading(true);
-              console.log('🔄 Redirecionando para Google Auth...');
-            }
-          } catch (error) {
-            console.error('❌ Erro no login:', error);
-            // Erro já foi tratado no loginWithGoogle()
-          } finally {
-            window.showLoading(false);
-            // Resetar botão
-            btn.disabled = false;
-            btn.innerHTML = originalText;
-            btn.style.opacity = '1';
-          }
-        });
-      }
-
-      if (demoBtn) {
-        demoBtn.addEventListener('click', async function() {
-          console.log('🚀 Demo clicado');
-          const btn = this;
-          btn.disabled = true;
-          btn.classList.add('loading');
-
-          try {
-            window.showLoading(true);
-            const user = await demoLogin();
-            
-            if (user) {
-              if (!window.appState) window.appState = {};
-              window.appState.currentUser = user;
-              
-              window.toggleLoginPage(false);
-              
-              setTimeout(() => {
-                window.location.hash = '#/dashboard';
-              }, 100);
-            }
-          } catch (error) {
-            console.error('❌ Erro no demo:', error);
-            alert('Erro ao iniciar demonstração. Tente novamente.');
-          } finally {
-            btn.disabled = false;
-            btn.classList.remove('loading');
-            window.showLoading(false);
-          }
-        });
-      }
-
-      if (guestBtn) {
-        guestBtn.addEventListener('click', async function() {
-          console.log('🚀 Guest clicado');
-          const btn = this;
-          btn.disabled = true;
-          btn.classList.add('loading');
-
-          try {
-            window.showLoading(true);
-            const user = await guestLogin();
-            
-            if (user) {
-              if (!window.appState) window.appState = {};
-              window.appState.currentUser = user;
-              
-              window.toggleLoginPage(false);
-              
-              setTimeout(() => {
-                window.location.hash = '#/dashboard';
-              }, 100);
-            }
-          } catch (error) {
-            console.error('❌ Erro no guest login:', error);
-            alert('Erro no login. Tente novamente.');
-          } finally {
-            btn.disabled = false;
-            btn.classList.remove('loading');
-            window.showLoading(false);
-          }
-        });
-      }
-
-      // Check authentication state
-      firebase.auth().onAuthStateChanged(function(user) {
-        if (user) {
-          console.log('✅ Usuário autenticado:', user.email || user.uid);
-          if (!window.appState) window.appState = {};
-          window.appState.currentUser = user;
-          
-          // Hide login page if it's showing
-          const loginPage = document.getElementById('login-page');
-          if (loginPage && loginPage.style.display !== 'none') {
-            window.toggleLoginPage(false);
-            setTimeout(() => {
-              if (!window.location.hash || window.location.hash === '#') {
-                window.location.hash = '#/dashboard';
-              }
-            }, 100);
-          }
-        } else {
-          console.log('❌ Usuário não autenticado');
-          window.toggleLoginPage(true);
-        }
-      });
-
-      // Botão de Login Biométrico
-      if (biometricBtn) {
-        biometricBtn.addEventListener('click', async function() {
-          console.log('🔐 Login biométrico clicado');
-          const btn = this;
-          const originalText = btn.innerHTML;
-          
-          // Mostrar estado de carregamento
-          btn.disabled = true;
-          btn.innerHTML = '<span>⏳</span> Verificando...';
-          btn.style.opacity = '0.7';
-
-          try {
-            // Verificar se o sistema biométrico está disponível
-            if (window.authenticateWithBiometric) {
-              const success = await window.authenticateWithBiometric();
-              if (success) {
-                // Login bem-sucedido, redirecionar para dashboard
-                window.toggleLoginPage(false);
-                setTimeout(() => {
-                  window.location.hash = '#/dashboard';
-                }, 100);
-              }
-            } else {
-              showErrorModal(
-                'Sistema Biométrico',
-                'O sistema de autenticação biométrica não está disponível.<br><br><strong>Para usar:</strong><br>• Configure primeiro nas configurações do app<br>• Certifique-se de que seu dispositivo suporta biometria',
-                'warning'
-              );
-            }
-          } catch (error) {
-            console.error('❌ Erro no login biométrico:', error);
-            showErrorModal(
-              'Erro na Biometria',
-              'Ocorreu um erro na autenticação biométrica.<br><br><strong>Para resolver:</strong><br>• Verifique se a biometria está configurada<br>• Tente novamente<br>• Ou use outro método de login',
-              'error'
-            );
-          } finally {
-            // Resetar botão
-            btn.disabled = false;
-            btn.innerHTML = originalText;
-            btn.style.opacity = '1';
-          }
-        });
-      }
-
-      console.log('✅ Handlers de login configurados');
-      
-      // Verificar disponibilidade biométrica após carregamento
-      setTimeout(async () => {
-        try {
-          if (window.biometricAuth) {
-            const isAvailable = await window.biometricAuth.checkAvailability();
-            const hasCredentials = window.biometricAuth.hasSavedCredentials();
-            
-            console.log('🔐 Verificação biométrica:', { isAvailable, hasCredentials });
-            
-            if (isAvailable && hasCredentials && biometricBtn) {
-              biometricBtn.style.display = 'block';
-              console.log('🔐 Botão biométrico ativado');
-            } else if (biometricBtn) {
-              biometricBtn.style.display = 'none';
-              console.log('🔐 Botão biométrico oculto - não disponível ou sem credenciais');
-            }
-          }
-        } catch (error) {
-          console.warn('⚠️ Erro ao verificar biometria:', error);
-        }
-      }, 2000);
     });
-  </script>
-</body>
+  </script>`n</body>
 </html>

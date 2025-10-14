@@ -5,6 +5,18 @@ import { setupDashboardHandlers } from './DashboardHandlers.js';
 import { initDashboardDragDrop } from './DashboardDragDrop.js';
 
 let listenersAttached = false;
+let renderScheduleId = null;
+
+function scheduleDashboardRender() {
+  try {
+    if (renderScheduleId) { clearTimeout(renderScheduleId); }
+    renderScheduleId = setTimeout(() => {
+      renderScheduleId = null;
+      // Chamar sem container para respeitar o route guard
+      renderDashboard();
+    }, 50);
+  } catch {}
+}
 // lastContainer era usado para re-render local; removido com mountPeriodIndicator
 
 export function renderDashboard(container) {
@@ -27,8 +39,8 @@ export function renderDashboard(container) {
   // Attach listeners once to refresh when data or period changes
   if (!listenersAttached) {
     try {
-      // Only rerender when the active route is Dashboard by omitting the container (route guard at top)
-      const rerender = () => queueMicrotask(() => renderDashboard());
+      // Coalescer múltiplos eventos próximos para evitar renders duplicados
+      const rerender = () => scheduleDashboardRender();
       eventBus.on('transactions:updated', rerender);
       eventBus.on('categories:updated', rerender);
       eventBus.on('budget:changed', rerender);
@@ -115,7 +127,7 @@ export function renderDashboard(container) {
     var raw = (txx.valor !== null && txx.valor !== undefined ? txx.valor : txx.amount);
     var v = parseAmount(raw);
     var tipo = txx.tipo || txx.type || 'despesa';
-    
+
     // Lógica correta: receitas são positivas, despesas são negativas
     if (tipo === 'receita') {
       receitas += Math.abs(v); // Receitas sempre positivas
@@ -124,7 +136,7 @@ export function renderDashboard(container) {
     }
   }
   var saldo = receitas - despesas;
-  var totalTransacoes = tx.length;
+  var _totalTransacoes = tx.length;
 
   // Orçamento: usar valorTotal do orçamento atual, ou somar limites de categorias de despesa
   var orcado = 0;
@@ -156,9 +168,9 @@ export function renderDashboard(container) {
   var totalAlertas = 0;
   var categoriasEmAlerta = [];
   var saldoTotalCategorias = 0;
-  var totalLimitesCategorias = 0;
+  var _totalLimitesCategorias = 0;
   var categoriasComLimite = 0;
-  
+
   for (var ca=0; ca<cats.length; ca++) {
     var cc = cats[ca];
     if (!cc) continue;
@@ -166,16 +178,16 @@ export function renderDashboard(container) {
     if (limv > 0) {
       var gasto = gastoPorCategoria[cc.id] || 0;
       var perc = limv > 0 ? (gasto / limv) : 0;
-      
+
       // Calcular saldo para meta diária (apenas categorias de despesa)
       var tipoCat = (cc.tipo || 'despesa');
       if (tipoCat === 'despesa') {
         var saldoCat = limv - gasto;
         saldoTotalCategorias += saldoCat;
-        totalLimitesCategorias += limv;
+        var _totalLimitesCategorias = (_totalLimitesCategorias || 0) + limv;
         categoriasComLimite++;
       }
-      
+
       // Contar alerta se categoria ultrapassou 70% do limite
       if (perc >= 0.7) {
         totalAlertas++;
@@ -196,34 +208,34 @@ export function renderDashboard(container) {
       }
     }
   }
-  
+
   // Calcular dias restantes no mês
   var ultimoDiaDoMes = new Date(year, month, 0).getDate();
   var diaAtual = new Date().getDate();
   var diasRestantes = Math.max(1, ultimoDiaDoMes - diaAtual + 1);
-  
+
   // Meta diária global (considerando despesas já realizadas)
   // saldoTotalCategorias já é o saldo restante (limite - gasto), não precisa subtrair despesas novamente
   var saldoRestanteOrcamento = saldoTotalCategorias;
   var metaDiariaGlobal = saldoRestanteOrcamento > 0 ? (saldoRestanteOrcamento / diasRestantes) : 0;
-  
+
   // Saldo restante das receitas (considerando despesas já realizadas)
   var saldoRestanteReceitas = receitas - despesas;
-  
+
   // Meta diária para bater exatamente as receitas (100% das receitas restantes)
   var metaDiariaReceitasCompletas = saldoRestanteReceitas > 0 ? (saldoRestanteReceitas / diasRestantes) : 0;
-  
+
   // Meta diária conservadora (80% das receitas restantes para gastos, 20% para reserva)
   var saldoRestanteConservador = saldoRestanteReceitas * 0.8;
   var metaDiariaConservadora = saldoRestanteConservador > 0 ? (saldoRestanteConservador / diasRestantes) : 0;
-  
+
   // Análise inteligente: diferença entre metas
   var analiseMetas = {
     diferencaOrcamentoVsReceitas: metaDiariaGlobal - metaDiariaReceitasCompletas,
     orcamentoMaiorQueReceitas: metaDiariaGlobal > metaDiariaReceitasCompletas,
     percentualDiferenca: metaDiariaReceitasCompletas > 0 ? ((metaDiariaGlobal - metaDiariaReceitasCompletas) / metaDiariaReceitasCompletas) * 100 : 0
   };
-  
+
   // Análise inteligente: Receitas vs Orçamento
   var analiseOrcamento = {
     receitasVsOrcado: orcado > 0 ? (receitas / orcado) : 0,
@@ -232,7 +244,7 @@ export function renderDashboard(container) {
     deficitOrcamento: Math.max(0, orcado - receitas),
     saldoPositivo: saldo > 0
   };
-  
+
   // Armazenar categorias em alerta globalmente para uso no modal
   window.categoriasEmAlerta = categoriasEmAlerta;
   console.log('🔍 [Dashboard] Total de alertas calculado:', totalAlertas);
@@ -305,10 +317,10 @@ export function renderDashboard(container) {
   html += '              <p class="text-sm text-gray-600 dark:text-gray-400">' + monthName + '/' + year + '</p>';
   html += '            </div>';
   html += '            <div class="flex gap-2">';
-                html += '              <button id="export-dashboard-btn" class="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-200 flex items-center gap-1.5 shadow-md hover:shadow-lg transform hover:scale-105">';
-                html += '                <span class="text-sm">📱</span>';
-                html += '                <span class="hidden sm:inline">Compartilhar</span>';
-                html += '              </button>';
+  html += '              <button id="export-dashboard-btn" class="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-200 flex items-center gap-1.5 shadow-md hover:shadow-lg transform hover:scale-105">';
+  html += '                <span class="text-sm">📱</span>';
+  html += '                <span class="hidden sm:inline">Compartilhar</span>';
+  html += '              </button>';
   html += '              <button id="reset-layout-btn" class="bg-gradient-to-r from-slate-500 to-slate-600 hover:from-slate-600 hover:to-slate-700 text-white px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-200 flex items-center gap-1.5 shadow-md hover:shadow-lg transform hover:scale-105">';
   html += '                <span class="text-sm">🔄</span>';
   html += '                <span class="hidden sm:inline">Resetar</span>';
@@ -345,11 +357,11 @@ export function renderDashboard(container) {
   html += '              <div class="text-lg font-bold text-red-600 dark:text-red-400">R$ ' + formatBR(despesas) + '</div>';
   html += '              <div class="text-xs text-gray-600 dark:text-gray-400">Despesas</div>';
   html += '            </div>';
-  html += '            <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm border border-gray-200 dark:border-gray-600">';
-  html += '              <div class="text-lg mb-1">💰</div>';
-  html += '              <div class="text-lg font-bold ' + (saldo >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400') + '">R$ ' + formatBR(Math.abs(saldo)) + '</div>';
-  html += '              <div class="text-xs text-gray-600 dark:text-gray-400">Saldo</div>';
-  html += '            </div>';
+  html += '                        <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm border border-gray-200 dark:border-gray-600">';
+            html += '              <div class="text-lg mb-1">💰</div>';
+            html += '              <div class="text-lg font-bold ' + (saldo >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400') + '">R$ ' + formatBR(saldo) + '</div>';
+            html += '              <div class="text-xs text-gray-600 dark:text-gray-400">Saldo</div>';
+            html += '            </div>';
   html += '          </div>';
   html += '          <!-- Resumo Financeiro Compacto -->';
   html += '          <div class="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm border border-gray-200 dark:border-gray-600 draggable-card" data-card-type="summary">';
@@ -359,79 +371,56 @@ export function renderDashboard(container) {
   html += '              Resumo Financeiro';
   html += '            </h5>';
   html += '            <div class="space-y-2">';
-  // Saldo Principal (mais importante)
-  html += '              <div class="flex justify-between text-sm border-b border-gray-200 dark:border-gray-600 pb-2">';
-  html += '                <span class="text-gray-600 dark:text-gray-400 font-medium">💰 Saldo do Mês:</span>';
-  html += '                <span class="font-bold text-lg ' + (saldo >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400') + '">R$ ' + formatBR(saldo) + '</span>';
+  // Meta Diária (destaque principal) - sempre visível com gradiente
+  html += '              <div class="flex justify-between text-xs bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 p-3 rounded-lg border-l-4 border-blue-500 shadow-sm mb-2">';
+  html += '                <span class="text-blue-800 dark:text-blue-300 font-semibold flex items-center gap-1"><span class="text-base">💡</span> Meta Diária (Orçamento):</span>';
+  html += '                <span class="font-bold text-blue-600 dark:text-blue-400 text-sm">R$ ' + formatBR(metaDiariaGlobal) + '/dia</span>';
   html += '              </div>';
-  
-  // Meta Diária (destaque principal) - sempre visível
-  html += '              <div class="flex justify-between text-xs bg-blue-50 dark:bg-blue-900/20 p-2 rounded-lg border border-blue-200 dark:border-blue-800 mb-2">';
-  html += '                <span class="text-gray-600 dark:text-gray-400 font-medium">💡 Meta Diária (Orçamento):</span>';
-  html += '                <span class="font-bold text-blue-600 dark:text-blue-400">R$ ' + formatBR(metaDiariaGlobal) + '/dia</span>';
+
+  // Meta Diária para Bater as Receitas - sempre visível com gradiente verde
+  html += '              <div class="flex justify-between text-xs bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/30 dark:to-emerald-900/30 p-3 rounded-lg border-l-4 border-green-500 shadow-sm mb-2">';
+  html += '                <span class="text-green-800 dark:text-green-300 font-semibold flex items-center gap-1"><span class="text-base">💰</span> Meta Diária (100% Receitas):</span>';
+  html += '                <span class="font-bold ' + (metaDiariaReceitasCompletas > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400') + ' text-sm">R$ ' + formatBR(metaDiariaReceitasCompletas) + '/dia</span>';
   html += '              </div>';
-  
-  // Meta Diária para Bater as Receitas - sempre visível
-  html += '              <div class="flex justify-between text-xs bg-green-50 dark:bg-green-900/20 p-2 rounded-lg border border-green-200 dark:border-green-800 mb-2">';
-  html += '                <span class="text-gray-600 dark:text-gray-400 font-medium">💰 Meta Diária (100% Receitas):</span>';
-  html += '                <span class="font-bold ' + (metaDiariaReceitasCompletas > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400') + '">R$ ' + formatBR(metaDiariaReceitasCompletas) + '/dia</span>';
+
+  // Meta Diária Conservadora baseada nas Receitas - sempre visível com gradiente amarelo
+  html += '              <div class="flex justify-between text-xs bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/30 dark:to-orange-900/30 p-3 rounded-lg border-l-4 border-yellow-500 shadow-sm mb-2">';
+  html += '                <span class="text-yellow-800 dark:text-yellow-300 font-semibold flex items-center gap-1"><span class="text-base">⚠️</span> Meta Diária (Conservadora):</span>';
+  html += '                <span class="font-bold ' + (metaDiariaConservadora > 0 ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400') + ' text-sm">R$ ' + formatBR(metaDiariaConservadora) + '/dia</span>';
   html += '              </div>';
-  
-  // Meta Diária Conservadora baseada nas Receitas - sempre visível
-  html += '              <div class="flex justify-between text-xs bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded-lg border border-yellow-200 dark:border-yellow-800 mb-2">';
-  html += '                <span class="text-gray-600 dark:text-gray-400 font-medium">⚠️ Meta Diária (Conservadora):</span>';
-  html += '                <span class="font-bold ' + (metaDiariaConservadora > 0 ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400') + '">R$ ' + formatBR(metaDiariaConservadora) + '/dia</span>';
-  html += '              </div>';
-  
-  
-  // Progresso do Orçamento (só se houver orçamento)
-  if (orcado > 0) {
-    const saldoOrcamento = orcado - despesas;
-    html += '              <div class="flex justify-between text-xs mb-1">';
-    html += '                <span class="text-gray-600 dark:text-gray-400">📊 Orçamento Total:</span>';
-    html += '                <span class="font-medium text-blue-600 dark:text-blue-400">R$ ' + formatBR(orcado) + '</span>';
-    html += '              </div>';
-    html += '              <div class="flex justify-between text-xs mb-1">';
-    html += '                <span class="text-gray-600 dark:text-gray-400">💰 Pode Gastar:</span>';
-    html += '                <span class="font-medium ' + (saldoOrcamento >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400') + '">R$ ' + formatBR(Math.abs(saldoOrcamento)) + '</span>';
-    html += '              </div>';
-    html += '              <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 mb-2">';
-    html += '                <div class="h-1.5 rounded-full ' + (progressoOrcado > 0.7 ? 'bg-red-500' : 'bg-green-500') + '" style="width: ' + Math.min(progressoOrcado * 100, 100) + '%"></div>';
-    html += '              </div>';
-  }
-  
-  // Alertas (só se houver alertas)
+
+  // Alertas (só se houver alertas) - com animação e destaque
   if (totalAlertas > 0) {
-    html += '              <div class="flex justify-between text-xs cursor-pointer hover:bg-red-50 dark:hover:bg-red-900/20 p-1 rounded transition-colors border border-red-200 dark:border-red-800" id="alertas-categorias-btn" title="Clique para ver categorias em alerta">';
-    html += '                <span class="text-red-600 dark:text-red-400 font-medium">🚨 Alertas:</span>';
-    html += '                <span class="font-bold text-red-600 dark:text-red-400">' + totalAlertas + ' categoria(s)</span>';
+    html += '              <div class="flex justify-between text-xs cursor-pointer bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/30 dark:to-orange-900/30 hover:from-red-100 hover:to-orange-100 dark:hover:from-red-900/40 dark:hover:to-orange-900/40 p-3 rounded-lg transition-all duration-200 border-l-4 border-red-500 shadow-md hover:shadow-lg animate-pulse" id="alertas-categorias-btn" title="Clique para ver categorias em alerta">';
+    html += '                <span class="text-red-700 dark:text-red-300 font-bold flex items-center gap-1"><span class="text-base">🚨</span> Alertas Importantes:</span>';
+    html += '                <span class="font-bold text-red-600 dark:text-red-400 text-sm bg-red-100 dark:bg-red-900/50 px-3 py-1 rounded-full">' + totalAlertas + ' categoria(s)</span>';
     html += '              </div>';
   }
-  
+
   // Insights Inteligentes (só se houver orçamento)
   if (orcado > 0) {
-    html += '              <div class="border-t border-gray-200 dark:border-gray-600 pt-2 mt-2">';
-    html += '                <div class="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">💡 Análise e Recomendações:</div>';
-    
-    // Cobertura das receitas
+    html += '              <div class="border-t border-gray-200 dark:border-gray-600 pt-3 mt-3">';
+    html += '                <div class="text-xs font-bold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-1"><span class="text-base">💡</span> Análise e Recomendações:</div>';
+
+    // Cobertura das receitas com background colorido
     if (analiseOrcamento.coberturaOrcamento >= 100) {
-      html += '                <div class="text-xs text-green-600 dark:text-green-400">✅ Receitas cobrem 100% do orçamento</div>';
+      html += '                <div class="text-xs text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900/20 p-2 rounded-lg border-l-4 border-green-500 mb-2 font-medium"><span class="text-base">✅</span> Receitas cobrem 100% do orçamento</div>';
     } else if (analiseOrcamento.coberturaOrcamento >= 80) {
-      html += '                <div class="text-xs text-yellow-600 dark:text-yellow-400">⚠️ Receitas cobrem ' + analiseOrcamento.coberturaOrcamento.toFixed(0) + '% do orçamento</div>';
+      html += '                <div class="text-xs text-yellow-700 dark:text-yellow-300 bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded-lg border-l-4 border-yellow-500 mb-2 font-medium"><span class="text-base">⚠️</span> Receitas cobrem ' + analiseOrcamento.coberturaOrcamento.toFixed(0) + '% do orçamento</div>';
     } else {
-      html += '                <div class="text-xs text-red-600 dark:text-red-400">❌ Receitas cobrem apenas ' + analiseOrcamento.coberturaOrcamento.toFixed(0) + '% do orçamento</div>';
+      html += '                <div class="text-xs text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/20 p-2 rounded-lg border-l-4 border-red-500 mb-2 font-medium"><span class="text-base">❌</span> Receitas cobrem apenas ' + analiseOrcamento.coberturaOrcamento.toFixed(0) + '% do orçamento</div>';
     }
-    
-    // Déficit do orçamento
+
+    // Déficit do orçamento com destaque
     if (analiseOrcamento.deficitOrcamento > 0) {
-      html += '                <div class="text-xs text-orange-600 dark:text-orange-400">📊 Faltam receitas: R$ ' + formatBR(analiseOrcamento.deficitOrcamento) + '</div>';
+      html += '                <div class="text-xs text-orange-700 dark:text-orange-300 bg-orange-50 dark:bg-orange-900/20 p-2 rounded-lg border-l-4 border-orange-500 mb-2 font-medium"><span class="text-base">📊</span> Faltam receitas: R$ ' + formatBR(analiseOrcamento.deficitOrcamento) + '</div>';
     }
-    
-    
+
+
     // Recomendações baseadas na análise
     html += '                <div class="mt-2 p-2 bg-gray-50 dark:bg-gray-700 rounded text-xs">';
     html += '                  <div class="font-medium text-gray-700 dark:text-gray-300 mb-1">🎯 Recomendações:</div>';
-    
+
     // Meta de receitas para cobrir o orçamento
     if (analiseOrcamento.coberturaOrcamento < 100) {
       var metaReceitas = orcado;
@@ -440,32 +429,32 @@ export function renderDashboard(container) {
         html += '                  <div class="text-blue-600 dark:text-blue-400">• 💡 Considere reduzir limites de categorias ou aumentar receitas</div>';
       }
     }
-    
+
     if (analiseOrcamento.coberturaOrcamento < 80) {
       html += '                  <div class="text-orange-600 dark:text-orange-400">• Considere reduzir limites de categorias</div>';
     }
     if (analiseOrcamento.receitasVsGastos < 1) {
       html += '                  <div class="text-red-600 dark:text-red-400">• Controle gastos ou aumente receitas</div>';
     }
-    
-    
+
+
     if (analiseMetas.orcamentoMaiorQueReceitas) {
       html += '                  <div class="text-orange-600 dark:text-orange-400">• Meta orçamento é R$ ' + formatBR(analiseMetas.diferencaOrcamentoVsReceitas) + '/dia maior que receitas</div>';
     } else {
       html += '                  <div class="text-green-600 dark:text-green-400">• Meta orçamento está dentro das receitas</div>';
     }
-    
-    
-    // Informação sobre recálculo dinâmico
-    html += '                  <div class="text-blue-600 dark:text-blue-400 text-xs mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded">';
-    html += '                    <div class="font-medium">🔄 Recálculo Dinâmico:</div>';
-    html += '                    <div>• Dias restantes: ' + diasRestantes + ' dias</div>';
-    html += '                    <div>• Gasto médio atual: R$ ' + formatBR(despesas / (ultimoDiaDoMes - diasRestantes + 1)) + '/dia</div>';
+
+
+    // Informação sobre recálculo dinâmico com gradiente e borda
+    html += '                  <div class="text-blue-700 dark:text-blue-300 text-xs mt-2 p-3 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-lg border-l-4 border-blue-500 shadow-sm">';
+    html += '                    <div class="font-bold flex items-center gap-1 mb-1"><span class="text-base">🔄</span> Recálculo Dinâmico:</div>';
+    html += '                    <div class="font-medium">• Dias restantes: <span class="text-blue-600 dark:text-blue-400 font-bold">' + diasRestantes + ' dias</span></div>';
+    html += '                    <div class="font-medium">• Gasto médio atual: <span class="text-blue-600 dark:text-blue-400 font-bold">R$ ' + formatBR(despesas / (ultimoDiaDoMes - diasRestantes + 1)) + '/dia</span></div>';
     html += '                  </div>';
     if (analiseOrcamento.saldoPositivo && analiseOrcamento.coberturaOrcamento >= 100) {
-      html += '                  <div class="text-green-600 dark:text-green-400">• Excelente controle financeiro!</div>';
+      html += '                  <div class="text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900/20 p-2 rounded-lg mt-2 font-bold flex items-center gap-1"><span class="text-base">🎉</span> Excelente controle financeiro!</div>';
     }
-    
+
     html += '                </div>';
     html += '              </div>';
   }
@@ -505,7 +494,7 @@ export function renderDashboard(container) {
             recMap[key].parcelasTotal = pt;
           }
         }
-        
+
         // Fallback: tentar obter informações de parcela de outros campos
         if (!recMap[key].parcelaAtual) {
           // Tentar outros campos possíveis para parcela atual
@@ -521,7 +510,7 @@ export function renderDashboard(container) {
             }
           }
         }
-        
+
         if (!recMap[key].parcelasTotal) {
           // Tentar outros campos possíveis para total de parcelas
           var camposTotal = ['totalParcelas', 'parcelasTotal', 'totalInstallments', 'installments', 'parcelasTotalNumero'];
@@ -536,13 +525,13 @@ export function renderDashboard(container) {
             }
           }
         }
-        
+
         // Fallback final: se não temos dados de parcela, usar o count como parcela atual
         if (!recMap[key].parcelaAtual && recMap[key].count > 0) {
           recMap[key].parcelaAtual = recMap[key].count;
           console.log('🔧 [Dashboard] Usando count como parcela atual para', recMap[key].nome, ':', recMap[key].count);
         }
-        
+
         // Fallback final: se não temos total de parcelas, assumir que é uma parcela única ou usar um valor padrão
         if (!recMap[key].parcelasTotal && recMap[key].parcelaAtual) {
           // Se só tem 1 transação, provavelmente é parcela única
@@ -558,7 +547,7 @@ export function renderDashboard(container) {
       } catch {}
     }
     var topRec = [];
-    for (var rkey in recMap) { 
+    for (var rkey in recMap) {
       if (Object.prototype.hasOwnProperty.call(recMap, rkey)) {
         // Debug: mostrar informações de parcela encontradas
         if (recMap[rkey].parcelaAtual || recMap[rkey].parcelasTotal) {
@@ -569,14 +558,14 @@ export function renderDashboard(container) {
             count: recMap[rkey].count
           });
         }
-        topRec.push({ 
-          key: rkey, 
-          nome: recMap[rkey].nome, 
-          total: recMap[rkey].total, 
-          count: recMap[rkey].count, 
-          parcelaAtual: recMap[rkey].parcelaAtual, 
-          parcelasTotal: recMap[rkey].parcelasTotal 
-        }); 
+        topRec.push({
+          key: rkey,
+          nome: recMap[rkey].nome,
+          total: recMap[rkey].total,
+          count: recMap[rkey].count,
+          parcelaAtual: recMap[rkey].parcelaAtual,
+          parcelasTotal: recMap[rkey].parcelasTotal
+        });
       }
     }
     topRec.sort(function(a,b){ return b.total - a.total; });
@@ -584,62 +573,141 @@ export function renderDashboard(container) {
 
     html += '      <div class="mb-12 draggable-card" data-card-type="top-recorrentes">';
     html += '        <div class="drag-handle"></div>';
-    html += '        <div class="flex items-center gap-2 mb-4">';
-    html += '          <div class="w-1 h-6 bg-gradient-to-b from-emerald-500 to-teal-500 rounded-full"></div>';
-    html += '          <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">♻️ Top Recorrentes</h2>';
+    html += '        <div class="flex items-center justify-between gap-2 mb-6">';
+    html += '          <div class="flex items-center gap-2">';
+    html += '            <div class="w-1 h-6 bg-gradient-to-b from-emerald-500 to-teal-500 rounded-full"></div>';
+    html += '            <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">♻️ Top Recorrentes</h2>';
+    html += '          </div>';
+    html += '          <div class="text-sm text-gray-500 dark:text-gray-400">';
+    html += '            <span class="font-medium">' + topRec.length + '</span> itens';
+    html += '          </div>';
     html += '        </div>';
-    html += '        <div class="u-card p-4">';
+    html += '        <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">';
     if (!topRec.length) {
-      html += '          <div class="empty-state">\n            <div class="empty-icon">♻️</div>\n            <div class="empty-text">Sem recorrentes neste período</div>\n            <div class="empty-description">Despesas recorrentes cadastradas aparecerão aqui</div>\n          </div>';
+      html += '          <div class="empty-state p-12 text-center">';
+      html += '            <div class="empty-icon text-6xl mb-6">♻️</div>';
+      html += '            <div class="empty-text text-xl font-bold mb-3 text-gray-900 dark:text-gray-100">Sem recorrentes neste período</div>';
+      html += '            <div class="empty-description text-gray-500 dark:text-gray-400 mb-6">Despesas recorrentes cadastradas aparecerão aqui</div>';
+      html += '            <button onclick="window.showAddRecorrenteModal && window.showAddRecorrenteModal()" class="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-xl font-medium transition-all duration-200 flex items-center gap-2 mx-auto">';
+      html += '              <span class="text-lg">➕</span>';
+      html += '              <span>Nova Recorrente</span>';
+      html += '            </button>';
+      html += '          </div>';
     } else {
+      html += '          <div class="divide-y divide-gray-100 dark:divide-gray-800">';
       for (var tr=0; tr<topRec.length; tr++) {
         var parcStr = '';
         var parcelaInfo = '';
+        var statusInfo = '';
+        var progressBar = '';
+        var statusColor = 'emerald';
+        var statusIcon = '🔄';
+        var statusText = 'Ativa';
+        var cardClass = 'bg-white dark:bg-gray-900';
+        var headerClass = 'bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-gray-800 dark:to-gray-800';
+        
         try {
           if ((topRec[tr].parcelaAtual !== null && topRec[tr].parcelaAtual !== undefined) && (topRec[tr].parcelasTotal !== null && topRec[tr].parcelasTotal !== undefined)) {
             var parcelaAtual = Number(topRec[tr].parcelaAtual);
             var parcelasTotal = Number(topRec[tr].parcelasTotal);
             var parcelasRestantes = parcelasTotal - parcelaAtual;
+            var progressoPercentual = Math.round((parcelaAtual / parcelasTotal) * 100);
+
+            // Formatação melhorada das parcelas com cores dinâmicas
+            var badgeColor = 'blue';
+            if (progressoPercentual >= 75) badgeColor = 'yellow';
+            if (progressoPercentual >= 90) badgeColor = 'orange';
+            if (parcelasRestantes === 0) badgeColor = 'green';
             
-            // Formatação melhorada das parcelas
-            parcStr = ' <span class="text-xs text-gray-500">• ' + String(parcelaAtual) + '/' + String(parcelasTotal) + '</span>';
-            
-            // Informação adicional sobre parcelas restantes com barra de progresso
+            parcStr = '<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-' + badgeColor + '-100 text-' + badgeColor + '-800 dark:bg-' + badgeColor + '-900 dark:text-' + badgeColor + '-200 ml-3 border border-' + badgeColor + '-200 dark:border-' + badgeColor + '-700">' + 
+                     String(parcelaAtual) + '/' + String(parcelasTotal) + '</span>';
+
+            // Status e informações baseadas no progresso
             if (parcelasRestantes > 0) {
-              var progressoPercentual = Math.round((parcelaAtual / parcelasTotal) * 100);
-              parcelaInfo = '<div class="mt-2">' +
-                           '<div class="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400 mb-1">' +
-                           '<span>' + (parcelasRestantes === 1 ? '1 parcela restante' : parcelasRestantes + ' parcelas restantes') + '</span>' +
-                           '<span>' + progressoPercentual + '%</span>' +
-                           '</div>' +
-                           '<div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">' +
-                           '<div class="bg-emerald-500 h-1.5 rounded-full transition-all duration-300" style="width: ' + progressoPercentual + '%"></div>' +
-                           '</div>' +
-                           '</div>';
+              if (progressoPercentual >= 90) {
+                statusColor = 'orange';
+                statusIcon = '⚡';
+                statusText = 'Quase Finalizada';
+                headerClass = 'bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-gray-800 dark:to-gray-800';
+              } else if (progressoPercentual >= 75) {
+                statusColor = 'yellow';
+                statusIcon = '📈';
+                statusText = 'Em Andamento';
+                headerClass = 'bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-gray-800 dark:to-gray-800';
+              } else {
+                statusColor = 'emerald';
+                statusIcon = '🔄';
+                statusText = 'Ativa';
+                headerClass = 'bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-gray-800 dark:to-gray-800';
+              }
+              
+              statusInfo = '<div class="flex items-center justify-between text-sm mb-3">';
+              statusInfo += '<div class="flex items-center gap-2">';
+              statusInfo += '<span class="text-gray-600 dark:text-gray-400">' + (parcelasRestantes === 1 ? '1 parcela restante' : parcelasRestantes + ' parcelas restantes') + '</span>';
+              statusInfo += '<span class="w-1 h-1 bg-gray-400 rounded-full"></span>';
+              statusInfo += '<span class="text-gray-500 dark:text-gray-500 text-xs">' + parcelaAtual + ' de ' + totalParcelas + '</span>';
+              statusInfo += '</div>';
+              statusInfo += '<span class="font-bold text-' + statusColor + '-600 dark:text-' + statusColor + '-400 text-lg">' + progressoPercentual + '%</span>';
+              statusInfo += '</div>';
+              
+              progressBar = '<div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4 overflow-hidden shadow-inner">';
+              progressBar += '<div class="bg-gradient-to-r from-' + statusColor + '-400 to-' + statusColor + '-500 h-4 rounded-full transition-all duration-700 ease-out relative flex items-center justify-end pr-2" style="width: ' + progressoPercentual + '%">';
+              progressBar += '<div class="absolute inset-0 bg-white opacity-20 rounded-full"></div>';
+              progressBar += '<span class="text-xs font-bold text-white relative z-10">' + progressoPercentual + '%</span>';
+              progressBar += '</div>';
+              progressBar += '</div>';
             } else if (parcelasRestantes === 0) {
-              parcelaInfo = '<div class="mt-2">' +
-                           '<div class="flex items-center justify-between text-xs text-orange-600 dark:text-orange-400 mb-1">' +
-                           '<span>Finalizado</span>' +
-                           '<span>100%</span>' +
-                           '</div>' +
-                           '<div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">' +
-                           '<div class="bg-orange-500 h-1.5 rounded-full"></div>' +
-                           '</div>' +
-                           '</div>';
+              statusColor = 'green';
+              statusIcon = '✅';
+              statusText = 'Finalizada';
+              headerClass = 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-gray-800 dark:to-gray-800';
+              statusInfo = '<div class="flex items-center justify-between text-sm mb-3">';
+              statusInfo += '<div class="flex items-center gap-2">';
+              statusInfo += '<span class="text-green-600 dark:text-green-400 font-medium">Recorrente finalizada</span>';
+              statusInfo += '<span class="w-1 h-1 bg-green-400 rounded-full"></span>';
+              statusInfo += '<span class="text-green-500 dark:text-green-500 text-xs">' + totalParcelas + ' parcelas</span>';
+              statusInfo += '</div>';
+              statusInfo += '<span class="font-bold text-green-600 dark:text-green-400 text-lg">100%</span>';
+              statusInfo += '</div>';
+              
+              progressBar = '<div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4 overflow-hidden shadow-inner">';
+              progressBar += '<div class="bg-gradient-to-r from-green-400 to-emerald-500 h-4 rounded-full relative flex items-center justify-end pr-2">';
+              progressBar += '<div class="absolute inset-0 bg-white opacity-20 rounded-full"></div>';
+              progressBar += '<span class="text-xs font-bold text-white relative z-10">100%</span>';
+              progressBar += '</div>';
+              progressBar += '</div>';
             }
           }
         } catch {}
-        
-        html += '          <div class="py-3 border-b border-gray-100 dark:border-gray-800 last:border-0">';
-        html += '            <div class="flex items-center justify-between gap-4">';
-        html += '              <div class="flex-1">';
-        html += '                <div class="font-medium text-gray-900 dark:text-gray-100">' + (topRec[tr].nome || 'Recorrente') + ' <span class="text-xs text-gray-500">(' + String(topRec[tr].count) + ')</span>' + parcStr + '</div>';
-        html += '                ' + parcelaInfo;
+
+        html += '            <div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200 border-b border-gray-100 dark:border-gray-800 last:border-b-0">';
+        html += '              <div class="flex items-center justify-between gap-4">';
+        html += '                <div class="flex items-center gap-3 flex-1 min-w-0">';
+        html += '                  <div class="w-10 h-10 rounded-lg flex items-center justify-center text-lg bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-800 dark:to-gray-700 border border-blue-200 dark:border-gray-600">';
+        html += '                    ' + statusIcon;
+        html += '                  </div>';
+        html += '                  <div class="flex-1 min-w-0">';
+        html += '                    <div class="flex items-center gap-2 mb-1">';
+        html += '                      <h3 class="font-semibold text-gray-900 dark:text-gray-100 truncate">' + (topRec[tr].nome || 'Recorrente') + '</h3>';
+        html += '                      ' + parcStr;
+        html += '                    </div>';
+        html += '                    <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">';
+        html += '                      <span class="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">' + String(topRec[tr].count) + ' transações</span>';
+        html += '                      <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-' + statusColor + '-100 text-' + statusColor + '-800 dark:bg-' + statusColor + '-900 dark:text-' + statusColor + '-200">';
+        html += '                        ' + statusText;
+        html += '                      </span>';
+        html += '                    </div>';
+        html += '                  </div>';
+        html += '                </div>';
+        html += '                <div class="text-right">';
+        html += '                  <div class="text-lg font-bold text-gray-900 dark:text-gray-100">R$ ' + Number(topRec[tr].total || 0).toFixed(2) + '</div>';
+        html += '                  <div class="text-xs text-gray-500 dark:text-gray-400">total</div>';
+        html += '                </div>';
         html += '              </div>';
-        html += '              <div class="text-sm font-semibold text-gray-600 dark:text-gray-300 ml-4">R$ ' + Number(topRec[tr].total || 0).toFixed(2) + '</div>';
+        html += '              ' + (progressBar ? '<div class="mt-3">' + progressBar + '</div>' : '');
         html += '            </div>';
-        html += '          </div>';
       }
+      html += '          </div>';
     }
     html += '        </div>';
     html += '      </div>';
@@ -729,7 +797,7 @@ export function renderDashboard(container) {
     html += '              <div>';
     html += '                <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">🎯 Visão Inteligente</h3>';
     html += '                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Limites prioritários + maiores gastos</p>';
-        html += '              </div>';
+    html += '              </div>';
     html += '              <button id="add-category-dashboard-btn" class="btn btn-primary btn-sm">+ Nova</button>';
     html += '            </div>';
     html += '          </div>';
@@ -746,7 +814,7 @@ export function renderDashboard(container) {
         var catU = categoriasUnificadas[u];
         var limiteU = Number(catU.limite || 0);
         var porcentU = limiteU > 0 ? (catU.gasto / limiteU) * 100 : 0;
-        
+
         // Determinar ícone e cor baseado no tipo e status
         var icone, corBarra, tagInfo;
         if (catU.temLimite) {
@@ -777,23 +845,23 @@ export function renderDashboard(container) {
           var tagColor = catU.temLimite && porcentU >= 90 ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300';
           html += '                  <span class="text-xs px-2 py-1 rounded-full font-medium ' + tagColor + '">' + tagInfo + '</span>';
         }
-    html += '                </div>';
+        html += '                </div>';
         html += '                <span class="font-bold text-sm ' + (catU.temLimite && catU.gasto > limiteU ? 'text-red-600' : 'text-gray-900 dark:text-gray-100') + '">R$ ' + formatBR(catU.gasto) + '</span>';
         html += '              </div>';
-        
+
         if (catU.temLimite) {
           html += '              <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">';
           html += '                <span>Limite: R$ ' + formatBR(limiteU) + '</span>';
           var percClass = porcentU >= 100 ? 'text-red-600 font-bold' : (porcentU >= 90 ? 'text-orange-600 font-medium' : '');
           html += '                <span class="' + percClass + '">' + porcentU.toFixed(1) + '%</span>';
-    html += '              </div>';
+          html += '              </div>';
           html += '              <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">';
           html += '                <div class="' + corBarra + ' h-2 rounded-full transition-all duration-300" style="width: ' + Math.min(porcentU, 100) + '%"></div>';
-      html += '              </div>';
+          html += '              </div>';
           if (porcentU >= 100) {
             html += '              <div class="mt-2 text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900 dark:bg-opacity-20 px-2 py-1 rounded">Excedeu em R$ ' + formatBR(catU.gasto - limiteU) + '</div>';
           }
-    } else {
+        } else {
           html += '              <p class="text-xs text-gray-500 dark:text-gray-400">Sem limite definido • Posição por gasto</p>';
         }
         html += '            </div>';
@@ -813,48 +881,88 @@ export function renderDashboard(container) {
     }).slice(0,5);
     html += '      <div class="mb-12 draggable-card" data-card-type="atividade-recente">';
     html += '        <div class="drag-handle"></div>';
-    html += '        <div class="flex items-center gap-2 mb-4">';
-    html += '          <div class="w-1 h-6 bg-gradient-to-b from-green-500 to-blue-500 rounded-full"></div>';
-    html += '          <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">💳 Atividade Recente</h2>';
+    html += '        <div class="flex items-center justify-between gap-2 mb-6">';
+    html += '          <div class="flex items-center gap-2">';
+    html += '            <div class="w-1 h-6 bg-gradient-to-b from-green-500 to-blue-500 rounded-full"></div>';
+    html += '            <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">💳 Atividade Recente</h2>';
+    html += '          </div>';
+    html += '          <div class="text-sm text-gray-500 dark:text-gray-400">';
+    html += '            <span class="font-medium">' + recent.length + '</span> transações';
+    html += '          </div>';
     html += '        </div>';
     html += '        <div class="u-card overflow-hidden">';
-    html += '          <div class="p-4">';
-    html += '            <div class="flex items-center justify-between mb-4 gap-4">';
-    html += '              <div class="text-sm font-medium text-gray-700 dark:text-gray-300">Últimas Transações</div>';
-    html += '              <button onclick="window.showAddTransactionModal && window.showAddTransactionModal()" class="btn btn-primary btn-sm">+ Nova Transação</button>';
+    html += '          <div class="bg-gradient-to-r from-green-50 to-blue-50 dark:from-gray-800 dark:to-gray-800 p-4 border-b border-gray-200 dark:border-gray-700">';
+    html += '            <div class="flex flex-wrap justify-between items-center gap-2">';
+    html += '              <h3 class="text-lg md:text-xl font-bold text-gray-900 dark:text-gray-100">Últimas Transações</h3>';
+    html += '              <button onclick="window.showAddTransactionModal && window.showAddTransactionModal()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 shadow-md hover:shadow-lg">';
+    html += '                + Nova Transação';
+    html += '              </button>';
     html += '            </div>';
+    html += '          </div>';
     if (recent.length === 0) {
-      html += '            <div class="empty-state">\n              <div class="empty-icon">🧾</div>\n              <div class="empty-text">Sem transações neste período</div>\n              <div class="mt-2"><button class="btn btn-primary btn-sm" onclick="window.showAddTransactionModal && window.showAddTransactionModal()">Adicionar transação</button></div>\n            </div>';
+      html += '          <div class="empty-state p-8">';
+      html += '            <div class="empty-icon text-4xl mb-4">🧾</div>';
+      html += '            <div class="empty-text text-lg font-medium mb-2">Sem transações neste período</div>';
+      html += '            <div class="empty-description text-sm text-gray-500 dark:text-gray-400 mb-4">Adicione transações para acompanhar seus gastos e receitas</div>';
+      html += '            <button class="btn btn-primary" onclick="window.showAddTransactionModal && window.showAddTransactionModal()">Adicionar transação</button>';
+      html += '          </div>';
     } else {
+      html += '          <div class="divide-y divide-gray-100 dark:divide-gray-800">';
       for (var r=0;r<recent.length;r++) {
         var rt = recent[r];
         var cat = cats.find(function(c){ return c.id === (rt.categoriaId || rt.categoryId); });
         var sign = (rt.tipo || 'despesa') === 'receita' ? '+' : '-';
         var amount = Math.abs(parseAmount(rt.valor !== null && rt.valor !== undefined ? rt.valor : rt.amount));
         var d = getTxDate(rt);
-        var dStr = d ? d.toLocaleDateString() : '';
+        var dStr = d ? d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
+        var isReceita = (rt.tipo || 'despesa') === 'receita';
+        
         // parcela info quando recorrente
         var parcInfo = '';
+        var parcelaBadge = '';
         try {
           if (rt.recorrenteId && (rt.parcelaAtual || rt.parcelasTotal)) {
             var pa = (rt.parcelaAtual !== null && rt.parcelaAtual !== undefined) ? rt.parcelaAtual : '';
             var pt = (rt.parcelasTotal !== null && rt.parcelasTotal !== undefined) ? rt.parcelasTotal : '';
-            if (pa || pt) parcInfo = ' • ' + (pa || '?') + '/' + (pt || '?');
+            if (pa || pt) {
+              parcInfo = ' • ' + (pa || '?') + '/' + (pt || '?');
+              parcelaBadge = '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 ml-2">' + (pa || '?') + '/' + (pt || '?') + '</span>';
+            }
           }
         } catch {}
-        html += '            <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-xl mb-2 gap-4">';
-        html += '              <div class="flex items-center gap-3 min-w-0">';
-        html += '                <div class="w-3 h-3 rounded-full" style="background-color: ' + (cat && cat.cor || '#6B7280') + '"></div>';
-        html += '                <div class="min-w-0">';
-        html += '                  <div class="font-medium text-gray-900 dark:text-gray-100 truncate">' + (rt.descricao || rt.description || 'Transação') + '</div>';
-        html += '                  <div class="text-xs text-gray-500 dark:text-gray-400">' + (cat && cat.nome || 'Sem categoria') + ' • ' + dStr + parcInfo + '</div>';
+        
+        // Ícone baseado no tipo
+        var tipoIcon = isReceita ? '💰' : '💸';
+        
+        html += '            <div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200">';
+        html += '              <div class="flex items-start justify-between gap-4">';
+        html += '                <div class="flex items-start gap-3 min-w-0 flex-1">';
+        html += '                  <div class="flex-shrink-0 mt-1">';
+        html += '                    <div class="w-10 h-10 rounded-full flex items-center justify-center text-lg" style="background-color: ' + (cat && cat.cor || '#6B7280') + '20; color: ' + (cat && cat.cor || '#6B7280') + '">';
+        html += '                      ' + tipoIcon;
+        html += '                    </div>';
+        html += '                  </div>';
+        html += '                  <div class="min-w-0 flex-1">';
+        html += '                    <div class="flex items-center gap-2 mb-1">';
+        html += '                      <h4 class="font-semibold text-gray-900 dark:text-gray-100 truncate">' + (rt.descricao || rt.description || 'Transação') + '</h4>';
+        html += '                      ' + parcelaBadge;
+        html += '                    </div>';
+        html += '                    <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">';
+        html += '                      <span class="font-medium">' + (cat && cat.nome || 'Sem categoria') + '</span>';
+        html += '                      <span>•</span>';
+        html += '                      <span>' + dStr + '</span>';
+        html += '                    </div>';
+        html += '                  </div>';
+        html += '                </div>';
+        html += '                <div class="text-right flex-shrink-0">';
+        html += '                  <div class="text-lg font-bold ' + (isReceita ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400') + '">' + sign + 'R$ ' + formatBR(amount) + '</div>';
+        html += '                  <div class="text-xs text-gray-500 dark:text-gray-400">' + (isReceita ? 'receita' : 'despesa') + '</div>';
         html += '                </div>';
         html += '              </div>';
-        html += '              <div class="font-bold ' + ((rt.tipo || 'despesa') === 'receita' ? 'text-green-600' : 'text-red-600') + '">' + sign + 'R$ ' + formatBR(amount) + '</div>';
         html += '            </div>';
       }
+      html += '          </div>';
     }
-    html += '          </div>';
     html += '        </div>';
     html += '      </div>';
   } catch {}
@@ -952,10 +1060,10 @@ export function renderDashboard(container) {
       }
     };
   } catch {}
-  
+
   // Inicializar handlers do Dashboard
   setupDashboardHandlers();
-  
+
   // Configurar botão de adicionar categoria no dashboard
   setTimeout(() => {
     const addCategoryBtn = document.getElementById('add-category-dashboard-btn');
@@ -965,7 +1073,7 @@ export function renderDashboard(container) {
         e.preventDefault();
         e.stopPropagation();
         console.log('🔧 Botão + Nova categoria clicado');
-        
+
         if (window.showAddCategoryModal) {
           console.log('🔧 Abrindo modal de categoria...');
           window.showAddCategoryModal();

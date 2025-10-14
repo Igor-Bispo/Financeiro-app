@@ -53,11 +53,11 @@ export function toggleCompactMode(enabled) {
 export function toggleMicroMode() {
   console.log('📱 Alternando modo micro-compacto');
   const container = document.querySelector('.settings-container');
-  const appContainer = document.querySelector('.app-container');
-  const body = document.body;
+  const _appContainer = document.querySelector('.app-container');
+  const _body = document.body;
   const microBtn = document.querySelector('.micro-compact-btn');
-  const nanoBtn = document.querySelector('.nano-compact-btn');
+  const _nanoBtn = document.querySelector('.nano-compact-btn');
   if (!container || !microBtn) return;
-  const isMicro = container.classList.contains('micro-mode');
+  const _isMicro = container.classList.contains('micro-mode');
   // ...continuação da lógica...
 }

@@ -1,23 +1,26 @@
 {
   "name": "controle-financeiro",
-  "version": "1.0.0",
+  "version": "1.0.17",
   "description": "Aplicação de controle financeiro com Firebase e reconhecimento de voz",
   "main": "index.html",
   "scripts": {
-  "predev": "node scripts/free-port-5176.mjs",
+    "predev": "node scripts/free-port-5176.mjs",
     "build": "vite build",
     "deploy": "npm run build && firebase deploy",
     "serve": "firebase serve",
     "dev": "vite",
     "preview": "vite preview",
     "lint": "eslint src --ext .js",
-  "lint:fix": "eslint src --ext .js --fix",
-  "lint:quiet": "eslint src --ext .js --quiet",
-  "cleanup": "node scripts/cleanup.mjs",
+    "lint:fix": "eslint src --ext .js --fix",
+    "lint:quiet": "eslint src --ext .js --quiet",
+    "cleanup": "node scripts/cleanup.mjs",
     "test": "vitest",
-  "test:run": "vitest run",
-  "test:coverage": "vitest run --coverage",
-  "test:rules": "firebase emulators:exec --only firestore \"vitest run tests/firestore.rules.security.test.js\"",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:rules": "firebase emulators:exec --only firestore \"vitest run tests/firestore.rules.security.test.js\"",
+    "android:build": "npm run build && npx cap sync android && npx cap build android",
+    "android:sync": "npm run build && npx cap sync android",
+    "android:open": "npx cap open android",
     "format": "prettier --write src",
     "clean": "rimraf dist",
     "postbuild": "node scripts/compress-sw.mjs"
@@ -32,13 +35,14 @@
   "author": "Igor Bispo",
   "license": "MIT",
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^3.0.1",
     "autoprefixer": "^10.4.21",
     "eslint": "^9.31.0",
     "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-prettier": "^5.5.1",
     "firebase-tools": "^14.11.0",
-  "@firebase/rules-unit-testing": "^3.0.1",
     "jsdom": "^24.1.3",
+    "postcss-import": "^16.1.1",
     "prettier": "^3.6.2",
     "rimraf": "^5.0.5",
     "tailwindcss": "^3.4.17",
@@ -47,7 +51,7 @@
     "vitest": "^2.1.3"
   },
   "engines": {
-  "node": ">=18.17.0"
+    "node": ">=18.17.0"
   },
   "repository": {
     "type": "git",
@@ -59,6 +63,10 @@
   },
   "homepage": "https://github.com/Igor-Bispo/Financeiro-app#readme",
   "dependencies": {
+    "@capacitor/android": "^6.2.1",
+    "@capacitor/cli": "^6.2.1",
+    "@capacitor/core": "^6.2.1",
+    "@codetrix-studio/capacitor-google-auth": "^3.3.6",
     "firebase": "^12.0.0"
   }
 }

@@ -10,21 +10,21 @@ const CURRENT_VERSION = 'v4.43.0';
 export async function checkAndClearCache() {
   try {
     const storedVersion = localStorage.getItem(CACHE_VERSION_KEY);
-    
+
     if (storedVersion !== CURRENT_VERSION) {
       console.log(`🔄 [CacheManager] Nova versão detectada: ${CURRENT_VERSION} (anterior: ${storedVersion})`);
-      
+
       // Limpar todos os caches
       await clearAllCaches();
-      
+
       // Limpar localStorage de versões antigas
       clearOldLocalStorage();
-      
+
       // Atualizar versão armazenada
       localStorage.setItem(CACHE_VERSION_KEY, CURRENT_VERSION);
-      
+
       console.log('✅ [CacheManager] Cache limpo e versão atualizada');
-      
+
       // Recarregar a página para garantir que a nova versão seja carregada
       if (storedVersion) { // Só recarrega se já havia uma versão anterior
         console.log('🔄 [CacheManager] Recarregando página para aplicar nova versão...');
@@ -48,14 +48,14 @@ async function clearAllCaches() {
     if ('caches' in window) {
       const cacheNames = await caches.keys();
       console.log(`🧹 [CacheManager] Limpando ${cacheNames.length} caches:`, cacheNames);
-      
+
       await Promise.all(
         cacheNames.map(cacheName => {
           console.log(`🗑️ [CacheManager] Removendo cache: ${cacheName}`);
           return caches.delete(cacheName);
         })
       );
-      
+
       console.log('✅ [CacheManager] Todos os caches foram limpos');
     }
   } catch (error) {
@@ -69,7 +69,7 @@ async function clearAllCaches() {
 function clearOldLocalStorage() {
   try {
     const keysToRemove = [];
-    
+
     // Lista de chaves que podem causar problemas se mantidas entre versões
     const problematicKeys = [
       'notification_use_modal',
@@ -78,19 +78,19 @@ function clearOldLocalStorage() {
       'app_state',
       'user_preferences'
     ];
-    
+
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key && problematicKeys.some(problematic => key.includes(problematic))) {
         keysToRemove.push(key);
       }
     }
-    
+
     keysToRemove.forEach(key => {
       console.log(`🗑️ [CacheManager] Removendo chave do localStorage: ${key}`);
       localStorage.removeItem(key);
     });
-    
+
     console.log(`✅ [CacheManager] ${keysToRemove.length} chaves antigas removidas do localStorage`);
   } catch (error) {
     console.error('❌ [CacheManager] Erro ao limpar localStorage:', error);
@@ -103,15 +103,15 @@ function clearOldLocalStorage() {
 export async function forceClearCache() {
   try {
     console.log('🧹 [CacheManager] Forçando limpeza completa do cache...');
-    
+
     await clearAllCaches();
     clearOldLocalStorage();
-    
+
     // Remover a versão para forçar recarregamento
     localStorage.removeItem(CACHE_VERSION_KEY);
-    
+
     console.log('✅ [CacheManager] Limpeza forçada concluída');
-    
+
     // Recarregar página
     window.location.reload();
   } catch (error) {
@@ -126,17 +126,17 @@ export async function checkServiceWorker() {
   try {
     if ('serviceWorker' in navigator) {
       const registration = await navigator.serviceWorker.getRegistration();
-      
+
       if (registration) {
         console.log('✅ [CacheManager] Service Worker ativo:', registration.scope);
-        
+
         // Verificar se há uma nova versão disponível
         if (registration.waiting) {
           console.log('🔄 [CacheManager] Nova versão do Service Worker aguardando ativação');
           // Forçar ativação da nova versão
           registration.waiting.postMessage({ type: 'SKIP_WAITING' });
         }
-        
+
         return true;
       } else {
         console.warn('⚠️ [CacheManager] Service Worker não encontrado');

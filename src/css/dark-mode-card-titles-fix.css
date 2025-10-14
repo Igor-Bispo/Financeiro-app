@@ -1,0 +1,134 @@
+/* ========================================
+   CORREÇÃO ESPECÍFICA - TÍTULOS DOS CARDS NO MODO ESCURO
+   Força texto branco nos títulos de cards no APK
+   ======================================== */
+
+/* === TÍTULOS PRINCIPAIS H2 === */
+.dark h2.text-gray-900,
+.dark h2.dark\:text-gray-100,
+.dark h2[class*="text-gray-900"],
+.dark h2[class*="dark:text-gray-100"] {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+
+/* === TÍTULOS H3 === */
+.dark h3.text-gray-900,
+.dark h3.dark\:text-gray-100,
+.dark h3[class*="text-gray-900"],
+.dark h3[class*="dark:text-gray-100"] {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+
+/* === TÍTULOS H4 === */
+.dark h4.text-gray-900,
+.dark h4.dark\:text-gray-100,
+.dark h4[class*="text-gray-900"],
+.dark h4[class*="dark:text-gray-100"] {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+
+/* === FORÇA EM TODOS OS ELEMENTOS COM ESSAS CLASSES === */
+.dark .text-gray-900.dark\:text-gray-100,
+.dark [class*="text-gray-900"][class*="dark:text-gray-100"] {
+  color: #ffffff !important;
+}
+
+/* === FORÇA EM CARDS E CONTAINERS === */
+.dark .u-card .text-gray-900,
+.dark .u-card .dark\:text-gray-100,
+.dark .u-card [class*="text-gray-900"],
+.dark .u-card [class*="dark:text-gray-100"] {
+  color: #ffffff !important;
+}
+
+.dark .bg-white .text-gray-900,
+.dark .bg-white .dark\:text-gray-100,
+.dark .bg-white [class*="text-gray-900"],
+.dark .bg-white [class*="dark:text-gray-100"] {
+  color: #ffffff !important;
+}
+
+/* === ESPECÍFICO PARA DASHBOARD === */
+.dark #app-content .text-gray-900,
+.dark #app-content .dark\:text-gray-100,
+.dark #app-content [class*="text-gray-900"],
+.dark #app-content [class*="dark:text-gray-100"] {
+  color: #ffffff !important;
+}
+
+/* === FORÇA EM ELEMENTOS COM FONT-BOLD === */
+.dark .font-bold.text-gray-900,
+.dark .font-bold.dark\:text-gray-100,
+.dark .font-bold[class*="text-gray-900"],
+.dark .font-bold[class*="dark:text-gray-100"] {
+  color: #ffffff !important;
+}
+
+.dark .font-semibold.text-gray-900,
+.dark .font-semibold.dark\:text-gray-100,
+.dark .font-semibold[class*="text-gray-900"],
+.dark .font-semibold[class*="dark:text-gray-100"] {
+  color: #ffffff !important;
+}
+
+.dark .font-medium.text-gray-900,
+.dark .font-medium.dark\:text-gray-100,
+.dark .font-medium[class*="text-gray-900"],
+.dark .font-medium[class*="dark:text-gray-100"] {
+  color: #ffffff !important;
+}
+
+/* === FORÇA COM MAIS ESPECIFICIDADE === */
+.dark .text-xl.font-bold.text-gray-900.dark\:text-gray-100,
+.dark .text-lg.font-semibold.text-gray-900.dark\:text-gray-100,
+.dark .text-lg.font-bold.text-gray-900.dark\:text-gray-100 {
+  color: #ffffff !important;
+}
+
+/* === SOBRESCREVE QUALQUER OUTRA REGRA === */
+html.dark .text-gray-900,
+html.dark .dark\:text-gray-100,
+html.dark [class*="text-gray-900"],
+html.dark [class*="dark:text-gray-100"] {
+  color: #ffffff !important;
+}
+
+/* === FORÇA EM BODY COM CLASSE DARK === */
+body.dark .text-gray-900,
+body.dark .dark\:text-gray-100,
+body.dark [class*="text-gray-900"],
+body.dark [class*="dark:text-gray-100"] {
+  color: #ffffff !important;
+}
+
+/* === FORÇA COM THEME-DARK === */
+.theme-dark .text-gray-900,
+.theme-dark .dark\:text-gray-100,
+.theme-dark [class*="text-gray-900"],
+.theme-dark [class*="dark:text-gray-100"] {
+  color: #ffffff !important;
+}
+
+/* === FORÇA MÁXIMA - USAR ONLY SCREEN === */
+@media only screen {
+  .dark .text-gray-900,
+  .dark .dark\:text-gray-100,
+  .dark [class*="text-gray-900"],
+  .dark [class*="dark:text-gray-100"] {
+    color: #ffffff !important;
+  }
+}
+
+/* === KEYFRAMES PARA FORÇA VISUAL === */
+@keyframes fixDarkText {
+  0% { color: #111827; }
+  100% { color: #ffffff; }
+}
+
+.dark .text-gray-900,
+.dark .dark\:text-gray-100 {
+  animation: fixDarkText 0.1s ease-out forwards !important;
+}

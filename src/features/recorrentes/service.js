@@ -177,7 +177,7 @@ export async function addRecorrente(userId, budgetId, dados) {
     efetivarMesAtual: dados.efetivarMesAtual ?? false,
   };
   const ref = await recurrRepo.create(recorrenteData);
-  
+
   // Enviar notificação de nova despesa recorrente
   try {
     const { sendRecorrenteChangeNotification } = await import('@features/notifications/NotificationService.js');
@@ -186,7 +186,7 @@ export async function addRecorrente(userId, budgetId, dados) {
   } catch (error) {
     console.warn('[RecorrentesService] Erro ao enviar notificação de nova despesa recorrente:', error);
   }
-  
+
   return ref.id || ref; // compat
 }
 
@@ -209,9 +209,9 @@ export async function updateRecorrente(userId, id, dados) {
   } catch (error) {
     console.warn('[RecorrentesService] Erro ao buscar dados anteriores da despesa recorrente:', error);
   }
-  
+
   await recurrRepo.update(id, { ...dados, updatedAt: new Date() });
-  
+
   // Enviar notificação de atualização de despesa recorrente
   try {
     const { sendRecorrenteChangeNotification } = await import('@features/notifications/NotificationService.js');
@@ -234,9 +234,9 @@ export async function deleteRecorrente(userId, id) {
   } catch (error) {
     console.warn('[RecorrentesService] Erro ao buscar dados da despesa recorrente para exclusão:', error);
   }
-  
+
   await recurrRepo.remove(id);
-  
+
   // Enviar notificação de exclusão de despesa recorrente
   if (recorrenteData) {
     try {
@@ -431,7 +431,7 @@ async function aplicarRecorrente(rec, userId, budgetId, ano, mes) {
   const diaClamped = Math.max(1, Math.min(diasNoMes, Number(diaLancamento)));
   const dataLancamento = new Date(ano, mes - 1, diaClamped);
   const parcelaAtual = calcularParcelaRecorrente(rec, ano, mes);
-  
+
   // Debug: verificar dados antes de criar transação
   console.log('🔧 [AplicarRecorrente] Dados para criar transação:', {
     recId: rec.id,
@@ -443,7 +443,7 @@ async function aplicarRecorrente(rec, userId, budgetId, ano, mes) {
     mes,
     dataLancamento: dataLancamento.toISOString()
   });
-  
+
   const { id: transacaoId } = await txRepo.createFromRecurring({ userId, budgetId, rec, createdDate: dataLancamento, parcelaAtual });
 
   // Notificar criação da transação recorrente aplicada (orçamento compartilhado)

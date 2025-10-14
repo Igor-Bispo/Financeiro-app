@@ -251,11 +251,11 @@ function showAddTransactionModal(initialData = {}) {
         } else {
           // Confirmação + inclusão desacopladas de app.js
           let proceed = false;
-          
+
           // Usar modal moderno de confirmação como primeira opção
           console.log('🔍 Debug modal - window.confirmTransaction:', typeof window.confirmTransaction);
           console.log('🔍 Debug modal - window.showConfirmationModal:', typeof window.showConfirmationModal);
-          
+
           if (typeof window.confirmTransaction === 'function') {
             console.log('✅ Usando modal moderno confirmTransaction');
             proceed = await window.confirmTransaction(transactionData);
@@ -275,7 +275,7 @@ function showAddTransactionModal(initialData = {}) {
             console.log('🔄 Tentando import dinâmico do modal moderno');
             // Fallback: tentar importar modal moderno
             try {
-                const { confirmTransaction } = await import('./ui/ConfirmModal.js');
+              const { confirmTransaction } = await import('./ui/ConfirmModal.js');
               console.log('✅ Import dinâmico bem-sucedido, usando confirmTransaction');
               proceed = await confirmTransaction(transactionData);
             } catch (importError) {

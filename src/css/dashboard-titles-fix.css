@@ -1,0 +1,115 @@
+/* ========================================
+   CORREÇÃO ESPECÍFICA DOS TÍTULOS DO DASHBOARD
+   ======================================== */
+
+/* === TÍTULOS DO DASHBOARD - MANTENDO NEGRITO === */
+
+/* "♻️ Top Recorrentes" e "💳 Atividade Recente" */
+h2.text-xl.md\\:text-2xl.font-bold {
+  font-weight: 700 !important; /* Manter negrito para títulos principais */
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+}
+
+/* Títulos de seção do dashboard */
+.dashboard-section-title,
+.dashboard-main-title {
+  font-weight: 700 !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+}
+
+/* === GARANTIR QUE TÍTULOS PRINCIPAIS MANTENHAM NEGRITO === */
+
+/* Todos os h2 no dashboard */
+#app-content h2 {
+  font-weight: 700 !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+}
+
+/* Títulos com classes específicas do dashboard */
+.text-xl.md\\:text-2xl.font-bold.text-gray-900.dark\\:text-gray-100 {
+  font-weight: 700 !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+}
+
+/* === SOBRESCREVER REGRAS GERAIS PARA TÍTULOS === */
+
+/* Garantir que títulos principais não sejam afetados pela padronização */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700 !important; /* Forçar negrito em todos os títulos */
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+}
+
+/* Subtítulos (h3-h6) com peso menor */
+h3, h4, h5, h6 {
+  font-weight: 600 !important; /* Semi-bold para subtítulos */
+}
+
+/* === ESPECÍFICO PARA DASHBOARD === */
+
+/* Container do dashboard */
+#app-content {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+}
+
+/* Títulos dentro do dashboard - FORÇAR TAMANHOS IDÊNTICOS */
+#app-content h2 {
+  font-weight: 700 !important;
+  font-size: 1.25rem !important; /* text-xl */
+  line-height: 1.25 !important;
+  letter-spacing: -0.025em !important;
+}
+
+/* Títulos específicos do dashboard - GARANTIR CONSISTÊNCIA */
+#app-content h2.text-xl.md\\:text-2xl.font-bold {
+  font-size: 1.25rem !important; /* Forçar text-xl */
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+  letter-spacing: -0.025em !important;
+}
+
+@media (min-width: 768px) {
+  #app-content h2 {
+    font-size: 1.5rem !important; /* md:text-2xl */
+  }
+  
+  #app-content h2.text-xl.md\\:text-2xl.font-bold {
+    font-size: 1.5rem !important; /* Forçar md:text-2xl */
+  }
+}
+
+/* === CORREÇÃO ESPECÍFICA PARA TÍTULOS DO DASHBOARD === */
+
+/* Forçar tamanhos idênticos para todos os títulos h2 do dashboard */
+#app-content h2.text-xl.md\\:text-2xl.font-bold.text-gray-900.dark\\:text-gray-100 {
+  font-size: 1.25rem !important; /* text-xl */
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+  letter-spacing: -0.025em !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+}
+
+/* === RESPONSIVIDADE === */
+
+/* Mobile */
+@media (max-width: 768px) {
+  #app-content h2 {
+    font-size: 1.25rem !important; /* text-xl no mobile */
+    font-weight: 700 !important;
+  }
+  
+  #app-content h2.text-xl.md\\:text-2xl.font-bold.text-gray-900.dark\\:text-gray-100 {
+    font-size: 1.25rem !important; /* Forçar text-xl no mobile */
+  }
+}
+
+/* Desktop */
+@media (min-width: 768px) {
+  #app-content h2 {
+    font-size: 1.5rem !important; /* text-2xl no desktop */
+    font-weight: 700 !important;
+  }
+  
+  #app-content h2.text-xl.md\\:text-2xl.font-bold.text-gray-900.dark\\:text-gray-100 {
+    font-size: 1.5rem !important; /* Forçar text-2xl no desktop */
+  }
+}

@@ -87,12 +87,12 @@ window.showAddRecorrenteModal = function (dados = {}) {
               // Declarar variáveis no escopo correto
               let transacaoId = null;
               let parcelaAtualFinal = 1;
-              
+
               // Criar transação para o mês atual usando a função correta
               try {
                 const { createFromRecurring } = await import('@data/repositories/transactionsRepo.js');
                 const { calcularParcelaRecorrente } = await import('@features/recorrentes/service.js');
-                
+
                 // Preparar dados do recorrente para a função
                 const recData = {
                   id: recorrenteId,
@@ -103,13 +103,13 @@ window.showAddRecorrenteModal = function (dados = {}) {
                   parcelasRestantes: dadosForm.parcelasRestantes,
                   dataInicio: dadosForm.dataInicio || now.toISOString().split('T')[0] // Usar data atual se não especificada
                 };
-                
+
                 // Calcular parcela atual
                 const parcelaAtual = calcularParcelaRecorrente(recData, anoAtual, mesAtual);
-                
+
                 // Se a função retornar null ou NaN, usar 1 como fallback
                 parcelaAtualFinal = (parcelaAtual && !isNaN(parcelaAtual)) ? parcelaAtual : 1;
-                
+
                 // Criar transação usando a função correta
                 const { id } = await createFromRecurring({
                   userId: user.uid,
@@ -118,7 +118,7 @@ window.showAddRecorrenteModal = function (dados = {}) {
                   createdDate: now,
                   parcelaAtual: parcelaAtualFinal
                 });
-                
+
                 transacaoId = id;
                 console.log('✅ Transação criada para mês atual:', transacaoId);
               } catch (error) {
@@ -290,4 +290,187 @@ window.showAddRecorrenteModal = function (dados = {}) {
     modal.appendChild(form);
   }
   document.body.appendChild(modal);
+};
+
+// Função para editar recorrente
+window.editRecorrente = async function (recorrenteId) {
+  try {
+    const recorrente = window.appState.recorrentes?.find(r => r.id === recorrenteId);
+    if (!recorrente) {
+      Snackbar({ message: 'Recorrente não encontrada', type: 'error' });
+      return;
+    }
+    window.showAddRecorrenteModal(recorrente);
+  } catch (err) {
+    console.error('Erro ao editar recorrente:', err);
+    Snackbar({ message: 'Erro ao editar recorrente', type: 'error' });
+  }
+};
+
+// Função para excluir recorrente
+window.deleteRecorrente = async function (recorrenteId) {
+  try {
+    const recorrente = window.appState.recorrentes?.find(r => r.id === recorrenteId);
+    if (!recorrente) {
+      Snackbar({ message: 'Recorrente não encontrada', type: 'error' });
+      return;
+    }
+
+    const confirmar = confirm(`Deseja realmente excluir a recorrente "${recorrente.descricao || recorrente.nome}"?`);
+    if (!confirmar) return;
+
+    const user = window.appState.currentUser;
+    if (!user) {
+      Snackbar({ message: 'Você precisa estar logado', type: 'error' });
+      return;
+    }
+
+    const { deleteDespesaRecorrente } = await import('./recorrentes.js');
+    await deleteDespesaRecorrente(user.uid, recorrenteId);
+    
+    Snackbar({ message: 'Recorrente excluída com sucesso!', type: 'success' });
+  } catch (err) {
+    console.error('Erro ao excluir recorrente:', err);
+    Snackbar({ message: 'Erro ao excluir recorrente', type: 'error' });
+  }
+};
+
+// Função para mostrar histórico da recorrente
+window.showHistoricoRecorrente = async function (recorrenteId) {
+  console.log('🚀 [Histórico] FUNÇÃO CHAMADA! ID:', recorrenteId);
+  console.log('🚀 [Histórico] Tipo de recorrenteId:', typeof recorrenteId);
+  console.log('🚀 [Histórico] window.appState existe?', !!window.appState);
+  
+  try {
+    console.log('📊 [Histórico] Iniciando... ID:', recorrenteId);
+    console.log('📊 [Histórico] window.appState:', window.appState);
+    console.log('📊 [Histórico] Recorrentes:', window.appState.recorrentes);
+    
+    const recorrente = window.appState.recorrentes?.find(r => r.id === recorrenteId);
+    console.log('📊 [Histórico] Recorrente encontrada:', recorrente);
+    
+    if (!recorrente) {
+      console.error('❌ [Histórico] Recorrente não encontrada!');
+      Snackbar({ message: 'Recorrente não encontrada', type: 'error' });
+      return;
+    }
+
+    // Buscar todas as transações relacionadas a esta recorrente
+    const transacoes = (window.appState.transactions || []).filter(t => t.recorrenteId === recorrenteId);
+    console.log('📊 [Histórico] Transações encontradas:', transacoes.length);
+    
+    // Ordenar por data (mais recente primeiro)
+    transacoes.sort((a, b) => {
+      const dataA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
+      const dataB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
+      return dataB - dataA;
+    });
+
+    console.log('📊 [Histórico] Criando modal...');
+    // Criar modal de histórico
+    const modal = Modal({
+      title: `📊 Histórico: ${recorrente.descricao || recorrente.nome}`,
+      content: '',
+      onClose: () => modal.remove()
+    });
+    console.log('📊 [Histórico] Modal criado:', modal);
+
+    const body = modal.querySelector('.modal-body');
+    
+    if (transacoes.length === 0) {
+      body.innerHTML = `
+        <div class="text-center py-12">
+          <div class="text-6xl mb-4">📭</div>
+          <p class="text-gray-600 dark:text-gray-400 text-lg">Nenhuma transação encontrada para esta recorrente</p>
+          <p class="text-sm text-gray-500 dark:text-gray-500 mt-2">As transações aparecerão aqui quando forem efetivadas</p>
+        </div>
+      `;
+    } else {
+      const formatarData = (data) => {
+        const d = data?.toDate ? data.toDate() : new Date(data);
+        return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+      };
+
+      const formatarValor = (valor) => {
+        return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor);
+      };
+
+      const linhas = transacoes.map(t => {
+        const data = formatarData(t.createdAt);
+        const valor = formatarValor(t.valor || 0);
+        const tipo = t.tipo === 'receita' ? '💰' : '💸';
+        const cor = t.tipo === 'receita' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
+        
+        return `
+          <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+            <div class="flex items-center gap-3">
+              <span class="text-2xl">${tipo}</span>
+              <div>
+                <div class="font-semibold text-gray-900 dark:text-gray-100">${t.descricao || 'Sem descrição'}</div>
+                <div class="text-sm text-gray-500 dark:text-gray-400">${data}</div>
+              </div>
+            </div>
+            <div class="text-right">
+              <div class="font-bold ${cor} text-lg">${valor}</div>
+              ${t.parcela ? `<div class="text-xs text-gray-500 dark:text-gray-400">Parcela ${t.parcela}</div>` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      body.innerHTML = `
+        <div class="space-y-3 max-h-96 overflow-y-auto">
+          <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="text-sm text-gray-600 dark:text-gray-400">Total de transações</div>
+                <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">${transacoes.length}</div>
+              </div>
+              <div>
+                <div class="text-sm text-gray-600 dark:text-gray-400">Valor total</div>
+                <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">${formatarValor(transacoes.reduce((sum, t) => sum + (t.valor || 0), 0))}</div>
+              </div>
+            </div>
+          </div>
+          ${linhas}
+        </div>
+      `;
+    }
+
+    console.log('📊 [Histórico] Adicionando modal ao body...');
+    document.body.appendChild(modal);
+    console.log('✅ [Histórico] Modal adicionado com sucesso!');
+  } catch (err) {
+    console.error('❌ [Histórico] Erro ao mostrar histórico:', err);
+    console.error('❌ [Histórico] Stack:', err.stack);
+    Snackbar({ message: 'Erro ao carregar histórico', type: 'error' });
+  }
+};
+
+// Função para efetivar recorrentes pendentes do mês atual
+window.efetivarRecorrentesMesAtual = async function () {
+  try {
+    const user = window.appState.currentUser;
+    const budget = window.appState.currentBudget;
+    
+    if (!user || !budget) {
+      Snackbar({ message: 'Você precisa estar logado e ter um orçamento selecionado', type: 'error' });
+      return;
+    }
+
+    const confirmar = confirm('Deseja efetivar todas as recorrentes pendentes do mês atual?');
+    if (!confirmar) return;
+
+    const { aplicarRecorrentesDoMes } = await import('./recorrentes.js');
+    const now = new Date();
+    const mes = now.getMonth() + 1;
+    const ano = now.getFullYear();
+
+    await aplicarRecorrentesDoMes(user.uid, budget.id, ano, mes);
+    
+    Snackbar({ message: 'Recorrentes efetivadas com sucesso!', type: 'success' });
+  } catch (err) {
+    console.error('Erro ao efetivar recorrentes:', err);
+    Snackbar({ message: 'Erro ao efetivar recorrentes', type: 'error' });
+  }
 };

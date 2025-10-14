@@ -67,39 +67,39 @@ export function mountPeriodIndicator(placeholderEl) {
 
     const onChange = (direction) => {
       console.log('🔄 onChange chamado com direção:', direction);
-      
+
       // Buscar o período atual a cada clique
       const currentPeriod = getSelectedPeriod();
       console.log('📅 Período atual:', currentPeriod.year, currentPeriod.month);
-      
+
       let y = currentPeriod.year;
       let m = currentPeriod.month;
-      
-      if (direction === 'prev') { 
-        m -= 1; 
-        if (m < 1) { 
-          m = 12; 
-          y -= 1; 
-        } 
-      } else if (direction === 'next') { 
-        m += 1; 
-        if (m > 12) { 
-          m = 1; 
-          y += 1; 
-        } 
+
+      if (direction === 'prev') {
+        m -= 1;
+        if (m < 1) {
+          m = 12;
+          y -= 1;
+        }
+      } else if (direction === 'next') {
+        m += 1;
+        if (m > 12) {
+          m = 1;
+          y += 1;
+        }
       }
-      
+
       console.log('📅 Novo período calculado:', y, m);
       setSelectedPeriod(y, m);
       console.log('💾 setSelectedPeriod chamado com:', y, m);
-      
+
       // Verificar se o período foi realmente salvo
       const savedPeriod = getSelectedPeriod();
       console.log('📖 Período salvo verificado:', savedPeriod);
-      
+
       const newPeriod = { month: meses[Math.max(0, Math.min(11, m - 1))] || String(m), year: y };
       console.log('📅 Período formatado:', newPeriod);
-      
+
       try {
         const el = placeholder.querySelector('.period-indicator');
         if (el) {

@@ -55,9 +55,9 @@ describe('NotificationService test_notification flows', () => {
     budgetsRepoMock.getById.mockResolvedValue({ id: 'b1', nome: 'Budget', criadoPor: 'owner1' });
     notificationsRepoMock.create.mockResolvedValue('new_id');
 
-  const svc = await importServiceFresh();
-  const { eventBus } = await import('../src/core/events/eventBus.js');
-  const emit = eventBus.emit;
+    const svc = await importServiceFresh();
+    const { eventBus } = await import('../src/core/events/eventBus.js');
+    const emit = eventBus.emit;
 
     await svc.sendTestNotificationToOwner('b1', 'sender1');
 
@@ -76,9 +76,9 @@ describe('NotificationService test_notification flows', () => {
   it('sendTestNotificationToOwner: does not create when sender is owner; emits info snackbar', async () => {
     budgetsRepoMock.getById.mockResolvedValue({ id: 'b1', nome: 'Budget', criadoPor: 'sender1' });
 
-  const svc = await importServiceFresh();
-  const { eventBus } = await import('../src/core/events/eventBus.js');
-  const emit = eventBus.emit;
+    const svc = await importServiceFresh();
+    const { eventBus } = await import('../src/core/events/eventBus.js');
+    const emit = eventBus.emit;
 
     await svc.sendTestNotificationToOwner('b1', 'sender1');
 
@@ -94,9 +94,9 @@ describe('NotificationService test_notification flows', () => {
     budgetsRepoMock.getById.mockResolvedValue({ id: 'b1', nome: 'Budget', usuariosPermitidos: ['a', 'b', 'sender1', 'b'] });
     notificationsRepoMock.create.mockResolvedValue('nid');
 
-  const svc = await importServiceFresh();
-  const { eventBus } = await import('../src/core/events/eventBus.js');
-  const emit = eventBus.emit;
+    const svc = await importServiceFresh();
+    const { eventBus } = await import('../src/core/events/eventBus.js');
+    const emit = eventBus.emit;
 
     await svc.sendTestNotificationToShared('b1', 'sender1');
 
@@ -114,9 +114,9 @@ describe('NotificationService test_notification flows', () => {
   it('sendTestNotificationToShared: emits info when there are no shared recipients', async () => {
     budgetsRepoMock.getById.mockResolvedValue({ id: 'b1', nome: 'Budget', usuariosPermitidos: ['sender1'] });
 
-  const svc = await importServiceFresh();
-  const { eventBus } = await import('../src/core/events/eventBus.js');
-  const emit = eventBus.emit;
+    const svc = await importServiceFresh();
+    const { eventBus } = await import('../src/core/events/eventBus.js');
+    const emit = eventBus.emit;
 
     await svc.sendTestNotificationToShared('b1', 'sender1');
 

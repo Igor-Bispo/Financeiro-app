@@ -15,10 +15,10 @@ export class DashboardDragDrop {
 
   setupDragAndDrop() {
     const cards = document.querySelectorAll('.draggable-card');
-    
+
     cards.forEach(card => {
       card.draggable = true;
-      
+
       card.addEventListener('dragstart', (e) => {
         this.draggedElement = card;
         card.classList.add('dragging');
@@ -26,11 +26,11 @@ export class DashboardDragDrop {
         e.dataTransfer.setData('text/html', card.outerHTML);
       });
 
-      card.addEventListener('dragend', (e) => {
+      card.addEventListener('dragend', (_e) => {
         card.classList.remove('dragging');
         this.draggedElement = null;
         this.dragOverElement = null;
-        
+
         // Remove drag-over class from all cards
         document.querySelectorAll('.draggable-card').forEach(c => {
           c.classList.remove('drag-over');
@@ -40,7 +40,7 @@ export class DashboardDragDrop {
       card.addEventListener('dragover', (e) => {
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
-        
+
         if (this.draggedElement && this.draggedElement !== card) {
           this.dragOverElement = card;
           card.classList.add('drag-over');
@@ -56,7 +56,7 @@ export class DashboardDragDrop {
       card.addEventListener('drop', (e) => {
         e.preventDefault();
         card.classList.remove('drag-over');
-        
+
         if (this.draggedElement && this.draggedElement !== card) {
           this.swapCards(this.draggedElement, card);
         }
@@ -68,13 +68,13 @@ export class DashboardDragDrop {
     const parent = draggedCard.parentNode;
     const draggedIndex = Array.from(parent.children).indexOf(draggedCard);
     const targetIndex = Array.from(parent.children).indexOf(targetCard);
-    
+
     if (draggedIndex < targetIndex) {
       parent.insertBefore(draggedCard, targetCard.nextSibling);
     } else {
       parent.insertBefore(draggedCard, targetCard);
     }
-    
+
     this.saveCardOrder();
     this.showNotification('Layout atualizado!', 'success');
   }
@@ -88,8 +88,8 @@ export class DashboardDragDrop {
   loadCardOrder() {
     const saved = localStorage.getItem('dashboard-card-order');
     return saved ? JSON.parse(saved) : [
-      'progress', 
-      'metrics', 
+      'progress',
+      'metrics',
       'summary',
       'top-recorrentes',
       'categorias-inteligentes',
@@ -255,19 +255,19 @@ export class DashboardDragDrop {
 
   shareToWhatsApp(format = 'PDF') {
     this.showNotification('Preparando para compartilhar...', 'info');
-    
+
     const data = this.gatherDashboardData();
     const message = this.generateWhatsAppMessage(data, format);
-    
+
     // Codificar a mensagem para URL
     const encodedMessage = encodeURIComponent(message);
-    
+
     // URL do WhatsApp Web/App
     const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
-    
+
     // Abrir WhatsApp
     window.open(whatsappUrl, '_blank');
-    
+
     this.showNotification('WhatsApp aberto para compartilhamento!', 'success');
   }
 
@@ -283,7 +283,7 @@ export class DashboardDragDrop {
     const progressData = this.extractProgressData();
     const metricsData = this.extractMetricsData();
     const summaryData = this.extractSummaryData();
-    
+
     return {
       period: `${monthName}/${year}`,
       progress: progressData,
@@ -299,12 +299,12 @@ export class DashboardDragDrop {
 
     const percentageEl = progressCard.querySelector('.text-lg.font-bold');
     const detailsEl = progressCard.querySelector('.text-xs.text-gray-600');
-    
+
     const percentage = percentageEl ? percentageEl.textContent.trim() : '0%';
     const details = detailsEl ? detailsEl.textContent.trim() : 'R$ 0,00 de R$ 0,00';
-    
+
     const [used, total] = details.split(' de ');
-    
+
     return {
       percentage,
       used: used || 'R$ 0,00',
@@ -315,11 +315,11 @@ export class DashboardDragDrop {
   extractMetricsData() {
     const metricsCards = document.querySelectorAll('[data-card-type="metrics"] .bg-white');
     const metrics = [];
-    
+
     metricsCards.forEach(card => {
       const valueEl = card.querySelector('.text-lg.font-bold');
       const labelEl = card.querySelector('.text-xs.text-gray-600');
-      
+
       if (valueEl && labelEl) {
         metrics.push({
           label: labelEl.textContent.trim(),
@@ -327,7 +327,7 @@ export class DashboardDragDrop {
         });
       }
     });
-    
+
     return metrics;
   }
 
@@ -337,11 +337,11 @@ export class DashboardDragDrop {
 
     const items = [];
     const lines = summaryCard.querySelectorAll('.flex.justify-between.text-xs');
-    
+
     lines.forEach(line => {
       const labelEl = line.querySelector('span:first-child');
       const valueEl = line.querySelector('span:last-child');
-      
+
       if (labelEl && valueEl) {
         items.push({
           label: labelEl.textContent.trim(),
@@ -349,51 +349,51 @@ export class DashboardDragDrop {
         });
       }
     });
-    
+
     return { items };
   }
 
 
   generateWhatsAppMessage(data, format = 'PDF') {
     let message = `📊 *RESUMO FINANCEIRO - ${data.period}*\n\n`;
-    
+
     // Progresso do Orçamento
-    message += `📈 *Progresso do Orçamento:*\n`;
+    message += '📈 *Progresso do Orçamento:*\n';
     message += `• ${data.progress.percentage} (${data.progress.used} de ${data.progress.total})\n\n`;
-    
+
     // Métricas
-    message += `💰 *Métricas:*\n`;
+    message += '💰 *Métricas:*\n';
     data.metrics.forEach(metric => {
       message += `• ${metric.label}: ${metric.value}\n`;
     });
-    message += `\n`;
-    
+    message += '\n';
+
     // Resumo
-    message += `📊 *Resumo Detalhado:*\n`;
+    message += '📊 *Resumo Detalhado:*\n';
     data.summary.items.forEach(item => {
       message += `• ${item.label}: ${item.value}\n`;
     });
-    message += `\n`;
-    
+    message += '\n';
+
     message += `📅 Exportado em: ${data.exportDate}\n`;
     message += `📄 Formato: ${format}\n\n`;
-    message += `---\n`;
-    message += `💡 Gerado pelo Sistema de Controle Financeiro`;
-    
+    message += '---\n';
+    message += '💡 Gerado pelo Sistema de Controle Financeiro';
+
     return message;
   }
 
   showNotification(message, type = 'info') {
     const notification = document.createElement('div');
     notification.className = `fixed top-4 right-4 px-4 py-2 rounded-lg text-white z-50 ${
-      type === 'success' ? 'bg-green-500' : 
-      type === 'error' ? 'bg-red-500' : 
-      'bg-blue-500'
+      type === 'success' ? 'bg-green-500' :
+        type === 'error' ? 'bg-red-500' :
+          'bg-blue-500'
     }`;
     notification.textContent = message;
-    
+
     document.body.appendChild(notification);
-    
+
     setTimeout(() => {
       if (document.body.contains(notification)) {
         document.body.removeChild(notification);

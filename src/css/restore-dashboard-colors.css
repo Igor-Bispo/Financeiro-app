@@ -1,0 +1,174 @@
+/* ========================================
+   RESTAURAR CORES IMPORTANTES DO DASHBOARD
+   ======================================== */
+
+/* === CORES DOS VALORES MONETÁRIOS === */
+
+/* Saldo negativo - VERMELHO */
+#app-content .text-red-600,
+#app-content .text-red-500,
+#app-content .dark\:text-red-400,
+#app-content .dark\:text-red-300 {
+  color: #dc2626 !important; /* red-600 */
+}
+
+/* Saldo positivo - VERDE */
+#app-content .text-green-600,
+#app-content .text-green-500,
+#app-content .dark\:text-green-400,
+#app-content .dark\:text-green-300 {
+  color: #16a34a !important; /* green-600 */
+}
+
+/* Despesas - VERMELHO */
+#app-content .text-red-600,
+#app-content .text-red-500 {
+  color: #dc2626 !important; /* red-600 */
+}
+
+/* Receitas - VERDE */
+#app-content .text-green-600,
+#app-content .text-green-500 {
+  color: #16a34a !important; /* green-600 */
+}
+
+/* === CORES DOS ALERTAS === */
+
+/* Alertas importantes - VERMELHO */
+#app-content .text-red-700,
+#app-content .text-red-800,
+#app-content .dark\:text-red-300,
+#app-content .dark\:text-red-400 {
+  color: #b91c1c !important; /* red-700 */
+}
+
+/* Alertas de atenção - LARANJA */
+#app-content .text-orange-600,
+#app-content .text-orange-700,
+#app-content .dark\:text-orange-300,
+#app-content .dark\:text-orange-400 {
+  color: #ea580c !important; /* orange-600 */
+}
+
+/* === CORES DAS METAS DIÁRIAS === */
+
+/* Meta Diária (Orçamento) - AZUL */
+#app-content .text-blue-600,
+#app-content .text-blue-700,
+#app-content .text-blue-800,
+#app-content .dark\:text-blue-300,
+#app-content .dark\:text-blue-400 {
+  color: #2563eb !important; /* blue-600 */
+}
+
+/* Meta Diária (100% Receitas) - VERDE */
+#app-content .text-green-600,
+#app-content .text-green-700,
+#app-content .text-green-800,
+#app-content .dark\:text-green-300,
+#app-content .dark\:text-green-400 {
+  color: #16a34a !important; /* green-600 */
+}
+
+/* Meta Diária (Conservadora) - AMARELO/LARANJA */
+#app-content .text-yellow-600,
+#app-content .text-yellow-700,
+#app-content .text-yellow-800,
+#app-content .dark\:text-yellow-300,
+#app-content .dark\:text-yellow-400 {
+  color: #ca8a04 !important; /* yellow-600 */
+}
+
+/* === CORES DOS TÍTULOS DE SEÇÃO === */
+
+/* Títulos principais - PRETO/CINZA ESCURO */
+#app-content h2,
+#app-content .text-gray-900,
+#app-content .dark\:text-gray-100 {
+  color: #111827 !important; /* gray-900 */
+}
+
+/* Títulos secundários - CINZA ESCURO */
+#app-content h3,
+#app-content .text-gray-800,
+#app-content .dark\:text-gray-200 {
+  color: #1f2937 !important; /* gray-800 */
+}
+
+/* Títulos terciários - CINZA MÉDIO */
+#app-content h4,
+#app-content h5,
+#app-content h6,
+#app-content .text-gray-700,
+#app-content .dark\:text-gray-300 {
+  color: #374151 !important; /* gray-700 */
+}
+
+/* === CORES DOS LABELS E DESCRIÇÕES === */
+
+/* Labels normais - CINZA MÉDIO */
+#app-content .text-gray-600,
+#app-content .dark\:text-gray-400 {
+  color: #4b5563 !important; /* gray-600 */
+}
+
+/* Labels secundários - CINZA CLARO */
+#app-content .text-gray-500,
+#app-content .dark\:text-gray-500 {
+  color: #6b7280 !important; /* gray-500 */
+}
+
+/* === CORES ESPECÍFICAS DO DASHBOARD === */
+
+/* Texto dos gradientes de alerta */
+#app-content .text-blue-800,
+#app-content .dark\:text-blue-300 {
+  color: #1e40af !important; /* blue-800 */
+}
+
+#app-content .text-green-800,
+#app-content .dark\:text-green-300 {
+  color: #166534 !important; /* green-800 */
+}
+
+#app-content .text-yellow-800,
+#app-content .dark\:text-yellow-300 {
+  color: #854d0e !important; /* yellow-800 */
+}
+
+#app-content .text-red-800,
+#app-content .dark\:text-red-300 {
+  color: #991b1b !important; /* red-800 */
+}
+
+/* === CORES DOS BADGES E CONTADORES === */
+
+/* Badge de alertas - VERMELHO */
+#app-content .bg-red-100,
+#app-content .dark\:bg-red-900\/50 {
+  background-color: #fee2e2 !important; /* red-100 */
+  color: #dc2626 !important; /* red-600 */
+}
+
+/* === CORES DOS ÍCONES E ELEMENTOS VISUAIS === */
+
+/* Ícones de status - manter cores originais */
+#app-content .animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite !important;
+}
+
+/* === SOBRESCREVER REGRAS GENÉRICAS === */
+
+/* Garantir que valores monetários mantenham suas cores */
+#app-content .text-lg.font-bold,
+#app-content .text-xl.font-bold,
+#app-content .text-2xl.font-bold {
+  /* Não aplicar cor genérica, deixar as cores específicas acima */
+}
+
+/* Garantir que títulos mantenham suas cores */
+#app-content h2.font-bold,
+#app-content h3.font-semibold,
+#app-content h4.font-medium {
+  /* Não aplicar cor genérica, deixar as cores específicas acima */
+}

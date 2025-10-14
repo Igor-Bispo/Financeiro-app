@@ -1,6 +1,13 @@
 export function Modal({ title = '', content = '', onClose = null }) {
   console.log('🔧 Modal sendo criado com:', { title, content: content.substring(0, 100) + '...' });
 
+  // Remover modal existente antes de criar novo
+  const existingModal = document.getElementById('app-modal');
+  if (existingModal) {
+    console.log('⚠️ [Modal] Modal existente encontrado - removendo');
+    existingModal.remove();
+  }
+
   const overlay = document.createElement('div');
   overlay.id = 'app-modal';
   overlay.className =
@@ -17,16 +24,24 @@ export function Modal({ title = '', content = '', onClose = null }) {
     z-index: 9999 !important;
     background: rgba(0, 0, 0, 0.4) !important;
   `;
+  
+  // Flag para evitar fechamento duplicado
+  let isClosing = false;
+  
   overlay.onclick = e => {
-    if (e.target === overlay) {
+    if (e.target === overlay && !isClosing) {
+      isClosing = true;
+      e.stopPropagation();
+      e.preventDefault();
+      console.log('🔧 [Modal] Clique no overlay - fechando modal');
       if (onClose) {
         onClose();
       } else {
         overlay.remove();
       }
-    }
-    if (window.toggleFABOnModal) {
-      window.toggleFABOnModal();
+      if (window.toggleFABOnModal) {
+        window.toggleFABOnModal();
+      }
     }
   };
 
@@ -47,12 +62,19 @@ export function Modal({ title = '', content = '', onClose = null }) {
   `;
 
   overlay.appendChild(modal);
-  
+
   // Garantir que o modal seja adicionado ao body
   document.body.appendChild(overlay);
 
   modal.querySelector('#modal-close-btn').onclick = e => {
+    if (isClosing) {
+      console.log('⚠️ [Modal] Já está fechando - ignorando clique');
+      return;
+    }
+    isClosing = true;
     e.stopPropagation();
+    e.preventDefault();
+    console.log('🔧 [Modal] Clique no botão X - fechando modal');
     if (onClose) {
       onClose();
     } else {

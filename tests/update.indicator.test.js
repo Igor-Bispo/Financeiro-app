@@ -7,8 +7,8 @@ describe('Update indicator on Settings tab', () => {
   beforeEach(() => {
     // Clean DOM
     document.body.innerHTML = '';
-  // Ensure no prior flag
-  try { window.__updateAvailable = false; } catch {}
+    // Ensure no prior flag
+    try { window.__updateAvailable = false; } catch {}
     nav = BottomNav('/dashboard');
     document.body.appendChild(nav);
   });

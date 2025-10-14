@@ -5,6 +5,12 @@ import { eventBus } from '@core/events/eventBus.js';
 export function setupThemeToggle() {
   console.log('🎨 Configurando toggle de tema...');
 
+  // Verificar se document está disponível (pode não estar em ambiente de teste)
+  if (typeof document === 'undefined') {
+    console.warn('⚠️ Document não disponível - pulando configuração de toggle de tema');
+    return;
+  }
+
   const button = document.getElementById('theme-toggle-btn');
   if (!button) {
     // Não há botão global; OK fora da aba Configurações
@@ -100,7 +106,7 @@ function forceThemeApplication(theme) {
     // Aplicar tema em elementos específicos que podem não estar respondendo
     const themeElements = document.querySelectorAll([
       '.u-card',
-      '.u-btn', 
+      '.u-btn',
       '.u-input',
       '.tab-container',
       '.tab-header',
@@ -133,13 +139,13 @@ function forceThemeApplication(theme) {
         --border-color: #e5e7eb !important;
       }
     `;
-    
+
     // Remover estilo anterior se existir
     const existingStyle = document.getElementById('force-theme-style');
     if (existingStyle) {
       existingStyle.remove();
     }
-    
+
     style.id = 'force-theme-style';
     document.head.appendChild(style);
 
@@ -166,19 +172,19 @@ export function applyCurrentTheme() {
   try {
     const savedTheme = localStorage.getItem('theme');
     const systemPreference = detectSystemPreference();
-    
+
     console.log('🎨 Aplicando tema atual:', {
       temaSalvo: savedTheme,
       preferenciaSistema: systemPreference,
       sistemaEscuro: window.matchMedia('(prefers-color-scheme: dark)').matches
     });
-    
+
     // Se não há tema salvo, usar preferência do sistema
     // Se há tema salvo, usar o tema salvo (ignorar sistema)
     const themeToApply = savedTheme || systemPreference;
-    
+
     console.log('🎯 Tema a ser aplicado:', themeToApply);
-    
+
     applyTheme(themeToApply);
     updateThemeButtonIcon(themeToApply);
 
@@ -261,10 +267,10 @@ export function getCurrentCompactMode() {
 function setupSystemPreferenceListener() {
   try {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    
+
     const handleSystemChange = (e) => {
       const savedTheme = localStorage.getItem('theme');
-      
+
       // Só aplicar mudança do sistema se não há tema salvo pelo usuário
       if (!savedTheme) {
         const newTheme = e.matches ? 'dark' : 'light';
@@ -305,7 +311,7 @@ export function applyThemeSettings() {
     applyCurrentTheme();
     applyCompactMode();
     setupSystemPreferenceListener();
-    
+
     // Expor funções para debug no console
     if (typeof window !== 'undefined') {
       window.debugTheme = {
@@ -316,7 +322,7 @@ export function applyThemeSettings() {
       };
       console.log('🔧 Funções de debug do tema disponíveis em window.debugTheme');
     }
-    
+
     console.log('✅ Configurações de tema aplicadas');
   } catch (error) {
     console.error('❌ Erro ao aplicar configurações de tema:', error);

@@ -1,0 +1,298 @@
+/* ========================================
+   CORREÇÃO ESPECÍFICA PARA BOTÕES - MODO ESCURO
+   ======================================== */
+
+/* === BOTÕES PRINCIPAIS === */
+.dark button,
+.dark .btn {
+  background-color: #4a5568 !important; /* Cinza médio claro */
+  border: 1px solid #718096 !important; /* Borda mais clara */
+  color: #ffffff !important; /* Texto branco */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+}
+
+.dark button:hover,
+.dark .btn:hover {
+  background-color: #718096 !important; /* Cinza mais claro no hover */
+  border-color: #a0aec0 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4) !important;
+}
+
+.dark button:active,
+.dark .btn:active {
+  background-color: #2d3748 !important;
+  transform: translateY(0) !important;
+}
+
+/* === BOTÕES PRIMÁRIOS (AZUIS) === */
+.dark .btn-primary,
+.dark button[class*="bg-blue"],
+.dark .bg-blue-500,
+.dark .bg-blue-600 {
+  background: linear-gradient(135deg, #3182ce 0%, #2c5aa0 100%) !important;
+  border: 1px solid #3182ce !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 4px rgba(49, 130, 206, 0.3) !important;
+}
+
+.dark .btn-primary:hover,
+.dark button[class*="bg-blue"]:hover,
+.dark .bg-blue-500:hover,
+.dark .bg-blue-600:hover {
+  background: linear-gradient(135deg, #2c5aa0 0%, #2a4d8a 100%) !important;
+  border-color: #2c5aa0 !important;
+  box-shadow: 0 4px 8px rgba(49, 130, 206, 0.4) !important;
+}
+
+/* === BOTÕES DE SUCESSO (VERDES) === */
+.dark .btn-success,
+.dark button[class*="bg-green"],
+.dark .bg-green-500,
+.dark .bg-green-600 {
+  background: linear-gradient(135deg, #38a169 0%, #2f855a 100%) !important;
+  border: 1px solid #38a169 !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 4px rgba(56, 161, 105, 0.3) !important;
+}
+
+.dark .btn-success:hover,
+.dark button[class*="bg-green"]:hover,
+.dark .bg-green-500:hover,
+.dark .bg-green-600:hover {
+  background: linear-gradient(135deg, #2f855a 0%, #276749 100%) !important;
+  border-color: #2f855a !important;
+  box-shadow: 0 4px 8px rgba(56, 161, 105, 0.4) !important;
+}
+
+/* === BOTÕES DE PERIGO (VERMELHOS) === */
+.dark .btn-danger,
+.dark .btn-error,
+.dark button[class*="bg-red"],
+.dark .bg-red-500,
+.dark .bg-red-600 {
+  background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%) !important;
+  border: 1px solid #e53e3e !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 4px rgba(229, 62, 62, 0.3) !important;
+}
+
+.dark .btn-danger:hover,
+.dark .btn-error:hover,
+.dark button[class*="bg-red"]:hover,
+.dark .bg-red-500:hover,
+.dark .bg-red-600:hover {
+  background: linear-gradient(135deg, #c53030 0%, #9c2626 100%) !important;
+  border-color: #c53030 !important;
+  box-shadow: 0 4px 8px rgba(229, 62, 62, 0.4) !important;
+}
+
+/* === BOTÕES DE AVISO (AMARELOS) === */
+.dark .btn-warning,
+.dark button[class*="bg-yellow"],
+.dark .bg-yellow-500,
+.dark .bg-yellow-600 {
+  background: linear-gradient(135deg, #d69e2e 0%, #b7791f 100%) !important;
+  border: 1px solid #d69e2e !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 4px rgba(214, 158, 46, 0.3) !important;
+}
+
+.dark .btn-warning:hover,
+.dark button[class*="bg-yellow"]:hover,
+.dark .bg-yellow-500:hover,
+.dark .bg-yellow-600:hover {
+  background: linear-gradient(135deg, #b7791f 0%, #975a16 100%) !important;
+  border-color: #b7791f !important;
+  box-shadow: 0 4px 8px rgba(214, 158, 46, 0.4) !important;
+}
+
+/* === BOTÕES SECUNDÁRIOS (CINZAS) === */
+.dark .btn-secondary,
+.dark button[class*="bg-gray"],
+.dark .bg-gray-500,
+.dark .bg-gray-600 {
+  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%) !important;
+  border: 1px solid #6b7280 !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 4px rgba(107, 114, 128, 0.3) !important;
+}
+
+.dark .btn-secondary:hover,
+.dark button[class*="bg-gray"]:hover,
+.dark .bg-gray-500:hover,
+.dark .bg-gray-600:hover {
+  background: linear-gradient(135deg, #4b5563 0%, #374151 100%) !important;
+  border-color: #4b5563 !important;
+  box-shadow: 0 4px 8px rgba(107, 114, 128, 0.4) !important;
+}
+
+/* === FAB (FLOATING ACTION BUTTON) === */
+.dark .fab,
+.dark .floating-action-button,
+.dark [class*="fab-"] {
+  background: linear-gradient(135deg, #3182ce 0%, #2c5aa0 100%) !important;
+  border: 2px solid #3182ce !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(49, 130, 206, 0.4) !important;
+}
+
+.dark .fab:hover,
+.dark .floating-action-button:hover,
+.dark [class*="fab-"]:hover {
+  background: linear-gradient(135deg, #2c5aa0 0%, #2a4d8a 100%) !important;
+  border-color: #2c5aa0 !important;
+  box-shadow: 0 6px 16px rgba(49, 130, 206, 0.5) !important;
+  transform: translateY(-2px) !important;
+}
+
+/* === BOTÕES DE NAVEGAÇÃO === */
+.dark .nav-btn {
+  background-color: transparent !important;
+  border: none !important;
+  color: #e5e7eb !important;
+}
+
+.dark .nav-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+}
+
+.dark .nav-btn.active {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+}
+
+/* === BOTÕES PEQUENOS === */
+.dark .btn-sm,
+.dark button[class*="text-xs"],
+.dark button[class*="text-sm"] {
+  background-color: #4a5568 !important;
+  border: 1px solid #718096 !important;
+  color: #ffffff !important;
+  font-size: 0.75rem !important;
+  padding: 0.25rem 0.5rem !important;
+}
+
+.dark .btn-sm:hover,
+.dark button[class*="text-xs"]:hover,
+.dark button[class*="text-sm"]:hover {
+  background-color: #718096 !important;
+  border-color: #a0aec0 !important;
+}
+
+/* === BOTÕES COM ÍCONES === */
+.dark button[class*="flex"],
+.dark .btn[class*="flex"] {
+  background-color: #4a5568 !important;
+  border: 1px solid #718096 !important;
+  color: #ffffff !important;
+}
+
+.dark button[class*="flex"]:hover,
+.dark .btn[class*="flex"]:hover {
+  background-color: #718096 !important;
+  border-color: #a0aec0 !important;
+}
+
+/* === BOTÕES EM CARDS === */
+.dark .u-card button,
+.dark .u-card .btn,
+.dark .card button,
+.dark .card .btn {
+  background-color: #4a5568 !important;
+  border: 1px solid #718096 !important;
+  color: #ffffff !important;
+}
+
+.dark .u-card button:hover,
+.dark .u-card .btn:hover,
+.dark .card button:hover,
+.dark .card .btn:hover {
+  background-color: #718096 !important;
+  border-color: #a0aec0 !important;
+}
+
+/* === BOTÕES EM MODAIS === */
+.dark .modal button,
+.dark .modal .btn,
+.dark .modal-content button,
+.dark .modal-content .btn {
+  background-color: #4a5568 !important;
+  border: 1px solid #718096 !important;
+  color: #ffffff !important;
+}
+
+.dark .modal button:hover,
+.dark .modal .btn:hover,
+.dark .modal-content button:hover,
+.dark .modal-content .btn:hover {
+  background-color: #718096 !important;
+  border-color: #a0aec0 !important;
+}
+
+/* === BOTÕES DE AÇÃO ESPECÍFICOS === */
+.dark [id*="btn"],
+.dark [class*="action"],
+.dark [class*="button"] {
+  background-color: #4a5568 !important;
+  border: 1px solid #718096 !important;
+  color: #ffffff !important;
+}
+
+.dark [id*="btn"]:hover,
+.dark [class*="action"]:hover,
+.dark [class*="button"]:hover {
+  background-color: #718096 !important;
+  border-color: #a0aec0 !important;
+}
+
+/* === FORÇA APLICAÇÃO EM TODOS OS BOTÕES === */
+.dark input[type="button"],
+.dark input[type="submit"],
+.dark input[type="reset"] {
+  background-color: #4a5568 !important;
+  border: 1px solid #718096 !important;
+  color: #ffffff !important;
+}
+
+.dark input[type="button"]:hover,
+.dark input[type="submit"]:hover,
+.dark input[type="reset"]:hover {
+  background-color: #718096 !important;
+  border-color: #a0aec0 !important;
+}
+
+/* === MELHORIAS PARA FOCUS E ACTIVE === */
+.dark button:focus,
+.dark .btn:focus {
+  outline: 2px solid #3182ce !important;
+  outline-offset: 2px !important;
+}
+
+.dark button:focus-visible,
+.dark .btn:focus-visible {
+  outline: 2px solid #3182ce !important;
+  outline-offset: 2px !important;
+}
+
+/* === CORREÇÃO PARA BOTÕES DESABILITADOS === */
+.dark button:disabled,
+.dark .btn:disabled {
+  background-color: #374151 !important;
+  border-color: #4b5563 !important;
+  color: #9ca3af !important;
+  cursor: not-allowed !important;
+  opacity: 0.6 !important;
+}
+
+/* === ANIMAÇÕES SUAVES === */
+.dark button,
+.dark .btn {
+  transition: all 0.2s ease !important;
+}
+
+.dark button:hover,
+.dark .btn:hover {
+  transition: all 0.2s ease !important;
+}

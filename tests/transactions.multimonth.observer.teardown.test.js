@@ -86,28 +86,28 @@ describe('TransactionsPage: infinite scroll multi-month + teardown', () => {
     const byYm = Object.fromEntries(instances.map(i => [i.target?.id.replace('scroll-sentinel-', ''), i]));
     expect(Object.keys(byYm).sort()).toEqual([ym1, ym2, ym3].sort());
 
-  // Helper para aguardar setTimeout(0)
-  const tick = () => new Promise(r => setTimeout(r, 0));
+    // Helper para aguardar setTimeout(0)
+    const tick = () => new Promise(r => setTimeout(r, 0));
 
-  // Simula intersecções: ym1 duas vezes (20 itens), com espera entre chamadas
-  byYm[ym1].cb([{ isIntersecting: true }]);
-  await tick();
-  await tick();
-  expect(cache[ym1].nextIndex).toBe(10);
-  byYm[ym1].cb([{ isIntersecting: true }]);
-  await tick();
-  await tick();
-  expect(cache[ym1].nextIndex).toBe(20);
-  // sentinel some e observer desconecta quando termina (após tick)
-  expect(document.getElementById(`scroll-sentinel-${ym1}`).style.display).toBe('none');
-  expect(byYm[ym1].disconnect).toHaveBeenCalledTimes(1);
+    // Simula intersecções: ym1 duas vezes (20 itens), com espera entre chamadas
+    byYm[ym1].cb([{ isIntersecting: true }]);
+    await tick();
+    await tick();
+    expect(cache[ym1].nextIndex).toBe(10);
+    byYm[ym1].cb([{ isIntersecting: true }]);
+    await tick();
+    await tick();
+    expect(cache[ym1].nextIndex).toBe(20);
+    // sentinel some e observer desconecta quando termina (após tick)
+    expect(document.getElementById(`scroll-sentinel-${ym1}`).style.display).toBe('none');
+    expect(byYm[ym1].disconnect).toHaveBeenCalledTimes(1);
 
-  byYm[ym2].cb([{ isIntersecting: true }]);
-  await tick();
-  await tick();
-  expect(cache[ym2].nextIndex).toBe(5);
-  expect(document.getElementById(`scroll-sentinel-${ym2}`).style.display).toBe('none');
-  expect(byYm[ym2].disconnect).toHaveBeenCalledTimes(1);
+    byYm[ym2].cb([{ isIntersecting: true }]);
+    await tick();
+    await tick();
+    expect(cache[ym2].nextIndex).toBe(5);
+    expect(document.getElementById(`scroll-sentinel-${ym2}`).style.display).toBe('none');
+    expect(byYm[ym2].disconnect).toHaveBeenCalledTimes(1);
 
     // ym3 ainda conectado (sem intersecções)
     expect(byYm[ym3].disconnect).not.toHaveBeenCalled();

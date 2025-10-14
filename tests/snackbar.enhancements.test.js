@@ -47,13 +47,13 @@ describe('Snackbar enhancements', () => {
     const el = await waitFor(() => document.querySelector('[data-snackbar="1"]'));
     expect(el.getAttribute('data-pos')).toBe('top');
     expect(el.getAttribute('data-align')).toBe('right');
-  // Inline styles should reflect top placement and right alignment
-  // For top placement, bottom should be empty and top should be set
-  expect(el.style.bottom).toBe('');
-  expect(el.style.top).not.toBe('');
-  // For right alignment, right is set, left cleared, and transform none
-  expect(el.style.right).toBe('16px');
-  expect(el.style.left).toBe('');
-  expect(el.style.transform).toBe('none');
+    // Inline styles should reflect top placement and right alignment
+    // For top placement, bottom should be empty and top should be set
+    expect(el.style.bottom).toBe('');
+    expect(el.style.top).not.toBe('');
+    // For right alignment, right is set, left cleared, and transform none
+    expect(el.style.right).toBe('16px');
+    expect(el.style.left).toBe('');
+    expect(el.style.transform).toBe('none');
   });
 });

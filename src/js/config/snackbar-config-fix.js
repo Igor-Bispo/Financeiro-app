@@ -12,11 +12,11 @@ class SnackbarConfigManager {
       cooldown: 500,
       hoverPause: true
     };
-    
+
     this.loadFromStorage();
     this.applyToSnackbar();
   }
-  
+
   loadFromStorage() {
     // Carregar configurações do localStorage
     this.config.duration = parseInt(localStorage.getItem('toastDuration')) || 3000;
@@ -26,35 +26,35 @@ class SnackbarConfigManager {
     this.config.maxQueue = parseInt(localStorage.getItem('toastMaxQueue')) || 5;
     this.config.cooldown = parseInt(localStorage.getItem('toastAntiSpam')) || parseInt(localStorage.getItem('toastCooldown')) || 500;
     this.config.hoverPause = localStorage.getItem('toast_hover_pause') === 'true';
-    
+
     // Mapear valores
     this.config.position = this.mapPosition(this.config.position);
     this.config.align = this.mapAlign(this.config.align);
-    
+
     console.log('[SnackbarConfig] Configurações carregadas:', this.config);
   }
-  
+
   mapPosition(position) {
     if (position === 'inferior') return 'bottom';
     if (position === 'superior') return 'top';
     return position;
   }
-  
+
   mapAlign(align) {
     if (align === 'centro') return 'center';
     if (align === 'esquerda') return 'left';
     if (align === 'direita') return 'right';
     return align;
   }
-  
+
   applyToSnackbar() {
     if (!window.SnackbarInstance) {
       console.warn('[SnackbarConfig] SnackbarInstance não disponível');
       return;
     }
-    
+
     const instance = window.SnackbarInstance;
-    
+
     // Aplicar configurações diretamente na instância
     instance.defaultDuration = this.config.duration;
     instance.bottomOffset = this.config.distance;
@@ -63,7 +63,7 @@ class SnackbarConfigManager {
     instance.maxQueue = this.config.maxQueue;
     instance.cooldownMs = this.config.cooldown;
     instance.hoverPause = this.config.hoverPause;
-    
+
     console.log('[SnackbarConfig] Configurações aplicadas na instância:', {
       defaultDuration: instance.defaultDuration,
       bottomOffset: instance.bottomOffset,
@@ -74,13 +74,13 @@ class SnackbarConfigManager {
       hoverPause: instance.hoverPause
     });
   }
-  
+
   updateConfig(key, value) {
     this.config[key] = value;
     this.saveToStorage();
     this.applyToSnackbar();
   }
-  
+
   saveToStorage() {
     // Salvar no localStorage
     localStorage.setItem('toastDuration', this.config.duration);
@@ -90,16 +90,16 @@ class SnackbarConfigManager {
     localStorage.setItem('toastMaxQueue', this.config.maxQueue);
     localStorage.setItem('toastAntiSpam', this.config.cooldown);
     localStorage.setItem('toast_hover_pause', this.config.hoverPause);
-    
+
     console.log('[SnackbarConfig] Configurações salvas no localStorage');
   }
-  
+
   test() {
     console.log('[SnackbarConfig] Testando configurações...');
-    
+
     // Aplicar configurações antes de testar
     this.applyToSnackbar();
-    
+
     // Testar com diferentes tipos
     if (window.Snackbar) {
       window.Snackbar.info('Teste INFO - Configurações aplicadas!');
@@ -111,7 +111,7 @@ class SnackbarConfigManager {
       }, 200);
     }
   }
-  
+
   reset() {
     this.config = {
       duration: 3000,
@@ -122,10 +122,10 @@ class SnackbarConfigManager {
       cooldown: 500,
       hoverPause: true
     };
-    
+
     this.saveToStorage();
     this.applyToSnackbar();
-    
+
     console.log('[SnackbarConfig] Configurações resetadas para padrão');
   }
 }

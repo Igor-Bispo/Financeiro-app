@@ -1,0 +1,207 @@
+/* ========================================
+   PADRONIZAÇÃO DE FONTES - REMOÇÃO DE NEGRITO
+   ======================================== */
+
+/* === PADRÃO GERAL: APENAS TÍTULOS EM NEGRITO === */
+
+/* Reset de font-weight para textos comuns */
+body, p, span, div, label, input, select, textarea {
+  font-weight: 400 !important; /* Normal weight para textos comuns */
+}
+
+/* === TÍTULOS QUE DEVEM PERMANECER EM NEGRITO === */
+h1, h2, h3, h4, h5, h6,
+.tab-title-highlight,
+.text-xl, .text-2xl, .text-3xl, .text-4xl,
+.page-title,
+.section-title,
+.card-title {
+  font-weight: 700 !important; /* Bold apenas para títulos */
+}
+
+/* === TÍTULOS DE SEÇÃO (h3, h4, h5, h6) === */
+h3, h4, h5, h6 {
+  font-weight: 600 !important; /* Semi-bold para subtítulos */
+}
+
+/* === REMOÇÃO DE NEGRITO DE ELEMENTOS COMUNS === */
+
+/* Botões - peso normal */
+button, .btn, .u-btn, .mobile-btn {
+  font-weight: 400 !important;
+}
+
+/* Botões específicos com classes Tailwind */
+button.font-semibold,
+button.font-bold,
+button.font-medium {
+  font-weight: 400 !important;
+}
+
+/* Labels e descrições */
+label, .label, .description, .text-sm, .text-xs {
+  font-weight: 400 !important;
+}
+
+/* Valores monetários e métricas */
+.amount, .value, .metric, .currency {
+  font-weight: 400 !important;
+}
+
+/* Textos de navegação */
+.nav-item, .tab-item, .menu-item {
+  font-weight: 400 !important;
+}
+
+/* Textos de formulário */
+input, select, textarea, .form-control {
+  font-weight: 400 !important;
+}
+
+/* Textos de lista */
+.list-item, .item, .entry {
+  font-weight: 400 !important;
+}
+
+/* Textos de status e badges */
+.status, .badge, .tag {
+  font-weight: 400 !important;
+}
+
+/* === PADRÃO ESPECÍFICO PARA CLASSES TAILWIND === */
+
+/* Remover negrito de classes comuns */
+.font-bold:not(h1):not(h2):not(h3):not(h4):not(h5):not(h6):not(.tab-title-highlight):not(.page-title):not(.section-title):not(.card-title) {
+  font-weight: 400 !important;
+}
+
+.font-semibold:not(h1):not(h2):not(h3):not(h4):not(h5):not(h6):not(.tab-title-highlight):not(.page-title):not(.section-title):not(.card-title) {
+  font-weight: 400 !important;
+}
+
+.font-medium:not(h1):not(h2):not(h3):not(h4):not(h5):not(h6):not(.tab-title-highlight):not(.page-title):not(.section-title):not(.card-title) {
+  font-weight: 400 !important;
+}
+
+/* === EXCEÇÕES: ELEMENTOS QUE DEVEM MANTER DESTAQUE === */
+
+/* Apenas títulos principais mantêm negrito */
+h1, h2, 
+.tab-title-highlight,
+.page-title,
+.section-title,
+.card-title,
+.text-xl, .text-2xl, .text-3xl, .text-4xl {
+  font-weight: 700 !important;
+}
+
+/* Subtítulos mantêm semi-bold */
+h3, h4, h5, h6 {
+  font-weight: 600 !important;
+}
+
+/* === PADRÃO UNIFICADO DE FONTE === */
+
+/* Todas as fontes usam a mesma família */
+* {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+}
+
+/* === CORREÇÃO ESPECÍFICA PARA CARDS DO DASHBOARD === */
+
+/* Valores monetários nos cards - remover negrito */
+.text-lg.font-bold.text-green-600.dark\\:text-green-400,
+.text-lg.font-bold.text-red-600.dark\\:text-red-400,
+.text-lg.font-bold.text-blue-600.dark\\:text-blue-400,
+.text-lg.font-bold.text-yellow-600.dark\\:text-yellow-400 {
+  font-weight: 400 !important; /* Valores com peso normal */
+}
+
+/* Textos de labels nos cards - remover negrito */
+.text-gray-600.dark\\:text-gray-400.font-medium,
+.text-xs.text-gray-600.dark\\:text-gray-400 {
+  font-weight: 400 !important; /* Labels com peso normal */
+}
+
+/* Subtítulos de cards - remover negrito */
+.text-sm.font-semibold.text-gray-700.dark\\:text-gray-300 {
+  font-weight: 400 !important; /* Subtítulos com peso normal */
+}
+
+/* Valores em cards de resumo - remover negrito */
+.font-bold.text-lg {
+  font-weight: 400 !important; /* Valores com peso normal */
+}
+
+/* Tamanho padrão para textos comuns */
+body, p, span, div, label, input, select, textarea, button {
+  font-size: 1rem !important; /* 16px padrão */
+  line-height: 1.5 !important;
+}
+
+/* Tamanhos específicos apenas para títulos */
+h1 { font-size: 2rem !important; }      /* 32px */
+h2 { font-size: 1.75rem !important; }   /* 28px */
+h3 { font-size: 1.5rem !important; }    /* 24px */
+h4 { font-size: 1.25rem !important; }   /* 20px */
+h5 { font-size: 1.125rem !important; }  /* 18px */
+h6 { font-size: 1rem !important; }      /* 16px */
+
+/* === APLICAÇÃO ESPECÍFICA PARA COMPONENTES === */
+
+/* Dashboard */
+.dashboard-item, .dashboard-metric, .dashboard-value {
+  font-weight: 400 !important;
+}
+
+/* Transações */
+.transaction-item, .transaction-description, .transaction-amount {
+  font-weight: 400 !important;
+}
+
+/* Categorias */
+.category-item, .category-name, .category-description {
+  font-weight: 400 !important;
+}
+
+/* Configurações */
+.settings-item, .settings-label, .settings-description {
+  font-weight: 400 !important;
+}
+
+/* Notificações */
+.notification-item, .notification-title, .notification-message {
+  font-weight: 400 !important;
+}
+
+/* === RESPONSIVIDADE === */
+
+/* Mobile: manter tamanhos legíveis */
+@media (max-width: 768px) {
+  body, p, span, div, label, input, select, textarea, button {
+    font-size: 0.875rem !important; /* 14px no mobile */
+  }
+  
+  h1 { font-size: 1.75rem !important; }   /* 28px */
+  h2 { font-size: 1.5rem !important; }    /* 24px */
+  h3 { font-size: 1.25rem !important; }   /* 20px */
+  h4 { font-size: 1.125rem !important; }  /* 18px */
+  h5 { font-size: 1rem !important; }      /* 16px */
+  h6 { font-size: 0.875rem !important; }  /* 14px */
+}
+
+/* === TEMA ESCURO === */
+@media (prefers-color-scheme: dark) {
+  /* Manter as mesmas regras de peso de fonte no tema escuro */
+  body, p, span, div, label, input, select, textarea {
+    font-weight: 400 !important;
+  }
+  
+  h1, h2, h3, h4, h5, h6,
+  .tab-title-highlight,
+  .page-title,
+  .section-title,
+  .card-title {
+    font-weight: 700 !important;
+  }
+}

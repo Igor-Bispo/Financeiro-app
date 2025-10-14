@@ -1,0 +1,87 @@
+/* ========================================
+   FORÇA APLICAÇÃO DE FONTES - VERSÃO AGRESSIVA
+   ======================================== */
+
+/* === FORÇAR TODOS OS TEXTOS PARA PESO NORMAL === */
+
+/* Resetar TODOS os elementos para peso normal */
+* {
+  font-weight: 400 !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+}
+
+/* === EXCEÇÕES: APENAS TÍTULOS PRINCIPAIS MANTÊM NEGRITO === */
+
+/* Títulos principais - FORÇAR negrito */
+h1, h2 {
+  font-weight: 700 !important;
+}
+
+/* Subtítulos - FORÇAR semi-bold */
+h3, h4, h5, h6 {
+  font-weight: 600 !important;
+}
+
+/* === CORREÇÃO ESPECÍFICA PARA DASHBOARD === */
+
+/* Títulos do dashboard - GARANTIR negrito */
+#app-content h2 {
+  font-weight: 700 !important;
+  font-size: 1.25rem !important;
+}
+
+@media (min-width: 768px) {
+  #app-content h2 {
+    font-size: 1.5rem !important;
+  }
+}
+
+/* === FORÇAR TODOS OS OUTROS ELEMENTOS PARA NORMAL === */
+
+/* Botões - FORÇAR normal */
+button, .btn, .u-btn, .mobile-btn,
+button.font-semibold, button.font-bold, button.font-medium {
+  font-weight: 400 !important;
+}
+
+/* Textos de cards - FORÇAR normal */
+.text-lg.font-bold,
+.text-sm.font-semibold,
+.text-xs.font-medium,
+.font-bold, .font-semibold, .font-medium {
+  font-weight: 400 !important;
+}
+
+/* Valores monetários - FORÇAR normal */
+.text-lg.font-bold.text-green-600,
+.text-lg.font-bold.text-red-600,
+.text-lg.font-bold.text-blue-600,
+.text-lg.font-bold.text-yellow-600,
+.text-lg.font-bold.text-gray-800,
+.text-lg.font-bold.text-purple-600,
+.text-lg.font-bold.text-orange-600 {
+  font-weight: 400 !important;
+}
+
+/* Labels e descrições - FORÇAR normal */
+.text-gray-600, .text-gray-400, .text-gray-500,
+.text-xs, .text-sm, .text-base {
+  font-weight: 400 !important;
+}
+
+/* === GARANTIR QUE NADA ESCAPE === */
+
+/* Override para qualquer classe que possa ter negrito */
+[class*="font-bold"], [class*="font-semibold"], [class*="font-medium"] {
+  font-weight: 400 !important;
+}
+
+/* Exceto títulos */
+h1[class*="font-bold"], h2[class*="font-bold"], h3[class*="font-bold"], h4[class*="font-bold"], h5[class*="font-bold"], h6[class*="font-bold"] {
+  font-weight: 700 !important;
+}
+
+h3[class*="font-semibold"], h4[class*="font-semibold"], h5[class*="font-semibold"], h6[class*="font-semibold"] {
+  font-weight: 600 !important;
+}
+

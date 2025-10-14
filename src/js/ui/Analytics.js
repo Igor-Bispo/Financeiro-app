@@ -28,13 +28,13 @@ export class Analytics {
       }
 
       const transacoesRef = collection(db, 'transactions');
-      
+
       // Estratégia otimizada: buscar apenas por budgetId e filtrar no cliente
       // Isso evita a necessidade de índices compostos complexos
       const qBudget = query(transacoesRef, where('budgetId', '==', budgetId));
       const snapAll = await getDocs(qBudget);
       const all = snapAll.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      
+
       // Filtrar por data efetiva no cliente
       const filtered = all.filter(t => {
         const d = Analytics.txToDate(t);
@@ -239,7 +239,7 @@ export class Analytics {
             id: doc.id,
             ...doc.data()
           }));
-          
+
           // Filtrar por período no cliente
           transacoes = allTransactions.filter(t => {
             const d = Analytics.txToDate(t);

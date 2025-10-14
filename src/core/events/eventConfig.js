@@ -39,7 +39,7 @@ export function setupEventListeners() {
           window.showAddTransactionModal(data || {});
           return;
         }
-        
+
         // Fallback: tentar import dinâmico
         try {
           await import('@js/showAddTransactionModal.js');
@@ -189,7 +189,8 @@ export function setupEventListeners() {
   // Eventos de aplicação
   eventBus.on('app:ready', (appState) => {
     logger.info('Aplicação pronta:', appState);
-    globalUtils.showSnackbar('Aplicação carregada', 'success');
+    // Snackbar removido para evitar duplicação com outros listeners
+    // globalUtils.showSnackbar('Aplicação carregada', 'success');
   });
 
   eventBus.on('app:error', (error) => {

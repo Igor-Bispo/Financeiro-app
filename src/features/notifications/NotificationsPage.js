@@ -32,16 +32,16 @@ const renderFAB = typeof window.renderFAB === 'function' ? window.renderFAB : ()
 
 function getNotifFilters() {
   console.log('[NotificationsPage] 🔧 Obtendo filtros de notificação...');
-  
+
   if (typeof window.getNotifFilters === 'function') {
     console.log('[NotificationsPage] 🔧 Usando função global getNotifFilters');
     return window.getNotifFilters();
   }
-  
+
   try {
     const raw = localStorage.getItem(FILTERS_STORAGE_KEY);
     console.log('[NotificationsPage] 🔧 Dados do localStorage:', raw ? 'Encontrados' : 'Não encontrados');
-    
+
     if (raw) {
       const parsed = JSON.parse(raw);
       const filters = {
@@ -55,7 +55,7 @@ function getNotifFilters() {
   } catch (e) {
     console.warn('[NotificationsPage] ⚠️ Erro ao carregar filtros do localStorage:', e);
   }
-  
+
   // Padrão: sempre mostrar notificações não lidas
   const defaultFilters = { types: DEFAULT_TYPES.slice(), period: 'all', unreadOnly: true };
   console.log('[NotificationsPage] 🔧 Usando filtros padrão:', defaultFilters);
@@ -132,27 +132,27 @@ function getFiltersState() {
 }
 function saveFiltersState() {
   console.log('[NotificationsPage] 💾 Salvando estado dos filtros...');
-  
+
   try {
     // Garantir que notifFilters não seja null
     if (!notifFilters) {
       notifFilters = getNotifFilters();
     }
-    
+
     // Verificar se notifFilters ainda é null após a inicialização
     if (!notifFilters) {
       console.warn('[NotificationsPage] ⚠️ notifFilters ainda é null, usando filtros padrão');
       notifFilters = { types: DEFAULT_TYPES.slice(), period: 'all', unreadOnly: true };
     }
-    
+
     window.__notifFilters = notifFilters;
-    
+
     const filtersToSave = {
-        types: Array.isArray(notifFilters.types) ? notifFilters.types : [],
-        period: notifFilters.period || 'all',
-        unreadOnly: !!notifFilters.unreadOnly,
+      types: Array.isArray(notifFilters.types) ? notifFilters.types : [],
+      period: notifFilters.period || 'all',
+      unreadOnly: !!notifFilters.unreadOnly,
     };
-    
+
     localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(filtersToSave));
     console.log('[NotificationsPage] ✅ Filtros salvos no localStorage:', filtersToSave);
   } catch (e) {
@@ -242,9 +242,9 @@ function clearOldNotificationsWithToast(daysOverride) {
   return removed > 0;
 }
 
-function openNotificationTarget(id, type) {
+function openNotificationTarget(_id, _type) {
   // Sempre redirecionar para o dashboard após hard reset
-    window.location.hash = '#/dashboard';
+  window.location.hash = '#/dashboard';
 }
 function showConfirmationModal(cfg) {
   const ok = confirm(cfg?.message || 'Confirmar?');
@@ -274,13 +274,13 @@ export async function renderNotifications(force = false) {
     console.log('[NotificationsPage] ⏳ Renderização já em andamento, ignorando...');
     return;
   }
-  
+
   // Limpar timeout anterior se existir
   if (renderTimeout) {
     clearTimeout(renderTimeout);
     renderTimeout = null;
   }
-  
+
   // Implementar debounce de 100ms
   if (!force) {
     renderTimeout = setTimeout(() => {
@@ -291,126 +291,126 @@ export async function renderNotifications(force = false) {
 
   isRendering = true;
   console.log('[NotificationsPage] 🚀 Iniciando renderização...');
-  
+
   try {
     const content = document.getElementById('app-content');
     if (!content) {
       console.error('[NotificationsPage] ❌ Elemento app-content não encontrado!');
       return;
     }
-    
+
     console.log('[NotificationsPage] ✅ Elemento app-content encontrado');
 
-  await loadNotifications(true); // Skip event emit para evitar loop
-  const notifications = window.appState.notifications || [];
-  console.log('[NotificationsPage] 📧 Notificações carregadas:', notifications.length);
-  console.log('[NotificationsPage] 📧 Notificações originais:', notifications.map(n => ({ id: n.id, type: n.type, read: n.read, archivedAt: n.archivedAt })));
-  
-  // Obter filtros atuais (respeitando a escolha do usuário)
-  const filters = getNotifFilters();
-  console.log('[NotificationsPage] 🔧 Filtros atuais:', filters);
-  
-  // Apenas definir como true se for a primeira vez (padrão)
-  if (filters.unreadOnly === undefined) {
-    filters.unreadOnly = true;
-    saveFiltersState();
-    console.log('[NotificationsPage] ✅ Padrão: Configurado para mostrar apenas notificações não lidas');
-  } else {
-    console.log('[NotificationsPage] ✅ Respeitando escolha do usuário: unreadOnly =', filters.unreadOnly);
-  }
-  
-  // Log das notificações carregadas
-  const unreadCount = notifications.filter(n => !n.read && !n.archivedAt).length;
-  console.log(`[NotificationsPage] 📊 Renderizando: ${notifications.length} total, ${unreadCount} não lidas`);
+    await loadNotifications(true); // Skip event emit para evitar loop
+    const notifications = window.appState.notifications || [];
+    console.log('[NotificationsPage] 📧 Notificações carregadas:', notifications.length);
+    console.log('[NotificationsPage] 📧 Notificações originais:', notifications.map(n => ({ id: n.id, type: n.type, read: n.read, archivedAt: n.archivedAt })));
 
-  const typeLabels = {
-    new_transaction: 'Nova Tx',
-    updated_transaction: 'Tx Atualizada',
-    deleted_transaction: 'Tx Excluída',
-    category_added: 'Cat Criada',
-    category_updated: 'Cat Atualizada',
-    category_deleted: 'Cat Excluída',
-    test_notification: 'Teste',
-  };
+    // Obter filtros atuais (respeitando a escolha do usuário)
+    const filters = getNotifFilters();
+    console.log('[NotificationsPage] 🔧 Filtros atuais:', filters);
 
-  const typeButtonsHtml = DEFAULT_TYPES.map((t) => {
-    const active = filters.types.includes(t);
-    return `<button onclick="window.toggleNotificationTypeFilter && window.toggleNotificationTypeFilter('${t}')" class="px-3 py-1 rounded-full text-xs font-medium ${
-      active ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
-    }">${typeLabels[t]}</button>`;
-  }).join('');
+    // Apenas definir como true se for a primeira vez (padrão)
+    if (filters.unreadOnly === undefined) {
+      filters.unreadOnly = true;
+      saveFiltersState();
+      console.log('[NotificationsPage] ✅ Padrão: Configurado para mostrar apenas notificações não lidas');
+    } else {
+      console.log('[NotificationsPage] ✅ Respeitando escolha do usuário: unreadOnly =', filters.unreadOnly);
+    }
 
-  const periodButtonsHtml = ['all', 'today', '7d', '30d']
-    .map((p) => {
-      const label = p === 'all' ? 'Tudo' : p === 'today' ? 'Hoje' : p === '7d' ? '7 dias' : '30 dias';
-      const active = filters.period === p;
-      return `<button onclick="window.setNotificationPeriod && window.setNotificationPeriod('${p}')" class="px-3 py-1 rounded-full text-xs font-medium ${
-        active ? 'bg-indigo-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
-      }">${label}</button>`;
-    })
-    .join('');
+    // Log das notificações carregadas
+    const unreadCount = notifications.filter(n => !n.read && !n.archivedAt).length;
+    console.log(`[NotificationsPage] 📊 Renderizando: ${notifications.length} total, ${unreadCount} não lidas`);
 
-  const filtered = applyNotificationFilters(notifications, filters);
-  console.log('[NotificationsPage] 🔍 Notificações após filtro:', filtered.length);
-  console.log('[NotificationsPage] 🔍 Filtros aplicados:', filters);
-  
-  // Priorizar notificações não lidas
-  const unreadNotifications = filtered.filter(n => !n.read && !n.archivedAt);
-  const readNotifications = filtered.filter(n => n.read && !n.archivedAt);
-  
-  console.log('[NotificationsPage] 🔍 Notificações não lidas após filtro:', unreadNotifications.length);
-  console.log('[NotificationsPage] 🔍 Notificações lidas após filtro:', readNotifications.length);
-  
-  // Organizar por prioridade: não lidas primeiro, depois lidas
-  const prioritizedFiltered = [...unreadNotifications, ...readNotifications];
-  
-  const pinned = prioritizedFiltered.filter((n) => !!n.pinned && !n.archivedAt);
-  const inbox = prioritizedFiltered.filter((n) => !n.pinned && !n.archivedAt);
-  const archived = prioritizedFiltered.filter((n) => !!n.archivedAt);
+    const typeLabels = {
+      new_transaction: 'Nova Tx',
+      updated_transaction: 'Tx Atualizada',
+      deleted_transaction: 'Tx Excluída',
+      category_added: 'Cat Criada',
+      category_updated: 'Cat Atualizada',
+      category_deleted: 'Cat Excluída',
+      test_notification: 'Teste',
+    };
 
-  console.log('[NotificationsPage] 🔍 Pinned:', pinned.length);
-  console.log('[NotificationsPage] 🔍 Inbox:', inbox.length);
-  console.log('[NotificationsPage] 🔍 Archived:', archived.length);
+    const typeButtonsHtml = DEFAULT_TYPES.map((t) => {
+      const active = filters.types.includes(t);
+      return `<button onclick="window.toggleNotificationTypeFilter && window.toggleNotificationTypeFilter('${t}')" class="px-3 py-1 rounded-full text-xs font-medium ${
+        active ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
+      }">${typeLabels[t]}</button>`;
+    }).join('');
 
-  const groupedInbox = groupNotificationsByDay(inbox);
-  const groupedPinned = groupNotificationsByDay(pinned);
-  const groupedArchived = groupNotificationsByDay(archived);
-  
-  console.log('[NotificationsPage] 🔍 Grouped Inbox:', groupedInbox.length);
-  console.log('[NotificationsPage] 🔍 Grouped Pinned:', groupedPinned.length);
-  console.log('[NotificationsPage] 🔍 Grouped Archived:', groupedArchived.length);
+    const periodButtonsHtml = ['all', 'today', '7d', '30d']
+      .map((p) => {
+        const label = p === 'all' ? 'Tudo' : p === 'today' ? 'Hoje' : p === '7d' ? '7 dias' : '30 dias';
+        const active = filters.period === p;
+        return `<button onclick="window.setNotificationPeriod && window.setNotificationPeriod('${p}')" class="px-3 py-1 rounded-full text-xs font-medium ${
+          active ? 'bg-indigo-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
+        }">${label}</button>`;
+      })
+      .join('');
 
-  const curP = typeof getSelectedPeriod === 'function' ? getSelectedPeriod() : null;
-  const now = new Date();
-  const selYear = (curP && curP.year) || window.appState?.selectedYear || now.getFullYear();
-  const selMonth = (curP && curP.month) || window.appState?.selectedMonth || now.getMonth() + 1;
-  const mesesNomes = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-  const monthName = mesesNomes[(selMonth - 1) % 12] || '';
+    const filtered = applyNotificationFilters(notifications, filters);
+    console.log('[NotificationsPage] 🔍 Notificações após filtro:', filtered.length);
+    console.log('[NotificationsPage] 🔍 Filtros aplicados:', filters);
 
-  const totalNotificacoes = filtered.length;
-  const notificacoesNaoLidas = filtered.filter((n) => !n.read && !n.archivedAt).length;
-  const notificacoesLidas = totalNotificacoes - notificacoesNaoLidas;
-  const notificacoesHoje = filtered.filter((n) => {
-    const data = n.createdAt?.toDate ? n.createdAt.toDate() : new Date(n.createdAt);
-    const hoje = new Date();
-    return data.toDateString() === hoje.toDateString();
-  }).length;
+    // Priorizar notificações não lidas
+    const unreadNotifications = filtered.filter(n => !n.read && !n.archivedAt);
+    const readNotifications = filtered.filter(n => n.read && !n.archivedAt);
 
-  if (!window.renderNotificationCard) {
-    window.renderNotificationCard = renderNotificationCard;
-  }
+    console.log('[NotificationsPage] 🔍 Notificações não lidas após filtro:', unreadNotifications.length);
+    console.log('[NotificationsPage] 🔍 Notificações lidas após filtro:', readNotifications.length);
 
-  const unreadBadge = notificacoesNaoLidas > 0
-    ? `<span class=\"header-unread-badge inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200\" aria-live=\"polite\" aria-atomic=\"true\">${notificacoesNaoLidas}</span>`
-    : '';
-  const unreadColorClass = notificacoesNaoLidas > 0 ? 'text-yellow-200' : 'text-green-200';
-  
-  console.log('[NotificationsPage] 🔍 Renderizando inbox com', inbox.length, 'notificações');
-  console.log('[NotificationsPage] 🔍 GroupedInbox tem', groupedInbox.length, 'grupos');
-  
-  const inboxSectionHtml = inbox.length
-    ? renderSection('📬 Inbox', groupedInbox)
-    : `
+    // Organizar por prioridade: não lidas primeiro, depois lidas
+    const prioritizedFiltered = [...unreadNotifications, ...readNotifications];
+
+    const pinned = prioritizedFiltered.filter((n) => !!n.pinned && !n.archivedAt);
+    const inbox = prioritizedFiltered.filter((n) => !n.pinned && !n.archivedAt);
+    const archived = prioritizedFiltered.filter((n) => !!n.archivedAt);
+
+    console.log('[NotificationsPage] 🔍 Pinned:', pinned.length);
+    console.log('[NotificationsPage] 🔍 Inbox:', inbox.length);
+    console.log('[NotificationsPage] 🔍 Archived:', archived.length);
+
+    const groupedInbox = groupNotificationsByDay(inbox);
+    const groupedPinned = groupNotificationsByDay(pinned);
+    const groupedArchived = groupNotificationsByDay(archived);
+
+    console.log('[NotificationsPage] 🔍 Grouped Inbox:', groupedInbox.length);
+    console.log('[NotificationsPage] 🔍 Grouped Pinned:', groupedPinned.length);
+    console.log('[NotificationsPage] 🔍 Grouped Archived:', groupedArchived.length);
+
+    const curP = typeof getSelectedPeriod === 'function' ? getSelectedPeriod() : null;
+    const now = new Date();
+    const selYear = (curP && curP.year) || window.appState?.selectedYear || now.getFullYear();
+    const selMonth = (curP && curP.month) || window.appState?.selectedMonth || now.getMonth() + 1;
+    const mesesNomes = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+    const monthName = mesesNomes[(selMonth - 1) % 12] || '';
+
+    const totalNotificacoes = filtered.length;
+    const notificacoesNaoLidas = filtered.filter((n) => !n.read && !n.archivedAt).length;
+    const notificacoesLidas = totalNotificacoes - notificacoesNaoLidas;
+    const notificacoesHoje = filtered.filter((n) => {
+      const data = n.createdAt?.toDate ? n.createdAt.toDate() : new Date(n.createdAt);
+      const hoje = new Date();
+      return data.toDateString() === hoje.toDateString();
+    }).length;
+
+    if (!window.renderNotificationCard) {
+      window.renderNotificationCard = renderNotificationCard;
+    }
+
+    const unreadBadge = notificacoesNaoLidas > 0
+      ? `<span class=\"header-unread-badge inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200\" aria-live=\"polite\" aria-atomic=\"true\">${notificacoesNaoLidas}</span>`
+      : '';
+    const unreadColorClass = notificacoesNaoLidas > 0 ? 'text-yellow-200' : 'text-green-200';
+
+    console.log('[NotificationsPage] 🔍 Renderizando inbox com', inbox.length, 'notificações');
+    console.log('[NotificationsPage] 🔍 GroupedInbox tem', groupedInbox.length, 'grupos');
+
+    const inboxSectionHtml = inbox.length
+      ? renderSection('📬 Inbox', groupedInbox)
+      : `
             <div class="mb-12">
               <div class="flex items-center gap-2 mb-4">
                 <div class="w-1 h-6 bg-gradient-to-b from-purple-500 to-pink-500 rounded-full"></div>
@@ -429,10 +429,10 @@ export async function renderNotifications(force = false) {
               </div>
             </div>
           `;
-  const pinnedSectionHtml = pinned.length ? renderSection('📌 Fixadas', groupedPinned) : '';
-  const archivedSectionHtml = archived.length ? renderSection('🗃️ Arquivadas', groupedArchived) : '';
+    const pinnedSectionHtml = pinned.length ? renderSection('📌 Fixadas', groupedPinned) : '';
+    const archivedSectionHtml = archived.length ? renderSection('🗃️ Arquivadas', groupedArchived) : '';
 
-  content.innerHTML = `
+    content.innerHTML = `
     <div class="tab-container">
       <div class="tab-header">
         <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-600">
@@ -626,175 +626,175 @@ export async function renderNotifications(force = false) {
     </div>
   `;
 
-  renderFAB();
+    renderFAB();
 
-  // Montar indicador de período padrão no cabeçalho
-  try { mountPeriodIndicator('#notif-period-indicator'); } catch {}
-  
-  console.log('[NotificationsPage] ✅ Interface renderizada com sucesso');
+    // Montar indicador de período padrão no cabeçalho
+    try { mountPeriodIndicator('#notif-period-indicator'); } catch {}
 
-  try {
-    const prev = window.__prevNotifHeaderCount || 0;
-    const curCount = (Array.isArray(window.appState?.notifications) ? window.appState.notifications.filter((n) => !n.read && !n.archivedAt).length : 0) || 0;
-    const badge = document.querySelector('.header-unread-badge');
-    const prefersReduce = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (badge && curCount > 0 && curCount !== prev && !prefersReduce) {
-      badge.style.transform = 'scale(1.05)';
-      setTimeout(() => {
-        try {
-          badge.style.transform = '';
-        } catch {}
-      }, 180);
-    }
-    window.__prevNotifHeaderCount = curCount;
-  } catch {}
+    console.log('[NotificationsPage] ✅ Interface renderizada com sucesso');
 
-  // Expor handlers globais necessários pela UI
-  try {
-    if (!window.__notifUIBound) {
-      window.__notifUIBound = true;
-      // Mapear ações do controller
-      window.markAllNotificationsAsRead = async () => { try { await ctlMarkAll(); } catch {} };
-      window.deleteAllReadNotifications = async () => { try { await ctlDeleteAll(); } catch {} };
-      window.archiveAllReadNotifications = async () => { try { await ctlArchiveAllRead(); } catch {} };
-      window.markNotificationAsRead = async (id) => { try { await ctlMarkOne(id); } catch {} };
-      window.__pinNotification = async (id, pinned) => { try { await ctlPinOne(id, pinned); } catch {} };
-      window.__archiveNotification = async (id, archived) => { try { await ctlArchiveOne(id, archived); } catch {} };
-
-      // Botões de teste: enviar notificação para dono/compartilhados
-      const bindTestHandlers = async () => {
-        const { sendTestNotificationToOwner, sendTestNotificationToShared } = await import('./NotificationService.js');
-        window.__sendTestToOwner = async () => {
+    try {
+      const prev = window.__prevNotifHeaderCount || 0;
+      const curCount = (Array.isArray(window.appState?.notifications) ? window.appState.notifications.filter((n) => !n.read && !n.archivedAt).length : 0) || 0;
+      const badge = document.querySelector('.header-unread-badge');
+      const prefersReduce = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (badge && curCount > 0 && curCount !== prev && !prefersReduce) {
+        badge.style.transform = 'scale(1.05)';
+        setTimeout(() => {
           try {
-            const budgetId = window.appState?.currentBudget?.id || window.appState?.currentBudgetId;
-            const senderUid = window.appState?.currentUser?.uid;
-            if (!budgetId || !senderUid) { return; }
-            await sendTestNotificationToOwner(budgetId, senderUid);
-          } catch (e) { console.warn(e); }
-        };
-        window.__sendTestToShared = async () => {
-          try {
-            const budgetId = window.appState?.currentBudget?.id || window.appState?.currentBudgetId;
-            const senderUid = window.appState?.currentUser?.uid;
-            if (!budgetId || !senderUid) { return; }
-            await sendTestNotificationToShared(budgetId, senderUid);
-          } catch (e) { console.warn(e); }
-        };
-        
-        // Teste do modal de notificação
-        window.__testNotificationModal = () => {
-          try {
-            const modal = getNotificationModal();
-            const testNotification = {
-              id: 'test-modal-' + Date.now(),
-              type: 'test_notification',
-              message: 'Esta é uma notificação de teste para demonstrar o modal!',
-              details: 'O modal aparece automaticamente quando novas notificações chegam.',
-              read: false,
-              createdAt: { toDate: () => new Date() }
-            };
-            modal.show(testNotification);
-            console.log('[NotificationsPage] 📱 Modal de teste exibido');
-          } catch (e) {
-            console.error('[NotificationsPage] ❌ Erro ao testar modal:', e);
-          }
-        };
-      };
-      bindTestHandlers();
-    }
-  } catch {}
+            badge.style.transform = '';
+          } catch {}
+        }, 180);
+      }
+      window.__prevNotifHeaderCount = curCount;
+    } catch {}
 
-  try {
-    const prefs = await loadUserNotificationPrefs();
-    const budgets = Array.isArray(window.appState?.budgets)
-      ? window.appState.budgets
-      : (Array.isArray(window.appState?.orçamentos) ? window.appState.orçamentos : []);
-    const container = document.getElementById('notif-budget-prefs');
-    if (container && Array.isArray(budgets)) {
-      const types = DEFAULT_TYPES;
-      container.innerHTML = budgets
-        .map((b) => {
-          const byBudget = prefs.byBudget || {};
-          const allow = byBudget[b.id]?.allow || {};
-          const row = types
-            .map((t) => {
-              const checked = allow[t] !== false;
-              const label = typeLabels[t];
-              return `<label class=\"inline-flex items-center gap-1 text-xs mr-2\"><input type=\"checkbox\" ${
-                checked ? 'checked' : ''
-              } onchange=\"window.__toggleBudgetTypePref && window.__toggleBudgetTypePref('${b.id}','${t}', this.checked)\"/>${label}</label>`;
-            })
-            .join('');
-          return `<div class=\"text-xs text-gray-700 dark:text-gray-300\"><div class=\"font-semibold mb-1\">${b.nome || b.name || 'Orçamento'}</div><div>${row}</div></div>`;
-        })
-        .join('');
-    }
-  } catch {}
+    // Expor handlers globais necessários pela UI
+    try {
+      if (!window.__notifUIBound) {
+        window.__notifUIBound = true;
+        // Mapear ações do controller
+        window.markAllNotificationsAsRead = async () => { try { await ctlMarkAll(); } catch {} };
+        window.deleteAllReadNotifications = async () => { try { await ctlDeleteAll(); } catch {} };
+        window.archiveAllReadNotifications = async () => { try { await ctlArchiveAllRead(); } catch {} };
+        window.markNotificationAsRead = async (id) => { try { await ctlMarkOne(id); } catch {} };
+        window.__pinNotification = async (id, pinned) => { try { await ctlPinOne(id, pinned); } catch {} };
+        window.__archiveNotification = async (id, archived) => { try { await ctlArchiveOne(id, archived); } catch {} };
 
-  try {
-    if (!window.__notifPeriodListenerBound) {
-      window.__notifPeriodListenerBound = true;
-      eventBus.on('period:changed', (p) =>
-        window.queueMicrotask(() => {
-          const hh = (window.location.hash || '').split('?')[0];
-          if (hh === '#/notifications') {
+        // Botões de teste: enviar notificação para dono/compartilhados
+        const bindTestHandlers = async () => {
+          const { sendTestNotificationToOwner, sendTestNotificationToShared } = await import('./NotificationService.js');
+          window.__sendTestToOwner = async () => {
             try {
-              const y = p?.year || (window.getSelectedPeriod && window.getSelectedPeriod().year);
-              const m = p?.month || (window.getSelectedPeriod && window.getSelectedPeriod().month);
-              if (y && m) {
-                const ym = `${y}-${String(m).padStart(2, '0')}`;
-                const url = new URL(window.location.href);
-                url.hash = `${hh}?ym=${ym}`;
-                window.history.replaceState(null, '', url.toString());
-              }
-            } catch {}
-            renderNotifications();
-          }
-        })
-      );
-    }
-    if (!window.__notifUpdatesListenerBound) {
-      window.__notifUpdatesListenerBound = true;
-      eventBus.on('notifications:updated', () => {
-        try {
-          const hh = (window.location.hash || '').split('?')[0];
-          if (hh === '#/notifications' && !isRendering) {
-            console.log('[NotificationsPage] 📡 Evento notifications:updated recebido, renderizando...');
-            renderNotifications();
-          } else if (isRendering) {
-            console.log('[NotificationsPage] ⏳ Ignorando evento notifications:updated - renderização em andamento');
-          }
-        } catch {}
-      });
-    }
-    
+              const budgetId = window.appState?.currentBudget?.id || window.appState?.currentBudgetId;
+              const senderUid = window.appState?.currentUser?.uid;
+              if (!budgetId || !senderUid) { return; }
+              await sendTestNotificationToOwner(budgetId, senderUid);
+            } catch (e) { console.warn(e); }
+          };
+          window.__sendTestToShared = async () => {
+            try {
+              const budgetId = window.appState?.currentBudget?.id || window.appState?.currentBudgetId;
+              const senderUid = window.appState?.currentUser?.uid;
+              if (!budgetId || !senderUid) { return; }
+              await sendTestNotificationToShared(budgetId, senderUid);
+            } catch (e) { console.warn(e); }
+          };
+
+          // Teste do modal de notificação
+          window.__testNotificationModal = () => {
+            try {
+              const modal = getNotificationModal();
+              const testNotification = {
+                id: 'test-modal-' + Date.now(),
+                type: 'test_notification',
+                message: 'Esta é uma notificação de teste para demonstrar o modal!',
+                details: 'O modal aparece automaticamente quando novas notificações chegam.',
+                read: false,
+                createdAt: { toDate: () => new Date() }
+              };
+              modal.show(testNotification);
+              console.log('[NotificationsPage] 📱 Modal de teste exibido');
+            } catch (e) {
+              console.error('[NotificationsPage] ❌ Erro ao testar modal:', e);
+            }
+          };
+        };
+        bindTestHandlers();
+      }
+    } catch {}
+
+    try {
+      const prefs = await loadUserNotificationPrefs();
+      const budgets = Array.isArray(window.appState?.budgets)
+        ? window.appState.budgets
+        : (Array.isArray(window.appState?.orçamentos) ? window.appState.orçamentos : []);
+      const container = document.getElementById('notif-budget-prefs');
+      if (container && Array.isArray(budgets)) {
+        const types = DEFAULT_TYPES;
+        container.innerHTML = budgets
+          .map((b) => {
+            const byBudget = prefs.byBudget || {};
+            const allow = byBudget[b.id]?.allow || {};
+            const row = types
+              .map((t) => {
+                const checked = allow[t] !== false;
+                const label = typeLabels[t];
+                return `<label class=\"inline-flex items-center gap-1 text-xs mr-2\"><input type=\"checkbox\" ${
+                  checked ? 'checked' : ''
+                } onchange=\"window.__toggleBudgetTypePref && window.__toggleBudgetTypePref('${b.id}','${t}', this.checked)\"/>${label}</label>`;
+              })
+              .join('');
+            return `<div class=\"text-xs text-gray-700 dark:text-gray-300\"><div class=\"font-semibold mb-1\">${b.nome || b.name || 'Orçamento'}</div><div>${row}</div></div>`;
+          })
+          .join('');
+      }
+    } catch {}
+
+    try {
+      if (!window.__notifPeriodListenerBound) {
+        window.__notifPeriodListenerBound = true;
+        eventBus.on('period:changed', (p) =>
+          window.queueMicrotask(() => {
+            const hh = (window.location.hash || '').split('?')[0];
+            if (hh === '#/notifications') {
+              try {
+                const y = p?.year || (window.getSelectedPeriod && window.getSelectedPeriod().year);
+                const m = p?.month || (window.getSelectedPeriod && window.getSelectedPeriod().month);
+                if (y && m) {
+                  const ym = `${y}-${String(m).padStart(2, '0')}`;
+                  const url = new URL(window.location.href);
+                  url.hash = `${hh}?ym=${ym}`;
+                  window.history.replaceState(null, '', url.toString());
+                }
+              } catch {}
+              renderNotifications();
+            }
+          })
+        );
+      }
+      if (!window.__notifUpdatesListenerBound) {
+        window.__notifUpdatesListenerBound = true;
+        eventBus.on('notifications:updated', () => {
+          try {
+            const hh = (window.location.hash || '').split('?')[0];
+            if (hh === '#/notifications' && !isRendering) {
+              console.log('[NotificationsPage] 📡 Evento notifications:updated recebido, renderizando...');
+              renderNotifications();
+            } else if (isRendering) {
+              console.log('[NotificationsPage] ⏳ Ignorando evento notifications:updated - renderização em andamento');
+            }
+          } catch {}
+        });
+      }
+
     // Listener de modal de notificações já configurado no bootstrap.js
     // Removido para evitar duplicação
-  } catch {}
+    } catch {}
 
-  try {
-    if (!window.__notifHotkeysBound) {
-      window.__notifHotkeysBound = true;
-      document.addEventListener('keydown', (e) => {
-        try {
-          const tag = (e.target && (e.target.tagName || '').toLowerCase()) || '';
-          if (tag === 'input' || tag === 'textarea' || tag === 'select' || (e.target && e.target.isContentEditable)) {
-            return;
-          }
-          const hh = (window.location.hash || '').split('?')[0];
-          if (hh === '#/notifications') {
-            if (e.key === 'u' || e.key === 'U') {
-              e.preventDefault();
-              if (typeof window.toggleUnreadOnly === 'function') {
-                window.toggleUnreadOnly();
+    try {
+      if (!window.__notifHotkeysBound) {
+        window.__notifHotkeysBound = true;
+        document.addEventListener('keydown', (e) => {
+          try {
+            const tag = (e.target && (e.target.tagName || '').toLowerCase()) || '';
+            if (tag === 'input' || tag === 'textarea' || tag === 'select' || (e.target && e.target.isContentEditable)) {
+              return;
+            }
+            const hh = (window.location.hash || '').split('?')[0];
+            if (hh === '#/notifications') {
+              if (e.key === 'u' || e.key === 'U') {
+                e.preventDefault();
+                if (typeof window.toggleUnreadOnly === 'function') {
+                  window.toggleUnreadOnly();
+                }
               }
             }
-          }
-        } catch {}
-      });
-    }
-  } catch {}
-  
+          } catch {}
+        });
+      }
+    } catch {}
+
   } finally {
     // Sempre resetar o flag de renderização
     isRendering = false;
@@ -804,21 +804,21 @@ export async function renderNotifications(force = false) {
 
 async function loadNotifications(skipEventEmit = false) {
   console.log('[NotificationsPage] 🔄 Iniciando carregamento de notificações...');
-  
+
   try {
     const u = window.appState?.currentUser;
     console.log('[NotificationsPage] 👤 Usuário atual:', u?.uid ? 'Logado' : 'Não logado');
-    
+
     if (u?.uid) {
       console.log('[NotificationsPage] 🔗 Iniciando listener de notificações...');
       await startNotificationsFor(u.uid);
-      
+
       // Forçar atualização das notificações não lidas
       const notifications = window.appState?.notifications || [];
       const unreadCount = notifications.filter(n => !n.read && !n.archivedAt).length;
-      
+
       console.log(`[NotificationsPage] ✅ Carregadas ${notifications.length} notificações, ${unreadCount} não lidas`);
-      
+
       // Emitir evento para atualizar badges apenas se não for skipado
       if (!skipEventEmit) {
         try {
@@ -871,18 +871,18 @@ function archiveAllRead() {
 export async function loadUnreadNotifications() {
   try {
     console.log('[NotificationsPage] Forçando carregamento de notificações não lidas...');
-    
+
     // Carregar notificações
     await loadNotifications(true); // Skip event emit
-    
+
     // Configurar filtro para mostrar apenas não lidas
     const filters = getNotifFilters();
     filters.unreadOnly = true;
     saveFiltersState();
-    
+
     // Renderizar com foco nas não lidas
     await renderNotifications(true); // Force render
-    
+
     console.log('[NotificationsPage] Notificações não lidas carregadas com sucesso');
   } catch (error) {
     console.error('[NotificationsPage] Erro ao carregar notificações não lidas:', error);
@@ -945,23 +945,23 @@ if (!window.loadUnreadNotifications) {
 // Função de teste para debug
 window.testNotificationsPage = async function() {
   console.log('[NotificationsPage] 🧪 Iniciando teste...');
-  
+
   // Verificar se o usuário está logado
   const user = window.appState?.currentUser;
   console.log('[NotificationsPage] 🧪 Usuário:', user?.uid ? 'Logado' : 'Não logado');
-  
+
   // Verificar se há notificações
   const notifications = window.appState?.notifications || [];
   console.log('[NotificationsPage] 🧪 Notificações no estado:', notifications.length);
-  
+
   // Verificar filtros
   const filters = getNotifFilters();
   console.log('[NotificationsPage] 🧪 Filtros atuais:', filters);
-  
+
   // Verificar localStorage
   const stored = localStorage.getItem(FILTERS_STORAGE_KEY);
   console.log('[NotificationsPage] 🧪 localStorage:', stored);
-  
+
   // Teste direto do Firebase
   try {
     console.log('[NotificationsPage] 🧪 Testando acesso direto ao Firebase...');
@@ -974,7 +974,7 @@ window.testNotificationsPage = async function() {
   } catch (error) {
     console.log('[NotificationsPage] 🧪 Erro ao acessar Firebase:', error);
   }
-  
+
   // Tentar renderizar
   try {
     await renderNotifications(true); // Force render

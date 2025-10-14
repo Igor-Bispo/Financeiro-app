@@ -5,7 +5,7 @@
  */
 
 import { getNotificationsRepo } from '../../data/repositories/notificationsRepo.js';
-import { getNotificationModal } from './ui/NotificationModal.js';
+import { getNotificationModal as _getNotificationModal } from './ui/NotificationModal.js';
 
 class CatchUpNotifications {
   constructor() {
@@ -20,19 +20,19 @@ class CatchUpNotifications {
    */
   async init() {
     console.log('[CatchUpNotifications] 🚀 Inicializando sistema de catch-up...');
-    
+
     // TEMPORARIAMENTE DESABILITADO PARA RESOLVER LOOP INFINITO
     console.log('[CatchUpNotifications] ⚠️ Sistema de catch-up temporariamente desabilitado');
     return;
-    
+
     // Configurar listener para mudanças de rota
     this.setupRouteListener();
-    
+
     // Verificar notificações pendentes após um delay para não conflitar com modais
     setTimeout(async () => {
       await this.checkPendingNotifications();
     }, 30000); // 30 segundos de delay (depois do modal de notificação)
-    
+
     console.log('[CatchUpNotifications] ✅ Sistema de catch-up inicializado');
   }
 
@@ -45,15 +45,15 @@ class CatchUpNotifications {
       console.log('[CatchUpNotifications] 🔍 Modal de notificação não existe');
       return false;
     }
-    
+
     const styles = window.getComputedStyle(modal);
     const hasShowClass = modal.classList.contains('notification-modal-show');
-    const isVisible = styles.display !== 'none' && 
-                     styles.opacity !== '0' && 
+    const isVisible = styles.display !== 'none' &&
+                     styles.opacity !== '0' &&
                      styles.visibility !== 'hidden' &&
                      styles.zIndex !== 'auto' &&
                      hasShowClass;
-    
+
     console.log('[CatchUpNotifications] 🔍 Verificando modal de notificação:', {
       exists: !!modal,
       display: styles.display,
@@ -65,7 +65,7 @@ class CatchUpNotifications {
       classList: Array.from(modal.classList),
       innerHTML: modal.innerHTML.substring(0, 100) + '...'
     });
-    
+
     return isVisible;
   }
 
@@ -86,7 +86,7 @@ class CatchUpNotifications {
 
     // Aguardar um pouco mais e verificar novamente
     await new Promise(resolve => setTimeout(resolve, 2000));
-    
+
     if (this.isNotificationModalActive()) {
       console.log('[CatchUpNotifications] ⏳ Modal de notificação ativo após delay, pulando catch-up...');
       return;
@@ -104,7 +104,7 @@ class CatchUpNotifications {
 
       const notificationsRepo = getNotificationsRepo();
       const notifications = await notificationsRepo.getUnreadNotifications(userId);
-      
+
       console.log('[CatchUpNotifications] 📊 Notificações não lidas encontradas:', notifications.length);
 
       if (notifications.length > 0) {
@@ -140,7 +140,7 @@ class CatchUpNotifications {
     }
 
     console.log('[CatchUpNotifications] 📱 Mostrando modal de catch-up com', this.pendingNotifications.length, 'notificações...');
-    
+
     const modal = this.createCatchUpModal();
     document.body.appendChild(modal);
     this.catchUpModal = modal;
@@ -160,7 +160,7 @@ class CatchUpNotifications {
    * Cria o modal de catch-up
    */
   createCatchUpModal() {
-    const isDarkTheme = document.body.classList.contains('dark') || 
+    const isDarkTheme = document.body.classList.contains('dark') ||
                        document.documentElement.classList.contains('dark') ||
                        window.matchMedia('(prefers-color-scheme: dark)').matches;
 
@@ -470,9 +470,9 @@ class CatchUpNotifications {
     if (!this.catchUpModal) return;
 
     console.log('[CatchUpNotifications] 🔒 Fechando modal de catch-up...');
-    
+
     this.catchUpModal.classList.remove('catch-up-modal-show');
-    
+
     setTimeout(() => {
       if (this.catchUpModal) {
         this.catchUpModal.remove();
@@ -486,23 +486,23 @@ class CatchUpNotifications {
    */
   async markAllAsRead() {
     console.log('[CatchUpNotifications] ✅ Marcando todas as notificações como lidas...');
-    
+
     try {
       const notificationsRepo = getNotificationsRepo();
-      const userId = this.getCurrentUserId();
-      
+      const _userId = this.getCurrentUserId();
+
       for (const notification of this.pendingNotifications) {
         await notificationsRepo.markAsRead(notification.id);
       }
-      
+
       console.log('[CatchUpNotifications] ✅ Todas as notificações marcadas como lidas');
       this.closeCatchUpModal();
-      
+
       // Mostrar snackbar de confirmação
       if (window.Snackbar) {
         window.Snackbar.show('Todas as notificações foram marcadas como lidas', 'success');
       }
-      
+
     } catch (error) {
       console.error('[CatchUpNotifications] ❌ Erro ao marcar notificações como lidas:', error);
     }
@@ -537,17 +537,17 @@ class CatchUpNotifications {
     if (window.appState?.user?.uid) {
       return window.appState.user.uid;
     }
-    
+
     // Tentar obter do currentUser global
     if (window.currentUser?.uid) {
       return window.currentUser.uid;
     }
-    
+
     // Tentar obter do Firebase Auth
     if (window.firebase?.auth?.currentUser?.uid) {
       return window.firebase.auth.currentUser.uid;
     }
-    
+
     return null;
   }
 
@@ -640,11 +640,11 @@ class CatchUpNotifications {
    */
   formatDate(date) {
     if (!date) return 'Agora';
-    
+
     const now = new Date();
     const notificationDate = new Date(date);
     const diffInMinutes = Math.floor((now - notificationDate) / (1000 * 60));
-    
+
     if (diffInMinutes < 1) return 'Agora';
     if (diffInMinutes < 60) return `${diffInMinutes}min atrás`;
     if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h atrás`;

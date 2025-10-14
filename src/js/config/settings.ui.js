@@ -1,31 +1,31 @@
 
 // Controle global de animações
 function setAnimationsEnabled(enabled) {
-    if (enabled) {
-        document.body.classList.remove('no-animations');
-        localStorage.setItem('animationsEnabled', '1');
-    } else {
-        document.body.classList.add('no-animations');
-        localStorage.setItem('animationsEnabled', '0');
-    }
+  if (enabled) {
+    document.body.classList.remove('no-animations');
+    localStorage.setItem('animationsEnabled', '1');
+  } else {
+    document.body.classList.add('no-animations');
+    localStorage.setItem('animationsEnabled', '0');
+  }
 }
 
 // Restaurar estado ao carregar
 document.addEventListener('DOMContentLoaded', () => {
-    const saved = localStorage.getItem('animationsEnabled');
-    const enabled = saved === null ? true : saved === '1';
-    setAnimationsEnabled(enabled);
-    const toggle = document.getElementById('animations-toggle');
-    if (toggle) {
-        toggle.checked = enabled;
-        toggle.addEventListener('change', (e) => {
-            setAnimationsEnabled(e.target.checked);
-        });
-    }
+  const saved = localStorage.getItem('animationsEnabled');
+  const enabled = saved === null ? true : saved === '1';
+  setAnimationsEnabled(enabled);
+  const toggle = document.getElementById('animations-toggle');
+  if (toggle) {
+    toggle.checked = enabled;
+    toggle.addEventListener('change', (e) => {
+      setAnimationsEnabled(e.target.checked);
+    });
+  }
 });
 
 function renderEmptyState(icon, title, description) {
-    return `
+  return `
     <div class="empty-state">
         <div class="empty-icon">${icon}</div>
         <div class="empty-text">${title}</div>
@@ -35,23 +35,23 @@ function renderEmptyState(icon, title, description) {
 }
 
 function renderSharedWithMe(budgets, currentUser, currentBudget) {
-    const me = currentUser?.uid;
-    console.log('[DEBUG] renderSharedWithMe - budgets:', budgets);
-    console.log('[DEBUG] renderSharedWithMe - currentUser:', currentUser);
-    console.log('[DEBUG] renderSharedWithMe - me (uid):', me);
-    
-    const shared = (budgets || []).filter(b => {
-        const isShared = b && (b.isOwner === false || (me && b.userId && b.userId !== me));
-        console.log('[DEBUG] Orçamento:', b.nome, 'isOwner:', b.isOwner, 'userId:', b.userId, 'me:', me, 'isShared:', isShared);
-        return isShared;
-    });
-    
-    console.log('[DEBUG] Orçamentos compartilhados filtrados:', shared);
-    
-    if (!shared.length) {
-        return renderEmptyState('🤝', 'Nenhum orçamento compartilhado', 'Convites que você aceitar aparecerão aqui.');
-    }
-    return `
+  const me = currentUser?.uid;
+  console.log('[DEBUG] renderSharedWithMe - budgets:', budgets);
+  console.log('[DEBUG] renderSharedWithMe - currentUser:', currentUser);
+  console.log('[DEBUG] renderSharedWithMe - me (uid):', me);
+
+  const shared = (budgets || []).filter(b => {
+    const isShared = b && (b.isOwner === false || (me && b.userId && b.userId !== me));
+    console.log('[DEBUG] Orçamento:', b.nome, 'isOwner:', b.isOwner, 'userId:', b.userId, 'me:', me, 'isShared:', isShared);
+    return isShared;
+  });
+
+  console.log('[DEBUG] Orçamentos compartilhados filtrados:', shared);
+
+  if (!shared.length) {
+    return renderEmptyState('🤝', 'Nenhum orçamento compartilhado', 'Convites que você aceitar aparecerão aqui.');
+  }
+  return `
         <div class="space-y-4">
             ${shared.map(budget => `
                 <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -62,7 +62,7 @@ function renderSharedWithMe(budgets, currentUser, currentBudget) {
                                 <p class="text-xs text-green-600 dark:text-green-400 font-semibold bg-green-100 dark:bg-green-900/50 rounded-full px-2 py-0.5 inline-block mt-1">Compartilhado</p>
                             </div>
                             ${budget.id !== currentBudget?.id ? `
-                                <button type="button" class="enter-budget-button btn btn-primary btn-sm" data-budget-id="${budget.id}" data-budget-name="${(budget.nome || 'Orçamento').replace(/\"/g, '&quot;')}" title="Entrar neste orçamento">
+                                <button type="button" class="enter-budget-button inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-200 dark:border-blue-800 transition-all duration-200" data-budget-id="${budget.id}" data-budget-name="${(budget.nome || 'Orçamento').replace(/\"/g, '&quot;')}" title="Entrar neste orçamento">
                                     <span class="enter-icon">🚪</span><span class="enter-text">Entrar</span>
                                 </button>
                             ` : `
@@ -72,8 +72,8 @@ function renderSharedWithMe(budgets, currentUser, currentBudget) {
                         <p class="text-xs text-gray-500 dark:text-gray-400 mt-3 truncate">ID: ${budget.id}</p>
                     </div>
                     <div class="bg-gray-50 dark:bg-gray-800/50 px-5 py-3 flex justify-end items-center gap-2">
-                        <button class="btn btn-ghost btn-sm copy-budget-id-btn" data-budget-id="${budget.id}" title="Copiar ID do orçamento">📋 Copiar ID</button>
-                        <button class="btn btn-danger btn-sm leave-budget-btn" data-budget-id="${budget.id}" data-budget-name="${(budget.nome || 'Orçamento').replace(/"/g, '&quot;')}" title="Sair deste orçamento">🚪 Sair</button>
+                        <button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-900/20 hover:bg-gray-100 dark:hover:bg-gray-900/40 border border-gray-200 dark:border-gray-800 transition-all duration-200 copy-budget-id-btn" data-budget-id="${budget.id}" title="Copiar ID do orçamento">📋 Copiar ID</button>
+                        <button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-orange-700 dark:text-orange-300 bg-orange-50 dark:bg-orange-900/20 hover:bg-orange-100 dark:hover:bg-orange-900/40 border border-orange-200 dark:border-orange-800 transition-all duration-200 leave-budget-btn" data-budget-id="${budget.id}" data-budget-name="${(budget.nome || 'Orçamento').replace(/"/g, '&quot;')}" title="Sair deste orçamento">🚪 Sair</button>
                     </div>
                 </div>
             `).join('')}
@@ -82,12 +82,12 @@ function renderSharedWithMe(budgets, currentUser, currentBudget) {
 }
 
 function renderMyBudgets(budgets, currentUser, currentBudget) {
-    const me = currentUser?.uid;
-    const owned = (budgets || []).filter(b => b && (b.isOwner !== false) && (!me || b.userId === me));
-    if (!owned.length) {
-        return renderEmptyState('🗂️', 'Nenhum orçamento próprio', 'Crie um novo orçamento para começar.');
-    }
-    return `
+  const me = currentUser?.uid;
+  const owned = (budgets || []).filter(b => b && (b.isOwner !== false) && (!me || b.userId === me));
+  if (!owned.length) {
+    return renderEmptyState('🗂️', 'Nenhum orçamento próprio', 'Crie um novo orçamento para começar.');
+  }
+  return `
         <div class="space-y-4">
             ${owned.map(budget => `
                 <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border ${budget.id === currentBudget?.id ? 'border-blue-500' : 'border-gray-200 dark:border-gray-700'} overflow-hidden">
@@ -98,7 +98,7 @@ function renderMyBudgets(budgets, currentUser, currentBudget) {
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Criado em ${budget.createdAt ? new Date(budget.createdAt.seconds * 1000).toLocaleDateString('pt-BR') : 'Data não disponível'}</p>
                             </div>
                             ${budget.id !== currentBudget?.id ? `
-                                <button type="button" class="enter-budget-button btn btn-primary btn-sm" data-budget-id="${budget.id}" data-budget-name="${(budget.nome || 'Orçamento').replace(/"/g, '&quot;')}" title="Entrar neste orçamento">
+                                <button type="button" class="enter-budget-button inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-200 dark:border-blue-800 transition-all duration-200" data-budget-id="${budget.id}" data-budget-name="${(budget.nome || 'Orçamento').replace(/"/g, '&quot;')}" title="Entrar neste orçamento">
                                     <span class="enter-icon">🚪</span><span class="enter-text">Entrar</span>
                                 </button>
                             ` : `
@@ -107,8 +107,8 @@ function renderMyBudgets(budgets, currentUser, currentBudget) {
                         </div>
                     </div>
                     <div class="bg-gray-50 dark:bg-gray-800/50 px-5 py-3 flex justify-end items-center gap-2">
-                        <button class="btn btn-ghost btn-sm copy-budget-id-btn" data-budget-id="${budget.id}" title="Copiar ID do orçamento">📋 Copiar ID</button>
-                        <button class="btn btn-danger btn-sm delete-budget-btn" data-budget-id="${budget.id}" data-budget-name="${(budget.nome || 'Orçamento').replace(/"/g, '&quot;')}" title="Excluir orçamento">🗑️ Excluir</button>
+                        <button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-900/20 hover:bg-gray-100 dark:hover:bg-gray-900/40 border border-gray-200 dark:border-gray-800 transition-all duration-200 copy-budget-id-btn" data-budget-id="${budget.id}" title="Copiar ID do orçamento">📋 Copiar ID</button>
+                        <button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 border border-red-200 dark:border-red-800 transition-all duration-200 delete-budget-btn" data-budget-id="${budget.id}" data-budget-name="${(budget.nome || 'Orçamento').replace(/"/g, '&quot;')}" title="Excluir orçamento">🗑️ Excluir</button>
                     </div>
                 </div>
             `).join('')}
@@ -117,16 +117,16 @@ function renderMyBudgets(budgets, currentUser, currentBudget) {
 }
 
 function renderUsersWithAccess(usersWithAccess) {
-    if (!usersWithAccess || usersWithAccess.length === 0) {
-        return `
+  if (!usersWithAccess || usersWithAccess.length === 0) {
+    return `
         <div class="text-center py-8">
             <div class="text-4xl mb-3">👥</div>
             <div class="text-gray-500 dark:text-gray-400">Nenhum usuário compartilhado</div>
             <div class="text-sm text-gray-400 dark:text-gray-500 mt-1">Compartilhe seu orçamento para colaborar</div>
         </div>
         `;
-    }
-    return `
+  }
+  return `
     <div class="space-y-3">
         ${usersWithAccess.map(user => `
             <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
@@ -141,7 +141,7 @@ function renderUsersWithAccess(usersWithAccess) {
                     </div>
                 </div>
                     <div class="flex-shrink-0 ml-2">
-                        <button class="remove-user-btn btn btn-danger btn-sm" data-uid="${user.uid}" data-email="${user.email}" title="Remover usuário">
+                        <button class="remove-user-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 border border-red-200 dark:border-red-800 transition-all duration-200" data-uid="${user.uid}" data-email="${user.email}" title="Remover usuário">
                             <span class="hidden sm:inline">🗑️ Remover</span>
                             <span class="sm:hidden">🗑️</span>
                         </button>
@@ -154,15 +154,15 @@ function renderUsersWithAccess(usersWithAccess) {
 }
 
 function renderSentInvitations(sentInvitations) {
-    if (!sentInvitations || sentInvitations.length === 0) {
-        return `
+  if (!sentInvitations || sentInvitations.length === 0) {
+    return `
         <div class="text-center py-8">
             <div class="text-4xl mb-3">📤</div>
             <div class="text-gray-500 dark:text-gray-400">Nenhum convite pendente</div>
             <div class="text-sm text-gray-400 dark:text-gray-500 mt-1">Convites enviados aparecerão aqui</div>
         </div>`;
-    }
-    return `
+  }
+  return `
     <div class="space-y-3">
         ${sentInvitations.map(invite => `
             <div class="bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800 p-3" data-invite-id="${invite.id}">
@@ -175,7 +175,7 @@ function renderSentInvitations(sentInvitations) {
                     </div>
                 </div>
                     <div class="flex-shrink-0 ml-2">
-                        <button class="cancel-invitation-btn btn btn-outline btn-sm" data-invite-id="${invite.id}" title="Cancelar convite">
+                        <button class="cancel-invitation-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-900/20 hover:bg-gray-100 dark:hover:bg-gray-900/40 border border-gray-200 dark:border-gray-800 transition-all duration-200" data-invite-id="${invite.id}" title="Cancelar convite">
                             <span class="hidden sm:inline">❌ Cancelar</span>
                             <span class="sm:hidden">❌</span>
                         </button>
@@ -187,15 +187,15 @@ function renderSentInvitations(sentInvitations) {
 }
 
 function renderPendingInvitations(pendingInvitations) {
-    if (!pendingInvitations || pendingInvitations.length === 0) {
-        return `
+  if (!pendingInvitations || pendingInvitations.length === 0) {
+    return `
         <div class="text-center py-8">
             <div class="text-4xl mb-3">📬</div>
             <div class="text-gray-500 dark:text-gray-400">Nenhum convite pendente</div>
             <div class="text-sm text-gray-400 dark:text-gray-500 mt-1">Novos convites aparecerão aqui</div>
         </div>`;
-    }
-    return `
+  }
+  return `
     <div class="space-y-3">
         ${pendingInvitations.map(invite => `
             <div class="bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800 p-3" data-invite-id="${invite.id}" data-budget-id="${invite.budgetId}">
@@ -207,10 +207,10 @@ function renderPendingInvitations(pendingInvitations) {
                     </div>
                 </div>
                 <div class="flex gap-2">
-                    <button class="accept-invitation-btn btn btn-primary btn-sm flex-1" data-invite-id="${invite.id}" title="Aceitar convite">
+                    <button class="accept-invitation-btn inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/40 border border-green-200 dark:border-green-800 transition-all duration-200 flex-1" data-invite-id="${invite.id}" title="Aceitar convite">
                         ✅ Aceitar
                     </button>
-                    <button class="decline-invitation-btn btn btn-danger btn-sm flex-1" data-invite-id="${invite.id}" title="Recusar convite">
+                    <button class="decline-invitation-btn inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 border border-red-200 dark:border-red-800 transition-all duration-200 flex-1" data-invite-id="${invite.id}" title="Recusar convite">
                         ❌ Recusar
                     </button>
                 </div>
@@ -220,7 +220,7 @@ function renderPendingInvitations(pendingInvitations) {
 }
 
 export function generateSettingsHTML(state) {
-    const {
+  const {
     currentUser,
     currentBudget,
     budgets,
@@ -228,10 +228,10 @@ export function generateSettingsHTML(state) {
     ownerDisplay,
     pendingInvitations,
     sentInvitations,
-    appVersion
-    } = state;
+    appVersion: _appVersion
+  } = state;
 
-    return `
+  return `
     <div class="tab-container">
         <div class="tab-header">
         <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-600">
@@ -370,7 +370,7 @@ export function generateSettingsHTML(state) {
                                 <div class="text-sm text-gray-600 dark:text-gray-400">Conectado como</div>
                                 <div class="font-medium text-gray-900 dark:text-gray-100 truncate" title="${currentUser.email || ''}">${currentUser.email || 'Usuário'}</div>
                             </div>
-                                    <button id="btn-logout" class="btn btn-danger btn-sm">Sair</button>
+                                    <button id="btn-logout" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 border border-red-200 dark:border-red-800 transition-all duration-200" title="Sair da conta">Sair</button>
                         </div>
                     </div>
                     ` : ''}
@@ -498,7 +498,7 @@ export function generateSettingsHTML(state) {
                                         <form id="share-budget-form" class="space-y-3" autocomplete="off" novalidate>
                                                                             <input type="email" id="share-email-input" name="email" placeholder="email@exemplo.com" 
                                                 class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm" required>
-                                            <button id="share-budget-btn" type="submit" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 text-sm" data-loading-text="Enviando...">
+                                            <button id="share-budget-btn" type="submit" class="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-orange-700 dark:text-orange-300 bg-orange-50 dark:bg-orange-900/20 hover:bg-orange-100 dark:hover:bg-orange-900/40 border border-orange-200 dark:border-orange-800 transition-all duration-200" data-loading-text="Enviando...">
                                                 <span class="hidden sm:inline">📤 Enviar Convite</span>
                                                 <span class="sm:hidden">📤 Enviar</span>
                                                                             </button>
@@ -519,10 +519,10 @@ export function generateSettingsHTML(state) {
                         <h2 class="section-title blue-border">📁 Meus Orçamentos</h2>
                         <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-4">
                         ${renderMyBudgets(budgets, currentUser, currentBudget)}
-                        <button id="create-new-budget-btn" class="create-button btn btn-primary mt-5 w-full">➕ Criar Novo Orçamento</button>
+                        <button id="create-new-budget-btn" class="create-button inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-200 dark:border-blue-800 transition-all duration-200 mt-5 w-full" title="Criar novo orçamento">➕ Criar Novo Orçamento</button>
                         
                         <!-- TESTE: Botão para testar notificações -->
-                        <button id="test-notifications-btn" class="btn btn-secondary mt-3 w-full">🧪 Testar Notificações</button>
+                        <button id="test-notifications-btn" class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-900/20 hover:bg-gray-100 dark:hover:bg-gray-900/40 border border-gray-200 dark:border-gray-800 transition-all duration-200 mt-3 w-full" title="Testar notificações">🧪 Testar Notificações</button>
                         </div>
                     </div>
 
@@ -556,40 +556,40 @@ export function generateSettingsHTML(state) {
                                     Ações de Dados
                                 </h5>
                                 <div class="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
-                                    <button id="export-data-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-medium flex items-center justify-center gap-2 md:gap-3 p-3 md:p-4 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md">
+                                    <button id="export-data-btn" class="inline-flex items-center justify-center gap-2 md:gap-3 p-3 md:p-4 rounded-lg text-sm font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-200 dark:border-blue-800 transition-all duration-200" title="Exportar dados">
                                         <span class="text-lg md:text-2xl">📤</span>
                                     <div class="text-left">
                                             <div class="font-semibold text-sm md:text-base">
                                                 <span class="hidden sm:inline">Exportar Dados</span>
                                                 <span class="sm:hidden">Exportar</span>
                                             </div>
-                                            <div class="text-xs opacity-90">
+                                            <div class="text-xs opacity-75">
                                                 <span class="hidden sm:inline">Backup completo</span>
                                                 <span class="sm:hidden">Backup</span>
                                             </div>
                                     </div>
                                 </button>
-                                    <button id="import-data-btn" class="bg-green-500 hover:bg-green-600 text-white font-medium flex items-center justify-center gap-2 md:gap-3 p-3 md:p-4 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md">
+                                    <button id="import-data-btn" class="inline-flex items-center justify-center gap-2 md:gap-3 p-3 md:p-4 rounded-lg text-sm font-medium text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/40 border border-green-200 dark:border-green-800 transition-all duration-200" title="Importar dados">
                                         <span class="text-lg md:text-2xl">📥</span>
                                     <div class="text-left">
                                             <div class="font-semibold text-sm md:text-base">
                                                 <span class="hidden sm:inline">Importar Dados</span>
                                                 <span class="sm:hidden">Importar</span>
                                             </div>
-                                            <div class="text-xs opacity-90">
+                                            <div class="text-xs opacity-75">
                                                 <span class="hidden sm:inline">Restaurar backup</span>
                                                 <span class="sm:hidden">Restaurar</span>
                                             </div>
                                     </div>
                                 </button>
-                                    <button id="clear-data-btn" class="bg-red-500 hover:bg-red-600 text-white font-medium flex items-center justify-center gap-2 md:gap-3 p-3 md:p-4 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md">
+                                    <button id="clear-data-btn" class="inline-flex items-center justify-center gap-2 md:gap-3 p-3 md:p-4 rounded-lg text-sm font-medium text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 border border-red-200 dark:border-red-800 transition-all duration-200" title="Limpar dados">
                                         <span class="text-lg md:text-2xl">🗑️</span>
                                     <div class="text-left">
                                             <div class="font-semibold text-sm md:text-base">
                                                 <span class="hidden sm:inline">Limpar Dados</span>
                                                 <span class="sm:hidden">Limpar</span>
                                             </div>
-                                            <div class="text-xs opacity-90">
+                                            <div class="text-xs opacity-75">
                                                 <span class="hidden sm:inline">Remover tudo</span>
                                                 <span class="sm:hidden">Remover</span>
                                             </div>
@@ -725,9 +725,9 @@ export function generateSettingsHTML(state) {
                                     </label>
                                 </div>
                                     <div class="flex gap-2">
-                                        <button id="apply-toast-settings" class="btn btn-primary btn-sm flex-1">Aplicar</button>
-                                        <button id="reset-toast-settings" class="btn btn-secondary btn-sm flex-1">Reset</button>
-                                        <button id="test-toast" class="btn btn-ghost btn-sm flex-1">Testar</button>
+                                        <button id="apply-toast-settings" class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-200 dark:border-blue-800 transition-all duration-200 flex-1" title="Aplicar configurações">Aplicar</button>
+                                        <button id="reset-toast-settings" class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-900/20 hover:bg-gray-100 dark:hover:bg-gray-900/40 border border-gray-200 dark:border-gray-800 transition-all duration-200 flex-1" title="Resetar configurações">Reset</button>
+                                        <button id="test-toast" class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/40 border border-purple-200 dark:border-purple-800 transition-all duration-200 flex-1" title="Testar notificação">Testar</button>
                                     </div>
                                 </div>
                             </div>
@@ -768,7 +768,7 @@ export function generateSettingsHTML(state) {
                                         <div class="text-sm font-medium text-gray-900 dark:text-gray-100">Alternar tema</div>
                                         <div class="text-xs text-gray-500 dark:text-gray-400">Tema claro/escuro</div>
                                     </div>
-                                    <button id="toggle-theme-btn" class="btn btn-primary btn-sm">
+                                    <button id="toggle-theme-btn" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/40 border border-purple-200 dark:border-purple-800 transition-all duration-200" title="Alternar tema">
                                         🌙 Alternar
                                     </button>
                         </div>
@@ -806,8 +806,8 @@ export function generateSettingsHTML(state) {
                                     </label>
                                 </div>
                                     <div class="flex gap-2">
-                                        <button class="compact-size-btn btn btn-primary btn-sm" data-size="micro">Micro</button>
-                                        <button class="compact-size-btn btn btn-secondary btn-sm" data-size="nano">Nano</button>
+                                        <button class="compact-size-btn inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-200 dark:border-blue-800 transition-all duration-200" data-size="micro" title="Modo Micro">Micro</button>
+                                        <button class="compact-size-btn inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-900/20 hover:bg-gray-100 dark:hover:bg-gray-900/40 border border-gray-200 dark:border-gray-800 transition-all duration-200" data-size="nano" title="Modo Nano">Nano</button>
                                     </div>
                                 </div>
                             </div>
@@ -849,8 +849,8 @@ export function generateSettingsHTML(state) {
                                         <input type="text" id="days-chunk-size" value="Automático" placeholder="Deixe em branco para automático" class="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
                             </div>
                                     <div class="flex gap-2">
-                                        <button id="save-days-chunk" class="btn btn-primary btn-sm flex-1">Salvar</button>
-                                        <button id="reset-days-chunk" class="btn btn-secondary btn-sm flex-1">Reset</button>
+                                        <button id="save-days-chunk" class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-200 dark:border-blue-800 transition-all duration-200 flex-1" title="Salvar configuração">Salvar</button>
+                                        <button id="reset-days-chunk" class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-900/20 hover:bg-gray-100 dark:hover:bg-gray-900/40 border border-gray-200 dark:border-gray-800 transition-all duration-200 flex-1" title="Resetar para padrão">Reset</button>
                         </div>
                     </div>
                                     </div>
@@ -940,7 +940,7 @@ export function generateSettingsHTML(state) {
                                 </div>
                                         <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-2 md:p-3">
                                             <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">⚙️ SW</div>
-                                            <div class="font-bold text-xs md:text-sm text-gray-800 dark:text-gray-200">v4.42.0</div>
+                                            <div class="font-bold text-xs md:text-sm text-gray-800 dark:text-gray-200">v4.57.0</div>
                         </div>
                     </div>
 
@@ -963,11 +963,11 @@ export function generateSettingsHTML(state) {
                                     <div class="grid grid-cols-2 gap-2 md:gap-4">
                                         <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-2 md:p-3">
                                             <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">📅 Update</div>
-                                            <div class="font-bold text-xs md:text-sm text-gray-800 dark:text-gray-200">Set 2025</div>
+                                            <div class="font-bold text-xs md:text-sm text-gray-800 dark:text-gray-200">Out 2025</div>
                                         </div>
                                         <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-2 md:p-3">
                                             <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">🔧 Build</div>
-                                            <div class="font-bold text-xs md:text-sm text-gray-800 dark:text-gray-200">Production</div>
+                                            <div class="font-bold text-xs md:text-sm text-gray-800 dark:text-gray-200">v1.0.9</div>
                                         </div>
                                         </div>
                                     </div>
@@ -980,31 +980,31 @@ export function generateSettingsHTML(state) {
                                     Ações Rápidas
                                 </h5>
                                 <div class="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-3">
-                                    <button id="check-updates-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-medium text-xs flex items-center justify-center gap-1 md:gap-2 p-2 md:p-3 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md">
+                                    <button id="check-updates-btn" class="inline-flex items-center justify-center gap-1 md:gap-2 p-2 md:p-3 rounded-lg text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-200 dark:border-blue-800 transition-all duration-200" title="Verificar atualizações">
                                         <span class="text-sm md:text-base">☁️⬇️</span>
                                         <span class="hidden sm:inline">Atualizações</span>
                                         <span class="sm:hidden">Update</span>
                                     </button>
-                                    <button id="help-support-btn" class="bg-purple-500 hover:bg-purple-600 text-white font-medium text-xs flex items-center justify-center gap-1 md:gap-2 p-2 md:p-3 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md">
+                                    <button id="help-support-btn" class="inline-flex items-center justify-center gap-1 md:gap-2 p-2 md:p-3 rounded-lg text-xs font-medium text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/40 border border-purple-200 dark:border-purple-800 transition-all duration-200" title="Ajuda e suporte">
                                         <span class="text-sm md:text-base">❓</span>
                                         <span>Suporte</span>
                                     </button>
-                                    <button id="whats-new-btn" class="bg-green-500 hover:bg-green-600 text-white font-medium text-xs flex items-center justify-center gap-1 md:gap-2 p-2 md:p-3 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md">
+                                    <button id="whats-new-btn" class="inline-flex items-center justify-center gap-1 md:gap-2 p-2 md:p-3 rounded-lg text-xs font-medium text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/40 border border-green-200 dark:border-green-800 transition-all duration-200" title="O que mudou">
                                         <span class="text-sm md:text-base">📄</span>
                                         <span class="hidden sm:inline">O que mudou</span>
                                         <span class="sm:hidden">Novidades</span>
                                     </button>
-                                    <button id="copy-info-btn" class="bg-gray-500 hover:bg-gray-600 text-white font-medium text-xs flex items-center justify-center gap-1 md:gap-2 p-2 md:p-3 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md">
+                                    <button id="copy-info-btn" class="inline-flex items-center justify-center gap-1 md:gap-2 p-2 md:p-3 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-900/20 hover:bg-gray-100 dark:hover:bg-gray-900/40 border border-gray-200 dark:border-gray-800 transition-all duration-200" title="Copiar informações">
                                         <span class="text-sm md:text-base">📋</span>
                                         <span class="hidden sm:inline">Copiar Info</span>
                                         <span class="sm:hidden">Copiar</span>
                                     </button>
-                                    <button id="clear-cache-btn" class="bg-red-500 hover:bg-red-600 text-white font-medium text-xs flex items-center justify-center gap-1 md:gap-2 p-2 md:p-3 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md">
+                                    <button id="clear-cache-btn" class="inline-flex items-center justify-center gap-1 md:gap-2 p-2 md:p-3 rounded-lg text-xs font-medium text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 border border-red-200 dark:border-red-800 transition-all duration-200" title="Limpar cache">
                                         <span class="text-sm md:text-base">🗑️</span>
                                         <span class="hidden sm:inline">Limpar Cache</span>
                                         <span class="sm:hidden">Limpar</span>
                                     </button>
-                                    <button id="install-app-btn" class="bg-indigo-500 hover:bg-indigo-600 text-white font-medium text-xs flex items-center justify-center gap-1 md:gap-2 p-2 md:p-3 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md">
+                                    <button id="install-app-btn" class="inline-flex items-center justify-center gap-1 md:gap-2 p-2 md:p-3 rounded-lg text-xs font-medium text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 border border-indigo-200 dark:border-indigo-800 transition-all duration-200" title="Instalar aplicativo">
                                         <span class="text-sm md:text-base">⬇️</span>
                                         <span>Instalar</span>
                                     </button>

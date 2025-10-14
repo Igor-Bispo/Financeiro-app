@@ -25,23 +25,37 @@ export async function getById(id) {
 }
 
 export async function list(filters = {}) {
+  console.log('🔍 [BudgetsRepo] list - Filtros:', filters);
+  console.log('🔍 [BudgetsRepo] list - Coleção:', COLL);
   const collRef = collection(db, COLL);
   const clauses = [];
   if (filters.userId) clauses.push(where('userId', '==', filters.userId));
   const q = clauses.length ? query(collRef, ...clauses) : collRef;
+  console.log('🔍 [BudgetsRepo] list - Query preparada, executando getDocs...');
   const snap = await getDocs(q);
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  console.log('📊 [BudgetsRepo] list - Documentos retornados:', snap.docs.length);
+  const result = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  console.log('📋 [BudgetsRepo] list - Dados mapeados:', result);
+  return result;
 }
 
 export async function listOwn(userId) {
-  return list({ userId });
+  console.log('🔍 [BudgetsRepo] listOwn - userId:', userId);
+  const result = await list({ userId });
+  console.log('📊 [BudgetsRepo] listOwn - Resultados:', result.length, 'orçamentos');
+  console.log('📋 [BudgetsRepo] listOwn - Dados:', result);
+  return result;
 }
 
 export async function listShared(userId) {
+  console.log('🔍 [BudgetsRepo] listShared - userId:', userId);
   const collRef = collection(db, COLL);
   const q = query(collRef, where('usuariosPermitidos', 'array-contains', userId));
   const snap = await getDocs(q);
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  const result = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  console.log('📊 [BudgetsRepo] listShared - Resultados:', result.length, 'orçamentos');
+  console.log('📋 [BudgetsRepo] listShared - Dados:', result);
+  return result;
 }
 
 export async function create(dto) {

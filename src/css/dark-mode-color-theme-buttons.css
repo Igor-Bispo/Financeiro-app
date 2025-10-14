@@ -1,0 +1,138 @@
+/* ========================================
+   CORREÇÃO ESPECÍFICA - BOTÕES DE TEMA DE CORES
+   ======================================== */
+
+/* === BOTÕES DE TEMA DE CORES NO MODO ESCURO === */
+.dark .color-theme-btn {
+  border: 2px solid #4a5568 !important; /* Borda neutra por padrão */
+  transition: all 0.2s ease !important;
+}
+
+/* === TEMA AZUL === */
+.dark .color-theme-btn[data-theme="blue"] {
+  background-color: #3b82f6 !important; /* Azul vibrante */
+  border-color: #3b82f6 !important;
+}
+
+.dark .color-theme-btn[data-theme="blue"]:hover {
+  background-color: #2563eb !important; /* Azul mais escuro no hover */
+  border-color: #2563eb !important;
+  transform: scale(1.1) !important;
+  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3) !important;
+}
+
+/* === TEMA VERDE === */
+.dark .color-theme-btn[data-theme="green"] {
+  background-color: #10b981 !important; /* Verde vibrante */
+  border-color: #10b981 !important;
+}
+
+.dark .color-theme-btn[data-theme="green"]:hover {
+  background-color: #059669 !important; /* Verde mais escuro no hover */
+  border-color: #059669 !important;
+  transform: scale(1.1) !important;
+  box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3) !important;
+}
+
+/* === TEMA ROXO === */
+.dark .color-theme-btn[data-theme="purple"] {
+  background-color: #8b5cf6 !important; /* Roxo vibrante */
+  border-color: #8b5cf6 !important;
+}
+
+.dark .color-theme-btn[data-theme="purple"]:hover {
+  background-color: #7c3aed !important; /* Roxo mais escuro no hover */
+  border-color: #7c3aed !important;
+  transform: scale(1.1) !important;
+  box-shadow: 0 4px 8px rgba(139, 92, 246, 0.3) !important;
+}
+
+/* === TEMA LARANJA === */
+.dark .color-theme-btn[data-theme="orange"] {
+  background-color: #f59e0b !important; /* Laranja vibrante */
+  border-color: #f59e0b !important;
+}
+
+.dark .color-theme-btn[data-theme="orange"]:hover {
+  background-color: #d97706 !important; /* Laranja mais escuro no hover */
+  border-color: #d97706 !important;
+  transform: scale(1.1) !important;
+  box-shadow: 0 4px 8px rgba(245, 158, 11, 0.3) !important;
+}
+
+/* === ESTADO ATIVO/SELECIONADO === */
+.dark .color-theme-btn.active {
+  transform: scale(1.15) !important;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2) !important;
+}
+
+.dark .color-theme-btn[data-theme="blue"].active {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4) !important;
+}
+
+.dark .color-theme-btn[data-theme="green"].active {
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.4) !important;
+}
+
+.dark .color-theme-btn[data-theme="purple"].active {
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.4) !important;
+}
+
+.dark .color-theme-btn[data-theme="orange"].active {
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.4) !important;
+}
+
+/* === FORÇA APLICAÇÃO COM JAVASCRIPT === */
+.dark .color-theme-btn[style*="background"] {
+  /* Sobrescrever estilos inline se necessário */
+}
+
+/* === CORREÇÃO PARA BORDAS CINZAS === */
+.dark .color-theme-btn[class*="border-gray"] {
+  border-color: inherit !important; /* Herdar a cor do tema */
+}
+
+/* === ANIMAÇÕES SUAVES === */
+.dark .color-theme-btn {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* === INDICADOR VISUAL DE SELEÇÃO === */
+.dark .color-theme-btn::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  transition: border-color 0.2s ease;
+}
+
+.dark .color-theme-btn.active::after {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* === CORREÇÃO PARA BOTÕES COM POSIÇÃO RELATIVA === */
+.dark .color-theme-btn {
+  position: relative;
+}
+
+/* === MELHORIAS PARA CONTRASTE === */
+.dark .color-theme-btn {
+  /* Garantir que as cores sejam sempre vibrantes */
+  filter: brightness(1.1) saturate(1.2);
+}
+
+/* === CORREÇÃO ESPECÍFICA PARA O PROBLEMA === */
+.dark button.color-theme-btn {
+  /* Força aplicação das cores específicas */
+}
+
+.dark button.color-theme-btn[data-theme="purple"],
+.dark button.color-theme-btn[data-theme="orange"] {
+  /* Correção específica para os botões que estão cinza */
+  background-color: inherit !important;
+  border-color: inherit !important;
+}

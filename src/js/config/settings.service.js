@@ -14,12 +14,12 @@ export async function loadBudgetInvitations(userId) {
   if (!userId) return [];
   try {
     console.log('[DEBUG] Carregando convites para userId:', userId);
-    
+
     // Buscar convites por invitedUserId (sem filtro de status para evitar índice composto)
     const q1 = query(collection(db, 'budgetInvitations'), where('invitedUserId', '==', userId));
     const snapshot1 = await getDocs(q1);
     console.log('[DEBUG] Convites por invitedUserId:', snapshot1.docs.length);
-    
+
     // Também buscar por email (para compatibilidade)
     const user = window.appState?.currentUser;
     let invitations;
@@ -27,7 +27,7 @@ export async function loadBudgetInvitations(userId) {
       const q2 = query(collection(db, 'budgetInvitations'), where('invitedUserEmail', '==', user.email));
       const snapshot2 = await getDocs(q2);
       console.log('[DEBUG] Convites por email:', snapshot2.docs.length);
-      
+
       // Combinar resultados únicos
       const allInvitations = new Map();
       [...snapshot1.docs, ...snapshot2.docs].forEach(doc => {
@@ -64,13 +64,13 @@ export async function loadBudgetInvitations(userId) {
     return invitations;
   } catch (error) {
     console.error('Erro ao carregar convites de orçamento:', error);
-    
+
     // Se for erro de permissão, retornar array vazio em vez de falhar
     if (error.code === 'permission-denied') {
       console.warn('Permissões insuficientes para carregar convites, retornando array vazio');
       return [];
     }
-    
+
     throw error;
   }
 }
@@ -88,13 +88,13 @@ export async function loadSentBudgetInvitations(budgetId) {
     return snapshot.docs.map(d => ({ id: d.id, ...d.data() })).filter(inv => inv.status === 'pending');
   } catch (error) {
     console.error('Erro ao carregar convites enviados:', error);
-    
+
     // Se for erro de permissão, retornar array vazio em vez de falhar
     if (error.code === 'permission-denied') {
       console.warn('Permissões insuficientes para carregar convites enviados, retornando array vazio');
       return [];
     }
-    
+
     throw error;
   }
 }
@@ -111,24 +111,24 @@ export async function acceptBudgetInvitation(invitationId) {
   const invitationSnap = await getDoc(invitationRef);
   const invitationData = invitationSnap.data();
   console.log('[DEBUG] Dados do convite:', invitationData);
-  
+
   if (invitationData && invitationData.budgetId) {
     // Usar o currentUser.uid em vez do invitedUserId do convite
     const currentUserId = window.appState?.currentUser?.uid;
     if (!currentUserId) {
       throw new Error('Usuário não autenticado');
     }
-    
+
     console.log('[DEBUG] Adicionando usuário ao orçamento:', {
       budgetId: invitationData.budgetId,
       currentUserId: currentUserId
     });
-    
+
     const budgetRef = doc(db, 'budgets', invitationData.budgetId);
     await updateDoc(budgetRef, {
       usuariosPermitidos: arrayUnion(currentUserId)
     });
-    
+
     console.log('[DEBUG] Usuário adicionado ao orçamento com sucesso');
   } else {
     console.error('[DEBUG] Dados do convite inválidos:', {

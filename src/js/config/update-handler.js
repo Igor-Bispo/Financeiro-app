@@ -1,7 +1,7 @@
 // NOVA LÓGICA SIMPLIFICADA PARA BOTÃO DE ATUALIZAÇÕES
 export function showUpdateModal() {
   console.log('🔄 [NOVA LÓGICA] Mostrando modal de atualizações...');
-  
+
   // Criar modal HTML diretamente
   const modalHTML = `
     <div id="update-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -46,26 +46,26 @@ export function showUpdateModal() {
       </div>
     </div>
   `;
-  
+
   // Adicionar modal ao DOM
   document.body.insertAdjacentHTML('beforeend', modalHTML);
-  
+
   // Adicionar event listeners
   const modal = document.getElementById('update-modal');
   const normalBtn = document.getElementById('normal-update-btn');
   const hardBtn = document.getElementById('hard-refresh-btn');
   const cancelBtn = document.getElementById('cancel-update-btn');
-  
+
   function closeModal() {
     if (modal) {
       modal.remove();
     }
   }
-  
+
   function executeNormalUpdate() {
     console.log('🔄 [NOVA LÓGICA] Executando verificação normal...');
     closeModal();
-    
+
     // Executar verificação normal
     if (typeof window.checkForUpdates === 'function') {
       window.checkForUpdates(false);
@@ -80,11 +80,11 @@ export function showUpdateModal() {
       });
     }
   }
-  
+
   function executeHardRefresh() {
     console.log('🔄 [NOVA LÓGICA] Executando hard refresh...');
     closeModal();
-    
+
     // Executar hard refresh
     if (typeof window.performHardRefresh === 'function') {
       window.performHardRefresh();
@@ -99,20 +99,20 @@ export function showUpdateModal() {
       });
     }
   }
-  
+
   // Event listeners
   if (normalBtn) {
     normalBtn.addEventListener('click', executeNormalUpdate);
   }
-  
+
   if (hardBtn) {
     hardBtn.addEventListener('click', executeHardRefresh);
   }
-  
+
   if (cancelBtn) {
     cancelBtn.addEventListener('click', closeModal);
   }
-  
+
   // Fechar modal ao clicar fora
   if (modal) {
     modal.addEventListener('click', (e) => {
@@ -121,6 +121,6 @@ export function showUpdateModal() {
       }
     });
   }
-  
+
   console.log('🔄 [NOVA LÓGICA] Modal criado e event listeners adicionados!');
 }

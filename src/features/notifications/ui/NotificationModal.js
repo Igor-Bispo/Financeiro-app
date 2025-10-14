@@ -20,7 +20,7 @@ class NotificationModal {
 
   createModalHTML() {
     console.log('[NotificationModal] 🏗️ Criando HTML do modal...');
-    
+
     // Remover modal existente se houver
     const existingModal = document.getElementById('notification-modal');
     if (existingModal) {
@@ -64,11 +64,11 @@ class NotificationModal {
 
     document.body.insertAdjacentHTML('beforeend', modalHTML);
     console.log('[NotificationModal] ✅ HTML do modal inserido no DOM');
-    
+
     // Verificar se foi inserido corretamente
     const insertedModal = document.getElementById('notification-modal');
     console.log('[NotificationModal] 🔍 Modal inserido verificado:', !!insertedModal);
-    
+
     if (insertedModal) {
       console.log('[NotificationModal] 🔍 Modal inserido com sucesso, vinculando eventos...');
       this.bindEvents();
@@ -99,7 +99,7 @@ class NotificationModal {
         this.close();
       });
     }
-    
+
     if (overlay) {
       overlay.addEventListener('click', (e) => {
         if (e.target === overlay) {
@@ -136,7 +136,7 @@ class NotificationModal {
         this.close();
       }
     });
-    
+
     console.log('[NotificationModal] ✅ Eventos vinculados com sucesso');
   }
 
@@ -149,7 +149,7 @@ class NotificationModal {
       queueLength: this.notificationQueue.length,
       isProcessing: this.isProcessing
     });
-    
+
     if (!notification) {
       console.log('[NotificationModal] ❌ Notificação inválida, retornando');
       return;
@@ -176,9 +176,9 @@ class NotificationModal {
     while (this.notificationQueue.length > 0) {
       const notification = this.notificationQueue.shift();
       console.log('[NotificationModal] 📱 Processando notificação da fila:', notification.id);
-      
+
       await this.showNotification(notification);
-      
+
       // Aguardar 3 segundos entre notificações
       if (this.notificationQueue.length > 0) {
         console.log('[NotificationModal] ⏳ Aguardando 3 segundos antes da próxima notificação...');
@@ -209,19 +209,19 @@ class NotificationModal {
     // Mostrar modal
     let modal = document.getElementById('notification-modal');
     console.log('[NotificationModal] 🔍 Modal encontrado:', !!modal);
-    
+
     if (!modal) {
       console.log('[NotificationModal] 🔧 Modal não encontrado, recriando...');
       this.createModalHTML();
       modal = document.getElementById('notification-modal');
       console.log('[NotificationModal] 🔍 Modal após recriação:', !!modal);
-      
+
       if (!modal) {
         console.error('[NotificationModal] ❌ Modal ainda não encontrado após recriação!');
         return;
       }
     }
-    
+
     if (modal) {
       console.log('[NotificationModal] 📱 Mostrando modal...');
       console.log('[NotificationModal] 🔍 Modal antes da modificação:', {
@@ -230,13 +230,13 @@ class NotificationModal {
         visibility: window.getComputedStyle(modal).visibility,
         zIndex: window.getComputedStyle(modal).zIndex
       });
-      
+
       // Remover classe de overlay se existir
       modal.classList.remove('notification-modal-overlay');
-      
+
       // Remover qualquer estilo que possa estar escondendo o modal
       modal.removeAttribute('style');
-      
+
       // Forçar visibilidade com estilos inline
       modal.style.cssText = `
         position: fixed !important;
@@ -255,13 +255,13 @@ class NotificationModal {
         visibility: visible !important;
         pointer-events: auto !important;
       `;
-      
+
       // Forçar exibição também via atributo
       modal.setAttribute('style', modal.style.cssText);
-      
+
       // Adicionar classe de visibilidade
       modal.classList.add('notification-modal-show');
-      
+
       console.log('[NotificationModal] 🎨 Estilos aplicados, verificando resultado...');
       console.log('[NotificationModal] 🔍 Modal após aplicação de estilos:', {
         display: window.getComputedStyle(modal).display,
@@ -270,7 +270,7 @@ class NotificationModal {
         zIndex: window.getComputedStyle(modal).zIndex,
         position: window.getComputedStyle(modal).position
       });
-      
+
       console.log('[NotificationModal] 🎨 Estilos inline aplicados');
       console.log('[NotificationModal] 📊 Modal computed styles:', {
         display: window.getComputedStyle(modal).display,
@@ -279,24 +279,24 @@ class NotificationModal {
         zIndex: window.getComputedStyle(modal).zIndex,
         pointerEvents: window.getComputedStyle(modal).pointerEvents
       });
-      
+
       // Log adicional para debug
       console.log('[NotificationModal] 🔍 Modal element:', modal);
       console.log('[NotificationModal] 🔍 Modal parent:', modal.parentNode);
       console.log('[NotificationModal] 🔍 Modal in DOM:', document.contains(modal));
-      
+
       // Verificar se o container está visível
       const container = modal.querySelector('.notification-modal-container');
       if (container) {
         // Detectar tema atual
-        const isDarkTheme = document.body.classList.contains('dark') || 
+        const isDarkTheme = document.body.classList.contains('dark') ||
                            document.documentElement.classList.contains('dark') ||
                            window.matchMedia('(prefers-color-scheme: dark)').matches;
-        
+
         const bgColor = isDarkTheme ? '#1f2937' : 'white';
         const textColor = isDarkTheme ? '#f9fafb' : '#111827';
         const borderColor = isDarkTheme ? '#374151' : '#e5e7eb';
-        
+
         container.style.cssText = `
           background: ${bgColor} !important;
           color: ${textColor} !important;
@@ -310,26 +310,26 @@ class NotificationModal {
           transform: scale(1) translateY(0) !important;
           opacity: 1 !important;
         `;
-        
+
         // Aplicar cores nos elementos de texto
         const titleEl = container.querySelector('#notification-modal-title');
         const timeEl = container.querySelector('#notification-modal-time');
         const messageEl = container.querySelector('#notification-modal-message');
         const detailsEl = container.querySelector('#notification-modal-details');
-        
+
         if (titleEl) titleEl.style.color = textColor;
         if (timeEl) timeEl.style.color = isDarkTheme ? '#9ca3af' : '#6b7280';
         if (messageEl) messageEl.style.color = textColor;
         if (detailsEl) detailsEl.style.color = isDarkTheme ? '#d1d5db' : '#374151';
-        
+
         console.log('[NotificationModal] 🎨 Container estilizado para tema:', isDarkTheme ? 'escuro' : 'claro');
       }
-      
+
       // Animação de entrada
       setTimeout(() => {
         console.log('[NotificationModal] ✨ Adicionando classe de animação...');
         modal.classList.add('notification-modal-show');
-        
+
         // Verificar se a classe foi adicionada
         console.log('[NotificationModal] 🔍 Classe notification-modal-show adicionada:', modal.classList.contains('notification-modal-show'));
       }, 10);
@@ -344,11 +344,11 @@ class NotificationModal {
       console.log('[NotificationModal] 🔍 Timer executado, modal ainda aberto?', this.isOpen);
       this.close();
     }, 8000);
-    
+
     console.log('[NotificationModal] ⏰ Timer de auto-fechamento configurado para 8 segundos');
-    
+
     console.log('[NotificationModal] ✅ Modal exibido com sucesso');
-    
+
     // Verificação final
     setTimeout(() => {
       const finalModal = document.getElementById('notification-modal');
@@ -374,7 +374,7 @@ class NotificationModal {
     if (!iconEl || !titleEl || !timeEl || !contentEl) return;
 
     // Detectar tema atual
-    const isDarkTheme = document.body.classList.contains('dark') || 
+    const isDarkTheme = document.body.classList.contains('dark') ||
                        document.documentElement.classList.contains('dark') ||
                        window.matchMedia('(prefers-color-scheme: dark)').matches;
 
@@ -413,10 +413,10 @@ class NotificationModal {
     };
 
     // Data/hora
-    const createdAt = notification.createdAt?.toDate ? 
-      notification.createdAt.toDate() : 
+    const createdAt = notification.createdAt?.toDate ?
+      notification.createdAt.toDate() :
       new Date(notification.createdAt);
-    
+
     const timeStr = createdAt.toLocaleString('pt-BR', {
       day: '2-digit',
       month: '2-digit',
@@ -431,7 +431,7 @@ class NotificationModal {
     titleEl.style.color = textColor;
     timeEl.textContent = timeStr;
     timeEl.style.color = secondaryTextColor;
-    
+
     // Conteúdo da notificação com informações contextuais
     const contextualContent = this.generateContextualContent(notification, textColor, detailsTextColor);
     contentEl.innerHTML = contextualContent;
@@ -439,15 +439,15 @@ class NotificationModal {
 
   generateContextualContent(notification, textColor, detailsTextColor) {
     // Detectar tema atual
-    const isDarkTheme = document.body.classList.contains('dark') || 
+    const isDarkTheme = document.body.classList.contains('dark') ||
                        document.documentElement.classList.contains('dark') ||
                        window.matchMedia('(prefers-color-scheme: dark)').matches;
 
     const formatCurrency = (value) => {
       if (typeof value === 'number') {
-        return new Intl.NumberFormat('pt-BR', { 
-          style: 'currency', 
-          currency: 'BRL' 
+        return new Intl.NumberFormat('pt-BR', {
+          style: 'currency',
+          currency: 'BRL'
         }).format(value);
       }
       return value;
@@ -460,8 +460,8 @@ class NotificationModal {
     };
 
     switch (notification.type) {
-      case 'new_transaction':
-        return `
+    case 'new_transaction':
+      return `
           <div class="notification-modal-message" style="color: ${textColor}; margin-bottom: 12px;">
             <strong>Nova transação adicionada:</strong>
           </div>
@@ -484,13 +484,13 @@ class NotificationModal {
           </div>
         `;
 
-      case 'updated_transaction':
-        const changes = Array.isArray(notification.changes) ? notification.changes : [];
-        const prev = notification.prev;
-        
-        let changeDetails = '';
-        if (changes.includes('valor') && prev?.valor && notification.transactionValor) {
-          changeDetails += `
+    case 'updated_transaction':
+      const changes = Array.isArray(notification.changes) ? notification.changes : [];
+      const prev = notification.prev;
+
+      let changeDetails = '';
+      if (changes.includes('valor') && prev?.valor && notification.transactionValor) {
+        changeDetails += `
             <div style="margin-bottom: 8px;">
               <strong>💰 Valor alterado:</strong> 
               <span style="color: #ef4444;">${formatCurrency(prev.valor)}</span> 
@@ -498,9 +498,9 @@ class NotificationModal {
               <span style="color: #10b981;">${formatCurrency(notification.transactionValor)}</span>
             </div>
           `;
-        }
-        if (changes.includes('descricao') && prev?.descricao) {
-          changeDetails += `
+      }
+      if (changes.includes('descricao') && prev?.descricao) {
+        changeDetails += `
             <div style="margin-bottom: 8px;">
               <strong>📝 Descrição alterada:</strong> 
               <span style="color: #ef4444;">"${prev.descricao}"</span> 
@@ -508,9 +508,9 @@ class NotificationModal {
               <span style="color: #10b981;">"${notification.transactionDescricao}"</span>
             </div>
           `;
-        }
-        if (changes.includes('categoria') && prev?.categoria) {
-          changeDetails += `
+      }
+      if (changes.includes('categoria') && prev?.categoria) {
+        changeDetails += `
             <div style="margin-bottom: 8px;">
               <strong>📁 Categoria alterada:</strong> 
               <span style="color: #ef4444;">${prev.categoria}</span> 
@@ -518,9 +518,9 @@ class NotificationModal {
               <span style="color: #10b981;">${notification.transactionCategoria}</span>
             </div>
           `;
-        }
-        if (changes.includes('data') && prev?.data) {
-          changeDetails += `
+      }
+      if (changes.includes('data') && prev?.data) {
+        changeDetails += `
             <div style="margin-bottom: 8px;">
               <strong>📅 Data alterada:</strong> 
               <span style="color: #ef4444;">${formatDate(prev.data)}</span> 
@@ -528,9 +528,9 @@ class NotificationModal {
               <span style="color: #10b981;">${formatDate(notification.transactionData)}</span>
             </div>
           `;
-        }
-        if (changes.includes('tipo') && prev?.tipo) {
-          changeDetails += `
+      }
+      if (changes.includes('tipo') && prev?.tipo) {
+        changeDetails += `
             <div style="margin-bottom: 8px;">
               <strong>💳 Tipo alterado:</strong> 
               <span style="color: #ef4444;">${prev.tipo}</span> 
@@ -538,9 +538,9 @@ class NotificationModal {
               <span style="color: #10b981;">${notification.transactionTipo}</span>
             </div>
           `;
-        }
+      }
 
-        return `
+      return `
           <div class="notification-modal-message" style="color: ${textColor}; margin-bottom: 12px;">
             <strong>Transação atualizada:</strong>
           </div>
@@ -556,8 +556,8 @@ class NotificationModal {
           </div>
         `;
 
-      case 'deleted_transaction':
-        return `
+    case 'deleted_transaction':
+      return `
           <div class="notification-modal-message" style="color: ${textColor}; margin-bottom: 12px;">
             <strong>Transação excluída:</strong>
           </div>
@@ -577,8 +577,8 @@ class NotificationModal {
           </div>
         `;
 
-      case 'recorrente_reminder':
-        return `
+    case 'recorrente_reminder':
+      return `
           <div class="notification-modal-message" style="color: ${textColor}; margin-bottom: 12px;">
             <strong>Lembrete de despesa recorrente:</strong>
           </div>
@@ -595,8 +595,8 @@ class NotificationModal {
           </div>
         `;
 
-      case 'category_added':
-        return `
+    case 'category_added':
+      return `
           <div class="notification-modal-message" style="color: ${textColor}; margin-bottom: 12px;">
             <strong>Nova categoria criada:</strong>
           </div>
@@ -616,13 +616,13 @@ class NotificationModal {
           </div>
         `;
 
-      case 'category_updated':
-        const categoryChanges = notification.changes || {};
-        const categoryPrev = notification.prev;
-        
-        let categoryChangeDetails = '';
-        if (categoryChanges.nome && categoryPrev?.nome !== undefined) {
-          categoryChangeDetails += `
+    case 'category_updated':
+      const categoryChanges = notification.changes || {};
+      const categoryPrev = notification.prev;
+
+      let categoryChangeDetails = '';
+      if (categoryChanges.nome && categoryPrev?.nome !== undefined) {
+        categoryChangeDetails += `
             <div style="margin-bottom: 8px;">
               <strong>📁 Nome alterado:</strong> 
               <span style="color: #ef4444;">"${categoryPrev.nome || 'Sem nome'}"</span> 
@@ -630,9 +630,9 @@ class NotificationModal {
               <span style="color: #10b981;">"${notification.categoryNome || 'Sem nome'}"</span>
             </div>
           `;
-        }
-        if (categoryChanges.tipo && categoryPrev?.tipo !== undefined) {
-          categoryChangeDetails += `
+      }
+      if (categoryChanges.tipo && categoryPrev?.tipo !== undefined) {
+        categoryChangeDetails += `
             <div style="margin-bottom: 8px;">
               <strong>💳 Tipo alterado:</strong> 
               <span style="color: #ef4444;">${categoryPrev.tipo === 'receita' ? 'Receita' : 'Despesa'}</span> 
@@ -640,11 +640,11 @@ class NotificationModal {
               <span style="color: #10b981;">${notification.categoryTipo === 'receita' ? 'Receita' : 'Despesa'}</span>
             </div>
           `;
-        }
-        if (categoryChanges.limite && categoryPrev?.limite !== undefined) {
-          const prevLimit = categoryPrev.limite !== null && categoryPrev.limite !== undefined ? formatCurrency(categoryPrev.limite) : 'Sem limite';
-          const newLimit = notification.categoryLimite !== null && notification.categoryLimite !== undefined ? formatCurrency(notification.categoryLimite) : 'Sem limite';
-          categoryChangeDetails += `
+      }
+      if (categoryChanges.limite && categoryPrev?.limite !== undefined) {
+        const prevLimit = categoryPrev.limite !== null && categoryPrev.limite !== undefined ? formatCurrency(categoryPrev.limite) : 'Sem limite';
+        const newLimit = notification.categoryLimite !== null && notification.categoryLimite !== undefined ? formatCurrency(notification.categoryLimite) : 'Sem limite';
+        categoryChangeDetails += `
             <div style="margin-bottom: 8px;">
               <strong>💰 Limite alterado:</strong> 
               <span style="color: #ef4444;">${prevLimit}</span> 
@@ -652,9 +652,9 @@ class NotificationModal {
               <span style="color: #10b981;">${newLimit}</span>
             </div>
           `;
-        }
-        if (categoryChanges.cor && categoryPrev?.cor) {
-          categoryChangeDetails += `
+      }
+      if (categoryChanges.cor && categoryPrev?.cor) {
+        categoryChangeDetails += `
             <div style="margin-bottom: 8px;">
               <strong>🎨 Cor alterada:</strong> 
               <span style="background: ${categoryPrev.cor}; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.8em; margin-right: 8px;">${categoryPrev.cor}</span>
@@ -662,9 +662,9 @@ class NotificationModal {
               <span style="background: ${notification.categoryColor}; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.8em;">${notification.categoryColor}</span>
             </div>
           `;
-        }
+      }
 
-        return `
+      return `
           <div class="notification-modal-message" style="color: ${textColor}; margin-bottom: 12px;">
             <strong>Categoria atualizada:</strong>
           </div>
@@ -686,8 +686,8 @@ class NotificationModal {
           </div>
         `;
 
-      case 'category_deleted':
-        return `
+    case 'category_deleted':
+      return `
           <div class="notification-modal-message" style="color: ${textColor}; margin-bottom: 12px;">
             <strong>Categoria excluída:</strong>
           </div>
@@ -707,14 +707,14 @@ class NotificationModal {
           </div>
         `;
 
-      case 'new_recorrente':
-        const parcelasInfo = notification.recorrenteParcelasTotal && notification.recorrenteParcelasTotal > 1 
-          ? `<div style="margin-bottom: 8px;">
+    case 'new_recorrente':
+      const parcelasInfo = notification.recorrenteParcelasTotal && notification.recorrenteParcelasTotal > 1
+        ? `<div style="margin-bottom: 8px;">
                <strong>🔢 Parcelas:</strong> ${notification.recorrenteParcelasRestantes || notification.recorrenteParcelasTotal}/${notification.recorrenteParcelasTotal}
              </div>`
-          : '';
-        
-        return `
+        : '';
+
+      return `
           <div class="notification-modal-message" style="color: ${textColor}; margin-bottom: 12px;">
             <strong>Nova despesa recorrente criada:</strong>
           </div>
@@ -738,13 +738,13 @@ class NotificationModal {
           </div>
         `;
 
-      case 'updated_recorrente':
-        const recorrenteChanges = Array.isArray(notification.changes) ? notification.changes : [];
-        const recorrentePrev = notification.prev;
-        
-        let recorrenteChangeDetails = '';
-        if (recorrenteChanges.includes('nome') && recorrentePrev?.nome) {
-          recorrenteChangeDetails += `
+    case 'updated_recorrente':
+      const recorrenteChanges = Array.isArray(notification.changes) ? notification.changes : [];
+      const recorrentePrev = notification.prev;
+
+      let recorrenteChangeDetails = '';
+      if (recorrenteChanges.includes('nome') && recorrentePrev?.nome) {
+        recorrenteChangeDetails += `
             <div style="margin-bottom: 8px;">
               <strong>📝 Nome alterado:</strong> 
               <span style="color: #ef4444;">"${recorrentePrev.nome}"</span> 
@@ -752,9 +752,9 @@ class NotificationModal {
               <span style="color: #10b981;">"${notification.recorrenteNome}"</span>
             </div>
           `;
-        }
-        if (recorrenteChanges.includes('valor') && recorrentePrev?.valor) {
-          recorrenteChangeDetails += `
+      }
+      if (recorrenteChanges.includes('valor') && recorrentePrev?.valor) {
+        recorrenteChangeDetails += `
             <div style="margin-bottom: 8px;">
               <strong>💰 Valor alterado:</strong> 
               <span style="color: #ef4444;">${formatCurrency(recorrentePrev.valor)}</span> 
@@ -762,9 +762,9 @@ class NotificationModal {
               <span style="color: #10b981;">${formatCurrency(notification.recorrenteValor)}</span>
             </div>
           `;
-        }
-        if (recorrenteChanges.includes('frequencia') && recorrentePrev?.frequencia) {
-          recorrenteChangeDetails += `
+      }
+      if (recorrenteChanges.includes('frequencia') && recorrentePrev?.frequencia) {
+        recorrenteChangeDetails += `
             <div style="margin-bottom: 8px;">
               <strong>📅 Frequência alterada:</strong> 
               <span style="color: #ef4444;">${recorrentePrev.frequencia}</span> 
@@ -772,9 +772,9 @@ class NotificationModal {
               <span style="color: #10b981;">${notification.recorrenteFrequencia}</span>
             </div>
           `;
-        }
-        if (recorrenteChanges.includes('categoria') && recorrentePrev?.categoria) {
-          recorrenteChangeDetails += `
+      }
+      if (recorrenteChanges.includes('categoria') && recorrentePrev?.categoria) {
+        recorrenteChangeDetails += `
             <div style="margin-bottom: 8px;">
               <strong>📁 Categoria alterada:</strong> 
               <span style="color: #ef4444;">${recorrentePrev.categoria}</span> 
@@ -782,9 +782,9 @@ class NotificationModal {
               <span style="color: #10b981;">${notification.recorrenteCategoria}</span>
             </div>
           `;
-        }
-        if (recorrenteChanges.includes('descricao') && recorrentePrev?.descricao) {
-          recorrenteChangeDetails += `
+      }
+      if (recorrenteChanges.includes('descricao') && recorrentePrev?.descricao) {
+        recorrenteChangeDetails += `
             <div style="margin-bottom: 8px;">
               <strong>📄 Descrição alterada:</strong> 
               <span style="color: #ef4444;">"${recorrentePrev.descricao}"</span> 
@@ -792,9 +792,9 @@ class NotificationModal {
               <span style="color: #10b981;">"${notification.recorrenteDescricao}"</span>
             </div>
           `;
-        }
-        if (recorrenteChanges.includes('parcelasRestantes') && recorrentePrev?.parcelasRestantes !== undefined) {
-          recorrenteChangeDetails += `
+      }
+      if (recorrenteChanges.includes('parcelasRestantes') && recorrentePrev?.parcelasRestantes !== undefined) {
+        recorrenteChangeDetails += `
             <div style="margin-bottom: 8px;">
               <strong>🔢 Parcelas restantes alteradas:</strong> 
               <span style="color: #ef4444;">${recorrentePrev.parcelasRestantes || 'Ilimitadas'}</span> 
@@ -802,9 +802,9 @@ class NotificationModal {
               <span style="color: #10b981;">${notification.recorrenteParcelasRestantes || 'Ilimitadas'}</span>
             </div>
           `;
-        }
-        if (recorrenteChanges.includes('parcelasTotal') && recorrentePrev?.parcelasTotal !== undefined) {
-          recorrenteChangeDetails += `
+      }
+      if (recorrenteChanges.includes('parcelasTotal') && recorrentePrev?.parcelasTotal !== undefined) {
+        recorrenteChangeDetails += `
             <div style="margin-bottom: 8px;">
               <strong>🔢 Total de parcelas alterado:</strong> 
               <span style="color: #ef4444;">${recorrentePrev.parcelasTotal || 'Ilimitadas'}</span> 
@@ -812,9 +812,9 @@ class NotificationModal {
               <span style="color: #10b981;">${notification.recorrenteParcelasTotal || 'Ilimitadas'}</span>
             </div>
           `;
-        }
+      }
 
-        return `
+      return `
           <div class="notification-modal-message" style="color: ${textColor}; margin-bottom: 12px;">
             <strong>Despesa recorrente atualizada:</strong>
           </div>
@@ -830,14 +830,14 @@ class NotificationModal {
           </div>
         `;
 
-      case 'deleted_recorrente':
-        const deletedParcelasInfo = notification.recorrenteParcelasTotal && notification.recorrenteParcelasTotal > 1 
-          ? `<div style="margin-bottom: 8px;">
+    case 'deleted_recorrente':
+      const deletedParcelasInfo = notification.recorrenteParcelasTotal && notification.recorrenteParcelasTotal > 1
+        ? `<div style="margin-bottom: 8px;">
                <strong>🔢 Parcelas:</strong> ${notification.recorrenteParcelasRestantes || notification.recorrenteParcelasTotal}/${notification.recorrenteParcelasTotal}
              </div>`
-          : '';
-        
-        return `
+        : '';
+
+      return `
           <div class="notification-modal-message" style="color: ${textColor}; margin-bottom: 12px;">
             <strong>Despesa recorrente excluída:</strong>
           </div>
@@ -861,8 +861,8 @@ class NotificationModal {
           </div>
         `;
 
-      case 'test_notification':
-        return `
+    case 'test_notification':
+      return `
           <div class="notification-modal-message" style="color: ${textColor}; margin-bottom: 12px;">
             <strong>Notificação de teste:</strong>
           </div>
@@ -873,8 +873,8 @@ class NotificationModal {
           </div>
         `;
 
-      default:
-        return `
+    default:
+      return `
           <div class="notification-modal-message" style="color: ${textColor};">
             ${notification.message || 'Você tem uma nova notificação.'}
           </div>
@@ -890,19 +890,19 @@ class NotificationModal {
   async markAsRead(notificationId) {
     try {
       await markOneAsRead(notificationId);
-      
+
       // Emitir evento para atualizar a interface
-      eventBus.emit('snackbar:show', { 
-        message: 'Notificação marcada como lida', 
-        type: 'success', 
-        duration: 2000 
+      eventBus.emit('snackbar:show', {
+        message: 'Notificação marcada como lida',
+        type: 'success',
+        duration: 2000
       });
     } catch (error) {
       console.error('[NotificationModal] Erro ao marcar como lida:', error);
-      eventBus.emit('snackbar:show', { 
-        message: 'Erro ao marcar notificação como lida', 
-        type: 'error', 
-        duration: 3000 
+      eventBus.emit('snackbar:show', {
+        message: 'Erro ao marcar notificação como lida',
+        type: 'error',
+        duration: 3000
       });
     }
   }
@@ -936,14 +936,14 @@ class NotificationModal {
       hasAutoCloseTimer: !!this.autoCloseTimer,
       currentNotification: !!this.currentNotification
     });
-    
+
     this.isOpen = false;
     this.currentNotification = null;
 
     const modal = document.getElementById('notification-modal');
     if (modal) {
       modal.classList.remove('notification-modal-show');
-      
+
       setTimeout(() => {
         modal.style.display = 'none';
         modal.style.opacity = '0';

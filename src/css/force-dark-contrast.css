@@ -1,0 +1,87 @@
+/* ========================================
+   FORÇA CONTRASTE MÁXIMO - MODO ESCURO
+   ======================================== */
+
+/* === FORÇA FUNDOS NEUTROS EM TODOS OS CARDS === */
+.dark *[class*="bg-gradient-to"],
+.dark *[class*="from-"],
+.dark *[class*="to-"] {
+  background: #2d3748 !important;
+  border: 1px solid #4a5568 !important;
+}
+
+/* === FORÇA TEXTOS BRANCOS EM TODOS OS ELEMENTOS === */
+.dark *[class*="text-"]:not(.text-white):not(.text-gray-100):not(.text-gray-200) {
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8) !important;
+}
+
+/* === ESPECÍFICO PARA CARDS DE META DIÁRIA === */
+.dark .bg-blue-50,
+.dark .bg-green-50,
+.dark .bg-yellow-50,
+.dark .bg-orange-50,
+.dark .bg-red-50 {
+  background: #2d3748 !important;
+  border: 1px solid #4a5568 !important;
+}
+
+/* === ESPECÍFICO PARA ALERTAS === */
+.dark .bg-red-50,
+.dark .bg-orange-50,
+.dark .bg-yellow-50 {
+  background: #2d3748 !important;
+  border: 1px solid #e53e3e !important;
+}
+
+/* === FORÇA BORDAS COLORIDAS PARA NEUTRAS === */
+.dark .border-blue-500,
+.dark .border-green-500,
+.dark .border-yellow-500,
+.dark .border-orange-500,
+.dark .border-red-500 {
+  border-color: #4a5568 !important;
+}
+
+/* === EXCEÇÕES PARA VALORES MONETÁRIOS === */
+.dark .text-green-600,
+.dark .dark\:text-green-400 {
+  color: #68d391 !important;
+  text-shadow: none !important;
+}
+
+.dark .text-red-600,
+.dark .dark\:text-red-400 {
+  color: #fc8181 !important;
+  text-shadow: none !important;
+}
+
+.dark .text-blue-600,
+.dark .dark\:text-blue-400 {
+  color: #63b3ed !important;
+  text-shadow: none !important;
+}
+
+/* === FORÇA APLICAÇÃO EM ELEMENTOS RESISTENTES === */
+.dark div[style*="background"],
+.dark div[style*="gradient"] {
+  background: #2d3748 !important;
+}
+
+/* === CORREÇÃO PARA ELEMENTOS COM MÚLTIPLAS CLASSES === */
+.dark .bg-gradient-to-r.from-blue-50.to-indigo-50,
+.dark .bg-gradient-to-r.from-green-50.to-emerald-50,
+.dark .bg-gradient-to-r.from-yellow-50.to-orange-50,
+.dark .bg-gradient-to-r.from-red-50.to-orange-50 {
+  background: #2d3748 !important;
+  border: 1px solid #4a5568 !important;
+}
+
+/* === FORÇA APLICAÇÃO EM TODOS OS ELEMENTOS === */
+.dark * {
+  /* Aplicar apenas se não tiver cor específica definida */
+}
+
+.dark *:not(.text-green-600):not(.text-red-600):not(.text-blue-600):not(.dark\:text-green-400):not(.dark\:text-red-400):not(.dark\:text-blue-400) {
+  /* Força branco apenas se não for um valor monetário */
+}

@@ -11,46 +11,50 @@ export function renderFAB() {
     return;
   }
 
+  // Se já existe um FAB válido renderizado, evitar recriar
+  try {
+    if (window.currentFAB && fabContainer.firstChild === window.currentFAB) {
+      // Já montado
+      return;
+    }
+  } catch {}
+
   console.log('✅ Container FAB encontrado, criando FAB corrigido...');
 
   try {
-    // Limpar container e event listeners antigos
+    // Limpar container e event listeners antigos (se trocar instância)
     if (window.currentFAB && window.currentFAB.cleanup) {
-      console.log('🧹 Limpando FAB anterior...');
-      window.currentFAB.cleanup();
+      try { window.currentFAB.cleanup(); } catch {}
     }
-
-    fabContainer.innerHTML = '';
+    try { fabContainer.innerHTML = ''; } catch {}
 
     // Criar FAB corrigido
     console.log('🔧 Criando FAB corrigido...');
-    import('@js/ui/FAB.js').then(({ FAB }) => {
-      const fab = FAB();
-      console.log('🔧 FAB corrigido criado:', fab);
-      fabContainer.appendChild(fab);
-      console.log('🔧 FAB corrigido adicionado ao container');
-
-      // Armazenar referência para limpeza
-      window.currentFAB = fab;
+    import('@js/ui/FAB.js').then(({ initFAB }) => {
+      initFAB();
+      console.log('🔧 FAB corrigido inicializado');
+      
+      // Buscar o FAB criado no DOM
+      const fab = document.getElementById('fab-main');
+      if (fab) {
+        console.log('🔧 FAB corrigido encontrado no DOM:', fab);
+        // Armazenar referência para limpeza
+        window.currentFAB = fab;
+      } else {
+        console.error('❌ FAB não foi criado corretamente');
+      }
 
       console.log('✅ FAB corrigido criado e adicionado ao DOM');
 
       // Verificar se o FAB está visível e funcionando
       setTimeout(() => {
         const fabMain = document.getElementById('fab-main');
-        const fabContainerMain = document.getElementById('fab-container-main');
         const fabActions = document.getElementById('fab-actions');
 
         if (fabMain) {
           console.log('✅ FAB principal encontrado e visível');
         } else {
           console.error('❌ FAB principal não encontrado');
-        }
-
-        if (fabContainerMain) {
-          console.log('✅ Container FAB principal encontrado');
-        } else {
-          console.error('❌ Container FAB principal não encontrado');
         }
 
         if (fabActions) {
@@ -92,6 +96,13 @@ export function renderBottomNav(activeRoute) {
     console.error('❌ Elemento bottom-nav não encontrado');
     return;
   }
+
+  // Evitar reconstrução se já estiver montado para mesma rota
+  try {
+    if (bottomNav.dataset.activeRoute === activeRoute && bottomNav.querySelector('.nav-btn')) {
+      return;
+    }
+  } catch {}
 
   // Se não há botões, monte o bottom-nav e só atualize o estado ativo após a montagem
   if (!bottomNav.querySelector('.nav-btn')) {

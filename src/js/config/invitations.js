@@ -1,5 +1,5 @@
 // invitations.js - módulo para gerenciamento de convites
-import { collection, query, where, getDocs, getDoc, updateDoc, addDoc, serverTimestamp, arrayUnion, doc } from 'firebase/firestore';
+import { collection, query, where, getDocs, getDoc, updateDoc, addDoc as _addDoc, serverTimestamp, arrayUnion, doc } from 'firebase/firestore';
 import { db } from '../firebase.js';
 
 export function normalizeInvitationStatus(s) {

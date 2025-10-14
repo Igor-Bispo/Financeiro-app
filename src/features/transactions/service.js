@@ -43,7 +43,7 @@ export async function loadTransactions(budgetId, userId) {
         window.appState.transactions = transactions;
       }
     } catch {}
-      console.log('[DEBUG] Transações carregadas para o orçamento', budgetId, transactions);
+    console.log('[DEBUG] Transações carregadas para o orçamento', budgetId, transactions);
     return transactions;
   } catch (error) {
     transactionsStore.setState({ error: error.message, loading: false });
@@ -58,8 +58,8 @@ export function startTransactionsListener(budgetId, userId) {
 
   const unsubscribe = transactionsRepo.listenToChanges({ budgetId, userId }, (transactions) => {
     transactionsStore.setState({ transactions });
-  console.log('🚦 Emitindo transactions:updated', { budgetId, transactions });
-  eventBus.emit('transactions:updated', { budgetId, transactions });
+    console.log('🚦 Emitindo transactions:updated', { budgetId, transactions });
+    eventBus.emit('transactions:updated', { budgetId, transactions });
   });
 
   listeners.set(key, unsubscribe);
@@ -157,15 +157,27 @@ export async function addTransactionWithNotifications(transactionData) {
     console.log('✅ Transação adicionada com ID:', newId);
     
     // Enviar notificações para membros do orçamento (exceto o autor) - com fallback de import direto
+    console.log('📧 [Transactions] Tentando enviar notificações...');
+    console.log('📧 [Transactions] Budget ID:', budget.id);
+    console.log('📧 [Transactions] Sender UID:', user.uid);
+    console.log('📧 [Transactions] Transaction:', { ...transaction, id: newId });
+    
     try {
       if (typeof window !== 'undefined' && typeof window.sendTransactionNotification === 'function') {
+        console.log('📧 [Transactions] Usando window.sendTransactionNotification (global)');
         await window.sendTransactionNotification(budget.id, user.uid, { ...transaction, id: newId });
+        console.log('✅ [Transactions] Notificações enviadas via window.sendTransactionNotification');
       } else {
+        console.log('📧 [Transactions] window.sendTransactionNotification não disponível, usando import');
+        console.log('📧 [Transactions] typeof window.sendTransactionNotification:', typeof window.sendTransactionNotification);
         const { sendTransactionNotification } = await import('@features/notifications/NotificationService.js');
+        console.log('📧 [Transactions] sendTransactionNotification importada:', typeof sendTransactionNotification);
         await sendTransactionNotification(budget.id, user.uid, { ...transaction, id: newId });
+        console.log('✅ [Transactions] Notificações enviadas via import');
       }
     } catch (notifyErr) {
-      console.warn('Não foi possível enviar notificações de nova transação:', notifyErr);
+      console.error('❌ [Transactions] ERRO ao enviar notificações:', notifyErr);
+      console.error('❌ [Transactions] Stack:', notifyErr.stack);
     }
     
     // Verificar limites de categoria
@@ -244,15 +256,27 @@ export async function updateTransactionWithNotifications(transactionId, transact
           }
         }
         const payload = { id: transactionId, ...transactionData, prev: prev ? { descricao: prev.descricao, valor: prev.valor, categoriaId: prev.categoriaId, tipo: prev.tipo } : null, changeSet };
+        
+        console.log('📧 [Transactions] Tentando enviar notificação de ATUALIZAÇÃO...');
+        console.log('📧 [Transactions] Budget ID:', budgetId);
+        console.log('📧 [Transactions] Sender UID:', user.uid);
+        console.log('📧 [Transactions] Payload:', payload);
+        
         if (typeof window !== 'undefined' && typeof window.sendTransactionUpdatedNotification === 'function') {
+          console.log('📧 [Transactions] Usando window.sendTransactionUpdatedNotification (global)');
           await window.sendTransactionUpdatedNotification(budgetId, user.uid, payload);
+          console.log('✅ [Transactions] Notificações de atualização enviadas via global');
         } else {
+          console.log('📧 [Transactions] window.sendTransactionUpdatedNotification não disponível, usando import');
           const { sendTransactionUpdatedNotification } = await import('@features/notifications/NotificationService.js');
+          console.log('📧 [Transactions] sendTransactionUpdatedNotification importada:', typeof sendTransactionUpdatedNotification);
           await sendTransactionUpdatedNotification(budgetId, user.uid, payload);
+          console.log('✅ [Transactions] Notificações de atualização enviadas via import');
         }
       }
     } catch (notifyErr) {
-      console.warn('Não foi possível enviar notificações de atualização de transação:', notifyErr);
+      console.error('❌ [Transactions] ERRO ao enviar notificações de atualização:', notifyErr);
+      console.error('❌ [Transactions] Stack:', notifyErr.stack);
     }
     
     // Verificar limites de categoria

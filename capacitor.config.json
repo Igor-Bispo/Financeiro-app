@@ -1,0 +1,43 @@
+{
+	"appId": "com.financeiro.app",
+	"appName": "Controle Financeiro",
+	"webDir": "dist",
+	"server": {
+		"androidScheme": "https"
+	},
+	"android": {
+		"allowMixedContent": true,
+		"captureInput": true,
+		"webContentsDebuggingEnabled": true
+	},
+	"ios": {
+		"contentInset": "automatic",
+		"scrollEnabled": true
+	},
+	"plugins": {
+		"SplashScreen": {
+			"launchShowDuration": 2000,
+			"backgroundColor": "#1f2937",
+			"showSpinner": true,
+			"androidSpinnerStyle": "small",
+			"spinnerColor": "#ffffff",
+			"launchAutoHide": true,
+			"androidSplashResourceName": "splash"
+		},
+		"GoogleAuth": {
+			"scopes": [
+				"profile",
+				"email"
+			],
+			"serverClientId": "418109336597-mi7u3efmc2g9854r7uboupcc9iru3v5h.apps.googleusercontent.com",
+			"forceCodeForRefreshToken": true
+		},
+		"Network": {
+			"requestTimeout": 30000,
+			"retryLimit": 3
+		},
+		"CapacitorHttp": {
+			"enabled": false
+		}
+	}
+}
