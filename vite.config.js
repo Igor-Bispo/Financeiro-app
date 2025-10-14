@@ -102,12 +102,11 @@ export default defineConfig({
       }
     },
     // Otimizações de build
-    minify: true,
     // Análise de bundle
     reportCompressedSize: true,
     chunkSizeWarningLimit: 2000, // Aumentado para app complexo
     target: 'es2020', // Otimizar para navegadores modernos
-    minify: 'terser', // Melhor compressão
+    minify: 'terser', // Melhor compressão com Terser
     terserOptions: {
       compress: {
         drop_console: !process.env.DEBUG, // Remover console.log em produção
@@ -153,9 +152,9 @@ export default defineConfig({
       'firebase/auth',
       'firebase/firestore',
       '@core/events/eventBus',
-      '@core/store/createStore'
-    ],
-    exclude: ['@core/logger/logger.js'] // Excluir logger para evitar problemas de import
+      '@core/store/createStore',
+      '@core/logger/logger'
+    ]
   },
   
   // Configurações de desenvolvimento

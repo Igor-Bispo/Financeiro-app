@@ -73,10 +73,29 @@ class Logger {
   critical(message, ...args) {
     console.error('🚨 CRITICAL:', message, ...args);
   }
+
+  // Método para definir nível de log dinamicamente
+  setLevel(level) {
+    if (typeof level === 'string') {
+      level = this.levels[level.toUpperCase()];
+    }
+    if (level !== undefined && level >= 0 && level <= 3) {
+      this.currentLevel = level;
+      this.debug(`Logger level set to: ${Object.keys(this.levels)[level]}`);
+    }
+  }
+
+  // Método para obter nível atual
+  getLevel() {
+    return this.currentLevel;
+  }
 }
 
 // Instância singleton
 export const logger = new Logger();
+
+// Exportar função setLevel como named export para compatibilidade
+export const setLevel = (level) => logger.setLevel(level);
 
 // Exportar também como default para compatibilidade
 export default logger;
