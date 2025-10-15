@@ -21,23 +21,28 @@ class CapacitorSpeechRecognition {
         return;
       }
 
-      const { SpeechRecognitionPlugin } = window.Capacitor.Plugins;
+      const { SpeechRecognition } = window.Capacitor.Plugins;
       
-      if (!SpeechRecognitionPlugin) {
-        console.log('⚠️ [CapacitorSpeech] Plugin não encontrado');
+      if (!SpeechRecognition) {
+        console.log('⚠️ [CapacitorSpeech] Plugin SpeechRecognition não encontrado');
         return;
       }
 
       // Verificar se está disponível
-      const result = await SpeechRecognitionPlugin.isAvailable();
+      const result = await SpeechRecognition.available();
       this.isAvailable = result.available;
       
       console.log(`🎤 [CapacitorSpeech] Plugin disponível: ${this.isAvailable}`);
 
       // Configurar listeners para eventos do plugin
-      await SpeechRecognitionPlugin.addListener('speechRecognitionEvent', (event) => {
-        console.log('🎤 [CapacitorSpeech] Evento recebido:', event);
-        this.handleNativeEvent(event);
+      await SpeechRecognition.addListener('partialResults', (result) => {
+        console.log('🎤 [CapacitorSpeech] Resultado parcial:', result);
+        this.handleNativeEvent({ event: 'partial', text: result.matches });
+      });
+
+      await SpeechRecognition.addListener('finalResults', (result) => {
+        console.log('🎤 [CapacitorSpeech] Resultado final:', result);
+        this.handleNativeEvent({ event: 'result', text: result.matches });
       });
 
     } catch (error) {
@@ -99,8 +104,16 @@ class CapacitorSpeechRecognition {
     console.log('🚀 [CapacitorSpeech] Iniciando reconhecimento...');
     
     try {
-      const { SpeechRecognitionPlugin } = window.Capacitor.Plugins;
-      await SpeechRecognitionPlugin.startListening();
+      const { SpeechRecognition } = window.Capacitor.Plugins;
+      await SpeechRecognition.start({
+        language: 'pt-BR',
+        maxResults: 1,
+        prompt: 'Diga o valor e descrição da transação',
+        partialResults: true,
+        popup: false
+      });
+      this.isListening = true;
+      console.log('✅ [CapacitorSpeech] Reconhecimento iniciado');
     } catch (error) {
       console.error('❌ [CapacitorSpeech] Erro ao iniciar:', error);
       throw error;
@@ -115,9 +128,10 @@ class CapacitorSpeechRecognition {
     console.log('🛑 [CapacitorSpeech] Parando reconhecimento...');
     
     try {
-      const { SpeechRecognitionPlugin } = window.Capacitor.Plugins;
-      await SpeechRecognitionPlugin.stopListening();
+      const { SpeechRecognition } = window.Capacitor.Plugins;
+      await SpeechRecognition.stop();
       this.isListening = false;
+      console.log('✅ [CapacitorSpeech] Reconhecimento parado');
     } catch (error) {
       console.error('❌ [CapacitorSpeech] Erro ao parar:', error);
     }

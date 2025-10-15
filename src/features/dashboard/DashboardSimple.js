@@ -136,7 +136,7 @@ export function renderDashboard(container) {
     }
   }
   var saldo = receitas - despesas;
-  var _totalTransacoes = tx.length;
+  // Total de transações (removido variável não utilizada)
 
   // Orçamento: usar valorTotal do orçamento atual, ou somar limites de categorias de despesa
   var orcado = 0;
@@ -167,7 +167,7 @@ export function renderDashboard(container) {
   }
   var totalAlertas = 0;
   var categoriasEmAlerta = [];
-  var saldoTotalCategorias = 0;
+  // var saldoTotalCategorias = 0; // Removido - não utilizado
   var _totalLimitesCategorias = 0;
   var categoriasComLimite = 0;
 
@@ -182,8 +182,7 @@ export function renderDashboard(container) {
       // Calcular saldo para meta diária (apenas categorias de despesa)
       var tipoCat = (cc.tipo || 'despesa');
       if (tipoCat === 'despesa') {
-        var saldoCat = limv - gasto;
-        saldoTotalCategorias += saldoCat;
+        // var saldoCat = limv - gasto; // Removido - não utilizado
         var _totalLimitesCategorias = (_totalLimitesCategorias || 0) + limv;
         categoriasComLimite++;
       }
@@ -211,12 +210,33 @@ export function renderDashboard(container) {
 
   // Calcular dias restantes no mês
   var ultimoDiaDoMes = new Date(year, month, 0).getDate();
-  var diaAtual = new Date().getDate();
+  
+  // Se estivermos visualizando o mês atual, usar a data atual real
+  // Se estivermos visualizando outro mês, calcular baseado no mês selecionado
+  var diaAtual;
+  var agora = new Date();
+  var mesAtual = agora.getMonth() + 1;
+  var anoAtual = agora.getFullYear();
+  
+  if (year === anoAtual && month === mesAtual) {
+    // Mês atual: usar o dia real de hoje
+    diaAtual = agora.getDate();
+  } else {
+    // Mês diferente: usar o último dia do mês (para meses passados) ou primeiro dia (para futuros)
+    if (year < anoAtual || (year === anoAtual && month < mesAtual)) {
+      // Mês no passado: considerar o mês todo (usar último dia)
+      diaAtual = ultimoDiaDoMes;
+    } else {
+      // Mês no futuro: considerar desde o primeiro dia
+      diaAtual = 1;
+    }
+  }
+  
   var diasRestantes = Math.max(1, ultimoDiaDoMes - diaAtual + 1);
 
   // Meta diária global (considerando despesas já realizadas)
-  // saldoTotalCategorias já é o saldo restante (limite - gasto), não precisa subtrair despesas novamente
-  var saldoRestanteOrcamento = saldoTotalCategorias;
+  // Calcular corretamente: Orçamento Total - Despesas já realizadas
+  var saldoRestanteOrcamento = orcado - despesas;
   var metaDiariaGlobal = saldoRestanteOrcamento > 0 ? (saldoRestanteOrcamento / diasRestantes) : 0;
 
   // Saldo restante das receitas (considerando despesas já realizadas)
@@ -357,11 +377,11 @@ export function renderDashboard(container) {
   html += '              <div class="text-lg font-bold text-red-600 dark:text-red-400">R$ ' + formatBR(despesas) + '</div>';
   html += '              <div class="text-xs text-gray-600 dark:text-gray-400">Despesas</div>';
   html += '            </div>';
-  html += '                        <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm border border-gray-200 dark:border-gray-600">';
-            html += '              <div class="text-lg mb-1">💰</div>';
-            html += '              <div class="text-lg font-bold ' + (saldo >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400') + '">R$ ' + formatBR(saldo) + '</div>';
-            html += '              <div class="text-xs text-gray-600 dark:text-gray-400">Saldo</div>';
-            html += '            </div>';
+  html += '            <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm border border-gray-200 dark:border-gray-600">';
+  html += '              <div class="text-lg mb-1">💰</div>';
+  html += '              <div class="text-lg font-bold ' + (saldo >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400') + '">R$ ' + formatBR(saldo) + '</div>';
+  html += '              <div class="text-xs text-gray-600 dark:text-gray-400">Saldo</div>';
+  html += '            </div>';
   html += '          </div>';
   html += '          <!-- Resumo Financeiro Compacto -->';
   html += '          <div class="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm border border-gray-200 dark:border-gray-600 draggable-card" data-card-type="summary">';
@@ -597,14 +617,14 @@ export function renderDashboard(container) {
       html += '          <div class="divide-y divide-gray-100 dark:divide-gray-800">';
       for (var tr=0; tr<topRec.length; tr++) {
         var parcStr = '';
-        var parcelaInfo = '';
-        var statusInfo = '';
+        // var parcelaInfo = ''; // Não utilizado
+        // var statusInfo = ''; // Não utilizado
         var progressBar = '';
         var statusColor = 'emerald';
         var statusIcon = '🔄';
         var statusText = 'Ativa';
-        var cardClass = 'bg-white dark:bg-gray-900';
-        var headerClass = 'bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-gray-800 dark:to-gray-800';
+        // var cardClass = 'bg-white dark:bg-gray-900'; // Não utilizado
+        // var headerClass = 'bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-gray-800 dark:to-gray-800'; // Não utilizado
         
         try {
           if ((topRec[tr].parcelaAtual !== null && topRec[tr].parcelaAtual !== undefined) && (topRec[tr].parcelasTotal !== null && topRec[tr].parcelasTotal !== undefined)) {
@@ -619,7 +639,7 @@ export function renderDashboard(container) {
             if (progressoPercentual >= 90) badgeColor = 'orange';
             if (parcelasRestantes === 0) badgeColor = 'green';
             
-            parcStr = '<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-' + badgeColor + '-100 text-' + badgeColor + '-800 dark:bg-' + badgeColor + '-900 dark:text-' + badgeColor + '-200 ml-3 border border-' + badgeColor + '-200 dark:border-' + badgeColor + '-700">' + 
+            parcStr = '<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-' + badgeColor + '-100 text-' + badgeColor + '-800 dark:bg-' + badgeColor + '-900 dark:text-' + badgeColor + '-200 ml-3 border border-' + badgeColor + '-200 dark:border-' + badgeColor + '-700">' +
                      String(parcelaAtual) + '/' + String(parcelasTotal) + '</span>';
 
             // Status e informações baseadas no progresso
@@ -628,27 +648,27 @@ export function renderDashboard(container) {
                 statusColor = 'orange';
                 statusIcon = '⚡';
                 statusText = 'Quase Finalizada';
-                headerClass = 'bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-gray-800 dark:to-gray-800';
+                // headerClass = 'bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-gray-800 dark:to-gray-800';
               } else if (progressoPercentual >= 75) {
                 statusColor = 'yellow';
                 statusIcon = '📈';
                 statusText = 'Em Andamento';
-                headerClass = 'bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-gray-800 dark:to-gray-800';
+                // headerClass = 'bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-gray-800 dark:to-gray-800';
               } else {
                 statusColor = 'emerald';
                 statusIcon = '🔄';
                 statusText = 'Ativa';
-                headerClass = 'bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-gray-800 dark:to-gray-800';
+                // headerClass = 'bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-gray-800 dark:to-gray-800';
               }
               
-              statusInfo = '<div class="flex items-center justify-between text-sm mb-3">';
-              statusInfo += '<div class="flex items-center gap-2">';
-              statusInfo += '<span class="text-gray-600 dark:text-gray-400">' + (parcelasRestantes === 1 ? '1 parcela restante' : parcelasRestantes + ' parcelas restantes') + '</span>';
-              statusInfo += '<span class="w-1 h-1 bg-gray-400 rounded-full"></span>';
-              statusInfo += '<span class="text-gray-500 dark:text-gray-500 text-xs">' + parcelaAtual + ' de ' + totalParcelas + '</span>';
-              statusInfo += '</div>';
-              statusInfo += '<span class="font-bold text-' + statusColor + '-600 dark:text-' + statusColor + '-400 text-lg">' + progressoPercentual + '%</span>';
-              statusInfo += '</div>';
+              // statusInfo = '<div class="flex items-center justify-between text-sm mb-3">';
+              // statusInfo += '<div class="flex items-center gap-2">';
+              // statusInfo += '<span class="text-gray-600 dark:text-gray-400">' + (parcelasRestantes === 1 ? '1 parcela restante' : parcelasRestantes + ' parcelas restantes') + '</span>';
+              // statusInfo += '<span class="w-1 h-1 bg-gray-400 rounded-full"></span>';
+              // statusInfo += '<span class="text-gray-500 dark:text-gray-500 text-xs">' + parcelaAtual + ' de ' + parcelasTotal + '</span>';
+              // statusInfo += '</div>';
+              // statusInfo += '<span class="font-bold text-' + statusColor + '-600 dark:text-' + statusColor + '-400 text-lg">' + progressoPercentual + '%</span>';
+              // statusInfo += '</div>';
               
               progressBar = '<div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4 overflow-hidden shadow-inner">';
               progressBar += '<div class="bg-gradient-to-r from-' + statusColor + '-400 to-' + statusColor + '-500 h-4 rounded-full transition-all duration-700 ease-out relative flex items-center justify-end pr-2" style="width: ' + progressoPercentual + '%">';
@@ -660,15 +680,15 @@ export function renderDashboard(container) {
               statusColor = 'green';
               statusIcon = '✅';
               statusText = 'Finalizada';
-              headerClass = 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-gray-800 dark:to-gray-800';
-              statusInfo = '<div class="flex items-center justify-between text-sm mb-3">';
-              statusInfo += '<div class="flex items-center gap-2">';
-              statusInfo += '<span class="text-green-600 dark:text-green-400 font-medium">Recorrente finalizada</span>';
-              statusInfo += '<span class="w-1 h-1 bg-green-400 rounded-full"></span>';
-              statusInfo += '<span class="text-green-500 dark:text-green-500 text-xs">' + totalParcelas + ' parcelas</span>';
-              statusInfo += '</div>';
-              statusInfo += '<span class="font-bold text-green-600 dark:text-green-400 text-lg">100%</span>';
-              statusInfo += '</div>';
+              // headerClass = 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-gray-800 dark:to-gray-800';
+              // statusInfo = '<div class="flex items-center justify-between text-sm mb-3">';
+              // statusInfo += '<div class="flex items-center gap-2">';
+              // statusInfo += '<span class="text-green-600 dark:text-green-400 font-medium">Recorrente finalizada</span>';
+              // statusInfo += '<span class="w-1 h-1 bg-green-400 rounded-full"></span>';
+              // statusInfo += '<span class="text-green-500 dark:text-green-500 text-xs">' + parcelasTotal + ' parcelas</span>';
+              // statusInfo += '</div>';
+              // statusInfo += '<span class="font-bold text-green-600 dark:text-green-400 text-lg">100%</span>';
+              // statusInfo += '</div>';
               
               progressBar = '<div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4 overflow-hidden shadow-inner">';
               progressBar += '<div class="bg-gradient-to-r from-green-400 to-emerald-500 h-4 rounded-full relative flex items-center justify-end pr-2">';
@@ -918,14 +938,14 @@ export function renderDashboard(container) {
         var isReceita = (rt.tipo || 'despesa') === 'receita';
         
         // parcela info quando recorrente
-        var parcInfo = '';
+        // var parcInfo = ''; // Não utilizado
         var parcelaBadge = '';
         try {
           if (rt.recorrenteId && (rt.parcelaAtual || rt.parcelasTotal)) {
             var pa = (rt.parcelaAtual !== null && rt.parcelaAtual !== undefined) ? rt.parcelaAtual : '';
             var pt = (rt.parcelasTotal !== null && rt.parcelasTotal !== undefined) ? rt.parcelasTotal : '';
             if (pa || pt) {
-              parcInfo = ' • ' + (pa || '?') + '/' + (pt || '?');
+              // parcInfo = ' • ' + (pa || '?') + '/' + (pt || '?'); // Não utilizado
               parcelaBadge = '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 ml-2">' + (pa || '?') + '/' + (pt || '?') + '</span>';
             }
           }

@@ -7,7 +7,9 @@ import {
 import { Snackbar } from './ui/Snackbar.js';
 import { collection, addDoc, getDocs, query, where } from 'firebase/firestore';
 
-window.showAddRecorrenteModal = function (dados = {}) {
+console.log('🔍 [DEBUG] showAddRecorrenteModal.js carregado!');
+console.log('🔍 [DEBUG] Imports carregados:', { Modal: typeof Modal, RecorrenteForm: typeof RecorrenteForm });window.showAddRecorrenteModal = function (dados = {}) {
+  console.log('🔍 [DEBUG] showAddRecorrenteModal chamada com dados:', dados);
   const isEdicao = !!dados && Object.keys(dados).length > 0;
   const modal = Modal({
     title: isEdicao ? 'Editar Despesa Recorrente' : 'Nova Despesa Recorrente',
@@ -32,10 +34,34 @@ window.showAddRecorrenteModal = function (dados = {}) {
     return;
   }
 
+  // 🔥 DEBUG SUPER CRÍTICO: Verificar se o callback está sendo criado
+  console.log('🔥 [DEBUG-CALLBACK-CREATION] Criando callback onSubmit...');
+  console.log('🔥 [DEBUG-CALLBACK-CREATION] Dados iniciais para RecorrenteForm:', dados);
+  
   const form = RecorrenteForm({
     initialData: dados,
     onSubmit: async dadosForm => {
       try {
+        // 🚨🚨🚨 LOG CRÍTICO IMEDIATO - PRIMEIRA LINHA DO CALLBACK
+        console.log('🚨🚨🚨 [CALLBACK-SHOWADDRECORRENTE] *** CALLBACK INICIADO! ***');
+        console.log('🚨🚨🚨 [CALLBACK-SHOWADDRECORRENTE] dadosForm recebido:', dadosForm);
+        console.log('🚨🚨🚨 [CALLBACK-SHOWADDRECORRENTE] Tipo de dadosForm:', typeof dadosForm);
+        console.log('🚨🚨🚨 [CALLBACK-SHOWADDRECORRENTE] dadosForm.efetivarMesAtual:', dadosForm.efetivarMesAtual);
+        
+        // 🚨 VERIFICAR SE É PARA EFETIVAR NO MÊS ATUAL
+        if (dadosForm.efetivarMesAtual === true) {
+          console.log('🚨🚨🚨 [CALLBACK-SHOWADDRECORRENTE] *** DEVE CRIAR TRANSAÇÃO AUTOMÁTICA! ***');
+        } else {
+          console.log('🚨🚨🚨 [CALLBACK-SHOWADDRECORRENTE] *** NÃO DEVE CRIAR TRANSAÇÃO AUTOMÁTICA ***');
+        }
+        
+        // 🚨 DEBUG CRÍTICO: Primeiro log absoluto
+        console.log('🚨 [DEBUG-CRÍTICO] onSubmit EXECUTADO! dadosForm:', dadosForm);
+        // 🔧 DEBUG: Verificar dados recebidos do formulário
+        console.log('🔧 [DEBUG-FORM] Dados recebidos do formulário:', dadosForm);
+        console.log('🔧 [DEBUG-FORM] dadosForm.efetivarMesAtual (valor):', dadosForm.efetivarMesAtual);
+        console.log('🔧 [DEBUG-FORM] dadosForm.efetivarMesAtual (tipo):', typeof dadosForm.efetivarMesAtual);
+        
         // Esconder FAB enquanto o modal está aberto
         document.querySelector('.fab')?.classList.add('hidden');
         if (isEdicao && dados.id) {
@@ -50,7 +76,9 @@ window.showAddRecorrenteModal = function (dados = {}) {
           );
           // Se marcado, efetivar no mês atual
           if (dadosForm.efetivarMesAtual) {
-            console.log('🚀 Efetivando recorrente no mês atual...');
+            console.log('🚀 [DEBUG] Checkbox marcado - Efetivando recorrente no mês atual...');
+            console.log('🚀 [DEBUG] dadosForm.efetivarMesAtual:', dadosForm.efetivarMesAtual);
+            console.log('🚀 [DEBUG] recorrenteId:', recorrenteId);
             const now = new Date();
             const mesAtual = now.getMonth() + 1;
             const anoAtual = now.getFullYear();
@@ -84,6 +112,7 @@ window.showAddRecorrenteModal = function (dados = {}) {
             console.log('🔍 Já existe transação neste mês?', jaExiste);
 
             if (!jaExiste) {
+              console.log('✅ [DEBUG] Não existe transação para este mês, criando...');
               // Declarar variáveis no escopo correto
               let transacaoId = null;
               let parcelaAtualFinal = 1;
@@ -111,6 +140,13 @@ window.showAddRecorrenteModal = function (dados = {}) {
                 parcelaAtualFinal = (parcelaAtual && !isNaN(parcelaAtual)) ? parcelaAtual : 1;
 
                 // Criar transação usando a função correta
+                console.log('🔄 [DEBUG] Chamando createFromRecurring com:', {
+                  userId: user.uid,
+                  budgetId: budget.id,
+                  rec: recData,
+                  createdDate: now,
+                  parcelaAtual: parcelaAtualFinal
+                });
                 const { id } = await createFromRecurring({
                   userId: user.uid,
                   budgetId: budget.id,
@@ -120,7 +156,7 @@ window.showAddRecorrenteModal = function (dados = {}) {
                 });
 
                 transacaoId = id;
-                console.log('✅ Transação criada para mês atual:', transacaoId);
+                console.log('✅ [DEBUG] Transação criada para mês atual:', transacaoId);
               } catch (error) {
                 console.error('❌ Erro ao criar transação usando createFromRecurring:', error);
                 // Fallback para o método antigo
@@ -185,19 +221,23 @@ window.showAddRecorrenteModal = function (dados = {}) {
                 );
               }
             } else {
-              console.log('⏭️ Transação já existe para este mês, pulando...');
+              console.log('⏭️ [DEBUG] Transação já existe para este mês, pulando...');
             }
           }
         }
         await new Promise(res => setTimeout(res, 200));
+        console.log('🔄 [DEBUG] Carregando recorrentes após salvar...');
         try {
           const { loadRecorrentes } = await import('@features/recorrentes/service.js');
           await loadRecorrentes();
+          console.log('✅ [DEBUG] loadRecorrentes executado com sucesso');
         } catch (e) {
+          console.warn('⚠️ [DEBUG] Erro no loadRecorrentes:', e);
           if (typeof window.loadRecorrentes === 'function') {
             await window.loadRecorrentes();
+            console.log('✅ [DEBUG] window.loadRecorrentes executado como fallback');
           } else {
-            console.warn('loadRecorrentes indisponível:', e);
+            console.warn('❌ [DEBUG] loadRecorrentes indisponível:', e);
           }
         }
 
@@ -210,7 +250,32 @@ window.showAddRecorrenteModal = function (dados = {}) {
           type: 'success'
         });
 
-        // Sincronização completa de todos os dados
+        // 🔄 ATUALIZAÇÃO IMEDIATA DA PÁGINA DE RECORRENTES
+        console.log('🔄 [ATUALIZAÇÃO] Iniciando atualização imediata da página...');
+        
+        // 1. Recarregar dados de recorrentes IMEDIATAMENTE
+        try {
+          console.log('🔄 [ATUALIZAÇÃO] Recarregando dados de recorrentes...');
+          const { loadRecorrentes } = await import('@features/recorrentes/service.js');
+          await loadRecorrentes();
+          console.log('✅ [ATUALIZAÇÃO] Dados de recorrentes recarregados');
+        } catch (err) {
+          console.warn('⚠️ [ATUALIZAÇÃO] Erro ao recarregar recorrentes:', err);
+        }
+
+        // 2. Atualizar a interface IMEDIATAMENTE se estiver na página de recorrentes
+        if (window.location.hash.includes('/recorrentes')) {
+          console.log('✅ [ATUALIZAÇÃO] Usuário está na página de recorrentes, atualizando interface...');
+          try {
+            const { renderRecorrentes } = await import('@features/recorrentes/RecorrentesPage.js');
+            await renderRecorrentes();
+            console.log('✅ [ATUALIZAÇÃO] Interface de recorrentes atualizada com sucesso!');
+          } catch (e) {
+            console.error('❌ [ATUALIZAÇÃO] Erro ao atualizar interface:', e);
+          }
+        }
+
+        // Sincronização completa de todos os dados (com delay menor)
         setTimeout(async () => {
           document.querySelector('.fab')?.classList.remove('hidden');
 
@@ -262,8 +327,24 @@ window.showAddRecorrenteModal = function (dados = {}) {
           }
 
           // Atualizar todas as abas
+          console.log('🔄 [DEBUG] Atualizando abas - location.hash:', window.location.hash);
           if (window.location.hash.includes('/recorrentes')) {
-            try { typeof window._renderRecorrentes === 'function' && window._renderRecorrentes(); } catch {}
+            console.log('🔄 [DEBUG] Atualizando aba de recorrentes...');
+            try {
+              // Usar a função moderna de renderização
+              const { renderRecorrentes } = await import('@features/recorrentes/RecorrentesPage.js');
+              await renderRecorrentes();
+              console.log('✅ [DEBUG] renderRecorrentes moderno executado');
+            } catch (e) {
+              console.error('❌ [DEBUG] Erro ao executar renderRecorrentes moderno:', e);
+              // Fallback para função legada
+              if (typeof window._renderRecorrentes === 'function') {
+                window._renderRecorrentes();
+                console.log('✅ [DEBUG] window._renderRecorrentes executado como fallback');
+              } else {
+                console.warn('⚠️ [DEBUG] Nenhuma função de renderização encontrada');
+              }
+            }
           } else if (window.location.hash.includes('/dashboard')) {
             try { typeof window.renderDashboard === 'function' && window.renderDashboard(); } catch {}
           } else if (window.location.hash.includes('/transactions')) {
@@ -271,13 +352,40 @@ window.showAddRecorrenteModal = function (dados = {}) {
           }
 
           // Disparar evento para sincronização
-          document.dispatchEvent(new CustomEvent('recorrente-adicionada'));
-          document.dispatchEvent(new CustomEvent('dados-atualizados'));
+          document.dispatchEvent(new CustomEvent('recorrente-adicionada', {
+            detail: {
+              isEdicao,
+              dados: dadosForm,
+              timestamp: Date.now()
+            }
+          }));
+          document.dispatchEvent(new CustomEvent('dados-atualizados', {
+            detail: {
+              tipo: 'recorrente',
+              acao: isEdicao ? 'editar' : 'criar',
+              timestamp: Date.now()
+            }
+          }));
+          
+          // 🚨 FORÇAR ATUALIZAÇÃO ADICIONAL se ainda estiver na página de recorrentes
+          setTimeout(async () => {
+            if (window.location.hash.includes('/recorrentes')) {
+              console.log('🔄 [ATUALIZAÇÃO-FINAL] Forçando atualização final da página de recorrentes...');
+              try {
+                const { renderRecorrentes } = await import('@features/recorrentes/RecorrentesPage.js');
+                await renderRecorrentes();
+                console.log('✅ [ATUALIZAÇÃO-FINAL] Página de recorrentes atualizada com sucesso!');
+              } catch (e) {
+                console.error('❌ [ATUALIZAÇÃO-FINAL] Erro na atualização final:', e);
+              }
+            }
+          }, 500);
         }, 100);
       } catch (err) {
         // Mostrar FAB novamente em caso de erro
         document.querySelector('.fab')?.classList.remove('hidden');
-        console.error('Erro ao adicionar/editar recorrente:', err);
+        console.error('❌🚨🚨🚨 [CALLBACK-SHOWADDRECORRENTE] ERRO NO CALLBACK:', err);
+        console.error('❌🚨🚨🚨 [CALLBACK-SHOWADDRECORRENTE] Stack do erro:', err.stack);
         Snackbar({ message: 'Erro ao salvar recorrente', type: 'error' });
       }
     }
@@ -447,30 +555,5 @@ window.showHistoricoRecorrente = async function (recorrenteId) {
   }
 };
 
-// Função para efetivar recorrentes pendentes do mês atual
-window.efetivarRecorrentesMesAtual = async function () {
-  try {
-    const user = window.appState.currentUser;
-    const budget = window.appState.currentBudget;
-    
-    if (!user || !budget) {
-      Snackbar({ message: 'Você precisa estar logado e ter um orçamento selecionado', type: 'error' });
-      return;
-    }
-
-    const confirmar = confirm('Deseja efetivar todas as recorrentes pendentes do mês atual?');
-    if (!confirmar) return;
-
-    const { aplicarRecorrentesDoMes } = await import('./recorrentes.js');
-    const now = new Date();
-    const mes = now.getMonth() + 1;
-    const ano = now.getFullYear();
-
-    await aplicarRecorrentesDoMes(user.uid, budget.id, ano, mes);
-    
-    Snackbar({ message: 'Recorrentes efetivadas com sucesso!', type: 'success' });
-  } catch (err) {
-    console.error('Erro ao efetivar recorrentes:', err);
-    Snackbar({ message: 'Erro ao efetivar recorrentes', type: 'error' });
-  }
-};
+// NOTA: Função window.efetivarRecorrentesMesAtual removida daqui para evitar duplicação
+// A implementação oficial está em RecorrentesPage.js

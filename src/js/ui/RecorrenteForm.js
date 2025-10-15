@@ -132,14 +132,14 @@ export function RecorrenteForm({ onSubmit, initialData = {} }) {
 
   // Função para atualizar a exibição dos valores
   function atualizarValoresInfo() {
-    const valorInput = document.getElementById('rec-valor');
-    const parcelasInput = document.getElementById('rec-parcelas');
+    const valorInput = form.querySelector('#rec-valor');
+    const parcelasInput = form.querySelector('#rec-parcelas');
     const tipoValorRadio = form.querySelector('input[name="tipo-valor"]:checked');
 
     const valor = valorInput ? parseFloat(valorInput.value) || 0 : 0;
     const parcelas = parcelasInput ? parseInt(parcelasInput.value) || 0 : 0;
     const tipoValor = tipoValorRadio ? tipoValorRadio.value : 'total';
-    const info = document.getElementById('recorrente-valores-info');
+    const info = form.querySelector('#recorrente-valores-info');
     if (parcelas > 1 && valor > 0) {
       if (tipoValor === 'total') {
         const valorParcela = valor / parcelas;
@@ -193,11 +193,11 @@ export function RecorrenteForm({ onSubmit, initialData = {} }) {
     }
   }, 100);
 
-  form.addEventListener('submit', e => {
+  form.addEventListener('submit', async e => {
     e.preventDefault();
-    const valorInput = parseFloat(document.getElementById('rec-valor').value);
-    let parcelasRestantes = document.getElementById('rec-parcelas').value
-      ? parseInt(document.getElementById('rec-parcelas').value)
+    const valorInput = parseFloat(form.querySelector('#rec-valor').value);
+    let parcelasRestantes = form.querySelector('#rec-parcelas').value
+      ? parseInt(form.querySelector('#rec-parcelas').value)
       : null;
     if (parcelasRestantes !== null && parcelasRestantes < 1) {
       parcelasRestantes = null; // Não permitir zero ou negativo
@@ -219,18 +219,39 @@ export function RecorrenteForm({ onSubmit, initialData = {} }) {
       valor = +valorInput.toFixed(2);
       valorTotal = +valorInput.toFixed(2);
     }
+    // 🚨 DEBUG CRÍTICO: Verificar captura do checkbox
+    const checkboxElement = form.querySelector('#rec-efetivar');
+    const checkboxValue = checkboxElement ? checkboxElement.checked : null;
+    console.log('🚨 [DEBUG-CHECKBOX] Elemento checkbox:', checkboxElement);
+    console.log('🚨 [DEBUG-CHECKBOX] Valor do checkbox:', checkboxValue);
+    
     const dados = {
-      descricao: document.getElementById('rec-desc').value,
+      descricao: form.querySelector('#rec-desc').value,
       valor, // valor da parcela
       valorTotal, // salva também o valor total
-      categoriaId: document.getElementById('rec-categoria').value,
-      dataInicio: document.getElementById('rec-data').value,
+      categoriaId: form.querySelector('#rec-categoria').value,
+      dataInicio: form.querySelector('#rec-data').value,
       parcelasRestantes,
       parcelasTotal: parcelasRestantes, // Adicionar o total de parcelas
       ativa: true,
-      efetivarMesAtual: document.getElementById('rec-efetivar').checked
+      efetivarMesAtual: checkboxValue
     };
-    onSubmit(dados);
+    
+    // 🚨 DEBUG CRÍTICO: Verificar dados finais
+    console.log('🚨 [DEBUG-DADOS-FINAIS] Dados que serão enviados:', dados);
+    console.log('🚨 [DEBUG-DADOS-FINAIS] efetivarMesAtual final:', dados.efetivarMesAtual);
+    
+    // 🚨 DEBUG CRÍTICO: Verificar chamada do onSubmit
+    console.log('🚨 [DEBUG-ONSUBMIT] Chamando onSubmit com dados:', dados);
+    console.log('🚨 [DEBUG-ONSUBMIT] Tipo de onSubmit:', typeof onSubmit);
+    
+    try {
+      await onSubmit(dados);
+      console.log('🚨 [DEBUG-ONSUBMIT] onSubmit executado com sucesso!');
+    } catch (error) {
+      console.error('❌ [DEBUG-ONSUBMIT] Erro no onSubmit:', error);
+      throw error; // Re-throw para que o erro seja visível
+    }
   });
 
   return form;

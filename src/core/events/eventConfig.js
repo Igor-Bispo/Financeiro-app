@@ -68,11 +68,52 @@ export function setupEventListeners() {
       }
 
       if (type === 'recorrente') {
-        // Carrega o modal moderno de recorrente sob demanda
-        await import('@js/showAddRecorrenteModal.js');
-        if (typeof window.showAddRecorrenteModal === 'function') {
-          window.showAddRecorrenteModal(data || {});
-          return;
+        try {
+          // Verificar se já está sendo processado para evitar recursão
+          if (window._processingRecorrenteModal) {
+            console.log('🚫 Modal de recorrente já sendo processado, ignorando');
+            return;
+          }
+          window._processingRecorrenteModal = true;
+          console.log('🎯 Processando modal de recorrente...');
+          
+          // 🚨 CORREÇÃO CRÍTICA: Usar a função completa com callback avançado
+          console.log('🔧 [EVENTCONFIG] Carregando função completa de recorrente...');
+          
+          // Resetar flag de processamento para permitir execução da função completa
+          window._processingRecorrenteModal = false;
+          
+          // Executar a função completa que tem o callback com criação automática de transação
+          if (typeof window.showAddRecorrenteModal === 'function') {
+            console.log('✅ [EVENTCONFIG] Usando window.showAddRecorrenteModal (função completa)');
+            return window.showAddRecorrenteModal(data);
+          } else {
+            console.warn('⚠️ [EVENTCONFIG] window.showAddRecorrenteModal não encontrado, usando fallback...');
+            
+            // Fallback: importar e executar diretamente
+            try {
+              const showAddRecorrenteModal = (await import('@js/showAddRecorrenteModal.js')).default;
+              if (showAddRecorrenteModal) {
+                console.log('✅ [EVENTCONFIG] Usando import direto da função completa');
+                return showAddRecorrenteModal(data);
+              }
+            } catch (importErr) {
+              console.error('❌ [EVENTCONFIG] Erro no import:', importErr);
+            }
+            
+            // Se chegou aqui, algo deu errado - notificar usuário
+            const { Snackbar } = await import('@js/ui/Snackbar.js');
+            Snackbar({
+              message: 'Erro ao carregar modal de recorrente',
+              type: 'error'
+            });
+            return;
+          }
+          
+          window._processingRecorrenteModal = false;
+        } catch (importError) {
+          window._processingRecorrenteModal = false;
+          console.warn('Falha ao importar modal de recorrente:', importError);
         }
       }
 

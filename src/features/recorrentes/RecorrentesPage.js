@@ -45,6 +45,9 @@ export async function render(container) {
 // Render completo seguindo o padrão de tab-container
 export async function renderRecorrentes() {
   try {
+    console.log('🔧 [DEBUG-RENDER] renderRecorrentes chamado!');
+    console.log('🔧 [DEBUG-RENDER] Hash atual:', window.location.hash);
+    
     // Render somente se a rota ativa for Recorrentes
     const hh = (window.location.hash || '').split('?')[0];
     if (hh !== '#/recorrentes') {
@@ -294,6 +297,9 @@ export async function renderRecorrentes() {
       const ano = selYear; const mes = selMonth;
       const parts = items.map(it => {
         const st = calcularStatusRecorrente(it, transacoes, ano, mes);
+        
+
+        
         // Fora da janela do mês selecionado:
         // - Já passou da última parcela
         // - Ainda não chegou na primeira parcela (início futuro)
@@ -308,10 +314,10 @@ export async function renderRecorrentes() {
         let statusColor = 'emerald';
         let statusIcon = '🔄';
         let statusText = 'Ativa';
-        let headerClass = 'bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-gray-800 dark:to-gray-800';
+        // let headerClass = 'bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-gray-800 dark:to-gray-800'; // Não utilizado
         let progressBar = '';
         let statusInfo = '';
-        let progressBarColor = 'emerald';
+        // let progressBarColor = 'emerald'; // Não utilizado
         let progressBarGradient = 'from-emerald-400 to-emerald-500';
         
         // Badge de parcelas com cores dinâmicas
@@ -337,32 +343,32 @@ export async function renderRecorrentes() {
               statusColor = 'orange';
               statusIcon = '⚡';
               statusText = 'Quase Finalizada';
-              headerClass = 'bg-gradient-to-r from-orange-50 to-red-50 dark:from-gray-800 dark:to-gray-800';
-              progressBarColor = 'orange';
+              // headerClass = 'bg-gradient-to-r from-orange-50 to-red-50 dark:from-gray-800 dark:to-gray-800';
+              // progressBarColor = 'orange';
               progressBarGradient = 'from-orange-400 via-orange-500 to-red-500';
             } else if (progressoPercentual >= 75) {
               // Em andamento avançado - tons de amarelo/laranja
               statusColor = 'yellow';
               statusIcon = '📈';
               statusText = 'Em Andamento';
-              headerClass = 'bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-gray-800 dark:to-gray-800';
-              progressBarColor = 'yellow';
+              // headerClass = 'bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-gray-800 dark:to-gray-800';
+              // progressBarColor = 'yellow';
               progressBarGradient = 'from-yellow-400 via-yellow-500 to-orange-500';
             } else if (progressoPercentual >= 50) {
               // Em andamento médio - tons de azul/verde
               statusColor = 'blue';
               statusIcon = '🔄';
               statusText = 'Em Andamento';
-              headerClass = 'bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-800';
-              progressBarColor = 'blue';
+              // headerClass = 'bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-800';
+              // progressBarColor = 'blue';
               progressBarGradient = 'from-blue-400 via-blue-500 to-indigo-500';
             } else {
               // Início - tons de verde/emerald
               statusColor = 'emerald';
               statusIcon = '🔄';
               statusText = 'Ativa';
-              headerClass = 'bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-gray-800 dark:to-gray-800';
-              progressBarColor = 'emerald';
+              // headerClass = 'bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-gray-800 dark:to-gray-800';
+              // progressBarColor = 'emerald';
               progressBarGradient = 'from-emerald-400 via-emerald-500 to-teal-500';
             }
             
@@ -388,8 +394,8 @@ export async function renderRecorrentes() {
             statusColor = 'green';
             statusIcon = '✅';
             statusText = 'Finalizada';
-            headerClass = 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-gray-800 dark:to-gray-800';
-            progressBarColor = 'green';
+            // headerClass = 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-gray-800 dark:to-gray-800'; // Não utilizado
+            // progressBarColor = 'green'; // Não utilizado
             progressBarGradient = 'from-green-400 via-green-500 to-emerald-500';
             
             statusInfo = `<div class="flex items-center justify-between text-sm mb-3">
@@ -489,6 +495,39 @@ export async function renderRecorrentes() {
         </div>
       `;
     }
+
+    // 🔄 LISTENERS PARA ATUALIZAÇÃO AUTOMÁTICA
+    // Remover listeners anteriores para evitar duplicação
+    if (window._recorrenteUpdateListener) {
+      document.removeEventListener('recorrente-adicionada', window._recorrenteUpdateListener);
+      document.removeEventListener('dados-atualizados', window._recorrenteUpdateListener);
+    }
+
+    // Criar novo listener para atualização automática
+    window._recorrenteUpdateListener = async (event) => {
+      console.log('🔄 [LISTENER] Evento de atualização recebido:', event.type, event.detail);
+      
+      // Verificar se estamos na página de recorrentes
+      if (window.location.hash.includes('/recorrentes')) {
+        console.log('🔄 [LISTENER] Atualizando página de recorrentes...');
+        try {
+          // Pequeno delay para garantir que os dados foram salvos
+          setTimeout(async () => {
+            await loadRecorrentes();
+            await renderRecorrentes();
+            console.log('✅ [LISTENER] Página de recorrentes atualizada com sucesso!');
+          }, 200);
+        } catch (err) {
+          console.error('❌ [LISTENER] Erro ao atualizar página:', err);
+        }
+      }
+    };
+
+    // Adicionar listeners
+    document.addEventListener('recorrente-adicionada', window._recorrenteUpdateListener);
+    document.addEventListener('dados-atualizados', window._recorrenteUpdateListener);
+    console.log('✅ [LISTENERS] Listeners de atualização automática configurados');
+
   } catch (e) {
     console.error('Erro ao renderizar recorrentes:', e);
   }
@@ -524,7 +563,19 @@ try {
 
 // Expor ação global para efetivar recorrentes pendentes do mês atual
 if (typeof window !== 'undefined') {
+  // Variável para prevenir double-click
+  let _efetivandoRecorrentes = false;
+  
   window.efetivarRecorrentesMesAtual = async function() {
+    // 🔒 Proteção contra double-click
+    if (_efetivandoRecorrentes) {
+      console.log('🔒 [PROTEÇÃO] Já está efetivando recorrentes, ignorando chamada...');
+      return;
+    }
+    
+    _efetivandoRecorrentes = true;
+    console.log('🚀 [EFETIVAR] Iniciando efetivação de recorrentes...');
+    
     try {
       const userId = window.appState?.currentUser?.uid;
       const budgetId = window.appState?.currentBudget?.id;
@@ -565,6 +616,10 @@ if (typeof window !== 'undefined') {
     } catch (err) {
       console.error('Erro ao efetivar recorrentes:', err);
       window.Snackbar ? window.Snackbar({ message: 'Erro ao efetivar recorrentes', type: 'error' }) : alert('Erro ao efetivar recorrentes');
+    } finally {
+      // 🔓 Liberar proteção contra double-click
+      _efetivandoRecorrentes = false;
+      console.log('🔓 [PROTEÇÃO] Efetivação concluída, liberando lock...');
     }
   };
 

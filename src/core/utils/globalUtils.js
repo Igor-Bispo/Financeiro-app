@@ -363,6 +363,8 @@ export const globalFunctions = {
   // showAddCategoryModal será definido dinamicamente quando necessário
 
   showAddRecorrenteModal: (data) => {
+    console.log('🎯 [GLOBALUTILS] Solicitação de modal de recorrente...');
+    
     eventBus.emit('modal:show', {
       type: 'recorrente',
       data,
@@ -413,7 +415,15 @@ if (typeof window !== 'undefined') {
   };
 
   // window.showAddCategoryModal será definido dinamicamente quando necessário
-  window.showAddRecorrenteModal = globalFunctions.showAddRecorrenteModal;
+  
+  // 🚨 CORREÇÃO: NÃO SOBRESCREVER SE A FUNÇÃO JÁ EXISTIR (nossa função é melhor)
+  if (typeof window.showAddRecorrenteModal !== 'function') {
+    console.log('⚠️ [GlobalUtils] showAddRecorrenteModal não existe, definindo fallback...');
+    window.showAddRecorrenteModal = globalFunctions.showAddRecorrenteModal;
+  } else {
+    console.log('✅ [GlobalUtils] showAddRecorrenteModal já existe, mantendo função existente!');
+  }
+  
   window.closeModal = globalFunctions.closeModal;
 
   // Expor estado global para compatibilidade

@@ -187,7 +187,28 @@ async function updateCategoriesData() {
 // Função auxiliar para calcular dias restantes no mês
 function calcularDiasRestantesNoMes(ano, mes) {
   const ultimoDiaDoMes = new Date(ano, mes, 0).getDate(); // Último dia do mês
-  const diaAtual = new Date().getDate();
+  
+  // Se estivermos visualizando o mês atual, usar a data atual real
+  // Se estivermos visualizando outro mês, calcular baseado no mês selecionado
+  let diaAtual;
+  const agora = new Date();
+  const mesAtual = agora.getMonth() + 1;
+  const anoAtual = agora.getFullYear();
+  
+  if (ano === anoAtual && mes === mesAtual) {
+    // Mês atual: usar o dia real de hoje
+    diaAtual = agora.getDate();
+  } else {
+    // Mês diferente: usar o último dia do mês (para meses passados) ou primeiro dia (para futuros)
+    if (ano < anoAtual || (ano === anoAtual && mes < mesAtual)) {
+      // Mês no passado: considerar o mês todo (usar último dia)
+      diaAtual = ultimoDiaDoMes;
+    } else {
+      // Mês no futuro: considerar desde o primeiro dia
+      diaAtual = 1;
+    }
+  }
+  
   return Math.max(1, ultimoDiaDoMes - diaAtual + 1);
 }
 
@@ -251,7 +272,7 @@ async function updateCategoriesContent(anoAtual, mesAtual) {
       .map(cat => {
         // Usar função auxiliar para calcular gastos corretamente
         const gastos = calcularGastosCategoria(cat, anoAtual, mesAtual);
-        const { totalGasto, totalGastoTransacoes, totalGastoRecorrentes, transacoesCategoria, recorrentesAplicadas: _recorrentesAplicadas } = gastos;
+        const { totalGasto, totalGastoTransacoes, totalGastoRecorrentes, transacoesCategoria } = gastos;
 
 
         // Debug: Log dos cálculos para esta categoria
@@ -747,7 +768,7 @@ ${categorias.length === 0 ? `
                   </div>
                   </div>
             ` : `
-              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div class="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
                 ${categoriasComGastos.map(cat => {
     const isReceita = cat.tipo === 'receita';
     const temLimite = cat.limite > 0;
@@ -904,9 +925,7 @@ ${categorias.length === 0 ? `
                                           <span class="font-bold text-orange-600 dark:text-orange-400">R$ ${Math.abs(cat.saldo).toFixed(2)}</span>
                                         </div>
                                         <div class="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                                          ${cat.porcentagem >= 80 ? 'Quase lá! Faltam apenas alguns reais' : 
-                                            cat.porcentagem >= 50 ? 'Bom progresso! Continue assim' : 
-                                            'Ainda há tempo para atingir a meta'}
+                                          ${cat.porcentagem >= 80 ? 'Quase lá! Faltam apenas alguns reais' : cat.porcentagem >= 50 ? 'Bom progresso! Continue assim' : 'Ainda há tempo para atingir a meta'}
                                         </div>
                                       </div>
                                     `}
@@ -958,18 +977,19 @@ ${categorias.length === 0 ? `
                           </div>
                         `}
                         
-                        <div class="flex items-center justify-end gap-2 mt-4">
-                          <button onclick="editCategory('${cat.id}')" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-200 dark:border-blue-800 transition-all duration-200" title="Editar categoria">
+                        <!-- Botões de ação com layout responsivo -->
+                        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 mt-4">
+                          <button onclick="editCategory('${cat.id}')" class="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-200 dark:border-blue-800 transition-all duration-200 min-w-0 flex-1 sm:flex-initial" title="Editar categoria">
                             <span>✏️</span>
-                            <span>Editar</span>
+                            <span class="whitespace-nowrap">Editar</span>
                           </button>
-                          <button onclick="showCategoryHistory('${cat.id}')" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/40 border border-purple-200 dark:border-purple-800 transition-all duration-200" title="Ver histórico">
+                          <button onclick="showCategoryHistory('${cat.id}')" class="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/40 border border-purple-200 dark:border-purple-800 transition-all duration-200 min-w-0 flex-1 sm:flex-initial" title="Ver histórico">
                             <span>📊</span>
-                            <span>Histórico</span>
+                            <span class="whitespace-nowrap">Histórico</span>
                           </button>
-                          <button onclick="window.deleteCategoryWithConfirmation('${cat.id}', '${cat.nome}')" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 border border-red-200 dark:border-red-800 transition-all duration-200" title="Excluir categoria">
+                          <button onclick="window.deleteCategoryWithConfirmation('${cat.id}', '${cat.nome}')" class="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 border border-red-200 dark:border-red-800 transition-all duration-200 min-w-0 flex-1 sm:flex-initial" title="Excluir categoria">
                             <span>🗑️</span>
-                            <span>Excluir</span>
+                            <span class="whitespace-nowrap">Excluir</span>
                           </button>
                         </div>
                       </div>

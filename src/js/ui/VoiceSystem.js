@@ -144,10 +144,13 @@ class VoiceSystem {
                 <span style="position: relative; z-index: 2;">🎤 Falar Novamente</span>
               </button>
               
-              <!-- Botão de cancelar premium - MAIOR E MAIS VISÍVEL -->
-              <button onclick="window.closeVoiceModal()" class="cancel-btn-premium" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; border: none; padding: 12px 20px; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 3px 6px rgba(239, 68, 68, 0.4); position: relative; overflow: hidden; width: 100%; flex-shrink: 0; text-transform: uppercase; letter-spacing: 0.5px;">
-                <span style="position: relative; z-index: 2;">✕ Cancelar</span>
-                <div class="btn-shine" style="position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent); transition: left 0.5s ease;"></div>
+              <!-- Botão de cancelar premium - MELHORADO PARA APK -->
+              <button 
+                id="cancel-voice-btn"
+                class="cancel-btn-premium" 
+                style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; border: none; padding: 18px 28px; border-radius: 14px; font-size: 18px; font-weight: 800; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 6px 12px rgba(239, 68, 68, 0.6); position: relative; overflow: hidden; width: 100%; flex-shrink: 0; text-transform: uppercase; letter-spacing: 0.8px; z-index: 10001; -webkit-tap-highlight-color: transparent; touch-action: manipulation; user-select: none; min-height: 56px;">
+                <span style="position: relative; z-index: 2; pointer-events: none;">✕ FECHAR</span>
+                <div class="btn-shine" style="position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent); transition: left 0.5s ease;"></div>
               </button>
             </div>
           </div>
@@ -157,6 +160,9 @@ class VoiceSystem {
 
     // Adicionar o modal ao body
     document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+    // CONFIGURAR EVENT LISTENERS DO BOTÃO CANCELAR PARA APK
+    this.setupCancelButton();
 
     // Adicionar as animações premium via style tag
     const style = document.createElement('style');
@@ -330,6 +336,126 @@ class VoiceSystem {
     console.log('✅ Modal de voz premium criado no DOM com responsividade otimizada');
   }
 
+  // Configurar event listeners do botão cancelar para APK
+  setupCancelButton() {
+    console.log('🔧 [setupCancelButton] Configurando listeners do botão cancelar...');
+    
+    const cancelBtn = document.getElementById('cancel-voice-btn');
+    if (!cancelBtn) {
+      console.error('❌ [setupCancelButton] Botão cancelar não encontrado!');
+      return;
+    }
+
+    // Função de fechamento unificada
+    const closeVoiceModal = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      console.log('🚨 [setupCancelButton] Fechamento do modal solicitado!');
+      
+      // Chamar diretamente o método da instância para garantir contexto correto
+      this.forceCloseModal();
+    };
+
+    // Remover listeners existentes para evitar duplicação
+    cancelBtn.replaceWith(cancelBtn.cloneNode(true));
+    const newCancelBtn = document.getElementById('cancel-voice-btn');
+
+    // Adicionar múltiplos tipos de eventos para máxima compatibilidade APK
+    const events = ['click', 'touchstart', 'touchend', 'pointerdown', 'mousedown'];
+    
+    events.forEach(eventType => {
+      newCancelBtn.addEventListener(eventType, closeVoiceModal, {
+        passive: false,
+        capture: true
+      });
+    });
+
+    // Também configurar o backdrop para fechar o modal
+    const modal = document.getElementById('voice-modal');
+    if (modal) {
+      modal.addEventListener('click', (event) => {
+        if (event.target === modal) {
+          console.log('🚨 [setupCancelButton] Fechamento via backdrop');
+          this.forceCloseModal();
+        }
+      });
+    }
+
+    // Adicionar listener global para ESC
+    const escapeHandler = (event) => {
+      if (event.key === 'Escape' && this.isModalOpen) {
+        console.log('🚨 [setupCancelButton] Fechamento via ESC');
+        this.forceCloseModal();
+      }
+    };
+    
+    document.addEventListener('keydown', escapeHandler);
+    
+    // Armazenar referência para remoção posterior
+    this.escapeHandler = escapeHandler;
+
+    console.log('✅ [setupCancelButton] Listeners configurados com sucesso');
+  }
+
+  // Método para forçar fechamento do modal (mais agressivo)
+  forceCloseModal() {
+    console.log('🚨 [forceCloseModal] FORÇANDO fechamento completo do modal...');
+
+    try {
+      // 1. Parar todo reconhecimento imediatamente (sem destruir o objeto)
+      this.stopAllRecognition().catch(() => {});
+      
+      // 2. Resetar apenas estados de UI (preservar reconhecimento configurado)
+      this.isModalOpen = false;
+      this.isListening = false;
+      this.isStarting = false;
+      this.hasError = false;
+      this.isProcessingCommand = false;
+      this.shouldKeepListening = false;
+      this.hasReceivedSpeech = false;
+      this.hasRecognizedSomething = false;
+      this.retryCount = 0;
+
+      // 3. Fechar modal via DOM direto
+      const modal = document.getElementById('voice-modal');
+      if (modal) {
+        modal.style.display = 'none';
+        modal.style.opacity = '0';
+        modal.style.pointerEvents = 'none';
+        modal.style.visibility = 'hidden';
+      }
+
+      // 4. Remover classe do body
+      document.body.classList.remove('voice-modal-open');
+
+      // 5. Parar plugins nativos
+      if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.SpeechRecognition) {
+        window.Capacitor.Plugins.SpeechRecognition.stop().catch(() => {});
+      }
+
+      // 6. IMPORTANTE: Manter o recognition configurado para próximo uso
+      if (this.recognition) {
+        console.log('🔧 [forceCloseModal] Mantendo reconhecimento configurado para reutilização');
+        // Apenas resetar configurações sem destruir o objeto
+        try {
+          this.recognition.continuous = true;
+          this.recognition.interimResults = true;
+          this.recognition.lang = 'pt-BR';
+        } catch (configError) {
+          console.warn('⚠️ [forceCloseModal] Erro ao reconfigurar reconhecimento:', configError);
+        }
+      }
+
+      console.log('✅ [forceCloseModal] Modal fechado com sucesso');
+      
+      // Disparar evento personalizado para notificar fechamento
+      window.dispatchEvent(new CustomEvent('voiceModalClosed'));
+      
+    } catch (error) {
+      console.error('❌ [forceCloseModal] Erro no fechamento forçado:', error);
+    }
+  }
+
   // ===== INICIALIZAÇÃO =====
 
   init() {
@@ -454,6 +580,42 @@ class VoiceSystem {
       console.error('❌ Erro ao configurar reconhecimento:', error);
       this.showError('Erro ao configurar reconhecimento de voz');
     }
+  }
+
+  // Método para reconfigurar listeners do reconhecimento
+  setupRecognitionListeners() {
+    console.log('🔧 Configurando listeners do reconhecimento...');
+    
+    if (!this.recognition) {
+      console.error('❌ Reconhecimento não disponível para configurar listeners');
+      return;
+    }
+
+    // Configurar event listeners principais
+    this.recognition.onstart = () => this.handleRecognitionStart();
+    this.recognition.onresult = (event) => this.handleRecognitionResult(event);
+    this.recognition.onerror = (event) => this.handleRecognitionError(event);
+    this.recognition.onend = () => this.handleRecognitionEnd();
+    this.recognition.onspeechstart = () => this.handleSpeechStart();
+    this.recognition.onspeechend = () => this.handleSpeechEnd();
+    this.recognition.onsoundstart = () => this.handleSoundStart();
+    this.recognition.onsoundend = () => this.handleSoundEnd();
+    
+    // Adicionar listener para áudio start/end (Android específico)
+    if (this.recognition.onaudiostart) {
+      this.recognition.onaudiostart = () => {
+        console.log('🎧 Áudio iniciado (Android)');
+        this.updateModalStatus('', 'Microfone ativo...', 'listening');
+      };
+    }
+    
+    if (this.recognition.onaudioend) {
+      this.recognition.onaudioend = () => {
+        console.log('🎧 Áudio finalizado (Android)');
+      };
+    }
+
+    console.log('✅ Listeners do reconhecimento configurados');
   }
 
   // ===== EVENTOS DO RECONHECIMENTO =====
@@ -2502,11 +2664,17 @@ class VoiceSystem {
     this.isModalOpen = true;
     this.retryCount = 0;
 
+    // Resetar flags para nova sessão
+    this.hasError = false;
+    this.hasReceivedSpeech = false;
+    this.hasRecognizedSomething = false;
+    this.shouldKeepListening = true;
+
     // Garantir que o reconhecimento está configurado e funcionando
     if (!this.recognition) {
-      console.log('🔄 Reconhecimento não encontrado, reinicializando...');
+      console.log('🔄 Reconhecimento não encontrado, inicializando...');
       if (!this.init()) {
-        console.error('❌ Falha na reinicialização do reconhecimento');
+        console.error('❌ Falha na inicialização do reconhecimento');
         this.showError('Erro ao inicializar reconhecimento de voz');
         return;
       }
@@ -2514,18 +2682,22 @@ class VoiceSystem {
       // Verificar se o reconhecimento está em estado válido
       console.log('🔍 Verificando estado do reconhecimento existente...');
       try {
-        // Tentar reinicializar se houve problemas anteriores
-        if (this.hasError || !this.recognition.continuous) {
-          console.log('🔄 Reconhecimento em estado inválido, reinicializando...');
-          this.recognition = null;
-          if (!this.init()) {
-            console.error('❌ Falha na reinicialização do reconhecimento');
-            this.showError('Erro ao inicializar reconhecimento de voz');
-            return;
-          }
+        // Reconfigurar reconhecimento existente para garantir configuração correta
+        console.log('🔧 Reconfigurando reconhecimento existente...');
+        this.recognition.continuous = true;
+        this.recognition.interimResults = true;
+        this.recognition.lang = 'pt-BR';
+        this.recognition.maxAlternatives = 1;
+        
+        // Verificar se precisa reconfigurar listeners
+        if (this.hasError || !this.recognition.onstart) {
+          console.log('🔄 Reconfigurando listeners do reconhecimento...');
+          this.setupRecognitionListeners();
         }
+        
+        console.log('✅ Reconhecimento reconfigurado com sucesso');
       } catch (error) {
-        console.warn('⚠️ Erro ao verificar reconhecimento, reinicializando:', error);
+        console.warn('⚠️ Erro ao reconfigurar reconhecimento, reinicializando:', error);
         this.recognition = null;
         if (!this.init()) {
           console.error('❌ Falha na reinicialização do reconhecimento');
@@ -2827,9 +2999,23 @@ class VoiceSystem {
         return true;
       }
 
+      // Se está iniciando, aguardar um pouco
+      if (this.isStarting) {
+        console.log('⚠️ Reconhecimento está iniciando, aguardando...');
+        await new Promise(resolve => setTimeout(resolve, 300));
+        if (this.isListening) {
+          return true;
+        }
+      }
+
       // Definir tipo atual imediatamente
       this.currentType = type;
       console.log('✅ Tipo de comando definido:', this.currentType);
+
+      // Resetar flags para nova sessão
+      this.shouldKeepListening = true;
+      this.hasReceivedSpeech = false;
+      this.hasRecognizedSomething = false;
 
       // Atualizar status do modal
       this.updateModalStatus('', 'Iniciando...', 'processing');
@@ -2838,6 +3024,8 @@ class VoiceSystem {
       try {
         this.recognition.stop();
         console.log('🛑 Parando reconhecimento anterior (sem delay)...');
+        // Aguardar um pouco para garantir que parou completamente
+        await new Promise(resolve => setTimeout(resolve, 100));
       } catch {
         console.log('ℹ️ Nenhum reconhecimento anterior para parar');
       }
@@ -2888,10 +3076,22 @@ class VoiceSystem {
     console.log('🎯 [VoiceSystem] Tentando plugin Capacitor nativo...');
     
     try {
+      // VERIFICAÇÃO MELHORADA DE CAPACITOR PARA APK
+      console.log('🔍 [tryCapacitor] Verificando ambiente Capacitor...');
+      console.log('📱 [window.Capacitor]', !!window.Capacitor);
+      console.log('🔌 [window.Capacitor.Plugins]', !!(window.Capacitor && window.Capacitor.Plugins));
+      console.log('🏠 [isNativePlatform]', window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' ? window.Capacitor.isNativePlatform() : 'N/A');
+
+      if (!window.Capacitor || !window.Capacitor.Plugins) {
+        console.log('❌ [tryCapacitor] Capacitor não disponível');
+        return false;
+      }
+
       // Importar o plugin dinamicamente
       const { getCapacitorSpeechRecognition } = await import('../plugins/CapacitorSpeechRecognition.js');
       
       const speechPlugin = await getCapacitorSpeechRecognition();
+      console.log('🎤 [speechPlugin.isAvailable]', speechPlugin.isAvailable);
       
       if (!speechPlugin.isAvailable) {
         console.log('❌ [VoiceSystem] Plugin nativo não disponível');
@@ -4513,13 +4713,43 @@ window.openVoiceModal = function(type = 'transaction') {
 
 // Função global para fechar modal de voz
 window.closeVoiceModal = async function() {
-  console.log('🎤 closeVoiceModal chamado');
+  console.log('🎤 closeVoiceModal global chamado');
 
-  if (voiceSystem) {
-    // Parar todo reconhecimento primeiro
-    await voiceSystem.stopAllRecognition();
-    // Depois fechar o modal
-    voiceSystem.stop();
+  try {
+    // Usar o método forceCloseModal da instância se disponível
+    if (window.voiceSystem && typeof window.voiceSystem.forceCloseModal === 'function') {
+      window.voiceSystem.forceCloseModal();
+      return;
+    }
+
+    // Fallback: fechamento manual se instância não disponível
+    console.log('🚨 [closeVoiceModal] Usando fallback manual');
+
+    // Parar reconhecimento
+    if (window.speechRecognition) {
+      window.speechRecognition.stop();
+    }
+
+    // Parar plugin Capacitor
+    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.SpeechRecognition) {
+      window.Capacitor.Plugins.SpeechRecognition.stop().catch(() => {});
+    }
+
+    // Fechar modal forçadamente
+    const modal = document.getElementById('voice-modal');
+    if (modal) {
+      modal.style.display = 'none';
+      modal.style.opacity = '0';
+      modal.style.pointerEvents = 'none';
+      modal.style.visibility = 'hidden';
+    }
+
+    // Remover classe do body
+    document.body.classList.remove('voice-modal-open');
+
+    console.log('✅ [closeVoiceModal] Modal fechado via fallback');
+  } catch (error) {
+    console.error('❌ [closeVoiceModal] Erro no fechamento:', error);
   }
 };
 

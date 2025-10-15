@@ -6,6 +6,9 @@ import showAddCategoryModal from '../js/showAddCategoryModal.js';
 import showAddTransactionModal from '../js/showAddTransactionModal.js';
 import '../js/showAddRecorrenteModal.js'; // Importar para registrar funções globais
 import '../js/dark-mode-enforcer.js'; // Força contraste no modo escuro
+
+// Debug: Verificar se showAddRecorrenteModal foi definida
+console.log('🔍 [DEBUG] window.showAddRecorrenteModal após import:', typeof window.showAddRecorrenteModal);
 import '../js/native-biometric.js'; // Biometria nativa para APK
 import * as notificationService from '../features/notifications/NotificationService.js'; // Sistema de notificações
 

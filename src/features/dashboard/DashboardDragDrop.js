@@ -279,17 +279,30 @@ export class DashboardDragDrop {
     const year = (window.appState && window.appState.selectedYear) || now.getFullYear();
     const monthName = monthNames[Math.max(0, Math.min(11, month - 1))] || '';
 
-    // Extrair dados estruturados do dashboard
+    // Obter dados do estado global da aplicação (mais confiável que DOM)
+    // Dados removidos - não utilizados
+    // const budgetData = window.currentBudgetData || {};
+    // const financialData = window.currentFinancialData || {};
+    
+    // Extrair valores dos elementos mais confiáveis
     const progressData = this.extractProgressData();
-    const metricsData = this.extractMetricsData();
-    const summaryData = this.extractSummaryData();
+    const budgetInfo = this.extractBudgetInfo();
+    const dailyGoals = this.extractDailyGoals();
+    const analysis = this.extractAnalysis();
 
     return {
       period: `${monthName}/${year}`,
       progress: progressData,
-      metrics: metricsData,
-      summary: summaryData,
-      exportDate: new Date().toLocaleString('pt-BR')
+      budget: budgetInfo,
+      dailyGoals: dailyGoals,
+      analysis: analysis,
+      exportDate: new Date().toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
     };
   }
 
@@ -331,54 +344,195 @@ export class DashboardDragDrop {
     return metrics;
   }
 
-  extractSummaryData() {
-    const summaryCard = document.querySelector('[data-card-type="summary"]');
-    if (!summaryCard) return { items: [] };
+  extractBudgetInfo() {
+    let planned = 'R$ 0,00', income = 'R$ 0,00', expenses = 'R$ 0,00', balance = 'R$ 0,00';
 
-    const items = [];
-    const lines = summaryCard.querySelectorAll('.flex.justify-between.text-xs');
+    // Extrair das métricas compactas (Receitas, Despesas, Saldo)
+    const metricsCards = document.querySelectorAll('[data-card-type="metrics"] .bg-white');
+    metricsCards.forEach(card => {
+      const valueEl = card.querySelector('.text-lg.font-bold');
+      const labelEl = card.querySelector('.text-xs.text-gray-600');
 
-    lines.forEach(line => {
-      const labelEl = line.querySelector('span:first-child');
-      const valueEl = line.querySelector('span:last-child');
+      if (valueEl && labelEl) {
+        const label = labelEl.textContent.trim().toLowerCase();
+        const value = valueEl.textContent.trim();
 
-      if (labelEl && valueEl) {
-        items.push({
-          label: labelEl.textContent.trim(),
-          value: valueEl.textContent.trim()
-        });
+        if (label.includes('receita')) {
+          income = value;
+        } else if (label.includes('despesa')) {
+          expenses = value;
+        } else if (label.includes('saldo')) {
+          balance = value;
+        }
       }
     });
 
-    return { items };
+    // Extrair orçamento do card de progresso
+    const progressCard = document.querySelector('[data-card-type="progress"]');
+    if (progressCard) {
+      const detailsEl = progressCard.querySelector('.text-xs.text-gray-600');
+      if (detailsEl) {
+        const text = detailsEl.textContent.trim();
+        // Formato: "R$ 3.082,79 de R$ 5.741,64"
+        const match = text.match(/de\s*(R\$\s*[\d.,]+)/);
+        if (match) {
+          planned = match[1].trim();
+        }
+      }
+    }
+
+    return { planned, income, expenses, balance };
+  }
+
+  extractDailyGoals() {
+    const summaryCard = document.querySelector('[data-card-type="summary"]');
+    let budget = 'R$ 0,00/dia', fullIncome = 'R$ 0,00/dia', conservative = 'R$ 0,00/dia';
+
+    if (summaryCard) {
+      // Buscar todas as divs que contêm metas diárias usando uma abordagem mais específica
+      const gradientDivs = summaryCard.querySelectorAll('.bg-gradient-to-r');
+      
+      for (let div of gradientDivs) {
+        const text = div.textContent || div.innerText || '';
+        
+        // Meta Diária (Orçamento) - buscar span com classes específicas
+        if (text.includes('Meta Diária (Orçamento)')) {
+          const valueSpan = div.querySelector('span.font-bold.text-blue-600, span.font-bold.text-sm');
+          if (valueSpan) {
+            budget = valueSpan.textContent.trim();
+          }
+        }
+        
+        // Meta Diária (100% Receitas) - buscar span com classes específicas
+        if (text.includes('Meta Diária (100% Receitas)')) {
+          const valueSpan = div.querySelector('span.font-bold.text-green-600, span.font-bold.text-red-600, span.font-bold.text-sm');
+          if (valueSpan) {
+            fullIncome = valueSpan.textContent.trim();
+          }
+        }
+        
+        // Meta Diária (Conservadora) - buscar span com classes específicas
+        if (text.includes('Meta Diária (Conservadora)')) {
+          const valueSpan = div.querySelector('span.font-bold.text-yellow-600, span.font-bold.text-red-600, span.font-bold.text-sm');
+          if (valueSpan) {
+            conservative = valueSpan.textContent.trim();
+          }
+        }
+      }
+
+      // Se não encontrou nos gradientes, tentar uma busca mais geral
+      if (budget === 'R$ 0,00/dia' && fullIncome === 'R$ 0,00/dia' && conservative === 'R$ 0,00/dia') {
+        const allSpansWithBold = summaryCard.querySelectorAll('span[class*="font-bold"]');
+        
+        for (let span of allSpansWithBold) {
+          const parentText = span.closest('.flex')?.textContent || span.parentElement?.textContent || '';
+          const value = span.textContent.trim();
+          
+          if (parentText.includes('Meta Diária (Orçamento)') && value.includes('R$')) {
+            budget = value;
+          } else if (parentText.includes('Meta Diária (100% Receitas)') && value.includes('R$')) {
+            fullIncome = value;
+          } else if (parentText.includes('Meta Diária (Conservadora)') && value.includes('R$')) {
+            conservative = value;
+          }
+        }
+      }
+    }
+
+    return { budget, fullIncome, conservative };
+  }
+
+  extractAnalysis() {
+    const summaryCard = document.querySelector('[data-card-type="summary"]');
+    let hasAlerts = false, alerts = 0, coverage = '0', daysRemaining = '0', topCategory = null, status = 'positive';
+
+    // Verificar alertas
+    const alertsEl = summaryCard?.querySelector('#alertas-categorias-btn .font-bold');
+    if (alertsEl && alertsEl.textContent.includes('categoria')) {
+      hasAlerts = true;
+      alerts = parseInt(alertsEl.textContent.match(/\d+/)?.[0] || '0');
+      status = alerts > 3 ? 'critical' : 'warning';
+    }
+
+    // Calcular dias restantes no mês
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const lastDay = new Date(year, month + 1, 0).getDate();
+    daysRemaining = (lastDay - now.getDate()).toString();
+
+    // Obter progresso para calcular cobertura
+    const progressData = this.extractProgressData();
+    const progressNum = parseFloat(progressData.percentage.replace('%', ''));
+    coverage = Math.round(progressNum).toString();
+
+    // Verificar status baseado no progresso
+    if (progressNum > 90) {
+      status = 'critical';
+    } else if (progressNum > 70) {
+      status = 'warning';
+    }
+
+    // Tentar obter categoria com maior gasto
+    const topCategoriesCard = document.querySelector('[data-card-type="categorias-inteligentes"]');
+    if (topCategoriesCard) {
+      const firstCategory = topCategoriesCard.querySelector('.categoria-item .font-medium');
+      if (firstCategory) {
+        topCategory = firstCategory.textContent.trim();
+      }
+    }
+
+    return { hasAlerts, alerts, coverage, daysRemaining, topCategory, status };
   }
 
 
   generateWhatsAppMessage(data, format = 'PDF') {
     let message = `📊 *RESUMO FINANCEIRO - ${data.period}*\n\n`;
 
-    // Progresso do Orçamento
-    message += '📈 *Progresso do Orçamento:*\n';
-    message += `• ${data.progress.percentage} (${data.progress.used} de ${data.progress.total})\n\n`;
+    // Situação Atual do Orçamento
+    message += '� *SITUAÇÃO ATUAL:*\n';
+    message += `• Orçamento Total: ${data.budget.planned}\n`;
+    message += `• Receitas: ${data.budget.income}\n`;
+    message += `• Despesas: ${data.budget.expenses}\n`;
+    message += `• Saldo Atual: ${data.budget.balance}\n`;
+    message += `• Progresso: ${data.progress.percentage} do orçamento usado\n\n`;
 
-    // Métricas
-    message += '💰 *Métricas:*\n';
-    data.metrics.forEach(metric => {
-      message += `• ${metric.label}: ${metric.value}\n`;
-    });
+    // Metas Diárias
+    message += '🎯 *METAS DIÁRIAS:*\n';
+    message += `• 💡 Meta Orçamento: ${data.dailyGoals.budget}\n`;
+    message += `• 💰 Meta 100% Receitas: ${data.dailyGoals.fullIncome}\n`;
+    message += `• ⚠️ Meta Conservadora: ${data.dailyGoals.conservative}\n\n`;
+
+    // Análise Inteligente
+    message += '📈 *ANÁLISE INTELIGENTE:*\n';
+    if (data.analysis.hasAlerts) {
+      message += `• 🚨 ${data.analysis.alerts} categoria(s) em alerta\n`;
+    }
+    message += `• 📊 Cobertura do Orçamento: ${data.analysis.coverage}%\n`;
+    message += `• 🏃‍♀️ Dias restantes no mês: ${data.analysis.daysRemaining}\n`;
+    
+    if (data.analysis.topCategory) {
+      message += `• 🔥 Maior gasto: ${data.analysis.topCategory}\n`;
+    }
     message += '\n';
 
-    // Resumo
-    message += '📊 *Resumo Detalhado:*\n';
-    data.summary.items.forEach(item => {
-      message += `• ${item.label}: ${item.value}\n`;
-    });
-    message += '\n';
+    // Status e Recomendação
+    if (data.analysis.status === 'positive') {
+      message += '✅ *STATUS: CONTROLADO*\n';
+      message += '💡 Continue assim! Suas finanças estão bem organizadas.\n\n';
+    } else if (data.analysis.status === 'warning') {
+      message += '⚠️ *STATUS: ATENÇÃO*\n';
+      message += '💡 Monitore os gastos para não ultrapassar o orçamento.\n\n';
+    } else {
+      message += '🔴 *STATUS: CRÍTICO*\n';
+      message += '💡 Considere revisar seus gastos para equilibrar as finanças.\n\n';
+    }
 
     message += `📅 Exportado em: ${data.exportDate}\n`;
-    message += `📄 Formato: ${format}\n\n`;
+    message += `� Via: ${format === 'Resumo' ? 'App Mobile/Web' : format}\n\n`;
     message += '---\n';
-    message += '💡 Gerado pelo Sistema de Controle Financeiro';
+    message += '🚀 *Servo Tech - Controle Financeiro*\n';
+    message += '💡 Gerado automaticamente pelo seu assistente financeiro';
 
     return message;
   }
