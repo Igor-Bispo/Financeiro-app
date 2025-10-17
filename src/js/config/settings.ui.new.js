@@ -1,5 +1,34 @@
 // src/js/config/settings.ui.js
 
+// Função utilitária para formatar datas de orçamentos
+function formatBudgetDate(dateValue) {
+  try {
+    let date;
+    if (dateValue?.toDate) {
+      // Firestore Timestamp
+      date = dateValue.toDate();
+    } else if (dateValue?.seconds) {
+      // Firestore Timestamp em formato objeto
+      date = new Date(dateValue.seconds * 1000);
+    } else if (dateValue) {
+      // JavaScript Date ou string
+      date = new Date(dateValue);
+    } else {
+      return 'Data não disponível';
+    }
+    
+    // Validar se a data é válida
+    if (isNaN(date.getTime())) {
+      return 'Data não disponível';
+    }
+    
+    return date.toLocaleDateString('pt-BR');
+  } catch (e) {
+    console.warn('Erro ao formatar data do orçamento:', e);
+    return 'Data não disponível';
+  }
+}
+
 function renderEmptyState(icon, title, description) {
   return `
         <div class="empty-state">
@@ -64,7 +93,7 @@ function renderMyBudgets(budgets, currentUser, currentBudget) {
                         <div class="flex justify-between items-start">
                             <div>
                                 <p class="font-bold text-lg text-gray-900 dark:text-gray-100">${budget.nome}</p>
-                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Criado em ${budget.createdAt ? new Date(budget.createdAt.seconds * 1000).toLocaleDateString('pt-BR') : 'Data não disponível'}</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Criado em ${budget.createdAt ? formatBudgetDate(budget.createdAt) : 'Data não disponível'}</p>
                             </div>
                             ${budget.id !== currentBudget?.id ? `
                                 <button type="button" class="enter-budget-button btn btn-primary btn-sm" data-budget-id="${budget.id}" data-budget-name="${(budget.nome || 'Orçamento').replace(/"/g, '&quot;')}" title="Entrar neste orçamento">
@@ -141,7 +170,7 @@ export function generateSettingsHTML(state) {
                                 <button id="edit-budget-name-btn" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white p-3 rounded-xl">✏️</button>
                             </div>
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div class="bg-white bg-opacity-15 p-4 rounded-xl"><div class="text-lg font-bold">${currentBudget.createdAt ? new Date(currentBudget.createdAt.seconds * 1000).toLocaleDateString('pt-BR') : 'N/A'}</div><div class="text-sm opacity-90">Data de Criação</div></div>
+                                <div class="bg-white bg-opacity-15 p-4 rounded-xl"><div class="text-lg font-bold">${currentBudget.createdAt ? formatBudgetDate(currentBudget.createdAt) : 'N/A'}</div><div class="text-sm opacity-90">Data de Criação</div></div>
                                 <div class="bg-white bg-opacity-15 p-4 rounded-xl"><div class="text-lg font-bold">${usersWithAccess.length + 1}</div><div class="text-sm opacity-90">Usuários</div></div>
                                 <div class="bg-white bg-opacity-15 p-4 rounded-xl"><div class="text-lg font-bold truncate" title="${ownerDisplay}">${ownerDisplay}</div><div class="text-sm opacity-90">Proprietário</div></div>
                             </div>

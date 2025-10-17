@@ -1,8 +1,9 @@
 // src/js/config/settings.service.js
 
-import { doc, updateDoc, deleteDoc, collection, query, where, getDocs, getDoc, serverTimestamp, arrayUnion, addDoc } from 'firebase/firestore';
+import { doc, updateDoc, collection, query, where, getDocs, getDoc, serverTimestamp, arrayUnion, addDoc } from 'firebase/firestore';
 import { db } from '../firebase.js';
 import { getById as getBudgetById, loadUserBudgets } from '@features/budgets/service.js';
+import { getUserInfo } from '@features/notifications/NotificationService.js';
 
 
 /**
@@ -106,11 +107,29 @@ export async function loadSentBudgetInvitations(budgetId) {
 export async function acceptBudgetInvitation(invitationId) {
   console.log('[DEBUG] Aceitando convite:', invitationId);
   const invitationRef = doc(db, 'budgetInvitations', invitationId);
-  await updateDoc(invitationRef, { status: 'accepted', acceptedAt: serverTimestamp() });
-
+  
+  // Primeiro, verificar se o convite ainda existe
   const invitationSnap = await getDoc(invitationRef);
+  if (!invitationSnap.exists()) {
+    throw new Error('Convite não encontrado ou foi cancelado');
+  }
+  
   const invitationData = invitationSnap.data();
   console.log('[DEBUG] Dados do convite:', invitationData);
+  
+  // Verificar se o convite já foi aceito, recusado ou cancelado
+  if (invitationData.status === 'accepted') {
+    throw new Error('Convite já foi aceito');
+  }
+  if (invitationData.status === 'declined') {
+    throw new Error('Convite foi recusado');
+  }
+  if (invitationData.status === 'cancelled') {
+    throw new Error('Convite foi cancelado e não pode mais ser aceito');
+  }
+  
+  // Atualizar o status do convite
+  await updateDoc(invitationRef, { status: 'accepted', acceptedAt: serverTimestamp() });
 
   if (invitationData && invitationData.budgetId) {
     // Usar o currentUser.uid em vez do invitedUserId do convite
@@ -130,6 +149,34 @@ export async function acceptBudgetInvitation(invitationId) {
     });
 
     console.log('[DEBUG] Usuário adicionado ao orçamento com sucesso');
+
+    // 🎉 ENVIAR NOTIFICAÇÃO DE CONVITE ACEITO
+    try {
+      const { sendBudgetInviteAcceptedNotification } = await import('@features/notifications/NotificationService.js');
+      const accepterInfo = await getUserInfo(currentUserId);
+      const accepterName = accepterInfo?.displayName || accepterInfo?.email || 'Usuário';
+      
+      await sendBudgetInviteAcceptedNotification(
+        invitationData.budgetId,
+        invitationData.budgetName || 'Orçamento',
+        currentUserId,
+        accepterName,
+        invitationData.invitedByUserId // proprietário que enviou o convite
+      );
+      console.log('✅ Notificação de convite aceito enviada para:', invitationData.invitedByUserId);
+    } catch (error) {
+      console.error('❌ Erro ao enviar notificação de convite aceito:', error);
+    }
+
+    // 🔄 Emitir evento para atualizar interfaces
+    try {
+      const { eventBus } = await import('@core/events/eventBus.js');
+      eventBus.emit('invitation:changed');
+      console.log('🔔 Evento invitation:changed emitido após aceitar convite');
+    } catch (error) {
+      console.error('❌ Erro ao emitir evento invitation:changed:', error);
+    }
+
   } else {
     console.error('[DEBUG] Dados do convite inválidos:', {
       hasInvitationData: !!invitationData,
@@ -145,7 +192,45 @@ export async function acceptBudgetInvitation(invitationId) {
  */
 export async function declineBudgetInvitation(invitationId) {
   const invitationRef = doc(db, 'budgetInvitations', invitationId);
+  
+  // Obter dados do convite antes de atualizar
+  const invitationSnap = await getDoc(invitationRef);
+  const invitationData = invitationSnap.data();
+  
   await updateDoc(invitationRef, { status: 'declined' });
+
+  // 🚫 ENVIAR NOTIFICAÇÃO DE CONVITE RECUSADO
+  if (invitationData) {
+    try {
+      const { sendBudgetInviteDeclinedNotification } = await import('@features/notifications/NotificationService.js');
+      const currentUserId = window.appState?.currentUser?.uid;
+      
+      if (currentUserId) {
+        const declinerInfo = await getUserInfo(currentUserId);
+        const declinerName = declinerInfo?.displayName || declinerInfo?.email || 'Usuário';
+        
+        await sendBudgetInviteDeclinedNotification(
+          invitationData.budgetId,
+          invitationData.budgetName || 'Orçamento',
+          currentUserId,
+          declinerName,
+          invitationData.invitedByUserId // proprietário que enviou o convite
+        );
+        console.log('✅ Notificação de convite recusado enviada para:', invitationData.invitedByUserId);
+      }
+    } catch (error) {
+      console.error('❌ Erro ao enviar notificação de convite recusado:', error);
+    }
+  }
+
+  // 🔄 Emitir evento para atualizar interfaces
+  try {
+    const { eventBus } = await import('@core/events/eventBus.js');
+    eventBus.emit('invitation:changed');
+    console.log('🔔 Evento invitation:changed emitido após recusar convite');
+  } catch (error) {
+    console.error('❌ Erro ao emitir evento invitation:changed:', error);
+  }
 }
 
 /**
@@ -167,6 +252,37 @@ export async function removeUserFromBudget(budgetId, uidToRemove) {
   await updateDoc(budgetRef, {
     usuariosPermitidos: updatedUsers
   });
+
+  // 🗑️ ENVIAR NOTIFICAÇÃO DE REMOÇÃO
+  try {
+    const { sendBudgetRemovalNotification } = await import('@features/notifications/NotificationService.js');
+    const currentUser = window.appState?.user || window.appState?.currentUser;
+    
+    if (currentUser && currentUser.uid !== uidToRemove) {
+      const removerInfo = await getUserInfo(currentUser.uid);
+      const removerName = removerInfo?.displayName || removerInfo?.email || 'Usuário';
+      
+      await sendBudgetRemovalNotification(
+        budgetId,
+        budgetData.nome || 'Orçamento',
+        uidToRemove,
+        currentUser.uid,
+        removerName
+      );
+      console.log('✅ Notificação de remoção enviada para:', uidToRemove);
+    }
+  } catch (error) {
+    console.error('❌ Erro ao enviar notificação de remoção:', error);
+  }
+
+  // 🔄 Emitir evento para atualizar interfaces
+  try {
+    const { eventBus } = await import('@core/events/eventBus.js');
+    eventBus.emit('invitation:changed');
+    console.log('🔔 Evento invitation:changed emitido após remover usuário');
+  } catch (error) {
+    console.error('❌ Erro ao emitir evento invitation:changed:', error);
+  }
 }
 
 /**
@@ -185,7 +301,25 @@ export async function updateBudgetName(budgetId, newName) {
  */
 export async function cancelSentInvitation(invitationId) {
   const invitationRef = doc(db, 'budgetInvitations', invitationId);
-  await deleteDoc(invitationRef);
+  
+  // Verificar se o convite existe antes de cancelar
+  const invitationSnap = await getDoc(invitationRef);
+  if (!invitationSnap.exists()) {
+    throw new Error('Convite não encontrado');
+  }
+  
+  const invitationData = invitationSnap.data();
+  
+  // Verificar se o convite já foi aceito
+  if (invitationData.status === 'accepted') {
+    throw new Error('Não é possível cancelar um convite já aceito');
+  }
+  
+  // Marcar como cancelado em vez de deletar (melhor para auditoria)
+  await updateDoc(invitationRef, {
+    status: 'cancelled',
+    cancelledAt: serverTimestamp()
+  });
 }
 
 /**
@@ -281,6 +415,48 @@ export async function inviteUserToBudget(budgetId, email, inviter) {
     status: 'pending',
     createdAt: serverTimestamp()
   });
+
+  // 📨 ENVIAR NOTIFICAÇÕES DE CONVITE
+  try {
+    const { sendBudgetInviteNotification, sendBudgetInviteSentNotification } = await import('@features/notifications/NotificationService.js');
+    const inviterInfo = await getUserInfo(inviter.uid);
+    const inviterName = inviterInfo?.displayName || inviterInfo?.email || 'Usuário';
+    
+    // Notificação para quem recebeu o convite (se usuário já existe)
+    if (invitedUserId) {
+      await sendBudgetInviteNotification(
+        budgetId,
+        budget.nome || 'Orçamento',
+        invitedUserId,
+        inviter.uid,
+        inviterName
+      );
+      console.log('✅ Notificação de convite enviada para:', invitedUserId);
+    }
+    
+    // Notificação para quem enviou o convite
+    await sendBudgetInviteSentNotification(
+      budgetId,
+      budget.nome || 'Orçamento',
+      inviter.uid,
+      inviterName,
+      email.trim()
+    );
+    console.log('✅ Notificação de convite enviado para:', inviter.uid);
+    
+  } catch (error) {
+    console.error('❌ Erro ao enviar notificações de convite:', error);
+  }
+
+  // 🔄 Emitir evento para atualizar interfaces
+  try {
+    const { eventBus } = await import('@core/events/eventBus.js');
+    eventBus.emit('invitation:changed');
+    console.log('🔔 Evento invitation:changed emitido após enviar convite');
+  } catch (error) {
+    console.error('❌ Erro ao emitir evento invitation:changed:', error);
+  }
+
   return { id: docRef.id };
 }
 

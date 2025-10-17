@@ -2,6 +2,35 @@
 // Provides only the essential global functions required by SettingsPage
 // Keep this file small, readable and syntax-safe
 
+// Função utilitária para formatar datas de orçamentos
+function formatBudgetDate(dateValue) {
+  try {
+    let date;
+    if (dateValue?.toDate) {
+      // Firestore Timestamp
+      date = dateValue.toDate();
+    } else if (dateValue?.seconds) {
+      // Firestore Timestamp em formato objeto
+      date = new Date(dateValue.seconds * 1000);
+    } else if (dateValue) {
+      // JavaScript Date ou string
+      date = new Date(dateValue);
+    } else {
+      return 'Data não disponível';
+    }
+    
+    // Validar se a data é válida
+    if (isNaN(date.getTime())) {
+      return 'Data não disponível';
+    }
+    
+    return date.toLocaleDateString('pt-BR');
+  } catch (e) {
+    console.warn('Erro ao formatar data do orçamento:', e);
+    return 'Data não disponível';
+  }
+}
+
 // DEBUG_MARKER_START
 console.log('[settings.handlers] minimal handlers loaded @', new Date().toISOString());
 
@@ -339,15 +368,53 @@ window.cancelSentInvitation = async function (invitationId) {
 };
 
 window.removeUserFromBudget = async function (uid) {
+  console.log('[DEBUG] 🚀 removeUserFromBudget iniciada para UID:', uid);
   try {
     const { appState } = window;
+    console.log('[DEBUG] 📊 AppState:', appState?.currentBudget?.id);
     if (!appState?.currentBudget?.id) throw new Error('Orçamento inválido');
     if (!uid) return;
-    if (!confirm('Remover este usuário do orçamento?')) return;
-    (await svc()).removeUserFromBudget(appState.currentBudget.id, uid);
-    snk().success('Usuário removido');
+    
+    console.log('[DEBUG] ✅ Parâmetros válidos, exibindo modal...');
+    
+    // Usar modal de confirmação personalizado se disponível
+    let confirmed = false;
+    if (window.confirmModal && typeof window.confirmModal.show === 'function') {
+      console.log('[DEBUG] 🎯 Usando confirmModal.show');
+      confirmed = await window.confirmModal.show({
+        title: 'Remover Usuário',
+        message: 'Deseja remover este usuário do orçamento compartilhado?',
+        confirmText: 'Sim, Remover',
+        cancelText: 'Cancelar',
+        type: 'danger'
+      });
+    } else {
+      console.log('[DEBUG] 🎯 Usando confirm() nativo');
+      confirmed = confirm('Remover este usuário do orçamento?');
+    }
+    
+    console.log('[DEBUG] 🤔 Confirmação recebida:', confirmed);
+    if (!confirmed) {
+      console.log('[DEBUG] ❌ Operação cancelada pelo usuário');
+      return;
+    }
+    
+    console.log('[DEBUG] 🔧 Executando remoção no serviço...');
+    await (await svc()).removeUserFromBudget(appState.currentBudget.id, uid);
+    console.log('[DEBUG] ✅ Usuário removido com sucesso!');
+    
+    snk().success('Usuário removido do orçamento');
     window.dispatchEvent(new CustomEvent('budget:changed'));
-  } catch {
+    
+    // Atualizar a interface automaticamente
+    console.log('[DEBUG] 🔄 Atualizando interface automaticamente...');
+    setTimeout(() => {
+      if (window.location.hash.includes('/settings')) {
+        window.location.reload();
+      }
+    }, 1000); // Aguarda 1 segundo para o usuário ver o snackbar
+  } catch (error) {
+    console.error('[DEBUG] ❌ Erro ao remover usuário:', error);
     snk().error('Erro ao remover usuário');
   }
 };
@@ -390,6 +457,40 @@ window.enterBudget = async function (budgetId, budgetName) {
     }
 
     console.log('[DEBUG] 📊 Orçamento encontrado:', fullBudget);
+
+    // 🚨 VERIFICAÇÃO DE ACESSO - Confirmar se usuário ainda tem permissão
+    const currentUser = window.appState?.user || window.appState?.currentUser;
+    if (currentUser && currentUser.uid) {
+      const isOwner = fullBudget.userId === currentUser.uid || fullBudget.criadoPor === currentUser.uid;
+      const isAllowed = fullBudget.usuariosPermitidos && fullBudget.usuariosPermitidos.includes(currentUser.uid);
+      
+      if (!isOwner && !isAllowed) {
+        console.log('[DEBUG] 🚫 Usuário não tem mais permissão para acessar este orçamento');
+        window.__changingBudget = false;
+        snk().warning('Você não tem mais acesso a este orçamento');
+        
+        // Limpar orçamento da lista local se ainda estiver lá
+        try {
+          localStorage.removeItem('currentBudgetId');
+          if (window.appState) {
+            window.appState.currentBudget = null;
+          }
+          
+          // Recarregar a página de configurações para atualizar a lista
+          setTimeout(() => {
+            if (window.location.hash.includes('/settings')) {
+              window.location.reload();
+            }
+          }, 1500);
+        } catch (e) {
+          console.warn('Erro ao limpar estado local:', e);
+        }
+        
+        return;
+      }
+      
+      console.log('[DEBUG] ✅ Usuário tem permissão para acessar o orçamento');
+    }
 
     // Navegar imediatamente para dashboard antes de emitir eventos
     try {
@@ -485,22 +586,211 @@ async function handleDeclineInvitation(inviteId) {
   }
 }
 
+// Cancel invitation --------------------------------------------------------
+async function handleCancelInvitation(inviteId) {
+  try {
+    console.log('[DEBUG] Cancelando convite:', inviteId);
+    const { appState } = window;
+    if (!appState?.currentUser) {
+      snk().error('Precisa estar autenticado');
+      return;
+    }
+
+    await (await svc()).cancelSentInvitation(inviteId);
+    snk().success('Convite cancelado');
+    window.dispatchEvent(new CustomEvent('invitation:changed'));
+
+    // Recarregar a página para atualizar o estado
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000);
+  } catch (e) {
+    console.error('[DEBUG] Erro ao cancelar convite:', e);
+    snk().error(e?.message || 'Erro ao cancelar convite');
+  }
+}
+
 // Share / invite form submit -----------------------------------------------
 async function handleInviteSubmit(form) {
   try {
     const emailInput = form.querySelector('input[name="inviteEmail"], input[type="email"]');
     const email = emailInput?.value?.trim();
     if (!email) { snk().warning('Informe um email'); return; }
+    
     const { appState } = window;
-    if (!appState?.currentBudget?.id) { snk().error('Nenhum orçamento ativo'); return; }
     if (!appState?.currentUser) { snk().error('Precisa estar autenticado'); return; }
-    await (await svc()).inviteUserToBudget(appState.currentBudget.id, email, appState.currentUser);
-    snk().success('Convite enviado');
-    emailInput.value = '';
-    window.dispatchEvent(new CustomEvent('invitation:changed'));
+    
+    // Carregar orçamentos do usuário para seleção
+    const { loadUserBudgets } = await import('@features/budgets/service.js');
+    const budgets = await loadUserBudgets(appState.currentUser.uid);
+    
+    // Filtrar apenas orçamentos próprios (onde o usuário é dono)
+    const ownBudgets = budgets.filter(b => b.userId === appState.currentUser.uid);
+    
+    if (!ownBudgets || ownBudgets.length === 0) {
+      snk().error('Você não possui orçamentos para compartilhar');
+      return;
+    }
+    
+    // Se houver apenas um orçamento, usar diretamente
+    if (ownBudgets.length === 1) {
+      await sendBudgetInvite(ownBudgets[0].id, email, appState.currentUser);
+      emailInput.value = '';
+      return;
+    }
+    
+    // Caso contrário, abrir modal de seleção
+    await showBudgetSelectionModal(ownBudgets, email, appState.currentUser, emailInput);
+    
   } catch (e) {
     snk().error(e?.message || 'Erro ao convidar');
   }
+}
+
+// Função para enviar convite de orçamento
+async function sendBudgetInvite(budgetId, email, currentUser) {
+  try {
+    await (await svc()).inviteUserToBudget(budgetId, email, currentUser);
+    snk().success('Convite enviado');
+    window.dispatchEvent(new CustomEvent('invitation:changed'));
+  } catch (e) {
+    throw e;
+  }
+}
+
+// Modal de seleção de orçamento para compartilhamento
+async function showBudgetSelectionModal(budgets, email, currentUser, emailInput) {
+  return new Promise((resolve) => {
+    // Remover modal existente se houver
+    const existingModal = document.getElementById('budget-selection-modal');
+    if (existingModal) {
+      existingModal.remove();
+    }
+
+    // Criar modal
+    const modal = document.createElement('div');
+    modal.id = 'budget-selection-modal';
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+    
+    modal.innerHTML = `
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-hidden">
+        <!-- Header -->
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+            <span class="text-blue-500">📋</span>
+            <span>Selecionar Orçamento</span>
+          </h3>
+          <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+            Escolha qual orçamento deseja compartilhar com <strong>${email}</strong>
+          </p>
+        </div>
+        
+        <!-- Lista de orçamentos -->
+        <div class="px-6 py-4 max-h-60 overflow-y-auto">
+          <div class="space-y-3">
+            ${budgets.map(budget => `
+              <button class="budget-option w-full text-left p-4 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200" data-budget-id="${budget.id}">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <div class="font-medium text-gray-900 dark:text-gray-100">${budget.nome}</div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">
+                      Criado em ${formatBudgetDate(budget.createdAt)}
+                    </div>
+                  </div>
+                  <div class="text-blue-500 dark:text-blue-400">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                  </div>
+                </div>
+              </button>
+            `).join('')}
+          </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex gap-3">
+          <button id="cancel-selection" class="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors">
+            Cancelar
+          </button>
+        </div>
+      </div>
+    `;
+
+    // Adicionar event listeners
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.remove();
+        resolve();
+      }
+    });
+
+    modal.querySelector('#cancel-selection').addEventListener('click', () => {
+      modal.remove();
+      resolve();
+    });
+
+    // Event listeners para seleção de orçamento
+    modal.querySelectorAll('.budget-option').forEach(button => {
+      button.addEventListener('click', async () => {
+        const budgetId = button.dataset.budgetId;
+        const selectedBudget = budgets.find(b => b.id === budgetId);
+        
+        if (!selectedBudget) {
+          snk().error('Orçamento não encontrado');
+          return;
+        }
+
+        // Mostrar loading
+        button.innerHTML = `
+          <div class="flex items-center justify-center">
+            <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+            <span class="ml-2 text-gray-600 dark:text-gray-400">Enviando convite...</span>
+          </div>
+        `;
+
+        try {
+          await sendBudgetInvite(budgetId, email, currentUser);
+          emailInput.value = '';
+          modal.remove();
+          resolve();
+        } catch (error) {
+          snk().error(error?.message || 'Erro ao enviar convite');
+          // Restaurar botão
+          button.innerHTML = `
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="font-medium text-gray-900 dark:text-gray-100">${selectedBudget.nome}</div>
+                <div class="text-sm text-gray-500 dark:text-gray-400">
+                  Criado em ${formatBudgetDate(selectedBudget.createdAt)}
+                </div>
+              </div>
+              <div class="text-blue-500 dark:text-blue-400">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+              </div>
+            </div>
+          `;
+        }
+      });
+    });
+
+    // Adicionar ao DOM
+    document.body.appendChild(modal);
+    
+    // Animar entrada
+    requestAnimationFrame(() => {
+      modal.style.opacity = '0';
+      modal.style.transform = 'scale(0.95)';
+      modal.style.transition = 'all 0.2s ease-out';
+      
+      requestAnimationFrame(() => {
+        modal.style.opacity = '1';
+        modal.style.transform = 'scale(1)';
+      });
+    });
+  });
 }
 
 // Theme --------------------------------------------------------------------
@@ -1302,8 +1592,38 @@ window.installApp = function () {
       return;
     }
 
-    // SEMPRE mostrar o modal moderno com instruções
-    console.log('[DEBUG] Mostrando modal de instalação moderno...');
+    // 🎨 MODO DEMO - FORÇAR MODAL ELEGANTE (TEMPORÁRIO PARA VISUALIZAÇÃO)
+    console.log('[DEBUG] 🎨 MODO DEMO ATIVADO - Mostrando modal elegante em vez de instalação automática');
+    
+    // Comentando instalação automática temporariamente para mostrar o modal elegante
+    /*
+    if (window.deferredPrompt) {
+      console.log('[DEBUG] 🎯 Prompt de instalação disponível! Iniciando instalação automática...');
+      
+      // Usar o prompt nativo do PWA
+      window.deferredPrompt.prompt();
+      
+      window.deferredPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+          console.log('[DEBUG] ✅ Usuário aceitou a instalação');
+          snk().success('App sendo instalado...');
+        } else {
+          console.log('[DEBUG] ❌ Usuário recusou a instalação');
+          snk().info('Instalação cancelada pelo usuário');
+        }
+        // Limpar o prompt usado
+        window.deferredPrompt = null;
+      }).catch((error) => {
+        console.error('[DEBUG] ❌ Erro no prompt de instalação:', error);
+        snk().error('Erro ao processar instalação');
+      });
+      
+      return; // Sair da função após tentar instalação automática
+    }
+    */
+
+    // Se chegou aqui, instalação automática não está disponível
+    console.log('[DEBUG] 📋 Instalação automática não disponível, mostrando instruções...');
 
     // Verificar se é um navegador compatível
     if (navigator.userAgent.includes('Chrome') ||
@@ -1313,111 +1633,304 @@ window.installApp = function () {
         navigator.userAgent.includes('iPhone') ||
         navigator.userAgent.includes('iPad')) {
 
-        // Mostrar instruções manuais com design moderno (v1.0.5)
-        console.log('[DEBUG] 🎨 Mostrando modal de instalação MODERNO v1.0.5');
-        const modalHTML = `
-          <div id="install-app-modal-v105" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-              <!-- Header -->
-              <div class="text-center p-6 border-b border-gray-200 dark:border-gray-700">
-                <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-                  <span class="text-3xl text-white">📱</span>
-                </div>
-                <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-2">Instalar Aplicativo</h2>
-                <p class="text-gray-600 dark:text-gray-400 text-sm">Adicione à sua tela inicial para acesso rápido</p>
-              </div>
-
-              <!-- Content -->
-              <div class="p-6 space-y-4">
-                <!-- Como instalar -->
-                <div class="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 p-4 rounded-xl border border-blue-200 dark:border-blue-700">
-                  <div class="flex items-center gap-3 mb-3">
-                    <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center shadow-md">
-                      <span class="text-lg text-white">📲</span>
-                    </div>
-                    <h3 class="font-semibold text-blue-800 dark:text-blue-200">Como Instalar</h3>
-                  </div>
-                  <div class="space-y-3 text-sm">
-                    <div class="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm">
-                      <p class="font-medium text-gray-700 dark:text-gray-300 mb-1">🌐 Chrome/Edge (Desktop)</p>
-                      <p class="text-gray-600 dark:text-gray-400 text-xs">Clique no ícone de instalação (➕) na barra de endereços</p>
-                    </div>
-                    <div class="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm">
-                      <p class="font-medium text-gray-700 dark:text-gray-300 mb-1">🤖 Android</p>
-                      <p class="text-gray-600 dark:text-gray-400 text-xs">Menu (⋮) → "Instalar app" ou "Adicionar à tela inicial"</p>
-                    </div>
-                    <div class="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm">
-                      <p class="font-medium text-gray-700 dark:text-gray-300 mb-1">🍎 Safari (iOS)</p>
-                      <p class="text-gray-600 dark:text-gray-400 text-xs">Compartilhar (⎙) → "Adicionar à Tela Inicial"</p>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Benefícios -->
-                <div class="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/30 dark:to-emerald-900/30 p-4 rounded-xl border border-green-200 dark:border-green-700">
-                  <div class="flex items-center gap-3 mb-3">
-                    <div class="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center shadow-md">
-                      <span class="text-lg text-white">✨</span>
-                    </div>
-                    <h3 class="font-semibold text-green-800 dark:text-green-200">Benefícios</h3>
-                  </div>
-                  <div class="grid grid-cols-2 gap-2 text-xs">
-                    <div class="bg-white dark:bg-gray-800 rounded-lg p-2 shadow-sm">
-                      <span class="text-green-600 dark:text-green-400">🚀</span>
-                      <p class="text-gray-700 dark:text-gray-300 font-medium mt-1">Acesso Rápido</p>
-                    </div>
-                    <div class="bg-white dark:bg-gray-800 rounded-lg p-2 shadow-sm">
-                      <span class="text-blue-600 dark:text-blue-400">📡</span>
-                      <p class="text-gray-700 dark:text-gray-300 font-medium mt-1">Funciona Offline</p>
-                    </div>
-                    <div class="bg-white dark:bg-gray-800 rounded-lg p-2 shadow-sm">
-                      <span class="text-purple-600 dark:text-purple-400">🔔</span>
-                      <p class="text-gray-700 dark:text-gray-300 font-medium mt-1">Notificações</p>
-                    </div>
-                    <div class="bg-white dark:bg-gray-800 rounded-lg p-2 shadow-sm">
-                      <span class="text-orange-600 dark:text-orange-400">⚡</span>
-                      <p class="text-gray-700 dark:text-gray-300 font-medium mt-1">Performance</p>
-                    </div>
-                  </div>
+      // Mostrar instruções manuais com design moderno e bonito (v2.0)
+      console.log('[DEBUG] 🎨 Mostrando modal de instalação SUPER MODERNO v2.1 - CACHE UPDATED');
+      const modalHTML = `
+        <div id="install-app-modal-v106" class="fixed inset-0 bg-gradient-to-br from-black/70 via-purple-900/50 to-blue-900/40 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-elegantFadeIn">
+          <div class="bg-white dark:bg-gray-900 rounded-3xl max-w-md w-full shadow-2xl transform transition-all animate-slideUp">
+            
+            <!-- Header Gradient -->
+            <div class="relative bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 rounded-t-3xl p-8 text-center overflow-hidden">
+              <!-- Decorative elements -->
+              <div class="absolute top-0 left-0 w-32 h-32 bg-white/10 rounded-full -translate-x-16 -translate-y-16"></div>
+              <div class="absolute bottom-0 right-0 w-24 h-24 bg-white/10 rounded-full translate-x-12 translate-y-12"></div>
+              
+              <!-- App Icon -->
+              <div class="relative w-20 h-20 mx-auto mb-4 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-lg">
+                <div class="w-16 h-16 bg-gradient-to-br from-white to-blue-100 rounded-xl flex items-center justify-center shadow-inner">
+                  <span class="text-3xl">�</span>
                 </div>
               </div>
+              
+              <!-- Title -->
+              <h2 class="text-2xl font-bold text-white mb-2 drop-shadow-sm">Servo Tech - Finanças</h2>
+              <p class="text-blue-100 text-sm font-medium">Instale o app para uma experiência completa</p>
+            </div>
 
-              <!-- Footer -->
-              <div class="p-6 border-t border-gray-200 dark:border-gray-700">
-                <button id="close-install-modal" class="w-full bg-gray-500 hover:bg-gray-600 text-white font-medium py-3 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md">
-                  Entendi
-                </button>
+            <!-- Content -->
+            <div class="p-6 space-y-5">
+              
+              <!-- Installation Steps -->
+              <div class="space-y-3">
+                <div class="flex items-center gap-3 mb-4">
+                  <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                    <span class="text-white text-sm font-bold">1</span>
+                  </div>
+                  <h3 class="font-semibold text-gray-800 dark:text-gray-200">Como instalar:</h3>
+                </div>
+                
+                <!-- Chrome/Edge -->
+                <div class="flex items-start gap-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-100 dark:border-blue-800">
+                  <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span class="text-white text-sm">🌐</span>
+                  </div>
+                  <div>
+                    <p class="font-medium text-gray-800 dark:text-gray-200 text-sm">Chrome/Edge</p>
+                    <p class="text-gray-600 dark:text-gray-400 text-xs mt-1">Clique no ícone <span class="font-semibold text-blue-600">⊕ Instalar</span> na barra de endereços</p>
+                  </div>
+                </div>
+
+                <!-- Android -->
+                <div class="flex items-start gap-3 p-3 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl border border-green-100 dark:border-green-800">
+                  <div class="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span class="text-white text-sm">🤖</span>
+                  </div>
+                  <div>
+                    <p class="font-medium text-gray-800 dark:text-gray-200 text-sm">Android</p>
+                    <p class="text-gray-600 dark:text-gray-400 text-xs mt-1">Menu <span class="font-semibold">⋮</span> → <span class="font-semibold text-green-600">"Instalar app"</span></p>
+                  </div>
+                </div>
+
+                <!-- iOS Safari -->
+                <div class="flex items-start gap-3 p-3 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl border border-purple-100 dark:border-purple-800">
+                  <div class="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span class="text-white text-sm">🍎</span>
+                  </div>
+                  <div>
+                    <p class="font-medium text-gray-800 dark:text-gray-200 text-sm">Safari (iOS)</p>
+                    <p class="text-gray-600 dark:text-gray-400 text-xs mt-1">Compartilhar <span class="font-semibold">⎙</span> → <span class="font-semibold text-purple-600">"Adicionar à Tela Inicial"</span></p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Benefits -->
+              <div class="bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 dark:from-amber-900/20 dark:via-orange-900/20 dark:to-red-900/20 p-4 rounded-xl border border-amber-200 dark:border-amber-800">
+                <div class="flex items-center gap-3 mb-3">
+                  <div class="w-8 h-8 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg flex items-center justify-center">
+                    <span class="text-white text-sm">✨</span>
+                  </div>
+                  <h3 class="font-semibold text-gray-800 dark:text-gray-200">Vantagens do app:</h3>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                  <div class="flex items-center gap-2">
+                    <span class="text-lg">🚀</span>
+                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Acesso rápido</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-lg">�</span>
+                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Tela cheia</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-lg">�</span>
+                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Funciona offline</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-lg">🔔</span>
+                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Notificações</span>
+                  </div>
+                </div>
               </div>
             </div>
+
+            <!-- Premium Footer -->
+            <div class="p-7 pt-0 space-y-4">
+              <!-- Botão de instalação direta (se prompt disponível) -->
+              <button id="install-direct-btn" class="w-full bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 text-white font-bold py-4 px-6 rounded-2xl transition-all duration-500 shadow-2xl hover:shadow-purple-500/25 transform hover:scale-[1.03] active:scale-[0.97] border border-indigo-400/30" style="display: none;">
+                <span class="flex items-center justify-center gap-3">
+                  <span class="text-xl animate-pulse">📱</span>
+                  <span class="tracking-wide">Instalar Agora</span>
+                  <span class="text-xl animate-bounce">🚀</span>
+                </span>
+              </button>
+              
+              <!-- Botão para fechar elegante -->
+              <button id="close-install-modal" class="w-full bg-gradient-to-r from-gray-500/80 via-gray-600/80 to-gray-700/80 hover:from-gray-600 hover:via-gray-700 hover:to-gray-800 text-white font-semibold py-4 px-6 rounded-2xl transition-all duration-500 shadow-xl hover:shadow-gray-500/20 transform hover:scale-[1.02] active:scale-[0.98] backdrop-blur-sm border border-gray-400/20">
+                <span class="flex items-center justify-center gap-3">
+                  <span class="text-lg">✨</span>
+                  <span class="tracking-wide">Entendi</span>
+                  <span class="text-lg">�</span>
+                </span>
+              </button>
+            </div>
           </div>
-        `;
+        </div>
 
-        // Remover modais existentes se houver (todas as versões)
-        const existingModal = document.getElementById('install-app-modal');
-        const existingModalV105 = document.getElementById('install-app-modal-v105');
-        if (existingModal) existingModal.remove();
-        if (existingModalV105) existingModalV105.remove();
+        <style>
+          @keyframes elegantFadeIn {
+            from { 
+              opacity: 0;
+              backdrop-filter: blur(0px);
+            }
+            to { 
+              opacity: 1;
+              backdrop-filter: blur(12px);
+            }
+          }
+          
+          @keyframes elegantSlideUp {
+            from { 
+              opacity: 0;
+              transform: translateY(50px) scale(0.9) rotateX(15deg);
+              filter: blur(5px);
+            }
+            to { 
+              opacity: 1;
+              transform: translateY(0) scale(1) rotateX(0deg);
+              filter: blur(0px);
+            }
+          }
 
-        // Adicionar modal ao DOM
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
+          @keyframes float1 {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            33% { transform: translateY(-10px) rotate(120deg); }
+            66% { transform: translateY(5px) rotate(240deg); }
+          }
 
-        // Event listeners
-        const modal = document.getElementById('install-app-modal-v105');
+          @keyframes float2 {
+            0%, 100% { transform: translateX(0px) scale(1); }
+            50% { transform: translateX(15px) scale(1.2); }
+          }
+
+          @keyframes float3 {
+            0%, 100% { transform: translate(0px, 0px) rotate(0deg); }
+            25% { transform: translate(10px, -5px) rotate(90deg); }
+            50% { transform: translate(-5px, 10px) rotate(180deg); }
+            75% { transform: translate(-10px, -5px) rotate(270deg); }
+          }
+          
+          .animate-elegantFadeIn {
+            animation: elegantFadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+          }
+          
+          .animate-elegantSlideUp {
+            animation: elegantSlideUp 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+          }
+
+          .animate-float1 {
+            animation: float1 6s ease-in-out infinite;
+          }
+
+          .animate-float2 {
+            animation: float2 4s ease-in-out infinite 1s;
+          }
+
+          .animate-float3 {
+            animation: float3 8s ease-in-out infinite 2s;
+          }
+
+          .bg-gradient-radial {
+            background: radial-gradient(circle, var(--tw-gradient-stops));
+          }
+
+          .bg-gradient-conic {
+            background: conic-gradient(var(--tw-gradient-stops));
+          }
+        </style>
+      `;
+
+      // Remover modais existentes se houver (todas as versões)
+      const existingModal = document.getElementById('install-app-modal');
+      const existingModalV105 = document.getElementById('install-app-modal-v105');
+      const existingModalV106 = document.getElementById('install-app-modal-v106');
+      if (existingModal) existingModal.remove();
+      if (existingModalV105) existingModalV105.remove();
+      if (existingModalV106) existingModalV106.remove();
+
+      // Adicionar modal ao DOM
+      document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+      // Event listeners - AGUARDAR DOM ESTAR PRONTO
+      setTimeout(() => {
+        // Buscar por todas as versões possíveis do modal
+        let modal = document.getElementById('install-app-modal-v106') || 
+                   document.getElementById('install-app-modal-v105') ||
+                   document.querySelector('[id*="install-app-modal"]');
+        
         const closeBtn = document.getElementById('close-install-modal');
+        const installBtn = document.getElementById('install-direct-btn');
+
+        console.log('[DEBUG] 🎯 Modal encontrado:', !!modal, modal?.id);
+        console.log('[DEBUG] 🎯 CloseBtn encontrado:', !!closeBtn);
+        console.log('[DEBUG] 🎯 InstallBtn encontrado:', !!installBtn);
 
         function closeModal() {
-          if (modal) modal.remove();
+          console.log('[DEBUG] 🚪 Fechando modal...');
+          
+          // Buscar novamente o modal se necessário
+          if (!modal) {
+            modal = document.getElementById('install-app-modal-v106') || 
+                   document.getElementById('install-app-modal-v105') ||
+                   document.querySelector('[id*="install-app-modal"]');
+          }
+          
+          if (modal) {
+            console.log('[DEBUG] 🗑️ Removendo modal:', modal.id);
+            modal.remove();
+            console.log('[DEBUG] ✅ Modal removido com sucesso!');
+          } else {
+            console.log('[DEBUG] ❌ Modal não encontrado para remoção');
+            // Fallback: remover qualquer modal de instalação
+            document.querySelectorAll('[id*="install-app-modal"]').forEach(m => {
+              console.log('[DEBUG] 🗑️ Removendo modal fallback:', m.id);
+              m.remove();
+            });
+          }
         }
 
+        // 🚀 Verificar se prompt de instalação está disponível para mostrar botão
+        if (window.deferredPrompt && installBtn) {
+          console.log('[DEBUG] 🎯 Prompt disponível! Mostrando botão de instalação direta');
+          installBtn.style.display = 'block';
+          
+          // Adicionar funcionalidade ao botão de instalação
+          installBtn.addEventListener('click', async () => {
+            try {
+              console.log('[DEBUG] 🚀 Iniciando instalação direta do modal...');
+              await window.deferredPrompt.prompt();
+              
+              const choiceResult = await window.deferredPrompt.userChoice;
+              if (choiceResult.outcome === 'accepted') {
+                console.log('[DEBUG] ✅ Instalação aceita');
+                snk().success('App sendo instalado...');
+                closeModal();
+              } else {
+                console.log('[DEBUG] ❌ Instalação recusada');
+                snk().info('Instalação cancelada');
+              }
+              
+              // Limpar o prompt usado
+              window.deferredPrompt = null;
+            } catch (error) {
+              console.error('[DEBUG] ❌ Erro na instalação direta:', error);
+              snk().error('Erro ao instalar');
+            }
+          });
+        } else {
+          console.log('[DEBUG] 📋 Prompt não disponível, mantendo apenas instruções');
+        }
+
+        // Event listener para botão fechar
         if (closeBtn) {
-          closeBtn.addEventListener('click', closeModal);
-        }
-
-        if (modal) {
-          modal.addEventListener('click', (e) => {
-            if (e.target === modal) closeModal();
+          console.log('[DEBUG] 🎯 Adicionando evento de click ao botão fechar');
+          closeBtn.addEventListener('click', (e) => {
+            console.log('[DEBUG] 🖱️ Botão fechar clicado!');
+            e.preventDefault();
+            e.stopPropagation();
+            closeModal();
           });
         }
+
+        // Event listener para clique no background
+        if (modal) {
+          console.log('[DEBUG] 🎯 Adicionando evento de click ao background do modal');
+          modal.addEventListener('click', (e) => {
+            console.log('[DEBUG] 🖱️ Background do modal clicado!', e.target.id);
+            if (e.target === modal) {
+              closeModal();
+            }
+          });
+        }
+      }, 100); // Aguardar 100ms para DOM estar pronto
     } else {
       snk().warning('Instalação não disponível neste navegador');
     }
@@ -1473,6 +1986,19 @@ document.addEventListener('click', (ev) => {
       console.log('[DEBUG] 🎯 Botão do FAB detectado - NÃO interceptando!');
       // NÃO FAZER NADA - deixar o addEventListener do FAB funcionar
       return; // Sair do handler para não interferir
+    }
+    
+    // Handler específico para botões remove-user-btn (ANTES da verificação de onclick)
+    if (buttonToExecute.classList.contains('remove-user-btn')) {
+      const uid = buttonToExecute.getAttribute('data-uid');
+      if (uid) {
+        console.log('[DEBUG] 🗑️ Removendo usuário:', uid);
+        // Chama função async corretamente
+        window.removeUserFromBudget(uid).catch(error => {
+          console.error('[DEBUG] ❌ Erro na remoção:', error);
+        });
+        return;
+      }
     }
     
     // Obter o atributo onclick (que é uma string)
@@ -1556,6 +2082,7 @@ document.addEventListener('click', (ev) => {
                          t.id === 'share-budget-btn' ||
                          t.classList?.contains('accept-invitation-btn') ||
                          t.classList?.contains('decline-invitation-btn') ||
+                         t.classList?.contains('cancel-invitation-btn') ||
                          t.id === 'clear-data-btn' ||
                          t.id === 'btn-logout' ||
                          t.id === 'limit-alerts-toggle' ||
@@ -1593,6 +2120,7 @@ document.addEventListener('click', (ev) => {
                          t.classList?.contains('leave-budget-btn') ||
                          t.id === 'enter-budget-button' ||
                          t.id === 'enter-text' ||
+                         t.id === 'create-new-budget-btn' ||
                          t.classList?.contains('color-theme-btn') ||
                          t.classList?.contains('compact-size-btn') ||
                          t.textContent?.includes('Copiar Informações') ||
@@ -1759,6 +2287,29 @@ document.addEventListener('click', (ev) => {
       console.warn('[DEBUG] Budget ID não encontrado no elemento');
       snk().error('Erro: ID do orçamento não encontrado');
     }
+    return;
+  }
+
+  // Handler para botão Criar Novo Orçamento
+  if (t.id === 'create-new-budget-btn') {
+    console.log('[DEBUG] Handler create-new-budget-btn executado!');
+    
+    try {
+      // Verificar se a função existe
+      if (typeof window.showAddBudgetModal === 'function') {
+        console.log('[DEBUG] Chamando window.showAddBudgetModal...');
+        window.showAddBudgetModal();
+      } else {
+        console.log('[DEBUG] window.showAddBudgetModal não está disponível, criando modal inline...');
+        
+        // Criar modal inline diretamente
+        createBudgetModalInline();
+      }
+    } catch (error) {
+      console.error('[DEBUG] Erro ao abrir modal de criar orçamento:', error);
+      snk().error('Erro ao abrir modal de criar orçamento');
+    }
+    
     return;
   }
 
@@ -3060,6 +3611,15 @@ ${events.slice(0, 10).map(e =>
     return;
   }
 
+  // Handler para botão de cancelar convite
+  if (t.classList?.contains('cancel-invitation-btn') || t.textContent?.includes('❌ Cancelar')) {
+    const inviteId = t.getAttribute('data-invite-id');
+    if (inviteId) {
+      handleCancelInvitation(inviteId);
+    }
+    return;
+  }
+
   // TESTE: Handler para testar notificações
   console.log('[DEBUG] Verificando botão de teste - ID:', t.id, 'Texto:', t.textContent);
   console.log('[DEBUG] Condição 1 (ID):', t.id === 'test-notifications-btn');
@@ -3698,5 +4258,194 @@ async function executeLeaveBudget(budgetId, displayName) {
       window.Snackbar.show(errorMessage, 'error', 5000);
     }
   }
+}
+
+/**
+ * Criar modal de orçamento inline quando a função principal não está disponível
+ */
+function createBudgetModalInline() {
+  console.log('[DEBUG] Criando modal de orçamento inline...');
+
+  const modalHTML = `
+    <div id="create-budget-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full shadow-2xl">
+        <div class="p-6">
+          <!-- Header -->
+          <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg">
+                <span class="text-2xl text-white">💰</span>
+              </div>
+              <div>
+                <h2 class="text-xl font-bold text-gray-800 dark:text-gray-200">Criar Novo Orçamento</h2>
+                <p class="text-sm text-gray-600 dark:text-gray-400">Configure seu novo orçamento</p>
+              </div>
+            </div>
+            <button id="close-budget-modal" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors">
+              <span class="text-2xl">×</span>
+            </button>
+          </div>
+          
+          <!-- Form -->
+          <form id="create-budget-form" class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Nome do Orçamento *
+              </label>
+              <input 
+                type="text" 
+                id="budget-name-input" 
+                required
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Ex: Orçamento Familiar"
+              >
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Descrição (opcional)
+              </label>
+              <textarea 
+                id="budget-description-input"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Descrição do orçamento"
+                rows="3"
+              ></textarea>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Tipo de Orçamento *
+              </label>
+              <select 
+                id="budget-type-input" 
+                required
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="pessoal">Pessoal</option>
+                <option value="compartilhado">Compartilhado</option>
+              </select>
+            </div>
+            
+            <div class="flex gap-3 pt-4">
+              <button 
+                type="button" 
+                id="cancel-budget-btn"
+                class="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-medium py-2 rounded-lg transition-all duration-200"
+              >
+                Cancelar
+              </button>
+              <button 
+                type="submit" 
+                id="submit-budget-btn"
+                class="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 rounded-lg transition-all duration-200"
+              >
+                Criar Orçamento
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Remover modal existente se houver
+  const existingModal = document.getElementById('create-budget-modal');
+  if (existingModal) {
+    existingModal.remove();
+  }
+
+  // Adicionar modal ao DOM
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+  // Event listeners
+  const modal = document.getElementById('create-budget-modal');
+  const closeBtn = document.getElementById('close-budget-modal');
+  const cancelBtn = document.getElementById('cancel-budget-btn');
+  const form = document.getElementById('create-budget-form');
+
+  function closeModal() {
+    if (modal) modal.remove();
+  }
+
+  // Fechar modal
+  if (closeBtn) closeBtn.addEventListener('click', closeModal);
+  if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+
+  // Fechar ao clicar fora do modal
+  if (modal) {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeModal();
+    });
+  }
+
+  // Submit do formulário
+  if (form) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const nameInput = document.getElementById('budget-name-input');
+      const descriptionInput = document.getElementById('budget-description-input');
+      const typeInput = document.getElementById('budget-type-input');
+      
+      const name = nameInput?.value?.trim();
+      const description = descriptionInput?.value?.trim();
+      const type = typeInput?.value;
+      
+      if (!name) {
+        snk().error('Nome do orçamento é obrigatório');
+        return;
+      }
+      
+      try {
+        snk().info('Criando orçamento...');
+        
+        // Obter usuário atual
+        const currentUser = window.appState?.currentUser;
+        if (!currentUser) {
+          snk().error('Usuário não encontrado');
+          return;
+        }
+        
+        // Criar dados do orçamento
+        const budgetData = {
+          nome: name,
+          descricao: description || '',
+          tipo: type || 'pessoal',
+          userId: currentUser.uid,
+          createdAt: new Date(),
+          isOwner: true,
+          usuariosPermitidos: [currentUser.uid]
+        };
+        
+        console.log('[DEBUG] Dados do orçamento a ser criado:', budgetData);
+        
+        // Importar e usar o serviço de orçamentos
+        const { createBudget } = await import('@features/budgets/service.js');
+        const newBudget = await createBudget(budgetData);
+        
+        console.log('[DEBUG] Orçamento criado com sucesso:', newBudget);
+        
+        // Fechar modal
+        closeModal();
+        
+        // Feedback de sucesso
+        snk().success('Orçamento criado com sucesso!');
+        
+        // Recarregar página de configurações para mostrar o novo orçamento
+        setTimeout(() => {
+          if (window.location.hash.startsWith('#/settings')) {
+            window.location.reload();
+          }
+        }, 2000);
+        
+      } catch (error) {
+        console.error('[DEBUG] Erro ao criar orçamento:', error);
+        snk().error('Erro ao criar orçamento: ' + (error.message || 'Erro desconhecido'));
+      }
+    });
+  }
+
+  console.log('[DEBUG] Modal de orçamento inline criado e configurado');
 }
 

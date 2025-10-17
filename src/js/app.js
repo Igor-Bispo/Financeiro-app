@@ -3853,8 +3853,45 @@ async function listenCurrentBudget(budgetId) {
   const ref = doc(db, 'budgets', budgetId);
   unsubscribeBudget = onSnapshot(ref, snap => {
     if (snap.exists()) {
-      window.appState.currentBudget = { id: snap.id, ...snap.data() };
-      console.log('🔍„ Orcamento atualizado:', snap.data().nome);
+      const budgetData = snap.data();
+      const currentUserId = window.appState?.user?.uid;
+      
+      // 🚨 VERIFICAR SE O USUÁRIO ATUAL FOI REMOVIDO DO ORÇAMENTO
+      if (currentUserId && budgetData.usuariosPermitidos && Array.isArray(budgetData.usuariosPermitidos)) {
+        const isUserAllowed = budgetData.usuariosPermitidos.includes(currentUserId) || budgetData.userId === currentUserId;
+        
+        if (!isUserAllowed) {
+          console.log('🚨 [REMOVIDO] Usuário foi removido do orçamento:', budgetData.nome);
+          
+          // Notificar o usuário
+          if (window.snk) {
+            window.snk().warning('Você foi removido deste orçamento compartilhado');
+          }
+          
+          // Limpar estado local
+          localStorage.removeItem('currentBudgetId');
+          if (window.appState) {
+            window.appState.currentBudget = null;
+          }
+          
+          // Parar todos os listeners
+          if (unsubscribeBudget) { unsubscribeBudget(); unsubscribeBudget = null; }
+          if (unsubscribeTransactions) { unsubscribeTransactions(); unsubscribeTransactions = null; }
+          if (unsubscribeCategories) { unsubscribeCategories(); unsubscribeCategories = null; }
+          if (unsubscribeRecorrentes) { unsubscribeRecorrentes(); unsubscribeRecorrentes = null; }
+          
+          // Redirecionar para página inicial após um breve delay
+          setTimeout(() => {
+            window.location.hash = '';
+            window.location.reload();
+          }, 2000);
+          
+          return; // Não processar mais nada
+        }
+      }
+      
+      window.appState.currentBudget = { id: snap.id, ...budgetData };
+      console.log('🔍„ Orcamento atualizado:', budgetData.nome);
 
       // Forcar atualizacao imediata
       setTimeout(async () => {
@@ -3867,6 +3904,24 @@ async function listenCurrentBudget(budgetId) {
           console.log('✅ renderDashboard executado');
         }
       }, 100);
+    } else {
+      // Orçamento foi deletado
+      console.log('🗑️ Orçamento foi deletado');
+      
+      if (window.snk) {
+        window.snk().error('Este orçamento foi deletado');
+      }
+      
+      // Limpar estado e redirecionar
+      localStorage.removeItem('currentBudgetId');
+      if (window.appState) {
+        window.appState.currentBudget = null;
+      }
+      
+      setTimeout(() => {
+        window.location.hash = '';
+        window.location.reload();
+      }, 2000);
     }
   });
 }
@@ -4515,9 +4570,9 @@ window.showAddBudgetModal = function () {
         nome: name,
         descricao: description,
         tipo: type,
-        criadoPor: window.appState.currentUser.uid,
-        membros: [window.appState.currentUser.uid],
-        criadoEm: new Date()
+        userId: window.appState.currentUser.uid,
+        usuariosPermitidos: [window.appState.currentUser.uid],
+        createdAt: new Date()
       };
 
       const budgetId = await addBudget(budgetData);
@@ -4798,8 +4853,37 @@ window.acceptBudgetInvitation = async function (invitationId) {
       return;
     }
 
-    // Aceitar é idempotente; mesmo que não esteja 'pending', garantimos acesso
+    // Verificar se o convite pode ser aceito
     const normStatus = normalizeInvitationStatus(invitationData.status);
+    if (normStatus === 'canceled') {
+      if (window.Snackbar) {
+        window.Snackbar({
+          message: 'Este convite foi cancelado e não pode mais ser aceito',
+          type: 'error'
+        });
+      }
+      return;
+    }
+    
+    if (normStatus === 'declined') {
+      if (window.Snackbar) {
+        window.Snackbar({
+          message: 'Este convite já foi recusado',
+          type: 'error'
+        });
+      }
+      return;
+    }
+    
+    if (normStatus === 'accepted') {
+      if (window.Snackbar) {
+        window.Snackbar({
+          message: 'Este convite já foi aceito',
+          type: 'success'
+        });
+      }
+      return;
+    }
 
     // Buscar o orçamento
     const budgetRef = doc(db, 'budgets', invitationData.budgetId);

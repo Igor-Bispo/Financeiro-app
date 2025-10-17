@@ -1,4 +1,33 @@
 
+// Função utilitária para formatar datas de orçamentos
+function formatBudgetDate(dateValue) {
+  try {
+    let date;
+    if (dateValue?.toDate) {
+      // Firestore Timestamp
+      date = dateValue.toDate();
+    } else if (dateValue?.seconds) {
+      // Firestore Timestamp em formato objeto
+      date = new Date(dateValue.seconds * 1000);
+    } else if (dateValue) {
+      // JavaScript Date ou string
+      date = new Date(dateValue);
+    } else {
+      return 'Data não disponível';
+    }
+    
+    // Validar se a data é válida
+    if (isNaN(date.getTime())) {
+      return 'Data não disponível';
+    }
+    
+    return date.toLocaleDateString('pt-BR');
+  } catch (e) {
+    console.warn('Erro ao formatar data do orçamento:', e);
+    return 'Data não disponível';
+  }
+}
+
 // Controle global de animações
 function setAnimationsEnabled(enabled) {
   if (enabled) {
@@ -95,7 +124,7 @@ function renderMyBudgets(budgets, currentUser, currentBudget) {
                         <div class="flex justify-between items-start gap-4">
                             <div>
                                 <p class="font-bold text-lg text-gray-900 dark:text-gray-100">${budget.nome}</p>
-                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Criado em ${budget.createdAt ? new Date(budget.createdAt.seconds * 1000).toLocaleDateString('pt-BR') : 'Data não disponível'}</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Criado em ${budget.createdAt ? formatBudgetDate(budget.createdAt) : 'Data não disponível'}</p>
                             </div>
                             ${budget.id !== currentBudget?.id ? `
                                 <button type="button" class="enter-budget-button inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-200 dark:border-blue-800 transition-all duration-200" data-budget-id="${budget.id}" data-budget-name="${(budget.nome || 'Orçamento').replace(/"/g, '&quot;')}" title="Entrar neste orçamento">
@@ -330,7 +359,7 @@ export function generateSettingsHTML(state) {
                                             <span class="text-sm">📅</span>
                                             <span class="text-xs font-medium text-gray-800 dark:text-gray-200">Criado</span>
                                         </div>
-                                        <span class="text-xs text-gray-600 dark:text-gray-400">${currentBudget?.createdAt ? new Date(currentBudget.createdAt.seconds * 1000).toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit'}) : 'N/A'}</span>
+                                        <span class="text-xs text-gray-600 dark:text-gray-400">${currentBudget?.createdAt ? formatBudgetDate(currentBudget.createdAt).replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$1/$2') : 'N/A'}</span>
                                     </div>
                                 </div>
                             </div>
